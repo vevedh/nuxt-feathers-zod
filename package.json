@@ -44,7 +44,11 @@
     "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
     "test:all": "nr test:types && nr test && playwright test",
     "prerelease": "nr test:types && nr lint && nr test && nr test:e2e",
-    "release": "dotenv release-it"
+    "publish:npm": "bun run prepack && bun publish --access public",
+    "release": "bunx release-it",
+    "release:patch": "bunx release-it patch",
+    "release:minor": "bunx release-it minor",
+    "release:major": "bunx release-it major"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"
