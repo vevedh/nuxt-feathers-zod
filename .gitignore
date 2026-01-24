@@ -1,10 +1,16 @@
 # Dependencies
 node_modules
 
+<<<<<<< HEAD
 
 *.zip
 *.tar.gz
 *.rar
+=======
+*.zip
+*.rar
+*.tar.gz
+>>>>>>> 4f1f19c6e6f15432d5fe218c78a13d22272129f2
 
 # Logs
 *.log*
