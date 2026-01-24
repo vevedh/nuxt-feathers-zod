@@ -4,9 +4,9 @@ import type { HookContext } from 'nuxt-feathers-zod/server'
 import type { UserService } from './users.class'
 import { passwordHash } from '@feathersjs/authentication-local'
 import { resolve } from '@feathersjs/schema'
-import { z } from 'zod'
-import { getZodValidator } from 'nuxt-feathers-zod/validators'
 import { zodQuerySyntax } from 'nuxt-feathers-zod/query'
+import { getZodValidator } from 'nuxt-feathers-zod/validators'
+import { z } from 'zod'
 
 // Main data model schema
 export const userSchema = z.object({
@@ -50,7 +50,8 @@ export const userQueryResolver = resolve<UserQuery, HookContext<UserService>>({
   // If there is a user (e.g. with authentication), they are only allowed to see their own data
   id: async (value: unknown, _user: unknown, context: HookContext<UserService>) => {
     const authUser = (context.params as any).user
-    if (authUser) return authUser.id
+    if (authUser)
+      return authUser.id
     return value
   },
 })

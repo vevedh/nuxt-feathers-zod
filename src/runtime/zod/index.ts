@@ -1,4 +1,4 @@
 export { formatZodIssues } from './format'
-export { getZodValidator } from './validators'
-export { zodQuerySyntax, queryProperty, queryPropertiesShape, sortDefinition } from './query'
 export { objectIdSchema } from './objectId'
+export { queryPropertiesShape, queryProperty, sortDefinition, zodQuerySyntax } from './query'
+export { getZodValidator } from './validators'

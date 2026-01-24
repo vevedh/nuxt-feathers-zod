@@ -15,13 +15,14 @@ export function objectIdSchema() {
       z.string().transform((input, ctx) => {
         try {
           return ObjectId.createFromHexString(input)
-        } catch (err: any) {
+        }
+        catch (err: any) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: err?.message ?? 'Invalid ObjectId',
           })
           return z.NEVER
         }
-      })
+      }),
     )
 }

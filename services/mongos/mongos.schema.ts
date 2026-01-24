@@ -3,11 +3,11 @@
 import type { HookContext } from 'nuxt-feathers-zod/server'
 import type { MongoService } from './mongos.class'
 import { resolve } from '@feathersjs/schema'
-import { z } from 'zod'
-import { getZodValidator } from 'nuxt-feathers-zod/validators'
 import { zodQuerySyntax } from 'nuxt-feathers-zod/query'
+import { getZodValidator } from 'nuxt-feathers-zod/validators'
+import { z } from 'zod'
 
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
+const objectIdRegex = /^[0-9a-f]{24}$/i
 export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid ObjectId')
 
 // Main data model schema

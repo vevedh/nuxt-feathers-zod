@@ -1,8 +1,3 @@
-/* eslint-disable ts/no-unsafe-call */
-/* eslint-disable ts/no-unsafe-member-access */
-/* eslint-disable ts/no-unsafe-assignment */
-/* eslint-disable ts/no-unsafe-return */
-
 // grabbed from feathers-pinia
 import type { Params } from '@feathersjs/feathers'
 import { FetchClient } from '@feathersjs/rest-client'

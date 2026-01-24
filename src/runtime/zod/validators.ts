@@ -1,14 +1,14 @@
 import type { HookContext } from '@feathersjs/feathers'
 import type { Validator } from '@feathersjs/schema'
+import type { z, ZodTypeAny } from 'zod'
 import { VALIDATED } from '@feathersjs/adapter-commons'
 import { BadRequest } from '@feathersjs/errors'
-import type { z, ZodTypeAny } from 'zod'
 import { ZodError } from 'zod'
 import { formatZodIssues } from './format'
 
 export type ValidatorKind = 'data' | 'query'
 
-export type ZodValidatorOptions = {
+export interface ZodValidatorOptions {
   kind?: ValidatorKind
   message?: string
   useSafeParse?: boolean
@@ -24,17 +24,17 @@ export type ZodValidatorOptions = {
  */
 export function getZodValidator<T extends ZodTypeAny>(
   schema: T,
-  opts: ZodValidatorOptions = {}
+  opts: ZodValidatorOptions = {},
 ) {
   const kind: ValidatorKind = opts.kind ?? 'data'
-  const message =
-    opts.message ?? (kind === 'query' ? 'Invalid query' : 'Invalid data')
+  const message
+    = opts.message ?? (kind === 'query' ? 'Invalid query' : 'Invalid data')
   const useSafeParse = opts.useSafeParse ?? true
 
   const validator = (async (
     value: unknown,
     context: HookContext,
-    _status?: unknown
+    _status?: unknown,
   ): Promise<z.infer<T>> => {
     try {
       const parseOne = async (v: unknown) => {
@@ -55,17 +55,19 @@ export function getZodValidator<T extends ZodTypeAny>(
         return schema.parse(v)
       }
 
-      const parsed =
-        kind === 'data' && Array.isArray(value)
+      const parsed
+        = kind === 'data' && Array.isArray(value)
           ? await Promise.all(value.map(parseOne))
           : await parseOne(value)
 
       // Mark as validated (Feathers convention)
-      Object.defineProperty(parsed as any, VALIDATED, { value: true })
+      Object.defineProperty(parsed, VALIDATED, { value: true })
 
-      return parsed as any
-    } catch (err: any) {
-      if (err instanceof BadRequest) throw err
+      return parsed
+    }
+    catch (err: any) {
+      if (err instanceof BadRequest)
+        throw err
 
       if (err instanceof ZodError) {
         throw new BadRequest(message, {

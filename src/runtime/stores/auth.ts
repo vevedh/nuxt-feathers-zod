@@ -1,7 +1,5 @@
-import { useRuntimeConfig } from '#app'
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { computed, reactive, toRefs } from 'vue'
-import { useFeathers } from '../composables/feathers'
 
 export const useAuthStore = defineStore('auth', () => {
   const state = reactive({

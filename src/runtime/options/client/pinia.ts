@@ -1,5 +1,5 @@
-import type { CreatePiniaClientConfig, PiniaServiceConfig } from 'feathers-pinia'
 import type { ModuleOptions as PiniaNuxtModuleOptions } from '@pinia/nuxt'
+import type { CreatePiniaClientConfig, PiniaServiceConfig } from 'feathers-pinia'
 import { klona } from 'klona'
 
 export type PiniaModuleOptions = Pick<PiniaNuxtModuleOptions, 'storesDirs'>

@@ -22,9 +22,9 @@ export function user(app: Application) {
   // Initialize hooks
   app.service(userPath).hooks({
     around: {
-      all: [schemaHooks.resolveExternal(userExternalResolver), schemaHooks.resolveResult(userResolver)],//
+      all: [schemaHooks.resolveExternal(userExternalResolver), schemaHooks.resolveResult(userResolver)], //
       find: [authenticate('jwt')], //
-      get: [authenticate('jwt')],//
+      get: [authenticate('jwt')], //
       create: [],
       update: [authenticate('jwt')],
       patch: [authenticate('jwt')],

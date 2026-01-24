@@ -19,10 +19,9 @@ async function addMessage() {
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
 
-function logout () {
+function logout() {
   auth.logout()
 }
-
 </script>
 
 <template>

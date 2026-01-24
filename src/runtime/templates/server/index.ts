@@ -16,7 +16,8 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
       filename: 'feathers/server/plugin.ts',
       getContents: getServerPluginContents(options),
       write: true,
-    },  ]
+    },
+  ]
 
   if (options.database.mongo) {
     serverTemplates.push({

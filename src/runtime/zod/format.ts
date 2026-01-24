@@ -1,6 +1,6 @@
 import type { ZodError } from 'zod'
 
-export type ZodIssueItem = {
+export interface ZodIssueItem {
   path: string
   code: string
   message: string

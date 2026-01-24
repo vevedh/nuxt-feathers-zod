@@ -3,9 +3,9 @@
 import type { HookContext } from 'nuxt-feathers-zod/server'
 import type { MessageService } from './messages.class'
 import { resolve } from '@feathersjs/schema'
-import { z } from 'zod'
-import { getZodValidator } from 'nuxt-feathers-zod/validators'
 import { zodQuerySyntax } from 'nuxt-feathers-zod/query'
+import { getZodValidator } from 'nuxt-feathers-zod/validators'
+import { z } from 'zod'
 
 // Main data model schema
 export const messageSchema = z.object({

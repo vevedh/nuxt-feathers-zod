@@ -7,7 +7,8 @@ const order = z.union([z.literal(1), z.literal(-1)])
 /** Coerce numbers coming from querystrings ("10" -> 10). */
 function coerceNumber() {
   return z.preprocess((v) => {
-    if (typeof v === 'string' && v.trim() !== '') return Number(v)
+    if (typeof v === 'string' && v.trim() !== '')
+      return Number(v)
     return v
   }, z.number())
 }
@@ -18,7 +19,7 @@ function coerceStringArrayFromCsv() {
     if (typeof v === 'string') {
       return v
         .split(',')
-        .map((s) => s.trim())
+        .map(s => s.trim())
         .filter(Boolean)
     }
     return v
@@ -41,7 +42,7 @@ function arrayOfKeys<Shape extends ZodRawShape>(shape: Shape) {
 
 export function queryProperty<
   T extends ZodTypeAny,
-  X extends Record<string, ZodTypeAny> = {}
+  X extends Record<string, ZodTypeAny> = {},
 >(prop: T, extension: X = {} as X) {
   const nullishProp = prop.nullish()
   const propOptional = prop.optional()
@@ -67,7 +68,7 @@ export function queryProperty<
 
 export function queryPropertiesShape<
   Shape extends ZodRawShape,
-  X extends Partial<Record<KeysOf<Shape>, Record<string, ZodTypeAny>>> = {}
+  X extends Partial<Record<KeysOf<Shape>, Record<string, ZodTypeAny>>> = {},
 >(shape: Shape, extensions: X = {} as X) {
   const keys = Object.keys(shape) as KeysOf<Shape>[]
   return keys.reduce((acc, key) => {
@@ -87,7 +88,7 @@ export function queryPropertiesShape<
 export function zodQuerySyntax<
   Schema extends z.AnyZodObject,
   Shape extends Schema['shape'],
-  X extends Partial<Record<KeysOf<Shape>, Record<string, ZodTypeAny>>> = {}
+  X extends Partial<Record<KeysOf<Shape>, Record<string, ZodTypeAny>>> = {},
 >(schema: Schema, extensions: X = {} as X) {
   const shape = schema.shape as Shape
   const keys = Object.keys(shape) as [KeysOf<Shape>, ...KeysOf<Shape>[]]
@@ -110,7 +111,7 @@ export function zodQuerySyntax<
     baseQuery.extend({
       $or: z.array(query).optional(),
       $and: z.array(query).optional(),
-    }).strict()
+    }).strict(),
   )
 
   return query
