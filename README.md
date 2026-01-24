@@ -1,6 +1,7 @@
 # nuxt-feathers-zod
 
 Nuxt 4 module that embeds a **FeathersJS v5 (Dove)** server into **Nitro** and generates a **typed Feathers client** for your Nuxt app, with **Zod-first validation**.
+It's using and inspired from project **[https://github.com/GaborTorma/feathers-nitro-adapter.git]()**
 
 This repository ships a ready-to-run playground (`nuxi dev playground`) and a module you can install in your own Nuxt application.
 
