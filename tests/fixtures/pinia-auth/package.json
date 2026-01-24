@@ -1,0 +1,5 @@
+{
+  "name": "pinia-auth",
+  "type": "module",
+  "private": true
+}

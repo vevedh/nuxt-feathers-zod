@@ -1,0 +1,31 @@
+{
+  "name": "nuxt-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxi build",
+    "dev": "nuxi dev --host",
+    "generate": "nuxt generate",
+    "preview": "nuxi preview",
+    "prepare": "nuxi prepare",
+    "test:types": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@feathersjs/authentication-client": "catalog:",
+    "@feathersjs/feathers": "catalog:",
+    "@feathersjs/rest-client": "catalog:",
+    "@feathersjs/socketio-client": "catalog:",
+    "@gabortorma/feathers-pinia": "catalog:",
+    "@pinia/nuxt": "catalog:",
+    "nuxt": "catalog:",
+    "pinia": "catalog:",
+    "socket.io-client": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@gabortorma/nuxt-eslint-layer": "catalog:",
+    "ofetch": "catalog:",
+    "typescript": "catalog:"
+  }
+}

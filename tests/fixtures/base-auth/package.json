@@ -1,0 +1,5 @@
+{
+  "name": "base-auth",
+  "type": "module",
+  "private": true
+}

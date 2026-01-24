@@ -1,0 +1,3 @@
+- MongoDB behúzása, unit teszttel (vitest-mongodb). van már hozzá egy git-tag
+- deps. ellenőrzése
+- get templates vars

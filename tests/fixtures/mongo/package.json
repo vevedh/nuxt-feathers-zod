@@ -1,0 +1,5 @@
+{
+  "name": "mongo",
+  "type": "module",
+  "private": true
+}
