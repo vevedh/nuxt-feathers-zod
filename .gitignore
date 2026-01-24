@@ -1,6 +1,10 @@
 # Dependencies
 node_modules
 
+*.zip
+*.rar
+*.tar.gz
+
 # Logs
 *.log*
 
