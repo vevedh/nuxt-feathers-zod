@@ -7,6 +7,8 @@ import consola from 'consola'
 
 type Adapter = 'mongodb' | 'memory'
 type MiddlewareTarget = 'nitro' | 'feathers'
+type IdField = 'id' | '_id'
+type CollectionName = string
 
 export type RunCliOptions = {
   cwd: string
@@ -48,6 +50,10 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
   if (subcmd === 'service') {
     const adapter = (flags.adapter as Adapter | undefined) ?? 'mongodb'
     const auth = Boolean(flags.auth)
+    const idField = (flags.idField as IdField | undefined) ?? (adapter === 'mongodb' ? '_id' : 'id')
+    const servicePath = typeof flags.path === 'string' ? String(flags.path) : undefined
+    const collectionName = typeof flags.collection === 'string' ? String(flags.collection) : undefined
+    const docs = Boolean(flags.docs)
     const dry = Boolean(flags.dry)
     const force = Boolean(flags.force)
 
@@ -60,6 +66,10 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
       name,
       adapter,
       auth,
+      idField,
+      servicePath,
+      collectionName,
+      docs,
       dry,
       force,
     })
@@ -86,7 +96,7 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
 function printHelp() {
   // Keep output short; this is a CLI entrypoint.
   // eslint-disable-next-line no-console
-  console.log(`\nnuxt-feathers-zod CLI\n\nUsage:\n  nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]\n\nExamples:\n  bunx nuxt-feathers-zod add service posts --adapter mongodb --auth\n  bunx nuxt-feathers-zod add middleware session\n  bunx nuxt-feathers-zod add middleware dummy --target feathers\n`)
+  console.log(`\nnuxt-feathers-zod CLI\n\nUsage:\n  nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--idField id|_id] [--path <customPath>] [--collection <mongoCollection>] [--docs] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]\n\nExamples:\n  bunx nuxt-feathers-zod add service posts --adapter mongodb --auth\n  bunx nuxt-feathers-zod add service users --adapter mongodb --idField _id --path accounts --docs\n  bunx nuxt-feathers-zod add service haproxy-domains --path haproxy/domains --collection haproxy-domains --auth --docs\n  bunx nuxt-feathers-zod add middleware session\n  bunx nuxt-feathers-zod add middleware dummy --target feathers\n`)
 }
 
 function parseFlags(argv: string[]) {
@@ -132,6 +142,28 @@ function normalizeServiceName(raw: string) {
   return kebabCase(raw)
 }
 
+function normalizeServicePath(raw: string) {
+  // Feathers service paths are usually kebab-case and can include slashes.
+  // We keep user intent, but normalize leading/trailing slashes.
+  const cleaned = String(raw).trim().replace(/^\/+/, '').replace(/\/+$/, '')
+  if (!cleaned) throw new Error('Invalid --path: path cannot be empty')
+  return cleaned
+}
+
+function normalizeCollectionName(raw: string) {
+  // MongoDB collection names are strings, but in practice should not include path separators.
+  // We keep it permissive while preventing common foot-guns.
+  const cleaned = String(raw).trim()
+  if (!cleaned) throw new Error('Invalid --collection: collection name cannot be empty')
+  if (cleaned.includes('/') || cleaned.includes('\\')) {
+    throw new Error('Invalid --collection: collection name must not include \/ or \\')
+  }
+  if (cleaned.includes('\u0000')) {
+    throw new Error('Invalid --collection: collection name must not include null characters')
+  }
+  return cleaned
+}
+
 function createServiceIds(serviceNameKebab: string) {
   const baseKebab = singularize(serviceNameKebab)
   const basePascal = pascalCase(baseKebab)
@@ -151,6 +183,10 @@ type GenerateServiceOptions = {
   name: string
   adapter: Adapter
   auth: boolean
+  idField: IdField
+  servicePath?: string
+  collectionName?: CollectionName
+  docs: boolean
   dry: boolean
   force: boolean
 }
@@ -159,6 +195,12 @@ export async function generateService(opts: GenerateServiceOptions) {
   const serviceNameKebab = normalizeServiceName(opts.name)
   const ids = createServiceIds(serviceNameKebab)
 
+  const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
+  const collectionName = normalizeCollectionName(
+    opts.collectionName
+      ?? (servicePath.includes('/') ? serviceNameKebab : servicePath),
+  )
+
   const dir = join(opts.servicesDir, serviceNameKebab)
   const schemaFile = join(dir, `${serviceNameKebab}.schema.ts`)
   const classFile = join(dir, `${serviceNameKebab}.class.ts`)
@@ -166,10 +208,10 @@ export async function generateService(opts: GenerateServiceOptions) {
   const serviceFile = join(dir, `${serviceNameKebab}.ts`)
 
   const files: Array<{ path: string; content: string }> = [
-    { path: schemaFile, content: renderSchema(ids, opts.adapter) },
-    { path: classFile, content: renderClass(ids, opts.adapter) },
-    { path: sharedFile, content: renderShared(ids) },
-    { path: serviceFile, content: renderService(ids, opts.auth) },
+    { path: schemaFile, content: renderSchema(ids, opts.adapter, opts.idField) },
+    { path: classFile, content: renderClass(ids, opts.adapter, collectionName) },
+    { path: sharedFile, content: renderShared(ids, servicePath) },
+    { path: serviceFile, content: renderService(ids, opts.auth, opts.docs) },
   ]
 
   await ensureDir(dir, opts.dry)
@@ -178,8 +220,38 @@ export async function generateService(opts: GenerateServiceOptions) {
     await writeFileSafe(f.path, f.content, { dry: opts.dry, force: opts.force })
   }
 
+  if (opts.docs) {
+    await ensureFeathersSwaggerSupport(opts.projectRoot, { dry: opts.dry, force: opts.force })
+  }
+
   if (!opts.dry) {
     consola.success(`Generated service '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
+  }
+}
+
+async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: boolean; force: boolean }) {
+  // 1) Ensure TS sees `ServiceOptions.docs` (required for feathers-swagger in TS projects)
+  const typesDir = join(projectRoot, 'types')
+  const typesFile = join(typesDir, 'feathers-swagger.d.ts')
+  const typesContent = `// Auto-generated by nuxt-feathers-zod CLI (required when using feathers-swagger in TypeScript)\n\nimport type { ServiceSwaggerOptions } from 'feathers-swagger'\n\ndeclare module '@feathersjs/feathers' {\n  interface ServiceOptions {\n    docs?: ServiceSwaggerOptions\n  }\n}\n`
+
+  await ensureDir(typesDir, io.dry)
+  await writeFileSafe(typesFile, typesContent, { dry: io.dry, force: io.force })
+
+  // 2) Best-effort dependency hint (we do not auto-install dependencies)
+  try {
+    const pkgPath = join(projectRoot, 'package.json')
+    if (!existsSync(pkgPath)) return
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as any
+    const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
+    if (!deps['feathers-swagger']) {
+      consola.warn(
+        `--docs was used but 'feathers-swagger' is not listed in package.json. Install it (and swagger UI deps if needed): bun add feathers-swagger swagger-ui-dist`,
+      )
+    }
+  }
+  catch {
+    // ignore
   }
 }
 
@@ -238,12 +310,12 @@ function relativeToCwd(p: string) {
   }
 }
 
-function renderSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter) {
+function renderSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
 
-  const idField = adapter === 'mongodb' ? '_id' : 'id'
+  const idSchemaField = idField
   const idSchema = adapter === 'mongodb'
     ? `
 const objectIdRegex = /^[0-9a-f]{24}$/i
@@ -253,11 +325,11 @@ export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid Obj
 
   const mainSchema = adapter === 'mongodb'
     ? `export const ${base}Schema = z.object({
-  ${idField}: objectIdSchema(),
+  ${idSchemaField}: objectIdSchema(),
   text: z.string(),
 })`
     : `export const ${base}Schema = z.object({
-  ${idField}: z.number().int(),
+  ${idSchemaField}: z.number().int(),
   text: z.string(),
 })`
 
@@ -303,8 +375,7 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 `
 }
 
-function renderClass(ids: ReturnType<typeof createServiceIds>, adapter: Adapter) {
-  const base = ids.baseCamel
+function renderClass(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, collectionName: string) {
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
@@ -364,13 +435,13 @@ export function getOptions(app: Application): MongoDBAdapterOptions {
       max: 100,
     },
     multi: true,
-    Model: mongoClient.then(db => db.collection('${serviceName}')),
+    Model: mongoClient.then(db => db.collection('${collectionName}')),
   }
 }
 `
 }
 
-function renderShared(ids: ReturnType<typeof createServiceIds>) {
+function renderShared(ids: ReturnType<typeof createServiceIds>, servicePath: string) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
@@ -390,7 +461,7 @@ export type { ${Base}, ${Base}Data, ${Base}Patch, ${Base}Query }
 
 export type ${clientServiceType} = Pick<${serviceClass}<Params<${Base}Query>>, (typeof ${methodsConst})[number]>
 
-export const ${pathConst} = '${serviceName}'
+export const ${pathConst} = '${servicePath}'
 
 export const ${methodsConst}: Array<keyof ${serviceClass}> = ['find', 'get', 'create', 'patch', 'remove']
 
@@ -410,12 +481,38 @@ declare module 'nuxt-feathers-zod/client' {
 `
 }
 
-function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean) {
+function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
   const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+
+  const swaggerImports = ''
+
+  const swaggerSchemaImports = ''
+  const docsBlock = docs
+    ? `
+    docs: {
+      description: '${Base} service',
+      idType: 'string',
+${auth ? `      securities: ${base}Methods,
+` : ''}      definitions: {
+        ${base}: { type: 'object', properties: {} },
+        ${base}Data: { type: 'object', properties: {} },
+        ${base}Patch: { type: 'object', properties: {} },
+        ${base}Query: {
+          type: 'object',
+          properties: {
+            $limit: { type: 'number' },
+            $skip: { type: 'number' },
+            $sort: { type: 'object', additionalProperties: { type: 'number' } },
+          },
+        },
+      },
+    },
+`
+    : ''
 
   const authAround = auth
     ? `
@@ -436,10 +533,10 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean) 
   return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 
 import type { Application } from 'nuxt-feathers-zod/server'
-${authImports}import { hooks as schemaHooks } from '@feathersjs/schema'
+${authImports}${swaggerImports}import { hooks as schemaHooks } from '@feathersjs/schema'
 import { getOptions, ${serviceClass} } from './${serviceName}.class'
 import {
-  ${base}DataResolver,
+${swaggerSchemaImports}  ${base}DataResolver,
   ${base}DataValidator,
   ${base}ExternalResolver,
   ${base}PatchResolver,
@@ -456,7 +553,7 @@ export * from './${serviceName}.schema'
 export function ${base}(app: Application) {
   app.use(${base}Path, new ${serviceClass}(getOptions(app)), {
     methods: ${base}Methods,
-    events: [],
+    events: [],${docsBlock}
   })
 
   app.service(${base}Path).hooks({

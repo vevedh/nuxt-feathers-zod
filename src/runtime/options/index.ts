@@ -7,6 +7,7 @@ import type { ResolvedServerOptions, ServerOptions } from './server'
 import type { ServicesDir, ServicesDirs } from './services'
 import type { ResolvedTransportsOptions, TransportsOptions } from './transports'
 import type { ResolvedValidatorOptions, ValidatorOptions } from './validator'
+import type { ResolvedSwaggerOptionsOrDisabled, SwaggerOptions, SwaggerOptionsOrDisabled } from './swagger'
 import { createResolver } from '@nuxt/kit'
 import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
@@ -16,6 +17,7 @@ import { resolveServerOptions } from './server'
 import { resolveServicesDirs } from './services'
 import { resolveTransportsOptions } from './transports'
 import { resolveValidatorOptions } from './validator'
+import { resolveSwaggerOptions } from './swagger'
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
@@ -27,6 +29,7 @@ export interface ModuleOptions {
   client: ClientOptions | boolean
   validator: ValidatorOptions
   loadFeathersConfig: boolean
+  swagger?: SwaggerOptionsOrDisabled
 }
 
 export interface ResolvedOptions {
@@ -39,7 +42,9 @@ export interface ResolvedOptions {
   client: ResolvedClientOptionsOrDisabled
   validator: ResolvedValidatorOptions
   loadFeathersConfig: boolean
+  swagger?: ResolvedSwaggerOptionsOrDisabled
 }
+
 
 export interface FeathersRuntimeConfig {
   auth?: ResolvedAuthOptions
@@ -76,6 +81,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const server = await resolveServerOptions(options.server, rootDir, serverDir)
   const client = await resolveClientOptions(options.client, !!database.mongo, rootDir, srcDir)
   const validator = resolveValidatorOptions(options.validator)
+  const swagger = resolveSwaggerOptions(options.swagger, transports)
   const servicesImports = await getServicesImports(servicesDirs) // TODO move
   const auth = resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
   const loadFeathersConfig = options.loadFeathersConfig
@@ -90,6 +96,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     validator,
     auth,
     loadFeathersConfig,
+    swagger,
   }
   console.dir(resolvedOptions, { depth: null })
   return resolvedOptions

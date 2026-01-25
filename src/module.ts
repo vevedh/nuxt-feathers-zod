@@ -5,6 +5,7 @@ import type { PiniaModuleOptions } from './runtime/options/client/pinia'
 import { addImports, addImportsDir, addPlugin, addServerPlugin, addTemplate, createResolver, defineNuxtModule, hasNuxtModule, installModule } from '@nuxt/kit'
 import { consola } from 'consola'
 import defu from 'defu'
+import { createRequire } from 'node:module'
 import { resolveOptions, resolvePublicRuntimeConfig, resolveRuntimeConfig } from './runtime/options'
 import { serverDefaults } from './runtime/options/server'
 import { addServicesImports, getServicesImports } from './runtime/services'
@@ -90,6 +91,7 @@ export default defineNuxtModule<ModuleOptions>({
     },
     loadFeathersConfig: false,
     auth: true,
+    swagger: false,
   },
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
@@ -97,6 +99,21 @@ export default defineNuxtModule<ModuleOptions>({
     // Prepare options
 
     const resolvedOptions: ResolvedOptions = await resolveOptions(options, nuxt)
+
+    // DX validation: if Swagger is enabled but the dependency is not resolvable from the project,
+    // emit a clear warning early (build/start time) rather than failing later at runtime.
+    if (resolvedOptions.swagger) {
+      const require = createRequire(import.meta.url)
+      try {
+        require.resolve('feathers-swagger', { paths: [nuxt.options.rootDir] })
+      }
+      catch {
+        consola.warn(
+          "feathers.swagger is enabled but 'feathers-swagger' could not be resolved from this Nuxt project. "
+          + "Install it in your app (root) dependencies: bun add feathers-swagger swagger-ui-dist",
+        )
+      }
+    }
 
     nuxt.options.runtimeConfig._feathers = resolveRuntimeConfig(resolvedOptions)
     nuxt.options.runtimeConfig.public._feathers = resolvePublicRuntimeConfig(resolvedOptions)

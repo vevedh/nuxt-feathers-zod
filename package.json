@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "@feathersjs/adapter-commons": "latest",
-    "@feathersjs/authentication": "latest",
+    "@feathersjs/authentication": "5.0.37",
     "@feathersjs/authentication-client": "latest",
     "@feathersjs/authentication-local": "latest",
     "@feathersjs/configuration": "latest",
@@ -109,16 +109,5 @@
     "vitest-mongodb": "latest",
     "vue": "latest",
     "vue-router": "latest"
-  },
-  "overrides": {
-    "@feathersjs/authentication": "5.0.37",
-    "@feathersjs/authentication-client": "5.0.37",
-    "@feathersjs/authentication-local": "5.0.37",
-    "@feathersjs/errors": "5.0.37",
-    "@feathersjs/feathers": "5.0.37",
-    "@feathersjs/koa": "5.0.37",
-    "@feathersjs/rest-client": "5.0.37",
-    "@feathersjs/schema": "5.0.37",
-    "@feathersjs/socketio-client": "5.0.37"
-  }
+  } 
 }

@@ -16,6 +16,7 @@ export default defineNuxtConfig({
   },
 
   feathers: {
+    swagger: { enabled: true },
     database: {
       mongo: {
         url: 'dummy',

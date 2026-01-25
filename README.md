@@ -364,7 +364,58 @@ Template basé sur le pattern existant `playground/server/feathers/dummy.ts` :
 * `--servicesDir <dir>`
 * `--target nitro|feathers`
 
+
+## Changements du 25 janvier 2026
+
+### 1) `add service` : nouvelles options ROI
+
+La commande supporte désormais :
+
+```bash
+bunx nuxt-feathers-zod add service <serviceName> \
+  [--idField id|_id] \
+  [--path <customPath>] \
+  [--docs] \
+  [--adapter mongodb|memory] \
+  [--auth] \
+  [--servicesDir <dir>] \
+  [--dry] \
+  [--force]
+```
+
+#### `--idField id|_id`
+
+* Détermine le champ d’identifiant dans le schéma Zod généré.
+* Compatible avec `mongodb` (ObjectId en string 24 hex) et `memory` (number int).
+* Défauts :
+
+  * `mongodb` → `_id`
+  * `memory` → `id`
+
+#### `--path <customPath>`
+
+* Découple le **dossier service** du **path Feathers exposé**.
+* Normalise automatiquement les `/` de tête/fin (ex: `/accounts/` → `accounts`).
+* Impacte : `*.shared.ts` (path const), et donc tous les usages de `service(path)`.
+
+#### `--docs`
+
+* Injecte un bloc `docs:` (Swagger legacy) dans le `app.use(...)`.
+* Ajoute `securities: ['jwt']` si `--auth` est activé.
+
+### 2) Tests smoke mis à jour
+
+* Ajout d’un test couvrant `--path`, `--idField`, `--docs`.
+
 ---
+
+## Exemple rapide (valide)
+
+```bash
+bunx nuxt-feathers-zod add service users --adapter mongodb --auth --idField id --path accounts --docs
+```
+
+Génère `services/users/*` mais expose le service sur `accounts` avec schéma `id: objectIdSchema()` + bloc `docs:`.
 
 
 

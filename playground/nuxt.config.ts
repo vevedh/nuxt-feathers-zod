@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   ],
 
   feathers: {
-
+    swagger: { enabled: true , docsJsonPath: '../swagger.json' },
     servicesDirs: '../services',
     transports: {
       rest: { path: '/feathers', framework: 'express' },
