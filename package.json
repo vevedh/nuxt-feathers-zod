@@ -21,6 +21,9 @@
     "./query": "./dist/runtime/zod/query.js",
     "./format": "./dist/runtime/zod/format.js"
   },
+  "bin": {
+    "nuxt-feathers-zod": "bin/nuxt-feathers-zod"
+  },
   "main": "./dist/module.mjs",
   "typesVersions": {
     "*": {
@@ -29,7 +32,11 @@
       "ofetch-adapter": ["./dist/runtime/adapters/ofetch.d.mts"]
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "bin",
+    "src/cli"
+  ],
   "scripts": {
     "prepack": "nuxt-module-build build",
     "dev": "nuxi dev playground",

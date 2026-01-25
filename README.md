@@ -278,6 +278,96 @@ Notes:
 
 The runtime auth bootstrap (`src/runtime/plugins/feathers-auth.ts`) re-authenticates **client-side only** to avoid SSR startup failures when the Feathers client is not yet injected.
 
+
+C’est appliqué au dépôt (zip monté), en respectant exactement l’ordre que vous avez demandé.
+
+Voici ce qui a été ajouté / modifié dans **nuxt-feathers-zod-main** :
+
+## 1) CLI Bun: `bunx nuxt-feathers-zod …`
+
+### Ajouts
+
+* `bin/nuxt-feathers-zod` (exécutable, shebang Bun)
+* `src/cli/index.ts` (implémentation complète de la CLI)
+
+### package.json
+
+* Ajout de :
+
+  * `"bin": { "nuxt-feathers-zod": "bin/nuxt-feathers-zod" }`
+  * `"files": ["dist", "bin", "src/cli"]` pour que la CLI soit bien publiée
+  * `"test": "vitest run"` (smoke tests)
+
+## 2) Commande `add service` (4 fichiers) + smoke tests
+
+### Commande
+
+```bash
+bunx nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--servicesDir <dir>] [--dry] [--force]
+```
+
+### Génération
+
+Crée automatiquement :
+
+* `services/<name>/<name>.schema.ts`
+* `services/<name>/<name>.class.ts`
+* `services/<name>/<name>.shared.ts`
+* `services/<name>/<name>.ts`
+
+Aligné sur le style déjà présent dans le repo :
+
+* Zod + `getZodValidator(...)`
+* `zodQuerySyntax(schema)`
+* `schemaHooks.validateQuery/validateData + resolveQuery/resolveData`
+* `--auth` ajoute `authenticate('jwt')` sur `find/get/patch/remove` (create reste ouvert)
+
+`--adapter mongodb` génère un `_id` ObjectId (regex 24 hex) comme le service `mongos` existant.
+`--adapter memory` génère un `id: z.number().int()` comme `messages`.
+
+Smoke test ajouté : `test/cli.spec.ts` (vérifie service + middleware).
+
+## 3) Commande `add middleware` (Nitro)
+
+### Commande
+
+```bash
+bunx nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]
+```
+
+Par défaut (`--target nitro`) :
+
+* crée `server/middleware/<name>.ts` avec un template `defineEventHandler(...)`.
+
+## 4) `--target feathers` (plugin Feathers côté serveur)
+
+Si vous faites :
+
+```bash
+bunx nuxt-feathers-zod add middleware dummy --target feathers
+```
+
+Génère :
+
+* `server/feathers/dummy.ts`
+
+Template basé sur le pattern existant `playground/server/feathers/dummy.ts` :
+
+* `defineFeathersServerPlugin((app) => app.hooks({ setup: [...] }))`
+
+## 5) Options ajoutées
+
+* `--adapter mongodb|memory`
+* `--auth`
+* `--dry`
+* `--force`
+* `--servicesDir <dir>`
+* `--target nitro|feathers`
+
+---
+
+
+
 ## License
 
 MIT
