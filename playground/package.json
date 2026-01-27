@@ -11,21 +11,21 @@
     "test:types": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@feathersjs/authentication-client": "catalog:",
-    "@feathersjs/feathers": "catalog:",
-    "@feathersjs/rest-client": "catalog:",
-    "@feathersjs/socketio-client": "catalog:",
-    "@gabortorma/feathers-pinia": "catalog:",
-    "@pinia/nuxt": "catalog:",
-    "nuxt": "catalog:",
-    "pinia": "catalog:",
-    "socket.io-client": "catalog:",
-    "vue": "catalog:",
-    "vue-router": "catalog:"
+    "@feathersjs/authentication-client": "latest",
+    "@feathersjs/feathers": "latest",
+    "@feathersjs/rest-client": "latest",
+    "@feathersjs/socketio-client": "latest",
+    "feathers-pinia": "latest",
+    "@pinia/nuxt": "latest",
+    "nuxt": "latest",
+    "pinia": "latest",
+    "socket.io-client": "latest",
+    "vue": "latest",
+    "vue-router": "latest"
   },
   "devDependencies": {
-    "@gabortorma/nuxt-eslint-layer": "catalog:",
-    "ofetch": "catalog:",
-    "typescript": "catalog:"
+    "@gabortorma/nuxt-eslint-layer": "latest",
+    "ofetch": "latest",
+    "typescript": "latest"
   }
 }

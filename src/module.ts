@@ -2,10 +2,10 @@ import type { Nuxt } from '@nuxt/schema'
 import type { FeathersPublicRuntimeConfig, FeathersRuntimeConfig, ModuleConfig, ModuleOptions, ResolvedOptions } from './runtime/options'
 import type { ClientOptions } from './runtime/options/client'
 import type { PiniaModuleOptions } from './runtime/options/client/pinia'
+import { createRequire } from 'node:module'
 import { addImports, addImportsDir, addPlugin, addServerPlugin, addTemplate, createResolver, defineNuxtModule, hasNuxtModule, installModule } from '@nuxt/kit'
 import { consola } from 'consola'
 import defu from 'defu'
-import { createRequire } from 'node:module'
 import { resolveOptions, resolvePublicRuntimeConfig, resolveRuntimeConfig } from './runtime/options'
 import { serverDefaults } from './runtime/options/server'
 import { addServicesImports, getServicesImports } from './runtime/services'
@@ -84,7 +84,7 @@ export default defineNuxtModule<ModuleOptions>({
     },
     server: serverDefaults,
     client: true,
-    servicesDirs: [],
+    servicesDirs: ['services'],
     validator: {
       formats: [],
       extendDefaults: true,
@@ -109,8 +109,8 @@ export default defineNuxtModule<ModuleOptions>({
       }
       catch {
         consola.warn(
-          "feathers.swagger is enabled but 'feathers-swagger' could not be resolved from this Nuxt project. "
-          + "Install it in your app (root) dependencies: bun add feathers-swagger swagger-ui-dist",
+          'feathers.swagger is enabled but \'feathers-swagger\' could not be resolved from this Nuxt project. '
+          + 'Install it in your app (root) dependencies: bun add feathers-swagger swagger-ui-dist',
         )
       }
     }
