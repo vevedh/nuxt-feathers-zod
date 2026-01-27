@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import process from 'node:process'
 
-function run(cmd: string[], cwd = process.cwd()) {
+function run(cmd: [string, ...string[]], cwd = process.cwd()) {
   const [bin, ...args] = cmd
   const res = spawnSync(bin, args, {
     cwd,

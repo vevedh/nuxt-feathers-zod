@@ -2,20 +2,11 @@
 
 import type { Params } from '@feathersjs/feathers'
 import type { ClientApplication } from 'nuxt-feathers-zod/client'
-import type {
-  SwaggerTests,
-  SwaggerTestsData,
-  SwaggerTestsPatch,
-  SwaggerTestsQuery,
-  SwaggerTestsService,
-} from './swagger-tests.class'
+import type { SwaggerTests, SwaggerTestsData, SwaggerTestsPatch, SwaggerTestsQuery, SwaggerTestsService } from './swagger-tests.class'
 
 export type { SwaggerTests, SwaggerTestsData, SwaggerTestsPatch, SwaggerTestsQuery }
 
-export type SwaggerTestsClientService = Pick<
-  SwaggerTestsService<Params<SwaggerTestsQuery>>,
-  (typeof swaggerTestsMethods)[number]
->
+export type SwaggerTestsClientService = Pick<SwaggerTestsService<Params<SwaggerTestsQuery>>, (typeof swaggerTestsMethods)[number]>
 
 export const swaggerTestsPath = 'swagger-tests'
 

@@ -1,7 +1,6 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import process from 'node:process'
 
 import { kebabCase, pascalCase } from 'change-case'
 import consola from 'consola'
@@ -59,7 +58,8 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
     const force = Boolean(flags.force)
 
     const projectRoot = await findProjectRoot(cwd)
-    const servicesDir = resolve(projectRoot, flags.servicesDir ?? 'services')
+    const servicesDirFlag = typeof flags.servicesDir === 'string' ? flags.servicesDir : undefined
+    const servicesDir = resolve(projectRoot, servicesDirFlag ?? 'services')
 
     await generateService({
       projectRoot,

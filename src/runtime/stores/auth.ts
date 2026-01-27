@@ -1,3 +1,4 @@
+import { useNuxtApp } from '#app'
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { computed, reactive, toRefs } from 'vue'
 
