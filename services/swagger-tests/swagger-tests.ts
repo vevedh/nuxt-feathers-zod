@@ -1,16 +1,9 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 
-import type { Application } from 'nuxt-feathers-zod/server'
-import { hooks as schemaHooks } from '@feathersjs/schema'
-import { authenticate } from '@feathersjs/authentication'
 import type { Application as FeathersApplication } from '@feathersjs/feathers'
-
-// Ensure legacy swagger `docs` metadata is accepted in ServiceOptions during typecheck.
-declare module '@feathersjs/feathers' {
-  interface ServiceOptions {
-    docs?: unknown
-  }
-}
+import type { Application } from 'nuxt-feathers-zod/server'
+import { authenticate } from '@feathersjs/authentication'
+import { hooks as schemaHooks } from '@feathersjs/schema'
 
 import { getOptions, SwaggerTestsService } from './swagger-tests.class'
 import {
@@ -28,6 +21,13 @@ import {
   swaggerTestsSchema,
 } from './swagger-tests.schema'
 import { swaggerTestsMethods, swaggerTestsPath } from './swagger-tests.shared'
+
+// Ensure legacy swagger `docs` metadata is accepted in ServiceOptions during typecheck.
+declare module '@feathersjs/feathers' {
+  interface ServiceOptions {
+    docs?: unknown
+  }
+}
 
 export * from './swagger-tests.class'
 export * from './swagger-tests.schema'

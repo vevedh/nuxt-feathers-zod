@@ -57,9 +57,11 @@ export function getServerPluginContents(options: ResolvedOptions) {
       return p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p
     }
 
-    const docsPath = trimTrailingSlash(normalizePath(swagger?.docsPath ?? '/docs'))
+    const rawDocsPath = typeof swagger?.docsPath === 'string' ? swagger.docsPath : '/docs'
+    const docsPath = trimTrailingSlash(normalizePath(rawDocsPath))
     const docsPathSlash = `${docsPath}/`
-    const docsJsonPath = trimTrailingSlash(normalizePath(swagger?.docsJsonPath ?? '/docs.json'))
+    const rawDocsJsonPath = typeof swagger?.docsJsonPath === 'string' ? swagger.docsJsonPath : '/docs.json'
+    const docsJsonPath = trimTrailingSlash(normalizePath(rawDocsJsonPath))
 
     const swaggerInitBlock = swaggerEnabled
       ? `  // Init Swagger (feathers-swagger legacy)

@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import process from 'node:process'
 
 import { kebabCase, pascalCase } from 'change-case'
 import consola from 'consola'
@@ -10,7 +11,7 @@ type MiddlewareTarget = 'nitro' | 'feathers'
 type IdField = 'id' | '_id'
 type CollectionName = string
 
-export type RunCliOptions = {
+export interface RunCliOptions {
   cwd: string
 }
 
@@ -95,7 +96,7 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
 
 function printHelp() {
   // Keep output short; this is a CLI entrypoint.
-  // eslint-disable-next-line no-console
+
   console.log(`\nnuxt-feathers-zod CLI\n\nUsage:\n  nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--idField id|_id] [--path <customPath>] [--collection <mongoCollection>] [--docs] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]\n\nExamples:\n  bunx nuxt-feathers-zod add service posts --adapter mongodb --auth\n  bunx nuxt-feathers-zod add service users --adapter mongodb --idField _id --path accounts --docs\n  bunx nuxt-feathers-zod add service haproxy-domains --path haproxy/domains --collection haproxy-domains --auth --docs\n  bunx nuxt-feathers-zod add middleware session\n  bunx nuxt-feathers-zod add middleware dummy --target feathers\n`)
 }
 
@@ -103,8 +104,10 @@ function parseFlags(argv: string[]) {
   const out: Record<string, string | boolean> = {}
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (!a) continue
-    if (!a.startsWith('--')) continue
+    if (!a)
+      continue
+    if (!a.startsWith('--'))
+      continue
     const key = a.slice(2)
     const next = argv[i + 1]
     if (!next || next.startsWith('--')) {
@@ -121,9 +124,11 @@ async function findProjectRoot(start: string) {
   // Walk up until we find a package.json.
   let dir = resolve(start)
   for (let i = 0; i < 20; i++) {
-    if (existsSync(join(dir, 'package.json'))) return dir
+    if (existsSync(join(dir, 'package.json')))
+      return dir
     const parent = resolve(dir, '..')
-    if (parent === dir) break
+    if (parent === dir)
+      break
     dir = parent
   }
   throw new Error(`Could not find project root from ${start}`)
@@ -131,9 +136,12 @@ async function findProjectRoot(start: string) {
 
 function singularize(input: string) {
   // Minimal heuristic (good enough for a DX helper; users can rename if needed)
-  if (input.endsWith('ies')) return `${input.slice(0, -3)}y`
-  if (input.endsWith('ses')) return input.slice(0, -2)
-  if (input.endsWith('s') && input.length > 1) return input.slice(0, -1)
+  if (input.endsWith('ies'))
+    return `${input.slice(0, -3)}y`
+  if (input.endsWith('ses'))
+    return input.slice(0, -2)
+  if (input.endsWith('s') && input.length > 1)
+    return input.slice(0, -1)
   return input
 }
 
@@ -146,7 +154,8 @@ function normalizeServicePath(raw: string) {
   // Feathers service paths are usually kebab-case and can include slashes.
   // We keep user intent, but normalize leading/trailing slashes.
   const cleaned = String(raw).trim().replace(/^\/+/, '').replace(/\/+$/, '')
-  if (!cleaned) throw new Error('Invalid --path: path cannot be empty')
+  if (!cleaned)
+    throw new Error('Invalid --path: path cannot be empty')
   return cleaned
 }
 
@@ -154,7 +163,8 @@ function normalizeCollectionName(raw: string) {
   // MongoDB collection names are strings, but in practice should not include path separators.
   // We keep it permissive while preventing common foot-guns.
   const cleaned = String(raw).trim()
-  if (!cleaned) throw new Error('Invalid --collection: collection name cannot be empty')
+  if (!cleaned)
+    throw new Error('Invalid --collection: collection name cannot be empty')
   if (cleaned.includes('/') || cleaned.includes('\\')) {
     throw new Error('Invalid --collection: collection name must not include \/ or \\')
   }
@@ -177,7 +187,7 @@ function createServiceIds(serviceNameKebab: string) {
   }
 }
 
-type GenerateServiceOptions = {
+interface GenerateServiceOptions {
   projectRoot: string
   servicesDir: string
   name: string
@@ -198,7 +208,7 @@ export async function generateService(opts: GenerateServiceOptions) {
   const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
   const collectionName = normalizeCollectionName(
     opts.collectionName
-      ?? (servicePath.includes('/') ? serviceNameKebab : servicePath),
+    ?? (servicePath.includes('/') ? serviceNameKebab : servicePath),
   )
 
   const dir = join(opts.servicesDir, serviceNameKebab)
@@ -207,7 +217,7 @@ export async function generateService(opts: GenerateServiceOptions) {
   const sharedFile = join(dir, `${serviceNameKebab}.shared.ts`)
   const serviceFile = join(dir, `${serviceNameKebab}.ts`)
 
-  const files: Array<{ path: string; content: string }> = [
+  const files: Array<{ path: string, content: string }> = [
     { path: schemaFile, content: renderSchema(ids, opts.adapter, opts.idField) },
     { path: classFile, content: renderClass(ids, opts.adapter, collectionName) },
     { path: sharedFile, content: renderShared(ids, servicePath) },
@@ -229,7 +239,7 @@ export async function generateService(opts: GenerateServiceOptions) {
   }
 }
 
-async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: boolean; force: boolean }) {
+async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: boolean, force: boolean }) {
   // 1) Ensure TS sees `ServiceOptions.docs` (required for feathers-swagger in TS projects)
   const typesDir = join(projectRoot, 'types')
   const typesFile = join(typesDir, 'feathers-swagger.d.ts')
@@ -241,8 +251,9 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
   // 2) Best-effort dependency hint (we do not auto-install dependencies)
   try {
     const pkgPath = join(projectRoot, 'package.json')
-    if (!existsSync(pkgPath)) return
-    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as any
+    if (!existsSync(pkgPath))
+      return
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8'))
     const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
     if (!deps['feathers-swagger']) {
       consola.warn(
@@ -255,7 +266,7 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
   }
 }
 
-type GenerateMiddlewareOptions = {
+interface GenerateMiddlewareOptions {
   projectRoot: string
   name: string
   target: MiddlewareTarget
@@ -271,7 +282,8 @@ export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
     const file = join(dir, `${fileBase}.ts`)
     await ensureDir(dir, opts.dry)
     await writeFileSafe(file, renderNitroMiddleware(fileBase), { dry: opts.dry, force: opts.force })
-    if (!opts.dry) consola.success(`Generated Nitro middleware '${fileBase}' in ${relativeToCwd(file)}`)
+    if (!opts.dry)
+      consola.success(`Generated Nitro middleware '${fileBase}' in ${relativeToCwd(file)}`)
     return
   }
 
@@ -280,15 +292,17 @@ export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
   const file = join(dir, `${fileBase}.ts`)
   await ensureDir(dir, opts.dry)
   await writeFileSafe(file, renderFeathersPlugin(fileBase), { dry: opts.dry, force: opts.force })
-  if (!opts.dry) consola.success(`Generated Feathers server plugin '${fileBase}' in ${relativeToCwd(file)}`)
+  if (!opts.dry)
+    consola.success(`Generated Feathers server plugin '${fileBase}' in ${relativeToCwd(file)}`)
 }
 
 async function ensureDir(dir: string, dry: boolean) {
-  if (dry) return
+  if (dry)
+    return
   await mkdir(dir, { recursive: true })
 }
 
-async function writeFileSafe(path: string, content: string, opts: { dry: boolean; force: boolean }) {
+async function writeFileSafe(path: string, content: string, opts: { dry: boolean, force: boolean }) {
   if (!opts.force && existsSync(path)) {
     throw new Error(`File already exists: ${path} (use --force to overwrite)`)
   }
@@ -303,7 +317,7 @@ async function writeFileSafe(path: string, content: string, opts: { dry: boolean
 
 function relativeToCwd(p: string) {
   try {
-    return p.replace(resolve(process.cwd()) + '/', '')
+    return p.replace(`${resolve(process.cwd())}/`, '')
   }
   catch {
     return p
@@ -486,7 +500,7 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, 
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
-  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authImports = auth ? 'import { authenticate } from \'@feathersjs/authentication\'\n' : ''
 
   const swaggerImports = ''
 
@@ -496,8 +510,10 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, 
     docs: {
       description: '${Base} service',
       idType: 'string',
-${auth ? `      securities: ${base}Methods,
-` : ''}      definitions: {
+${auth
+  ? `      securities: ${base}Methods,
+`
+  : ''}      definitions: {
         ${base}: { type: 'object', properties: {} },
         ${base}Data: { type: 'object', properties: {} },
         ${base}Patch: { type: 'object', properties: {} },

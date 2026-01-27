@@ -11,6 +11,7 @@ export default withNuxt(antfu({
     'ts/no-unsafe-member-access': 'off',
     'ts/no-empty-object-type': 'off',
     'antfu/no-top-level-await': 'off',
+    'ts/no-unsafe-argument': 'off',
 
   },
 }))

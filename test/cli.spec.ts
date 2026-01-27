@@ -1,7 +1,7 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
@@ -36,8 +36,8 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(existsSync(svcFile)).toBe(true)
 
     const svc = await readFile(svcFile, 'utf8')
-    expect(svc).toContain("authenticate('jwt')")
-    expect(svc).toContain("export function post")
+    expect(svc).toContain('authenticate(\'jwt\')')
+    expect(svc).toContain('export function post')
   })
 
   it('supports --path, --idField, --docs and --collection', async () => {
@@ -65,13 +65,13 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const svcFile = join(base, 'users.ts')
 
     const shared = await readFile(sharedFile, 'utf8')
-    expect(shared).toContain("export const userPath = 'accounts'")
+    expect(shared).toContain('export const userPath = \'accounts\'')
 
     const schema = await readFile(schemaFile, 'utf8')
     expect(schema).toContain('id: objectIdSchema()')
 
     const klass = await readFile(classFile, 'utf8')
-    expect(klass).toContain("db.collection('users')")
+    expect(klass).toContain('db.collection(\'users\')')
 
     const svc = await readFile(svcFile, 'utf8')
     expect(svc).toContain('docs:')

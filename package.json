@@ -21,9 +21,6 @@
     "./query": "./dist/runtime/zod/query.js",
     "./format": "./dist/runtime/zod/format.js"
   },
-  "bin": {
-    "nuxt-feathers-zod": "bin/nuxt-feathers-zod"
-  },
   "main": "./dist/module.mjs",
   "typesVersions": {
     "*": {
@@ -38,9 +35,12 @@
       ]
     }
   },
+  "bin": {
+    "nuxt-feathers-zod": "bin/nuxt-feathers-zod"
+  },
   "files": [
-    "dist",
     "bin",
+    "dist",
     "src/cli"
   ],
   "scripts": {

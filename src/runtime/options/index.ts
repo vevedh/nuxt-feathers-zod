@@ -5,9 +5,9 @@ import type { PiniaOptions } from './client/pinia'
 import type { DataBaseOptions, ResolvedDataBaseOptions } from './database'
 import type { ResolvedServerOptions, ServerOptions } from './server'
 import type { ServicesDir, ServicesDirs } from './services'
+import type { ResolvedSwaggerOptionsOrDisabled, SwaggerOptions, SwaggerOptionsOrDisabled } from './swagger'
 import type { ResolvedTransportsOptions, TransportsOptions } from './transports'
 import type { ResolvedValidatorOptions, ValidatorOptions } from './validator'
-import type { ResolvedSwaggerOptionsOrDisabled, SwaggerOptions, SwaggerOptionsOrDisabled } from './swagger'
 import { createResolver } from '@nuxt/kit'
 import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
@@ -15,9 +15,9 @@ import { resolveClientOptions } from './client'
 import { resolveDataBaseOptions } from './database'
 import { resolveServerOptions } from './server'
 import { resolveServicesDirs } from './services'
+import { resolveSwaggerOptions } from './swagger'
 import { resolveTransportsOptions } from './transports'
 import { resolveValidatorOptions } from './validator'
-import { resolveSwaggerOptions } from './swagger'
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
@@ -44,7 +44,6 @@ export interface ResolvedOptions {
   loadFeathersConfig: boolean
   swagger?: ResolvedSwaggerOptionsOrDisabled
 }
-
 
 export interface FeathersRuntimeConfig {
   auth?: ResolvedAuthOptions
