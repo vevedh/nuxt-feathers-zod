@@ -50,5 +50,8 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Typecheck
+        run: bun run lint:fix
+
       - name: Build module
         run: bun run prepare

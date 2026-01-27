@@ -75,6 +75,7 @@ export default defineNuxtConfig({
 At this point, Nuxt will start with an **embedded FeathersJS server inside Nitro**.
 
 ---
+
 Parfait 👍
 Voici un **bloc prêt à intégrer dans ton `README.md`**, qui :
 
@@ -82,7 +83,7 @@ Voici un **bloc prêt à intégrer dans ton `README.md`**, qui :
 2. **explique pourquoi le premier service à créer doit être `users`**
 3. **donne le raisonnement Feathers + Auth + Swagger + DX**
 
-Tu peux l’insérer tel quel (par exemple après la section *Minimal Feathers configuration*).
+Tu peux l’insérer tel quel (par exemple après la section _Minimal Feathers configuration_).
 
 ---
 
@@ -91,7 +92,7 @@ Tu peux l’insérer tel quel (par exemple après la section *Minimal Feathers c
 Le fichier :
 
 ```ts
-playground/server/feathers/dummy.ts
+playground / server / feathers / dummy.ts
 ```
 
 est **volontairement simple** et joue un rôle fondamental dans le module `nuxt-feathers-zod`.
@@ -102,10 +103,10 @@ est **volontairement simple** et joue un rôle fondamental dans le module `nuxt-
 
 Il permet de :
 
-* vérifier que **Feathers démarre correctement dans Nitro**
-* valider le **routing REST** (`/feathers/*`)
-* tester **Swagger UI**
-* servir de **service de test (smoke test)** pour le module
+- vérifier que **Feathers démarre correctement dans Nitro**
+- valider le **routing REST** (`/feathers/*`)
+- tester **Swagger UI**
+- servir de **service de test (smoke test)** pour le module
 
 ---
 
@@ -113,10 +114,10 @@ Il permet de :
 
 Typiquement, ce fichier :
 
-* crée une application Feathers
-* enregistre **au moins un service**
-* expose une route REST simple (ex: `/dummy`)
-* ne dépend pas d’authentification ni de base de données
+- crée une application Feathers
+- enregistre **au moins un service**
+- expose une route REST simple (ex: `/dummy`)
+- ne dépend pas d’authentification ni de base de données
 
 Exemple conceptuel :
 
@@ -142,10 +143,10 @@ curl http://localhost:3000/feathers/dummy
 
 Sans `dummy.ts` :
 
-* Feathers démarre **sans aucun service**
-* Swagger UI peut être vide ou trompeur
-* les tests d’intégration sont plus complexes
-* le playground ne démontre rien visuellement
+- Feathers démarre **sans aucun service**
+- Swagger UI peut être vide ou trompeur
+- les tests d’intégration sont plus complexes
+- le playground ne démontre rien visuellement
 
 👉 **`dummy.ts` est un point d’ancrage pédagogique et technique**, pas un service métier.
 
@@ -163,9 +164,9 @@ Ce n’est **pas un choix arbitraire**.
 
 Le système d’authentification Feathers (v5 Dove) repose sur :
 
-* le service **`authentication`**
-* une **stratégie locale ou JWT**
-* un **service utilisateur** (`users`)
+- le service **`authentication`**
+- une **stratégie locale ou JWT**
+- un **service utilisateur** (`users`)
 
 ➡️ **Sans service `users`**, ces endpoints ne peuvent pas fonctionner :
 
@@ -180,17 +181,17 @@ POST /feathers/users
 
 Le service `users` contient :
 
-* les identifiants (email, username, etc.)
-* le mot de passe hashé
-* les rôles (`admin`, `editor`, etc.)
-* les règles d’accès (RBAC)
+- les identifiants (email, username, etc.)
+- le mot de passe hashé
+- les rôles (`admin`, `editor`, etc.)
+- les règles d’accès (RBAC)
 
 C’est sur `users` que reposent ensuite :
 
-* `authenticate('jwt')`
-* `requireRole(...)`
-* les hooks de sécurité
-* Swagger `securitySchemes`
+- `authenticate('jwt')`
+- `requireRole(...)`
+- les hooks de sécurité
+- Swagger `securitySchemes`
 
 ---
 
@@ -198,9 +199,9 @@ C’est sur `users` que reposent ensuite :
 
 Si tu actives Swagger (`feathers.swagger = true`) :
 
-* le **flux d’authentification JWT** est documenté
-* le bouton **Authorize** apparaît
-* les routes sécurisées sont visibles
+- le **flux d’authentification JWT** est documenté
+- le bouton **Authorize** apparaît
+- les routes sécurisées sont visibles
 
 👉 **Sans `users`, Swagger est incomplet ou trompeur**.
 
@@ -210,19 +211,20 @@ Si tu actives Swagger (`feathers.swagger = true`) :
 
 Dans `nuxt-feathers-zod`, le service `users` permet :
 
-* de tester immédiatement :
+- de tester immédiatement :
 
   ```bash
   curl -X POST /feathers/users
   curl -X POST /feathers/authentication
   ```
-* de valider :
 
-  * JWT
-  * guards
-  * hooks
-  * swagger.json
-* d’avoir un **socle stable pour tous les autres services**
+- de valider :
+  - JWT
+  - guards
+  - hooks
+  - swagger.json
+
+- d’avoir un **socle stable pour tous les autres services**
 
 ---
 
@@ -239,22 +241,18 @@ Toujours respecter cet ordre :
 
 ## 🧭 Résumé
 
-* `dummy.ts` :
+- `dummy.ts` :
+  - service minimal
+  - sert de **preuve de fonctionnement**
+  - facilite debug, Swagger et onboarding
 
-  * service minimal
-  * sert de **preuve de fonctionnement**
-  * facilite debug, Swagger et onboarding
-
-* `users` :
-
-  * **service fondamental**
-  * requis pour l’authentification
-  * point central de la sécurité
-  * base de Swagger, JWT et RBAC
+- `users` :
+  - **service fondamental**
+  - requis pour l’authentification
+  - point central de la sécurité
+  - base de Swagger, JWT et RBAC
 
 👉 **Sans `users`, un projet Feathers n’est pas réellement exploitable.**
-
-
 
 ## 4️⃣ Minimal Feathers configuration
 
