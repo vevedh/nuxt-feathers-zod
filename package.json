@@ -18,8 +18,10 @@
     "./options": "./dist/runtime/options/index.js",
     "./ofetch-adapter": "./dist/runtime/adapters/ofetch.js",
     "./validators": "./dist/runtime/zod/validators.js",
+    "./objectId": "./dist/runtime/zod/objectId.js",
     "./query": "./dist/runtime/zod/query.js",
-    "./format": "./dist/runtime/zod/format.js"
+    "./format": "./dist/runtime/zod/format.js",
+    "./zod": "./dist/runtime/zod/index.js"
   },
   "main": "./dist/module.mjs",
   "typesVersions": {
