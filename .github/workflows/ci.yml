@@ -23,17 +23,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Nuxt module build uses Node APIs via toolchain; keep Node explicit for stability.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ matrix.bun }}
+
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ matrix.bun }}-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-${{ matrix.bun }}-
+            ${{ runner.os }}-bun-
 
       - name: Install
         run: bun install --frozen-lockfile
@@ -46,7 +55,3 @@ jobs:
 
       - name: Build module
         run: bun run test:build
-
-      # Optionnel: si vous avez un script smoke CLI (sinon retirez)
-      # - name: CLI smoke
-      #   run: bun run test:cli
