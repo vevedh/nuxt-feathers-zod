@@ -75,6 +75,186 @@ export default defineNuxtConfig({
 At this point, Nuxt will start with an **embedded FeathersJS server inside Nitro**.
 
 ---
+Parfait 👍
+Voici un **bloc prêt à intégrer dans ton `README.md`**, qui :
+
+1. **explique précisément le rôle de `playground/server/feathers/dummy.ts`**
+2. **explique pourquoi le premier service à créer doit être `users`**
+3. **donne le raisonnement Feathers + Auth + Swagger + DX**
+
+Tu peux l’insérer tel quel (par exemple après la section *Minimal Feathers configuration*).
+
+---
+
+## 🧪 Playground – rôle du fichier `playground/server/feathers/dummy.ts`
+
+Le fichier :
+
+```ts
+playground/server/feathers/dummy.ts
+```
+
+est **volontairement simple** et joue un rôle fondamental dans le module `nuxt-feathers-zod`.
+
+### 🎯 Objectif principal
+
+👉 **Fournir un backend Feathers minimal mais fonctionnel**, utilisable immédiatement dans le playground Nuxt, sans dépendre d’un vrai projet métier.
+
+Il permet de :
+
+* vérifier que **Feathers démarre correctement dans Nitro**
+* valider le **routing REST** (`/feathers/*`)
+* tester **Swagger UI**
+* servir de **service de test (smoke test)** pour le module
+
+---
+
+### 🧩 Que fait concrètement `dummy.ts` ?
+
+Typiquement, ce fichier :
+
+* crée une application Feathers
+* enregistre **au moins un service**
+* expose une route REST simple (ex: `/dummy`)
+* ne dépend pas d’authentification ni de base de données
+
+Exemple conceptuel :
+
+```ts
+export function dummy(app: Application) {
+  app.use('dummy', {
+    async find() {
+      return [{ ok: true }]
+    },
+  })
+}
+```
+
+Ce service permet de tester immédiatement :
+
+```bash
+curl http://localhost:3000/feathers/dummy
+```
+
+---
+
+### 🧠 Pourquoi ce fichier est important ?
+
+Sans `dummy.ts` :
+
+* Feathers démarre **sans aucun service**
+* Swagger UI peut être vide ou trompeur
+* les tests d’intégration sont plus complexes
+* le playground ne démontre rien visuellement
+
+👉 **`dummy.ts` est un point d’ancrage pédagogique et technique**, pas un service métier.
+
+---
+
+## 👤 Pourquoi créer immédiatement un service `users` (et pas un autre) ?
+
+Dans un projet Feathers **avec authentification**, le **premier vrai service à créer doit toujours être `users`**.
+
+Ce n’est **pas un choix arbitraire**.
+
+---
+
+### 🔐 Raison n°1 — Feathers Auth repose sur `users`
+
+Le système d’authentification Feathers (v5 Dove) repose sur :
+
+* le service **`authentication`**
+* une **stratégie locale ou JWT**
+* un **service utilisateur** (`users`)
+
+➡️ **Sans service `users`**, ces endpoints ne peuvent pas fonctionner :
+
+```http
+POST /feathers/authentication
+POST /feathers/users
+```
+
+---
+
+### 🔑 Raison n°2 — `users` est la source de vérité sécurité
+
+Le service `users` contient :
+
+* les identifiants (email, username, etc.)
+* le mot de passe hashé
+* les rôles (`admin`, `editor`, etc.)
+* les règles d’accès (RBAC)
+
+C’est sur `users` que reposent ensuite :
+
+* `authenticate('jwt')`
+* `requireRole(...)`
+* les hooks de sécurité
+* Swagger `securitySchemes`
+
+---
+
+### 🧠 Raison n°3 — Swagger dépend fortement de `users`
+
+Si tu actives Swagger (`feathers.swagger = true`) :
+
+* le **flux d’authentification JWT** est documenté
+* le bouton **Authorize** apparaît
+* les routes sécurisées sont visibles
+
+👉 **Sans `users`, Swagger est incomplet ou trompeur**.
+
+---
+
+### 🧪 Raison n°4 — DX et tests automatisés
+
+Dans `nuxt-feathers-zod`, le service `users` permet :
+
+* de tester immédiatement :
+
+  ```bash
+  curl -X POST /feathers/users
+  curl -X POST /feathers/authentication
+  ```
+* de valider :
+
+  * JWT
+  * guards
+  * hooks
+  * swagger.json
+* d’avoir un **socle stable pour tous les autres services**
+
+---
+
+## ✅ Ordre recommandé des services dans un projet Nuxt + Feathers
+
+Toujours respecter cet ordre :
+
+1. **`dummy`** (playground / smoke test)
+2. **`users`** ← indispensable
+3. `authentication` (auto-géré)
+4. services métier (`articles`, `projects`, `tickets`, etc.)
+
+---
+
+## 🧭 Résumé
+
+* `dummy.ts` :
+
+  * service minimal
+  * sert de **preuve de fonctionnement**
+  * facilite debug, Swagger et onboarding
+
+* `users` :
+
+  * **service fondamental**
+  * requis pour l’authentification
+  * point central de la sécurité
+  * base de Swagger, JWT et RBAC
+
+👉 **Sans `users`, un projet Feathers n’est pas réellement exploitable.**
+
+
 
 ## 4️⃣ Minimal Feathers configuration
 
