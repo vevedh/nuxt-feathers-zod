@@ -6,7 +6,7 @@ hero:
   text: "FeathersJS v5 + Zod + Nuxt 4 (Nitro)"
   tagline: "Un backend Feathers embarqué dans Nuxt, génération de services Zod-first, client Pinia, Swagger (legacy) et option Keycloak SSO."
   image:
-    src: /plume-dark.png
+    src: images/plume-dark.png
     alt: Logo plume
   actions:
     - theme: brand
