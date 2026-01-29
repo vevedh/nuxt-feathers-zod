@@ -50,7 +50,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/<your-org>/nuxt-feathers-zod' },
+      { icon: 'github', link: 'https://github.com/vevedh/nuxt-feathers-zod' },
     ],
 
     search: {
