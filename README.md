@@ -1,4 +1,5 @@
-# nuxt-feathers-zod
+# nuxt-feathers-zod 
+[guide](https://vevedh.github.io/nuxt-feathers-zod/)
 
 ### Guide officiel d’initialisation – Nuxt 4 (Bun, Feathers v5, Zod)
 
