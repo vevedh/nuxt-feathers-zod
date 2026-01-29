@@ -6,13 +6,15 @@ const mongod = await MongoMemoryServer.create()
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-23',
 
+  typescript: {
+    typeCheck: false,
+  },
   extends: [
     '@gabortorma/nuxt-eslint-layer',
   ],
 
   modules: [
-    'nuxt-mcp',
-    '../src/module',
+    '../src/module.ts',
   ],
 
   feathers: {
@@ -26,6 +28,17 @@ export default defineNuxtConfig({
         url: mongod.getUri(),
       },
     },
+    /* keycloak: {
+      serverUrl: 'https://svrkeycloak.agglo.local:8443',
+      realm: 'CACEM',
+      clientId: 'nuxt4app',
+      onLoad: 'login-required',
+      authServicePath: '/_keycloak',
+      userService: 'users',
+      serviceIdField: 'keycloakId',
+      permissions: false,
+    }, */
+
     client: {
       pinia: {
         idField: 'id', // user_id for mongoDB

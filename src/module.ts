@@ -107,7 +107,7 @@ export default defineNuxtModule<ModuleOptions>({
       try {
         require.resolve('feathers-swagger', { paths: [nuxt.options.rootDir] })
       }
-      catch {
+      catch (e) {
         consola.warn(
           'feathers.swagger is enabled but \'feathers-swagger\' could not be resolved from this Nuxt project. '
           + 'Install it in your app (root) dependencies: bun add feathers-swagger swagger-ui-dist',
@@ -153,7 +153,15 @@ export default defineNuxtModule<ModuleOptions>({
         nuxt.hook('vite:extendConfig', (config) => {
           config.optimizeDeps?.include?.push('feathers-pinia')
         })
+
         if (resolvedOptions.auth) {
+          addImports({ from: resolver.resolve('./runtime/stores/auth'), name: 'useAuthStore' })
+          addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/feathers-auth') })
+        }
+        if (resolvedOptions.keycloak) {
+          addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/keycloak-sso'), mode: 'client' })
+        }
+        else if (resolvedOptions.auth) {
           addImports({ from: resolver.resolve('./runtime/stores/auth'), name: 'useAuthStore' })
           addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/feathers-auth') })
         }
@@ -166,7 +174,10 @@ export default defineNuxtModule<ModuleOptions>({
         if (clientTemplate.filename?.endsWith('client/plugin.ts') || clientTemplate.filename?.endsWith('client/plugin'))
           clientPluginDst = tpl.dst
       }
-      addPlugin({ order: 0, src: clientPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'client/plugin.ts'), mode: 'client' })
+      // The Feathers client plugin must run on both server and client.
+      // Otherwise, SSR rendering of pages that call useService/useFeathers can crash
+      // with `$api` undefined (e.g. after a Keycloak logout which triggers a full reload).
+      addPlugin({ order: 0, src: clientPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'client/plugin.ts') })
     }
     nuxt.hook('mcp:setup', ({ mcp }) => {
       mcp.tool('get-feathers-config', 'Get the Feathers config', {}, async () => {

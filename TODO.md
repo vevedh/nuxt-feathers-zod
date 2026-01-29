@@ -26,6 +26,7 @@ Ton `README.md` couvre désormais correctement :
 À considérer plus tard si tu veux encore améliorer la DX :
 
 1. **Swagger – dépendances**
+
    - préciser explicitement :
 
      ```bash
@@ -35,12 +36,14 @@ Ton `README.md` couvre désormais correctement :
      (actuellement seul `feathers-swagger` est mentionné)
 
 2. **Clarifier Bun vs Node**
+
    - tu fais bien d’utiliser Bun partout 👍
      éventuellement ajouter une note :
 
      > “Toutes les commandes CLI sont montrées avec Bun, mais Node.js 18+ est compatible.”
 
 3. **Lien mental CLI → structure**
+
    - tu pourrais ajouter une phrase :
 
      > “La structure des services générée par le CLI est volontairement stricte afin de garantir la génération des types et l’intégration Zod.”

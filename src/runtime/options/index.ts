@@ -3,6 +3,7 @@ import type { AuthOptions, PublicAuthOptions, ResolvedAuthOptions, ResolvedAuthO
 import type { ClientOptions, ResolvedClientOptions, ResolvedClientOptionsOrDisabled } from './client'
 import type { PiniaOptions } from './client/pinia'
 import type { DataBaseOptions, ResolvedDataBaseOptions } from './database'
+import type { KeycloakOptions, ResolvedKeycloakOptions, ResolvedKeycloakOptionsOrDisabled } from './keycloak'
 import type { ResolvedServerOptions, ServerOptions } from './server'
 import type { ServicesDir, ServicesDirs } from './services'
 import type { ResolvedSwaggerOptionsOrDisabled, SwaggerOptions, SwaggerOptionsOrDisabled } from './swagger'
@@ -13,6 +14,7 @@ import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
 import { resolveClientOptions } from './client'
 import { resolveDataBaseOptions } from './database'
+import { resolveKeycloakOptions } from './keycloak'
 import { resolveServerOptions } from './server'
 import { resolveServicesDirs } from './services'
 import { resolveSwaggerOptions } from './swagger'
@@ -26,6 +28,7 @@ export interface ModuleOptions {
   servicesDirs: ServicesDir | ServicesDirs
   server: ServerOptions
   auth: AuthOptions | boolean
+  keycloak?: KeycloakOptions | boolean
   client: ClientOptions | boolean
   validator: ValidatorOptions
   loadFeathersConfig: boolean
@@ -39,6 +42,7 @@ export interface ResolvedOptions {
   servicesDirs: ServicesDirs
   server: ResolvedServerOptions
   auth: ResolvedAuthOptionsOrDisabled
+  keycloak: ResolvedKeycloakOptionsOrDisabled
   client: ResolvedClientOptionsOrDisabled
   validator: ResolvedValidatorOptions
   loadFeathersConfig: boolean
@@ -47,12 +51,20 @@ export interface ResolvedOptions {
 
 export interface FeathersRuntimeConfig {
   auth?: ResolvedAuthOptions
+  keycloak?: ResolvedKeycloakOptions
 }
 
 export interface FeathersPublicRuntimeConfig {
   transports: ResolvedTransportsOptions
   auth?: PublicAuthOptions
   pinia?: PiniaOptions
+  keycloak?: {
+    serverUrl: string
+    realm: string
+    clientId: string
+    authServicePath: string
+    onLoad: 'check-sso' | 'login-required'
+  }
 }
 
 export type ModuleConfig = Partial<Omit<ModuleOptions, 'auth'> & {
@@ -82,7 +94,11 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const validator = resolveValidatorOptions(options.validator)
   const swagger = resolveSwaggerOptions(options.swagger, transports)
   const servicesImports = await getServicesImports(servicesDirs) // TODO move
-  const auth = resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
+  // const auth = resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
+  const keycloak = resolveKeycloakOptions(options.keycloak)
+
+  // Keycloak-only: disable local/jwt auth pipeline entirely
+  const auth = keycloak ? false : resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
   const loadFeathersConfig = options.loadFeathersConfig
 
   const resolvedOptions = {
@@ -94,6 +110,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     client,
     validator,
     auth,
+    keycloak,
     loadFeathersConfig,
     swagger,
   }
@@ -106,6 +123,12 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
 
   if (options.auth) {
     runtimeConfig.auth = options.auth
+  }
+
+  if (options.keycloak) {
+    runtimeConfig.keycloak = {
+      authServicePath: options.keycloak.authServicePath,
+    }
   }
 
   return runtimeConfig
@@ -128,6 +151,16 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
   const client = options.client as ResolvedClientOptions
   if (client?.pinia) {
     publicRuntimeConfig.pinia = client.pinia
+  }
+
+  if (options.keycloak) {
+    publicRuntimeConfig.keycloak = {
+      serverUrl: options.keycloak.serverUrl,
+      realm: options.keycloak.realm,
+      clientId: options.keycloak.clientId,
+      authServicePath: options.keycloak.authServicePath,
+      onLoad: options.keycloak.onLoad,
+    } as any
   }
 
   return publicRuntimeConfig

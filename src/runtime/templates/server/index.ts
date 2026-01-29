@@ -1,6 +1,7 @@
 import type { ResolvedOptions } from '../../../runtime/options'
 import type { Templates } from '../types'
 import { getServerAuthContents } from './authentication'
+import { getServerKeycloakContents } from './keycloak'
 import { getServerMongodbContents } from './mongodb'
 import { getServerPluginContents } from './plugin'
 import { getServerContents } from './server'
@@ -31,6 +32,14 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
     serverTemplates.push({
       filename: 'feathers/server/authentication.ts',
       getContents: getServerAuthContents(options),
+      write: true,
+    })
+  }
+
+  if (options.keycloak) {
+    serverTemplates.push({
+      filename: 'feathers/server/keycloak.ts',
+      getContents: getServerKeycloakContents(options),
       write: true,
     })
   }

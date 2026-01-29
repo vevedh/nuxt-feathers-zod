@@ -3,7 +3,7 @@ export {
   defineGetters,
   defineSetters,
   defineValues,
-  useAuth,
+  useAuth as usePiniaAuth,
   useBackup,
   useDataStore,
   useInstanceDefaults,

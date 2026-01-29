@@ -7,12 +7,11 @@ export default defineNuxtConfig({
   ],
 
   modules: [
-    'nuxt-mcp',
-    './src/module',
+    './src/module.ts',
   ],
 
   imports: {
-    autoImport: false,
+    autoImport: true,
   },
 
   feathers: {
@@ -21,6 +20,15 @@ export default defineNuxtConfig({
       mongo: {
         url: 'dummy',
       },
+    },
+    keycloak: {
+      serverUrl: 'https://svrkeycloak.agglo.local:8443',
+      realm: 'AGGLO',
+      clientId: 'nuxt4app',
+      authServicePath: '/_keycloak',
+      userService: 'users',
+      serviceIdField: 'keycloakId',
+      permissions: false,
     },
   },
 

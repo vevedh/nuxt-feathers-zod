@@ -57,7 +57,10 @@
     "release": "bunx release-it",
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
-    "release:major": "bunx release-it major"
+    "release:major": "bunx release-it major",
+    "docs:dev": "cd docs && bun install && bunx vitepress dev . --host",
+    "docs:build": "cd docs && bun install && bunx vitepress build .",
+    "docs:preview": "cd docs && bun install && bunx vitepress preview ."
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"
@@ -85,6 +88,8 @@
     "consola": "latest",
     "defu": "latest",
     "feathers-pinia": "latest",
+    "jose": "^5.10.0",
+    "keycloak-js": "^24.0.5",
     "mongodb": "^6.21.0",
     "pinia": "latest",
     "socket.io-client": "latest",
@@ -105,7 +110,6 @@
     "dotenv-cli": "latest",
     "eslint": "^9.39.2",
     "nuxt": "^4.3.0",
-    "nuxt-mcp": "latest",
     "release-it": "latest",
     "typescript": "latest",
     "vitest": "latest",

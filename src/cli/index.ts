@@ -261,7 +261,7 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
       )
     }
   }
-  catch {
+  catch (e) {
     // ignore
   }
 }
@@ -319,7 +319,7 @@ function relativeToCwd(p: string) {
   try {
     return p.replace(`${resolve(process.cwd())}/`, '')
   }
-  catch {
+  catch (e) {
     return p
   }
 }

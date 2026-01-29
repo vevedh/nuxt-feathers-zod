@@ -1,192 +1,166 @@
 # nuxt-feathers-zod
 
-### Guide officiel d’initialisation – Nuxt 4 (Bun, Feathers v5, Zod)
+> **Nuxt 4 (Nitro) + FeathersJS v5 (Dove) + Zod** — un module “tout‑en‑un” (site + API) avec **CLI**.
 
-Ce guide décrit **la seule procédure valide et supportée** pour initialiser correctement **nuxt-feathers-zod** dans un projet **Nuxt 4**, en se basant **strictement sur le comportement réel du module**.
+`nuxt-feathers-zod` embarque un **backend Feathers** dans une app **Nuxt 4**. Tu construis une app web **et** une API dans le même projet, avec :
 
-Il évite volontairement toute “magie implicite” ou création manuelle non supportée.
-
----
-
-## 1. Objectif du module
-
-`nuxt-feathers-zod` permet d’embarquer un **backend FeathersJS v5 (Dove)** directement dans **Nitro**, avec :
-
-* API REST (`/feathers/*`)
-* WebSocket (Socket.IO)
-* Validation **Zod-first**
-* Authentification **Local + JWT**
-* Adapters (MongoDB, Memory, etc.)
-* Swagger legacy (optionnel)
-* Composables client (`useService`, `useAuth`, stores Pinia)
-
-👉 Il **n’y a pas de backend séparé** : Feathers est monté **dans Nuxt**.
+- ✅ Services **Zod-first** (validation `data`/`query` + types)
+- ✅ REST sous un préfixe (par défaut `/feathers`) via **Koa** ou **Express**
+- ✅ Client DX : `useService()` + stores Pinia (via `feathers-pinia`)
+- ✅ Swagger legacy (optionnel)
+- ✅ **Keycloak-only SSO** (optionnel) : `check-sso` ou `login-required` via `onLoad`
+- ✅ Composable unifié **`useAuth()`** (optimisation) : même API en Keycloak-only ou auth locale
 
 ---
 
-## 2. Pré-requis
+## TL;DR (Nuxt 4)
 
-* **Bun** (recommandé et supporté)
-* **Node.js ≥ 18**
-* **Nuxt 4**
-* MongoDB (optionnel mais recommandé)
-
----
-
-## 3. Création du projet Nuxt 4
-
-```bash
-bunx nuxi@latest init my-site
-cd my-site
-bun install
-bun run dev
-```
-
-➡️ Vérifie que Nuxt démarre **avant toute intégration Feathers**.
-
----
-
-## 4. Installation des dépendances
-
-### 4.1 Module principal
+1. Installer :
 
 ```bash
 bun add nuxt-feathers-zod feathers-pinia
 ```
 
-### 4.2 (Optionnel) Swagger legacy
-
-```bash
-bun add feathers-swagger swagger-ui-dist
-```
-
-> ⚠️ `swagger-ui-dist` est requis si `feathers.swagger = true`
-
----
-
-## 5. Configuration **obligatoire** (`nuxt.config.ts`)
-
-> ⚠️ **Cette configuration est critique**.
-> Une mauvaise initialisation provoque des erreurs bloquantes au démarrage.
+2. Configurer Nuxt :
 
 ```ts
 export default defineNuxtConfig({
   modules: ['nuxt-feathers-zod'],
 
   feathers: {
-    /**
-     * RÈGLE D’OR :
-     * Le module scanne UNIQUEMENT ces dossiers
-     */
+    // RÈGLE D’OR : le module scanne uniquement ces dossiers
     servicesDirs: ['services'],
 
-    /**
-     * Transports
-     */
     transports: {
-      rest: {
-        path: '/feathers',
-        framework: 'koa',
-      },
+      rest: { path: '/feathers', framework: 'koa' },
       websocket: true,
     },
 
-    /**
-     * Base de données (MongoDB recommandé)
-     */
     database: {
-      mongo: {
-        url: 'mongodb://127.0.0.1:27017/my-site',
-      },
+      mongo: { url: 'mongodb://127.0.0.1:27017/my-site' },
     },
 
-    /**
-     * Authentification
-     */
+    // Auth locale (JWT) — OU Keycloak-only (voir plus bas)
     auth: true,
 
-    /**
-     * Swagger legacy (optionnel)
-     */
-    swagger: false,
+    // Swagger legacy (optionnel)
+    swagger: { enabled: false },
   },
 })
 ```
 
----
-
-## 6. RÈGLE FONDAMENTALE – À NE JAMAIS VIOLER
-
-> ❌ **Ne jamais créer un service manuellement**
-> ✅ **Toujours utiliser la CLI officielle**
-
-Cette règle est **imposée par le code interne du module**.
-
----
-
-## 7. Création du premier service : `users` (OBLIGATOIRE)
+3. Générer les services **via la CLI** (ne pas créer à la main) :
 
 ```bash
-bunx nuxt-feathers-zod add service users \
-  --adapter mongodb \
-  --auth \
-  --idField _id \
-  --docs
-```
-
-### Structure générée (attendue)
-
-```
-services/users/
-  users.ts
-  users.class.ts
-  users.schema.ts
-  users.shared.ts
-```
-
-### Pourquoi `users` est obligatoire ?
-
-* Le module **résout l’authentification** via une `entityClass` nommée **`User`**
-* Cette classe est **recherchée dynamiquement** dans les exports scannés
-* Sans ce service :
-
-  * `Services typeExports []`
-  * `Entity class User not found in services imports`
-  * **Boot impossible**
-
-👉 Le service `users` est la **clé de voûte** de tout projet `nuxt-feathers-zod`.
-
----
-
-## 8. Création d’un service métier (exemple : `articles`)
-
-```bash
-bunx nuxt-feathers-zod add service articles \
-  --adapter mongodb \
-  --auth \
-  --idField _id \
-  --docs
-```
-
-Structure :
-
-```
-services/articles/
-  articles.ts
-  articles.class.ts
-  articles.schema.ts
-  articles.shared.ts
+bunx nuxt-feathers-zod add service users --adapter mongodb --auth --idField _id --docs
+bunx nuxt-feathers-zod add service articles --adapter mongodb --auth --idField _id --docs
 ```
 
 ---
 
-## 9. Démarrage et tests REST
+## Prérequis
+
+- **Bun** (recommandé)
+- Node.js ≥ 18
+- Nuxt 4
+
+---
+
+## Installation
 
 ```bash
-bun run dev
+bun add nuxt-feathers-zod feathers-pinia
 ```
 
-### 9.1 Création d’un utilisateur
+### Swagger legacy (optionnel)
+
+```bash
+bun add feathers-swagger swagger-ui-dist
+```
+
+> Si `feathers.swagger.enabled = true` mais que `feathers-swagger` n’est pas installé dans l’app Nuxt, le module affiche un warning DX au démarrage.
+
+---
+
+## Règle fondamentale : services générés uniquement via CLI
+
+✅ Toujours :
+
+```bash
+bunx nuxt-feathers-zod add service <name> ...
+```
+
+❌ Ne pas créer manuellement `services/<name>`.
+
+Pourquoi : le module génère les imports/types à partir de `servicesDirs`. Si un service n’est pas généré selon la structure attendue, tu peux déclencher des erreurs du type :
+
+- `Services typeExports []`
+- `Entity class User not found`
+
+---
+
+## Configuration Nuxt
+
+### Options essentielles
+
+- `feathers.servicesDirs` : **obligatoire**
+- `feathers.transports.rest.path` : préfixe REST (ex `/feathers`)
+- `feathers.database.mongo.url` : MongoDB (si adapter mongodb)
+
+---
+
+## Auth : concept important (ne pas mélanger)
+
+Le module supporte 2 approches :
+
+1. **Auth locale Feathers (JWT)** : `feathers.auth = true` + service `users` + endpoint `/feathers/authentication`.
+2. **Keycloak-only SSO** : `feathers.keycloak = { ... }` + plugin client `keycloak-js`, pas de login Feathers.
+
+👉 Ces deux providers ne partagent pas le même token ni la même session. C’est la raison pour laquelle on a ajouté **`useAuth()`** : une seule API côté frontend.
+
+---
+
+## `useAuth()` : API unifiée (recommandé)
+
+### Pourquoi ?
+
+- En Keycloak-only, `useAuthStore()` (auth locale) n’est pas initialisé.
+- En auth locale, `$keycloak` n’existe pas.
+- Mélanger les deux dans la même page revient à avoir **deux sources de vérité** et des headers `Authorization` concurrents.
+
+### Usage
+
+```ts
+const auth = useAuth()
+await auth.init()
+
+if (!auth.isAuthenticated.value) {
+  await auth.login()
+}
+
+console.log(auth.provider.value) // 'keycloak' | 'local' | 'none'
+console.log(auth.user.value)
+```
+
+> ⚠️ Attention : `feathers-pinia` expose aussi un `useAuth`. Évite d’importer `useAuth` depuis `feathers-pinia` dans une app Nuxt utilisant `nuxt-feathers-zod`. Si tu en as besoin, importe-le avec alias :
+>
+> ```ts
+> import { useAuth as useFeathersAuth } from 'feathers-pinia'
+> ```
+
+---
+
+## Auth locale (Local + JWT)
+
+### 1) Générer `users` (obligatoire)
+
+```bash
+bunx nuxt-feathers-zod add service users --adapter mongodb --auth --idField _id --docs
+```
+
+### 2) Tests REST
+
+Créer un utilisateur :
 
 ```bash
 curl -X POST http://localhost:3000/feathers/users \
@@ -194,7 +168,7 @@ curl -X POST http://localhost:3000/feathers/users \
   -d '{"userId":"demo","password":"demo123"}'
 ```
 
-### 9.2 Authentification
+Login :
 
 ```bash
 curl -X POST http://localhost:3000/feathers/authentication \
@@ -202,7 +176,7 @@ curl -X POST http://localhost:3000/feathers/authentication \
   -d '{"strategy":"local","userId":"demo","password":"demo123"}'
 ```
 
-### 9.3 Accès à un service protégé
+Appel protégé :
 
 ```bash
 curl http://localhost:3000/feathers/articles \
@@ -211,101 +185,134 @@ curl http://localhost:3000/feathers/articles \
 
 ---
 
-## 10. Swagger legacy (optionnel)
+## Keycloak-only SSO (Option A)
 
-### 10.1 Activer Swagger
+### Objectif
 
-```ts
-feathers: {
-  swagger: true,
-}
-```
+- Au démarrage : `check-sso` (pas de redirection forcée)
+- Routes protégées : middleware Nuxt qui appelle `login()` seulement quand nécessaire
 
-### 10.2 Accès
-
-* UI :
-  `http://localhost:3000/feathers/docs/`
-* Spec :
-  `http://localhost:3000/feathers/swagger.json`
-
-### ⚠️ Important
-
-Dans l’UI Swagger, la spec doit être définie manuellement à :
-
-```
-../swagger.json
-```
-
-(C’est un comportement connu et assumé du module.)
-
----
-
-## 11. Plugins serveur Feathers (seed, hooks globaux)
-
-### Exemple : `server/feathers/dummy.ts`
+### Configuration Nuxt
 
 ```ts
-import { defineFeathersServerPlugin } from 'nuxt-feathers-zod/server'
+export default defineNuxtConfig({
+  feathers: {
+    // active le mode Keycloak-only
+    keycloak: {
+      serverUrl: 'https://svrkeycloak.agglo.local:8443',
+      realm: 'AGGLO',
+      clientId: 'nuxt4app',
 
-export default defineFeathersServerPlugin((app) => {
-  app.hooks({
-    setup: [
-      async (context, next) => {
-        await context.app.service('users').create({
-          userId: 'admin',
-          password: 'admin123',
-        })
-        await next()
-      },
-    ],
-  })
+      // Option ajoutée : onLoad
+      onLoad: 'check-sso', // ou 'login-required'
+
+      // bridge service Feathers (whoami)
+      authServicePath: '/_keycloak',
+
+      // si tu veux une persistance user : userService + serviceIdField
+      userService: 'users',
+      serviceIdField: 'keycloakId',
+
+      permissions: false,
+    },
+  },
 })
 ```
 
-➡️ Ces fichiers sont des **plugins Feathers**, pas des services.
+### Fichier requis pour `check-sso`
+
+Créer : `public/silent-check-sso.html`
+
+```html
+<!doctype html>
+<html>
+  <body>
+    <script>
+      parent.postMessage(location.href, location.origin)
+    </script>
+  </body>
+</html>
+```
+
+### Les services Feathers protégés fonctionnent-ils ?
+
+✅ Oui, si :
+
+- côté client, le plugin Keycloak injecte `Authorization: Bearer <kc_token>` dans les appels Feathers
+- côté serveur, le hook Keycloak valide le JWT (JWKS) et remplit `context.params.user`
 
 ---
 
-## 12. Erreurs courantes et causes réelles
+## Frontend : `useService()` (feathers-pinia)
 
-### ❌ `Services typeExports []`
+Exemple : liste d’articles :
 
-Causes :
+```vue
+<script setup lang="ts">
+import { useService } from 'feathers-pinia'
 
-* `servicesDirs` incorrect
-* services créés manuellement
-* fichiers mal nommés (`users.ts` manquant)
+const { data, find, isPending } = useService('articles')
 
-### ❌ `Entity class User not found in services imports`
+await find({ query: { $limit: 10 } })
+</script>
 
-Cause exacte :
-
-* le service `users` n’existe pas ou n’a pas été généré via la CLI
-
-✅ Solution universelle :
-
-```bash
-bunx nuxt-feathers-zod add service users
+<template>
+  <div>
+    <div v-if="isPending">
+      Chargement…
+    </div>
+    <pre v-else>{{ data }}</pre>
+  </div>
+</template>
 ```
 
 ---
 
-## 13. Bonnes pratiques figées
+## Swagger legacy
 
-* ✅ **Toujours** générer les services avec la CLI
-* ✅ `services/<name>/<name>.ts` obligatoire
-* ✅ Zod-first (`*.schema.ts`)
-* ❌ Pas de création manuelle
-* ❌ Pas de renommage arbitraire de `User`
-* ❌ Pas de déplacement hors `servicesDirs`
+- UI : `/feathers/docs/`
+- Spec : `/feathers/swagger.json` (souvent consommée via `../swagger.json` depuis l’UI)
 
 ---
 
-## 14. Résumé express (checklist)
+## Playground (monorepo)
 
-1. `bunx nuxi init`
-2. `bun add nuxt-feathers-zod feathers-pinia`
-3. `servicesDirs: ['services']`
-4. `bunx nuxt-feathers-zod add service users`
-5. `bunx nuxt-feathers-zod add service <business>`
-6. `bun run dev`
+### Windows / ESM
+
+Référencer toujours le module avec extension :
+
+```ts
+modules: ['../src/module.ts']
+```
+
+### vue-tsc / vite-plugin-checker
+
+Si tu vois :
+
+- `Cannot find global type 'Array'` / `lib.dom.d.ts not found`
+
+Alors désactive le typecheck dans le playground :
+
+```ts
+typescript: { typeCheck: false }
+```
+
+Et garde le typecheck au root via un script dédié.
+
+---
+
+## Documentation (VitePress)
+
+Lancer la doc :
+
+```bash
+bun run docs:dev
+```
+
+---
+
+## Scripts utiles
+
+- `bun run dev` : lance le playground
+- `bun run prepare` : build du module (`nuxt-module-build prepare && build`)
+- `bun run docs:dev` : doc VitePress

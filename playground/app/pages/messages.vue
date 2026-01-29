@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+definePageMeta({ middleware: ['auth'], ssr: false })
 
 // create message
 const text = import.meta.server ? 'Hello, world! (server)' : 'Hello, world! (client)'
@@ -16,11 +16,20 @@ async function addMessage() {
   await useService('messages').create({ text: newMessage.value })
 }
 
-const auth = useAuthStore()
-const { user } = storeToRefs(auth)
+const auth = useAuth()
+await auth.init()
 
-function logout() {
-  auth.logout()
+const displayUser = computed(() => {
+  const u = auth.user.value
+  if (!u) {
+    return '(none)'
+  }
+  return u.userId || u.preferred_username || u.email || u.name || u._id || JSON.stringify(u)
+})
+
+async function logout() {
+  await auth.logout()
+  await navigateTo('/')
 }
 </script>
 
@@ -31,7 +40,8 @@ function logout() {
     </button>
     <h2>
       <span style="padding-right: 40px;">
-        User: <strong>{{ user?.userId }}</strong>
+        Provider: <strong>{{ auth.provider }}</strong><br>
+        User: <strong>{{ displayUser }}</strong>
       </span>
     </h2>
     <div>Add your message:</div>

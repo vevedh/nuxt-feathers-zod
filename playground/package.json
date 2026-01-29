@@ -17,9 +17,11 @@
     "@feathersjs/socketio-client": "latest",
     "@pinia/nuxt": "latest",
     "feathers-pinia": "latest",
+    "feathers-swagger": "^3.0.0",
     "nuxt": "latest",
     "pinia": "latest",
     "socket.io-client": "latest",
+    "swagger-ui-dist": "^5.31.0",
     "vue": "latest",
     "vue-router": "latest"
   },

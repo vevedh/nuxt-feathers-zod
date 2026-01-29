@@ -23,7 +23,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   try {
     await auth.reAuthenticate()
   }
-  catch {
+  catch (e) {
     // Ignore invalid/expired tokens at boot.
   }
 })

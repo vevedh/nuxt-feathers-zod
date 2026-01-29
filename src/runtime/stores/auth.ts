@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
       state.user = result.user
       state.authenticated = true
     }
-    catch {
+    catch (e) {
       logout()
     }
   }
