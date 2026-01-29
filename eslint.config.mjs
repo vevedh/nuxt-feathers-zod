@@ -9,6 +9,13 @@ export default withNuxt(
       '**/*.mts',
       'docs/**',
     ],
+    // ✅ on utilise un tsconfig dédié au lint
+    typescript: {
+      parserOptions: {
+        project: ['./tsconfig.eslint.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
 
     rules: {
       'unused-imports/no-unused-vars': 'off',
