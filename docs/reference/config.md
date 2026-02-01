@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Configuration Nuxt (`nuxt.config.ts`)
 
 Le module se configure via la clé `feathers`.

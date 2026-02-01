@@ -33,7 +33,7 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
     process.exit(1)
   }
 
-  if (subcmd !== 'service' && subcmd !== 'middleware') {
+  if (subcmd !== 'service' && subcmd !== 'custom-service' && subcmd !== 'middleware') {
     consola.error(`Unknown add target: ${subcmd ?? '(missing)'}`)
     printHelp()
     process.exit(1)
@@ -77,6 +77,35 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
     return
   }
 
+
+  if (subcmd === 'custom-service') {
+    const auth = Boolean(flags.auth)
+    const servicePath = typeof flags.path === 'string' ? String(flags.path) : undefined
+    const methods = typeof flags.methods === 'string' ? String(flags.methods) : undefined
+    const customMethods = typeof flags.customMethods === 'string' ? String(flags.customMethods) : undefined
+    const docs = Boolean(flags.docs)
+    const dry = Boolean(flags.dry)
+    const force = Boolean(flags.force)
+
+    const projectRoot = await findProjectRoot(cwd)
+    const servicesDirFlag = typeof flags.servicesDir === 'string' ? flags.servicesDir : undefined
+    const servicesDir = resolve(projectRoot, servicesDirFlag ?? 'services')
+
+    await generateCustomService({
+      projectRoot,
+      servicesDir,
+      name,
+      auth,
+      servicePath,
+      methods,
+      customMethods,
+      docs,
+      dry,
+      force,
+    })
+    return
+  }
+
   if (subcmd === 'middleware') {
     const target = (flags.target as MiddlewareTarget | undefined) ?? 'nitro'
     const dry = Boolean(flags.dry)
@@ -97,7 +126,7 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
 function printHelp() {
   // Keep output short; this is a CLI entrypoint.
 
-  console.log(`\nnuxt-feathers-zod CLI\n\nUsage:\n  nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--idField id|_id] [--path <customPath>] [--collection <mongoCollection>] [--docs] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]\n\nExamples:\n  bunx nuxt-feathers-zod add service posts --adapter mongodb --auth\n  bunx nuxt-feathers-zod add service users --adapter mongodb --idField _id --path accounts --docs\n  bunx nuxt-feathers-zod add service haproxy-domains --path haproxy/domains --collection haproxy-domains --auth --docs\n  bunx nuxt-feathers-zod add middleware session\n  bunx nuxt-feathers-zod add middleware dummy --target feathers\n`)
+  console.log(`\nnuxt-feathers-zod CLI\n\nUsage:\n  nuxt-feathers-zod add service <serviceName> [--adapter mongodb|memory] [--auth] [--idField id|_id] [--path <customPath>] [--collection <mongoCollection>] [--docs] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add custom-service <serviceName> [--methods <csv>] [--customMethods <csv>] [--auth] [--path <customPath>] [--docs] [--servicesDir <dir>] [--dry] [--force]\n  nuxt-feathers-zod add middleware <name> [--target nitro|feathers] [--dry] [--force]\n\nExamples:\n  bunx nuxt-feathers-zod add service posts --adapter mongodb --auth\n  bunx nuxt-feathers-zod add service users --adapter mongodb --idField _id --path accounts --docs\n  bunx nuxt-feathers-zod add service haproxy-domains --path haproxy/domains --collection haproxy-domains --auth --docs\n  bunx nuxt-feathers-zod add custom-service actions --methods find --customMethods run --auth\n  bunx nuxt-feathers-zod add middleware session\n  bunx nuxt-feathers-zod add middleware dummy --target feathers\n`)
 }
 
 function parseFlags(argv: string[]) {
@@ -274,7 +303,105 @@ interface GenerateMiddlewareOptions {
   force: boolean
 }
 
-export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
+export 
+interface GenerateCustomServiceOptions {
+  projectRoot: string
+  servicesDir: string
+  name: string
+  auth: boolean
+  servicePath?: string
+  /**
+   * CSV list of standard Feathers methods to implement/register.
+   * Default: "find"
+   */
+  methods?: string
+  /**
+   * CSV list of custom (RPC-like) methods to expose (e.g. "run").
+   * Default: "run"
+   */
+  customMethods?: string
+  docs: boolean
+  dry: boolean
+  force: boolean
+}
+
+export async function generateCustomService(opts: GenerateCustomServiceOptions) {
+  const serviceNameKebab = normalizeServiceName(opts.name)
+  const ids = createServiceIds(serviceNameKebab)
+
+  const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
+
+  const stdMethods = parseCsvMethods(opts.methods ?? 'find')
+  const customMethods = parseCsvMethods(opts.customMethods ?? 'run').filter(m => !STD_SERVICE_METHODS.has(m))
+
+  // Always ensure at least one method is registered (Feathers requirement)
+  if (stdMethods.length === 0 && customMethods.length === 0) {
+    throw new Error('Custom service must register at least one method. Use --methods and/or --customMethods.')
+  }
+
+  // Ensure "find" exists if user did not provide any standard methods (helps with SSR-safe registration)
+  if (stdMethods.length === 0)
+    stdMethods.push('find')
+
+  const dir = join(opts.servicesDir, serviceNameKebab)
+  const schemaFile = join(dir, `${serviceNameKebab}.schema.ts`)
+  const classFile = join(dir, `${serviceNameKebab}.class.ts`)
+  const sharedFile = join(dir, `${serviceNameKebab}.shared.ts`)
+  const serviceFile = join(dir, `${serviceNameKebab}.ts`)
+
+  const files: Array<{ path: string, content: string }> = [
+    { path: schemaFile, content: renderCustomSchema(ids, stdMethods, customMethods) },
+    { path: classFile, content: renderCustomClass(ids, stdMethods, customMethods) },
+    { path: sharedFile, content: renderCustomShared(ids, servicePath, stdMethods, customMethods) },
+    { path: serviceFile, content: renderCustomService(ids, servicePath, stdMethods, customMethods, opts.auth, opts.docs) },
+  ]
+
+  await ensureDir(dir, opts.dry)
+
+  for (const f of files) {
+    await writeFileSafe(f.path, f.content, { dry: opts.dry, force: opts.force })
+  }
+
+  if (opts.docs) {
+    await ensureFeathersSwaggerSupport(opts.projectRoot, { dry: opts.dry, force: opts.force })
+  }
+
+  if (!opts.dry) {
+    consola.success(`Generated custom service '${serviceNameKebab}' in ${dir}`)
+  }
+}
+
+const STD_SERVICE_METHODS = new Set([
+  'find',
+  'get',
+  'create',
+  'update',
+  'patch',
+  'remove',
+])
+
+function parseCsvMethods(value: string) {
+  return value
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+}
+
+function uniq(arr: string[]) {
+  return [...new Set(arr)]
+}
+
+function isValidIdentifier(name: string) {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)
+}
+
+function safeMethodName(name: string) {
+  // custom methods should still be valid JS identifiers
+  return isValidIdentifier(name) ? name : kebabCase(name).replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+}
+
+
+async function generateMiddleware(opts: GenerateMiddlewareOptions) {
   const fileBase = kebabCase(opts.name)
 
   if (opts.target === 'nitro') {
@@ -588,6 +715,350 @@ ${authAround}    },
       all: [],
     },
     error: {
+      all: [],
+    },
+  })
+}
+
+declare module 'nuxt-feathers-zod/server' {
+  interface ServiceTypes {
+    [${base}Path]: ${serviceClass}
+  }
+}
+`
+}
+
+
+function renderCustomSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  stdMethods: string[],
+  customMethods: string[],
+) {
+  const Base = ids.basePascal
+  const base = ids.baseCamel
+
+  const customSchemas = customMethods.map((m) => {
+    const M = pascalCase(m)
+    if (m === 'run') {
+      return `
+export const ${base}${M}DataSchema = z.object({
+  action: z.string().min(1),
+  payload: z.unknown().optional(),
+})
+export type ${Base}${M}Data = z.infer<typeof ${base}${M}DataSchema>
+
+export const ${base}${M}ResultSchema = z.object({
+  acknowledged: z.boolean(),
+  action: z.string(),
+  received: z.unknown().optional(),
+})
+export type ${Base}${M}Result = z.infer<typeof ${base}${M}ResultSchema>
+`
+    }
+    return `
+export const ${base}${M}DataSchema = z.unknown()
+export type ${Base}${M}Data = z.infer<typeof ${base}${M}DataSchema>
+
+export const ${base}${M}ResultSchema = z.unknown()
+export type ${Base}${M}Result = z.infer<typeof ${base}${M}ResultSchema>
+`
+  }).join('\n')
+
+  return `// ! Generated by nuxt-feathers-zod - custom service template
+import { z } from 'zod'
+
+${customSchemas}
+`
+}
+
+function renderCustomClass(
+  ids: ReturnType<typeof createServiceIds>,
+  stdMethods: string[],
+  customMethods: string[],
+) {
+  const Base = ids.basePascal
+  const serviceClass = `${Base}Service`
+
+  const stdImpl = uniq(stdMethods).map((m) => {
+    if (m === 'find') {
+      return `
+  async find(_params?: Params) {
+    return [{ ok: true, source: '${ids.serviceNameKebab}.${m}' }]
+  }`
+    }
+    if (m === 'get') {
+      return `
+  async get(id: Id, _params?: Params) {
+    return { id, ok: true, source: '${ids.serviceNameKebab}.${m}' }
+  }`
+    }
+    if (m === 'create') {
+      return `
+  async create(data: any, _params?: Params) {
+    return { ok: true, data, source: '${ids.serviceNameKebab}.${m}' }
+  }`
+    }
+    if (m === 'patch') {
+      return `
+  async patch(id: NullableId, data: any, _params?: Params) {
+    return { ok: true, id, data, source: '${ids.serviceNameKebab}.${m}' }
+  }`
+    }
+    if (m === 'remove') {
+      return `
+  async remove(id: NullableId, _params?: Params) {
+    return { ok: true, id, source: '${ids.serviceNameKebab}.${m}' }
+  }`
+    }
+    if (m === 'update') {
+      return `
+  async update(id: NullableId, data: any, _params?: Params) {
+    return { ok: true, id, data, source: '${ids.serviceNameKebab}.${m}' }
+  }`
+    }
+    // fallback stub
+    return `
+  async ${m}(..._args: any[]) {
+    throw new Error('${ids.serviceNameKebab}.${m} not implemented')
+  }`
+  }).join('\n')
+
+  const customImpl = uniq(customMethods).map((m) => {
+    const M = pascalCase(m)
+    const DataT = `${Base}${M}Data`
+    const ResT = `${Base}${M}Result`
+
+    if (m === 'run') {
+      return `
+  async ${m}(data: ${DataT}, _params?: Params): Promise<${ResT}> {
+    return {
+      acknowledged: true,
+      action: data.action,
+      received: data.payload,
+    }
+  }`
+    }
+
+    return `
+  async ${m}(data: ${DataT}, _params?: Params): Promise<${ResT}> {
+    return data as any
+  }`
+  }).join('\n')
+
+  const schemaImports = uniq(customMethods).map((m) => {
+    const M = pascalCase(m)
+    return `type ${Base}${M}Data, type ${Base}${M}Result`
+  })
+
+  const schemaImportLine = schemaImports.length
+    ? `import { ${schemaImports.join(', ')} } from './${ids.serviceNameKebab}.schema'`
+    : ''
+
+  return `// ! Generated by nuxt-feathers-zod - custom service template
+import type { Id, NullableId, Params } from '@feathersjs/feathers'
+import type { Application } from 'nuxt-feathers-zod/server'
+${schemaImportLine}
+
+export class ${serviceClass} {
+  constructor(public app: Application) {}
+
+${stdImpl}
+
+${customImpl}
+}
+`
+}
+
+function renderCustomShared(
+  ids: ReturnType<typeof createServiceIds>,
+  servicePath: string,
+  stdMethods: string[],
+  customMethods: string[],
+) {
+  const Base = ids.basePascal
+  const base = ids.baseCamel
+  const serviceName = ids.serviceNameKebab
+
+  const stdList = uniq(stdMethods)
+  const customList = uniq(customMethods)
+
+  const allClientMethods = uniq([...stdList, ...customList])
+
+  const schemaImports = customList.map((m) => {
+    const M = pascalCase(m)
+    return `type ${Base}${M}Data, type ${Base}${M}Result`
+  })
+  const schemaImportLine = schemaImports.length
+    ? `import { ${schemaImports.join(', ')} } from './${serviceName}.schema'`
+    : ''
+
+  const patches = customList.map((m) => {
+    const M = pascalCase(m)
+    const DataT = `${Base}${M}Data`
+    const ResT = `${Base}${M}Result`
+    return `
+function attach_${m}(client: ClientApplication, remote: any) {
+  if (typeof remote?.${m} === 'function')
+    return
+
+  // 1) REST transport
+  if (typeof remote?.request === 'function') {
+    remote.${m} = (data: ${DataT}, params?: Params) =>
+      remote.request({ method: '${m}', body: data }, params)
+    return
+  }
+
+  // 2) Socket transport (best-effort)
+  if (typeof remote?.send === 'function') {
+    remote.${m} = (data: ${DataT}, params?: Params) =>
+      remote.send('${m}', data, params)
+    return
+  }
+
+  // 3) Universal HTTP fallback
+  remote.${m} = async (data: ${DataT}, params?: Params): Promise<${ResT}> => {
+    const cfg: any = useRuntimeConfig()
+    const pub = cfg.public?.feathers ?? {}
+
+    const baseURL = pub.restUrl ?? pub.baseURL ?? pub.url ?? ''
+    const prefix
+      = pub.rest?.path
+      ?? pub.restPath
+      ?? pub.prefix
+      ?? '/feathers'
+
+    const url = joinURL(baseURL, prefix, '${servicePath}', '${m}')
+
+    const headers: Record<string, string> = {}
+    const auth = (params as any)?.headers?.authorization || (params as any)?.headers?.Authorization
+    if (auth)
+      headers.authorization = auth
+
+    return await $fetch<${ResT}>(url, { method: 'POST', body: data, headers })
+  }
+}
+`
+  }).join('\n')
+
+  const attachCalls = customList.map(m => `    attach_${m}(client, remote)`).join('\n')
+
+  const ssrMethodsList = JSON.stringify(stdList.length ? stdList : ['find'])
+
+  return `// ! Generated by nuxt-feathers-zod - custom service template
+import type { Params } from '@feathersjs/feathers'
+import type { ClientApplication } from 'nuxt-feathers-zod/client'
+import type { RestService } from '@feathersjs/rest-client'
+import { joinURL } from 'ufo'
+${schemaImportLine}
+
+export const ${base}Path = '${servicePath}'
+export const ${base}Methods = ${JSON.stringify(allClientMethods)} as const
+
+export type ${Base}ClientService = RestService & {
+${customList.map((m) => {
+    const M = pascalCase(m)
+    return `  ${m}(data: ${Base}${M}Data, params?: Params): Promise<${Base}${M}Result>`
+  }).join('\n')}
+}
+
+${patches}
+
+export function ${base}Client(client: ClientApplication) {
+  const connection: any = client.get('connection')
+  const remote: any = connection.service(${base}Path)
+
+  // SSR-safe: register only standard methods on server
+  if (import.meta.server) {
+    client.use(${base}Path, remote, { methods: ${ssrMethodsList} })
+    return
+  }
+
+${attachCalls}
+
+  client.use(${base}Path, remote, { methods: ${JSON.stringify(allClientMethods)} })
+}
+
+declare module 'nuxt-feathers-zod/client' {
+  interface ServiceTypes {
+    [${base}Path]: ${Base}ClientService
+  }
+}
+`
+}
+
+function renderCustomService(
+  ids: ReturnType<typeof createServiceIds>,
+  servicePath: string,
+  stdMethods: string[],
+  customMethods: string[],
+  auth: boolean,
+  docs: boolean,
+) {
+  const Base = ids.basePascal
+  const base = ids.baseCamel
+  const serviceName = ids.serviceNameKebab
+  const serviceClass = `${Base}Service`
+
+  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+
+  const allMethods = uniq([...stdMethods, ...customMethods])
+  const methodsConst = `${base}Methods`
+
+  const hookBefore = auth
+    ? `      all: [authenticate('jwt')],\n`
+    : ''
+
+  const schemaHookImports = customMethods.length
+    ? "import { schemaHooks } from '@feathersjs/schema'\n"
+    : ''
+
+  const schemaImports = customMethods.map((m) => {
+    const M = pascalCase(m)
+    return `${base}${M}DataSchema, ${base}${M}ResultSchema`
+  }).join(', ')
+
+  const customHookBlocks = customMethods.map((m) => {
+    const M = pascalCase(m)
+    return `      ${m}: [
+        schemaHooks.validateData(${base}${M}DataSchema),
+        schemaHooks.resolveData(async (ctx) => ctx),
+      ],`
+  }).join('\n')
+
+  // custom result validation is applied as around hooks (required pattern)
+  const customAroundBlocks = customMethods.map((m) => {
+    const M = pascalCase(m)
+    return `      ${m}: [
+        async (context) => {
+          ${base}${M}ResultSchema.parse(context.result)
+          return context
+        },
+      ],`
+  }).join('\n')
+
+  return `// ! Generated by nuxt-feathers-zod - custom service template
+import type { Application } from 'nuxt-feathers-zod/server'
+${authImports}${schemaHookImports}import { ${serviceClass} } from './${serviceName}.class'
+${customMethods.length ? `import { ${schemaImports} } from './${serviceName}.schema'\n` : ''}
+
+export const ${base}Path = '${servicePath}'
+export const ${methodsConst} = ${JSON.stringify(allMethods)} as const
+
+export function ${base}(app: Application) {
+  app.use(${base}Path, new ${serviceClass}(app), {
+    methods: ${methodsConst} as unknown as string[],
+    events: [],
+  })
+
+  app.service(${base}Path).hooks({
+    around: {
+      all: [],
+      ${customMethods.length ? customAroundBlocks : ''}
+    },
+    before: {
+${hookBefore}${customMethods.length ? customHookBlocks : ''}
+    },
+    after: {
       all: [],
     },
   })

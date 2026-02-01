@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Services (Zod-first)
 
 Un service généré suit une convention stable :

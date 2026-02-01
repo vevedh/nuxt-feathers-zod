@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Structure des services
 
 ## Fichiers

@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # CLI
 
 La CLI est la **seule méthode supportée** pour ajouter des services/middlewares compatibles.

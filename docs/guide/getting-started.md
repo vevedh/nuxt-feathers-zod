@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Démarrage rapide
 
 Ce module embarque **FeathersJS v5 (Dove)** dans **Nuxt 4 / Nitro**. Tu obtiens une API (REST et/ou WebSocket) dans le même projet.

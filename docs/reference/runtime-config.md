@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # RuntimeConfig
 
 Le module expose des infos dans `runtimeConfig` :

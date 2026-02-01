@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Keycloak SSO (Keycloak-only)
 
 Ce mode désactive l'auth locale Feathers et utilise Keycloak comme source d'identité.

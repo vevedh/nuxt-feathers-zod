@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Dépannage
 
 ## 1) `Services typeExports []` / `Entity class User not found`

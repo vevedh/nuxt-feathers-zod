@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Utilisation côté frontend (useService, Pinia)
 
 Le module expose un client Feathers dans Nuxt via le plugin runtime. Tu utilises ensuite :

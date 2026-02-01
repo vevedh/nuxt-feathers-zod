@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Keycloak SSO (Keycloak-only)
 
 Ce mode fait de **Keycloak la seule source d’identité**.

@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Auth locale (JWT)
 
 Quand `feathers.auth = true` (et que tu **n’es pas** en Keycloak-only), le module active l’auth Feathers classique :

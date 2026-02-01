@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Conventions de génération
 
 ## Services

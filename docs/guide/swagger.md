@@ -1,3 +1,6 @@
+---
+editLink: false
+---
 # Swagger (legacy)
 
 Le module supporte **feathers-swagger** (legacy). C’est un middleware (pas un service Feathers) et il est monté avant l’enregistrement des services afin de collecter leurs métadonnées `docs`.

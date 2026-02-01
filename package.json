@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "0.2.5",
+  "version": "6.3.0",
   "packageManager": "bun@1.3.6",
   "description": "Feathers API integration for Nuxt",
   "author": "Herve de CHAVIGNY",
@@ -60,7 +60,9 @@
     "release:major": "bunx release-it major",
     "docs:dev": "cd docs && bun install && bunx vitepress dev . --host",
     "docs:build": "cd docs && bun install && bunx vitepress build .",
-    "docs:preview": "cd docs && bun install && bunx vitepress preview ."
+    "docs:preview": "cd docs && bun install && bunx vitepress preview .",
+    "sync:actions": "bunx nuxt-feathers-zod add custom-service actions --methods find --customMethods run --auth --docs --force",
+    "sync:golden": "bun run sync:actions"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"
@@ -87,12 +89,14 @@
     "change-case": "latest",
     "consola": "latest",
     "defu": "latest",
-    "feathers-pinia": "latest",
+    "feathers-pinia": "^4.5.4",
+    "feathers-swagger": "^3.0.0",
     "jose": "^5.10.0",
     "keycloak-js": "^24.0.5",
     "mongodb": "^6.21.0",
     "pinia": "latest",
     "socket.io-client": "latest",
+    "swagger-ui-dist": "^5.31.0",
     "unimport": "^3.14.6",
     "zod": "^3.25.76"
   },

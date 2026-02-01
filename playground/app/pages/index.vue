@@ -28,6 +28,10 @@ async function goProtected() {
       <span v-if="auth.ready">(ready)</span>
     </p>
 
+    <p style="margin-top: 16px">
+      <NuxtLink to="/actions">Custom service demo: /actions</NuxtLink>
+    </p>
+
     <div v-if="isKeycloak">
       <p>
         Keycloak SSO (Option A): navigation to a protected page triggers login only if needed.
