@@ -52,13 +52,13 @@ export default defineConfig({
         },
 
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/vevedh/nuxt-feathers-zod' },
+          { icon: 'npm', link: 'https://www.npmjs.com/package/nuxt-feathers-zod' },
         ],
 
         search: { provider: 'local' },
 
         editLink: {
-          pattern: 'https://github.com/<your-org>/nuxt-feathers-zod/edit/main/docs/:path',
+          pattern: 'https://github.com/vevedh/nuxt-feathers-zod/edit/main/docs/:path',
           text: 'Modifier cette page',
         },
 
@@ -127,7 +127,7 @@ export default defineConfig({
         },
 
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/vevedh/nuxt-feathers-zod' },
+          { icon: 'npm', link: 'https://www.npmjs.com/package/nuxt-feathers-zod' },
         ],
 
         search: { provider: 'local' },
