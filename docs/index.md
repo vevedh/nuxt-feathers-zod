@@ -6,7 +6,7 @@ hero:
   text: "FeathersJS v5 + Zod + Nuxt 4 (Nitro)"
   tagline: "Un backend Feathers embarqué dans Nuxt, génération de services Zod-first, client Pinia, Swagger (legacy) et option Keycloak SSO."
   image:
-    src: /images/plume-dark.png
+    src: https://vevedh.github.io/nuxt-feathers-zod/images/plume-dark.png
     alt: Logo plume
   actions:
     - theme: brand
@@ -30,8 +30,7 @@ features:
   - title: "Keycloak SSO"
     details: "Mode Keycloak-only, SSO silencieux (check-sso) et routes protégées au cas par cas."
 ---
-
-## TL;DR
+## Attention !
 
 - Déclare `feathers.servicesDirs = ['services']`.
 - Génère toujours les services via la CLI : `bunx nuxt-feathers-zod add service ...`.
