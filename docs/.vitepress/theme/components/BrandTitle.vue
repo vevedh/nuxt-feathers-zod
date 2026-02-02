@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useData } from 'vitepress'
 
+
 const { isDark } = useData()
 </script>
 
 <template>
   <div class="vp-brand">
     <img
-      :src="isDark ? './images/plume-dark.png' : './images/plume-light.png'"
+      :src="isDark ? '~/images/plume-dark.png' : '/images/plume-light.png'"
       alt="nuxt-feathers-zod"
       class="vp-brand-logo"
     >
