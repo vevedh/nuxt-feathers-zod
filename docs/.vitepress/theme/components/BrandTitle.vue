@@ -8,7 +8,7 @@ const { isDark } = useData()
 <template>
   <div class="vp-brand">
     <img
-      :src="isDark ? './images/plume-dark.png' : './images/plume-light.png'"
+      :src="isDark ? 'https://vevedh.github.io/nuxt-feathers-zod/images/plume-dark.png' : 'https://vevedh.github.io/nuxt-feathers-zod/images/plume-light.png'"
       alt="nuxt-feathers-zod"
       class="vp-brand-logo"
     >
