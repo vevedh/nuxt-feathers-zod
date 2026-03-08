@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Typecheck shims for module-repo `tsc` runs.
  * In real Nuxt runtime, these are provided by Nuxt virtual modules / auto-imports.

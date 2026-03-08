@@ -93,7 +93,11 @@ function isServerModuleObject(value: any): value is ServerModuleObject {
   return !!value && typeof value === 'object' && typeof value.src === 'string'
 }
 
-async function resolveServerModuleEntries(entries: ServerModuleEntry[], rootDir: string, framework: 'express' | 'koa' = 'express'): Promise<ResolvedServerModule[]> {
+async function resolveServerModuleEntries(
+  entries: ServerModuleEntry[],
+  rootDir: string,
+  framework: 'express' | 'koa' = 'express',
+): Promise<ResolvedServerModule[]> {
   const { createResolver } = await import('@nuxt/kit')
   const { scanExports } = await import('unimport')
   const { setImportMeta } = await import('./utils')
@@ -164,7 +168,10 @@ async function resolveServerModuleEntries(entries: ServerModuleEntry[], rootDir:
   }
 
   return resolved.filter((plugin, index, self) =>
-    index === self.findIndex(p => p.from === plugin.from && JSON.stringify((p as any).options) === JSON.stringify((plugin as any).options)),
+    index === self.findIndex((p) =>
+      p.from === plugin.from &&
+      JSON.stringify((p as any).options) === JSON.stringify((plugin as any).options),
+    ),
   )
 }
 
@@ -230,7 +237,12 @@ function buildSecureServerModules(server: ModuleOptions['server']): ServerModule
   return out
 }
 
-export async function resolveServerOptions(server: ModuleOptions['server'], rootDir: string, serverDir: string, framework: 'express' | 'koa' = 'express'): Promise<ResolvedServerOptions> {
+export async function resolveServerOptions(
+  server: ModuleOptions['server'],
+  rootDir: string,
+  serverDir: string,
+  framework: 'express' | 'koa' = 'express',
+): Promise<ResolvedServerOptions> {
   const serverResolver = createResolver(serverDir)
 
   const resolvedPlugins = await resolvePluginsOptions(server, rootDir, serverResolver.resolve(serverDirDefault))
@@ -246,12 +258,20 @@ export async function resolveServerOptions(server: ModuleOptions['server'], root
     plugins: [],
   }
 
-  const resolvedModulesFromDirs = await resolvePluginsOptions(modulesOptions, rootDir, serverResolver.resolve(serverDirDefault, serverModulesDirDefault))
+  const resolvedModulesFromDirs = await resolvePluginsOptions(
+    modulesOptions,
+    rootDir,
+    serverResolver.resolve(serverDirDefault, serverModulesDirDefault),
+  )
   const resolvedNormalizedSecureModules = await resolveServerModuleEntries(normalizedSecureModules, rootDir, framework)
   const resolvedModulesFromEntries = await resolveServerModuleEntries(explicitModules, rootDir, framework)
 
   return {
     ...resolvedPlugins,
-    modules: [...resolvedModulesFromDirs.plugins as ResolvedServerModule[], ...resolvedNormalizedSecureModules, ...resolvedModulesFromEntries],
+    modules: [
+      ...(resolvedModulesFromDirs.plugins as ResolvedServerModule[]),
+      ...resolvedNormalizedSecureModules,
+      ...resolvedModulesFromEntries,
+    ],
   }
 }

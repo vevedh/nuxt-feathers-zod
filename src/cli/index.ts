@@ -71,7 +71,9 @@ function parseWebsocketOptions(flags: Record<string, string | boolean>) {
   const connectTimeout = parseNumberFlag(flags.websocketConnectTimeout)
   const transports = parseCsvFlag(flags.websocketTransports)
   const corsOrigin = parseCorsOriginFlag(flags.websocketCorsOrigin)
-  const corsCredentials = flags.websocketCorsCredentials === undefined ? undefined : parseBooleanFlag(flags.websocketCorsCredentials, false)
+  const corsCredentials = flags.websocketCorsCredentials === undefined
+    ? undefined
+    : parseBooleanFlag(flags.websocketCorsCredentials, false)
   const corsMethods = parseCsvFlag(flags.websocketCorsMethods)
 
   const websocket: {
@@ -123,7 +125,9 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
       const projectRoot = await findProjectRoot(cwd)
       const dry = Boolean(flags.dry)
 
-      const ssoUrl = typeof flags.ssoUrl === 'string' ? String(flags.ssoUrl) : (typeof flags.url === 'string' ? String(flags.url) : '')
+      const ssoUrl = typeof flags.ssoUrl === 'string'
+        ? String(flags.ssoUrl)
+        : (typeof flags.url === 'string' ? String(flags.url) : '')
       const realm = typeof flags.realm === 'string' ? String(flags.realm) : ''
       const clientId = typeof flags.clientId === 'string' ? String(flags.clientId) : ''
 
@@ -138,7 +142,14 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
         clientMode: 'remote',
         remote: {
           url: '',
-          auth: { enabled: true, payloadMode: 'keycloak', strategy: 'jwt', tokenField: 'accessToken', servicePath: 'authentication', reauth: true },
+          auth: {
+            enabled: true,
+            payloadMode: 'keycloak',
+            strategy: 'jwt',
+            tokenField: 'accessToken',
+            servicePath: 'authentication',
+            reauth: true,
+          },
         },
         keycloak: {
           serverUrl: ssoUrl,
@@ -229,7 +240,9 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
       }
 
       const flagsUrl = typeof flags.url === 'string' ? String(flags.url) : ''
-      const transport = (typeof flags.transport === 'string' ? String(flags.transport) : 'socketio') as 'auto' | 'rest' | 'socketio'
+      const transport = (
+        typeof flags.transport === 'string' ? String(flags.transport) : 'socketio'
+      ) as 'auto' | 'rest' | 'socketio'
       const restPath = typeof flags.restPath === 'string' ? String(flags.restPath) : '/feathers'
       const websocketPath = typeof flags.websocketPath === 'string' ? String(flags.websocketPath) : '/socket.io'
       const websocket = parseWebsocketOptions(flags)
@@ -271,7 +284,13 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
       return
     }
 
-    if (subcmd !== 'service' && subcmd !== 'custom-service' && subcmd !== 'remote-service' && subcmd !== 'middleware' && subcmd !== 'server-module') {
+    if (
+      subcmd !== 'service' &&
+      subcmd !== 'custom-service' &&
+      subcmd !== 'remote-service' &&
+      subcmd !== 'middleware' &&
+      subcmd !== 'server-module'
+    ) {
       consola.error(`Unknown add target: ${subcmd ?? '(missing)'}`)
       printHelp()
       process.exitCode = 1
@@ -335,7 +354,9 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
     if (subcmd === 'server-module') {
       const dry = Boolean(flags.dry)
       const force = Boolean(flags.force)
-      const preset = typeof flags.preset === 'string' ? String(flags.preset) : (flags.preset === true ? nameOrTarget : undefined)
+      const preset = typeof flags.preset === 'string'
+        ? String(flags.preset)
+        : (flags.preset === true ? nameOrTarget : undefined)
       const projectRoot = await findProjectRoot(cwd)
 
       await generateMiddleware({

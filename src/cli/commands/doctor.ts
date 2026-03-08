@@ -86,8 +86,30 @@ function parseRemoteAuth(cfg: string) {
 }
 
 function parseRemoteServices(cfg: string) {
-  const block = cfg.match(/remote\s*:\s*\{[\s\S]*?services\s*:\s*\[([\s\S]*?)\][\s\S]*?\}/)?.[1] ?? ''
-  const names = [...block.matchAll(/path\s*:\s*[\\"\']([^\"\']+)[\\"\']/g)].map(m => m[1])
+  const servicesMatch = cfg.match(/services\s*:\s*\[/)
+  if (servicesMatch?.index == null) return []
+
+  const listStart = cfg.indexOf('[', servicesMatch.index)
+  if (listStart === -1) return []
+
+  let depth = 0
+  let listEnd = -1
+  for (let i = listStart; i < cfg.length; i++) {
+    const char = cfg[i]
+    if (char === '[') depth++
+    else if (char === ']') {
+      depth--
+      if (depth === 0) {
+        listEnd = i
+        break
+      }
+    }
+  }
+
+  if (listEnd === -1) return []
+
+  const block = cfg.slice(listStart + 1, listEnd)
+  const names = [...block.matchAll(/path\s*:\s*[\"']([^"']+)[\"']/g)].map(m => m[1])
   return Array.from(new Set(names))
 }
 

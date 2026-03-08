@@ -9,6 +9,7 @@ export default withNuxt(
       '**/*.mts',
       'docs/**',
       'playground/**',
+      'out.js',
     ],
     // ✅ on utilise un tsconfig dédié au lint
     typescript: {

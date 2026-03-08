@@ -22,7 +22,13 @@ export default async function bodyParserServerModule(app: any, ctx: any = {}) {
     expressApp.use(json(jsonOptions === true || jsonOptions === undefined ? undefined : jsonOptions))
 
   if (urlencodedOptions !== false)
-    expressApp.use(urlencoded(urlencodedOptions === true || urlencodedOptions === undefined ? { extended: true } : urlencodedOptions))
+    expressApp.use(
+      urlencoded(
+        urlencodedOptions === true || urlencodedOptions === undefined
+          ? { extended: true }
+          : urlencodedOptions,
+      ),
+    )
 
   app.set('nfzModuleBodyParserLoaded', true)
 }

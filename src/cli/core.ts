@@ -466,10 +466,16 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     swagger: ${swaggerEnabled},`
   })()
 
+  const keycloakParts = [
+    patch.keycloak?.serverUrl ? `serverUrl: '${patch.keycloak.serverUrl}'` : '',
+    patch.keycloak?.realm ? `realm: '${patch.keycloak.realm}'` : '',
+    patch.keycloak?.clientId ? `clientId: '${patch.keycloak.clientId}'` : '',
+    patch.keycloak?.onLoad ? `onLoad: '${patch.keycloak.onLoad}'` : '',
+  ].filter(Boolean)
+
   const keycloakPart = patch.keycloak
     ? `
-    keycloak: {${patch.keycloak.serverUrl ? ` serverUrl: '${patch.keycloak.serverUrl}',` : ''}${patch.keycloak.realm ? ` realm: '${patch.keycloak.realm}',` : ''}${patch.keycloak.clientId ? ` clientId: '${patch.keycloak.clientId}',` : ''}${patch.keycloak.onLoad ? ` onLoad: '${patch.keycloak.onLoad}',` : ''}
-    },`
+    keycloak: { ${keycloakParts.join(', ')} },`
     : ''
 
   const clientPart = (() => {
@@ -481,7 +487,9 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
       const transport = patch.remote?.transport ? `'${patch.remote.transport}'` : `'auto'`
       const restPath = patch.remote?.restPath ? `'${patch.remote.restPath}'` : 'undefined'
       const websocketPath = patch.remote?.websocketPath ? `'${patch.remote.websocketPath}'` : 'undefined'
-      const websocket = patch.remote?.websocket ? renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath) : ''
+      const websocket = patch.remote?.websocket
+        ? renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)
+        : ''
       const remoteAuth = patch.remote?.auth
         ? `auth: { ${[
             patch.remote.auth.enabled !== undefined ? `enabled: ${patch.remote.auth.enabled}` : '',
@@ -493,13 +501,25 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
           ].filter(Boolean).join(', ')} }`
         : ''
 
+      const serviceMethods = patch.remoteService?.methods?.length
+        ? `, methods: ${JSON.stringify(patch.remoteService.methods)}`
+        : ''
       const servicesEntry = patch.remoteService
-        ? `{ path: '${patch.remoteService.path}'${patch.remoteService.methods?.length ? `, methods: ${JSON.stringify(patch.remoteService.methods)}` : ''} }`
+        ? `{ path: '${patch.remoteService.path}'${serviceMethods} }`
         : ''
 
       const services = servicesEntry ? `services: [${servicesEntry}]` : ''
 
-      const remoteObj = `remote: { url: ${url}, transport: ${transport}${restPath !== 'undefined' ? `, restPath: ${restPath}` : ''}${websocketPath !== 'undefined' ? `, websocketPath: ${websocketPath}` : ''}${websocket ? `, websocket: ${websocket}` : ''}${remoteAuth ? `, ${remoteAuth}` : ''}${services ? `, ${services}` : ''} }`
+      const remoteParts = [
+        `url: ${url}`,
+        `transport: ${transport}`,
+        restPath !== 'undefined' ? `restPath: ${restPath}` : '',
+        websocketPath !== 'undefined' ? `websocketPath: ${websocketPath}` : '',
+        websocket ? `websocket: ${websocket}` : '',
+        remoteAuth,
+        services,
+      ].filter(Boolean)
+      const remoteObj = `remote: { ${remoteParts.join(', ')} }`
       const transportRestPath = patch.remote?.restPath ?? '/feathers'
       const transportWebsocket = websocket || `{ path: '${patch.remote?.websocketPath ?? '/socket.io'}' }`
 
@@ -542,7 +562,11 @@ function patchFeathersObjectLiteral(feathersObj: string, patch: NuxtConfigPatch)
       // ensure dirs includes templatesDir
       out = ensureNestedTemplatesDirs(out, patch.templatesDir)
     } else {
-      out = insertProp(out, `templates: { dirs: ['${patch.templatesDir}'], strict: true, allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts'] }`)
+      out = insertProp(
+        out,
+        `templates: { dirs: ['${patch.templatesDir}'], strict: true, `
+        + `allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts'] }`,
+      )
     }
   }
 
@@ -603,7 +627,11 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
       parts.push(`transport: ${transport}`)
       if (patch.remote?.restPath) parts.push(`restPath: '${patch.remote.restPath}'`)
       if (patch.remote?.websocketPath) parts.push(`websocketPath: '${patch.remote.websocketPath}'`)
-      if (patch.remote?.websocket) parts.push(`websocket: ${renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)}`)
+      if (patch.remote?.websocket) {
+        parts.push(
+          `websocket: ${renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)}`,
+        )
+      }
       if (patch.remote?.auth) {
         const a = patch.remote.auth
         const ap: string[] = []
@@ -616,7 +644,10 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
         parts.push(`auth: { ${ap.join(', ')} }`)
       }
       if (patch.remoteService) {
-        const entry = `{ path: '${patch.remoteService.path}'${patch.remoteService.methods?.length ? `, methods: ${JSON.stringify(patch.remoteService.methods)}` : ''} }`
+        const methodsPart = patch.remoteService.methods?.length
+          ? `, methods: ${JSON.stringify(patch.remoteService.methods)}`
+          : ''
+        const entry = `{ path: '${patch.remoteService.path}'${methodsPart} }`
         parts.push(`services: [${entry}]`)
       }
       out = insertProp(out, `client: { mode: 'remote', remote: { ${parts.join(', ')} } }`)
@@ -651,7 +682,10 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
     const websocketPath = patch.embedded.websocketPath ?? '/socket.io'
     const websocketConfig = renderWebsocketConfig(patch.embedded.websocket as any, websocketPath)
     if (!/\btransports\s*:/.test(out)) {
-      out = insertProp(out, `transports: { rest: { path: '${restPath}', framework: '${framework}' }, websocket: ${websocketConfig} }`)
+      out = insertProp(
+        out,
+        `transports: { rest: { path: '${restPath}', framework: '${framework}' }, websocket: ${websocketConfig} }`,
+      )
     } else {
       out = ensureNestedTransports(out, framework, restPath, websocketConfig)
     }
@@ -689,7 +723,12 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
 }
 
 
-function ensureNestedTransports(objLiteral: string, framework: 'express' | 'koa' | undefined, restPath: string, websocketConfig: string): string {
+function ensureNestedTransports(
+  objLiteral: string,
+  framework: 'express' | 'koa' | undefined,
+  restPath: string,
+  websocketConfig: string,
+): string {
   const block = locateObjectLiteral(objLiteral, /\btransports\s*:\s*\{/)
   if (!block) return objLiteral
   const before = objLiteral.slice(0, block.start)
@@ -708,7 +747,10 @@ function ensureNestedTransports(objLiteral: string, framework: 'express' | 'koa'
   if (/\bwebsocket\s*:/.test(transportsObj)) {
     const websocketBlock = locateObjectLiteral(transportsObj, /\bwebsocket\s*:\s*\{/)
     if (websocketBlock)
-      transportsObj = transportsObj.slice(0, websocketBlock.start) + `websocket: ${websocketConfig}` + transportsObj.slice(websocketBlock.end)
+      transportsObj =
+        transportsObj.slice(0, websocketBlock.start)
+        + `websocket: ${websocketConfig}`
+        + transportsObj.slice(websocketBlock.end)
   } else {
     transportsObj = insertProp(transportsObj, `websocket: ${websocketConfig}`)
   }
@@ -1136,7 +1178,18 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
   // 1) Ensure TS sees `ServiceOptions.docs` (required for feathers-swagger in TS projects)
   const typesDir = join(projectRoot, 'types')
   const typesFile = join(typesDir, 'feathers-swagger.d.ts')
-  const typesContent = `// Auto-generated by nuxt-feathers-zod CLI (required when using feathers-swagger in TypeScript)\n\nimport type { ServiceSwaggerOptions } from 'feathers-swagger'\n\ndeclare module '@feathersjs/feathers' {\n  interface ServiceOptions {\n    docs?: ServiceSwaggerOptions\n  }\n}\n`
+  const typesContent = [
+    '// Auto-generated by nuxt-feathers-zod CLI (required when using feathers-swagger in TypeScript)',
+    '',
+    "import type { ServiceSwaggerOptions } from 'feathers-swagger'",
+    '',
+    "declare module '@feathersjs/feathers' {",
+    '  interface ServiceOptions {',
+    '    docs?: ServiceSwaggerOptions',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
 
   await ensureDir(typesDir, io.dry)
   await writeFileSafe(typesFile, typesContent, { dry: io.dry, force: io.force })
@@ -1150,7 +1203,9 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
     const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
     if (!deps['feathers-swagger']) {
       consola.warn(
-        `--docs was used but 'feathers-swagger' is not listed in package.json. Install it (and swagger UI deps if needed): bun add feathers-swagger swagger-ui-dist`,
+        `--docs was used but 'feathers-swagger' is not listed in package.json. `
+        + `Install it (and swagger UI deps if needed): `
+        + `bun add feathers-swagger swagger-ui-dist`,
       )
     }
   }
@@ -1190,6 +1245,15 @@ export interface GenerateCustomServiceOptions {
   schema?: SchemaKind
 }
 
+const STD_SERVICE_METHODS = new Set([
+  'find',
+  'get',
+  'create',
+  'update',
+  'patch',
+  'remove',
+])
+
 export async function generateCustomService(opts: GenerateCustomServiceOptions) {
   const serviceNameKebab = normalizeServiceName(opts.name)
   const ids = createServiceIds(serviceNameKebab)
@@ -1220,7 +1284,10 @@ export async function generateCustomService(opts: GenerateCustomServiceOptions) 
   const files: Array<{ path: string, content: string }> = [
     { path: classFile, content: renderCustomClass(ids, stdMethods, customMethods) },
     { path: sharedFile, content: renderCustomShared(ids, servicePath, stdMethods, customMethods, schemaKind) },
-    { path: serviceFile, content: renderCustomService(ids, servicePath, stdMethods, customMethods, opts.auth, opts.docs, schemaKind) },
+    {
+      path: serviceFile,
+      content: renderCustomService(ids, servicePath, stdMethods, customMethods, opts.auth, opts.docs, schemaKind),
+    },
     { path: hooksFile, content: renderEmptyHooks(ids) },
   ]
 
@@ -1242,15 +1309,6 @@ export async function generateCustomService(opts: GenerateCustomServiceOptions) 
     consola.success(`Generated adapter-less service '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
   }
 }
-
-const STD_SERVICE_METHODS = new Set([
-  'find',
-  'get',
-  'create',
-  'update',
-  'patch',
-  'remove',
-])
 
 function parseCsvMethods(value: string) {
   return value
@@ -1309,7 +1367,9 @@ export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
         await writeFileSafe(file, entry.content, { dry: opts.dry, force: opts.force })
       }
       if (!opts.dry)
-        consola.success(`Generated Express baseline server modules (${presets.map(p => p.name).join(', ')}) in ${relativeToCwd(dir)}`)
+        consola.success(
+          `Generated Express baseline server modules (${presets.map(p => p.name).join(', ')}) in ${relativeToCwd(dir)}`,
+        )
       return
     }
 
@@ -1423,10 +1483,14 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 `
 }
 
-function renderClass(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, collectionName: string, schemaKind: SchemaKind) {
+function renderClass(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  collectionName: string,
+  schemaKind: SchemaKind,
+) {
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
-  const useSchema = schemaKind === 'zod'
   const serviceClass = `${Base}Service`
   const paramsName = `${Base}Params`
 
@@ -1435,7 +1499,12 @@ function renderClass(ids: ReturnType<typeof createServiceIds>, adapter: Adapter,
   }
 
   if (adapter === 'memory') {
-    return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#custom-services
+    return [
+      '// For more information about this file see',
+      '// https://dove.feathersjs.com/guides/cli/service.class.html#custom-services',
+      '',
+    ].join('
+') + `
 
 import type { Params } from '@feathersjs/feathers'
 import type { MemoryServiceOptions } from '@feathersjs/memory'
@@ -1461,7 +1530,12 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
   }
 
   // mongodb
-  return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#database-services
+  return [
+    '// For more information about this file see',
+    '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
+    '',
+  ].join('
+') + `
 
 import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'
@@ -1603,15 +1677,17 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 
 function renderClassNoSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, collectionName: string) {
   const Base = ids.basePascal
-  const serviceName = ids.serviceNameKebab
   // no schema
   const serviceClass = `${Base}Service`
   const paramsName = `${Base}Params`
 
-  const idField = adapter === 'mongodb' ? '_id' : 'id'
-
   if (adapter === 'memory') {
-    return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#custom-services
+    return `${[
+      '// For more information about this file see',
+      '// https://dove.feathersjs.com/guides/cli/service.class.html#custom-services',
+      '',
+    ].join('
+')}
 
 import type { Params } from '@feathersjs/feathers'
 import type { MemoryServiceOptions } from '@feathersjs/memory'
@@ -1639,7 +1715,12 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
 `
   }
 
-  return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#database-services
+  return `${[
+    '// For more information about this file see',
+    '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
+    '',
+  ].join('
+')}
 
 import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'
@@ -1682,7 +1763,6 @@ function renderShared(ids: ReturnType<typeof createServiceIds>, servicePath: str
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
-  const useSchema = schemaKind === 'zod'
   const serviceClass = `${Base}Service`
   const methodsConst = `${base}Methods`
   const pathConst = `${base}Path`
@@ -1723,7 +1803,6 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, 
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
-  const useSchema = schemaKind === 'zod'
   const serviceClass = `${Base}Service`
   if (schemaKind === 'none') {
     return renderServiceNoSchema(ids, auth, docs)
@@ -1983,57 +2062,64 @@ function renderCustomClass(
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
 
-  const stdImpl = uniq(stdMethods).length ? uniq(stdMethods).map((m) => {
-    if (m === 'find') {
-      return `
+  const uniqueStdMethods = uniq(stdMethods)
+  const stdImpl = uniqueStdMethods.length
+    ? uniqueStdMethods
+        .map((m) => {
+          if (m === 'find') {
+            return `
   async find(_params?: Params) {
     return [{ ok: true, source: '${ids.serviceNameKebab}.${m}' }]
   }`
-    }
-    if (m === 'get') {
-      return `
+          }
+          if (m === 'get') {
+            return `
   async get(id: Id, _params?: Params) {
     return { id, ok: true, source: '${ids.serviceNameKebab}.${m}' }
   }`
-    }
-    if (m === 'create') {
-      return `
+          }
+          if (m === 'create') {
+            return `
   async create(data: any, _params?: Params) {
     return { ok: true, data, source: '${ids.serviceNameKebab}.${m}' }
   }`
-    }
-    if (m === 'patch') {
-      return `
+          }
+          if (m === 'patch') {
+            return `
   async patch(id: NullableId, data: any, _params?: Params) {
     return { ok: true, id, data, source: '${ids.serviceNameKebab}.${m}' }
   }`
-    }
-    if (m === 'remove') {
-      return `
+          }
+          if (m === 'remove') {
+            return `
   async remove(id: NullableId, _params?: Params) {
     return { ok: true, id, source: '${ids.serviceNameKebab}.${m}' }
   }`
-    }
-    if (m === 'update') {
-      return `
+          }
+          if (m === 'update') {
+            return `
   async update(id: NullableId, data: any, _params?: Params) {
     return { ok: true, id, data, source: '${ids.serviceNameKebab}.${m}' }
   }`
-    }
-    // fallback stub
-    return `
+          }
+          return `
   async ${m}(..._args: any[]) {
     throw new Error('${ids.serviceNameKebab}.${m} not implemented')
   }`
-  }).join('\n') : ''
+        })
+        .join('\n')
+    : ''
 
-  const customImpl = uniq(customMethods).length ? uniq(customMethods).map((m) => {
-    const M = pascalCase(m)
-    const DataT = `${Base}${M}Data`
-    const ResT = `${Base}${M}Result`
+  const uniqueCustomMethods = uniq(customMethods)
+  const customImpl = uniqueCustomMethods.length
+    ? uniqueCustomMethods
+        .map((m) => {
+          const M = pascalCase(m)
+          const DataT = `${Base}${M}Data`
+          const ResT = `${Base}${M}Result`
 
-    if (m === 'run') {
-      return `
+          if (m === 'run') {
+            return `
   async ${m}(data: ${DataT}, _params?: Params): Promise<${ResT}> {
     return {
       acknowledged: true,
@@ -2041,13 +2127,15 @@ function renderCustomClass(
       received: data.payload,
     }
   }`
-    }
+          }
 
-    return `
+          return `
   async ${m}(data: ${DataT}, _params?: Params): Promise<${ResT}> {
     return data as any
   }`
-  }).join('\n') : ''
+        })
+        .join('\n')
+    : ''
 
   const schemaImports = uniq(customMethods).map((m) => {
     const M = pascalCase(m)
@@ -2083,7 +2171,6 @@ function renderCustomShared(
   const Base = ids.basePascal
   const base = ids.baseCamel
   const serviceName = ids.serviceNameKebab
-  const useSchema = schemaKind === 'zod'
 
   const stdList = uniq(stdMethods)
   const customList = uniq(customMethods)
@@ -2529,7 +2616,10 @@ function renderSecureConfig(secure: NonNullable<NonNullable<NuxtConfigPatch['emb
   return `{ ${parts.join(', ')} }`
 }
 
-function ensureNestedServerSecure(objLiteral: string, secure: NonNullable<NonNullable<NuxtConfigPatch['embedded']>['secure']>): string {
+function ensureNestedServerSecure(
+  objLiteral: string,
+  secure: NonNullable<NonNullable<NuxtConfigPatch['embedded']>['secure']>,
+): string {
   const block = locateObjectLiteral(objLiteral, /\bserver\s*:\s*\{/)
   if (!block) return objLiteral
   const before = objLiteral.slice(0, block.start)
@@ -2588,7 +2678,11 @@ function ensureNestedClientRemote(objLiteral: string, patch: NuxtConfigPatch): s
       if (patch.remote?.transport) parts.push(`transport: '${patch.remote.transport}'`)
       if (patch.remote?.restPath) parts.push(`restPath: '${patch.remote.restPath}'`)
       if (patch.remote?.websocketPath) parts.push(`websocketPath: '${patch.remote.websocketPath}'`)
-      if (patch.remote?.websocket) parts.push(`websocket: ${renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)}`)
+      if (patch.remote?.websocket) {
+        parts.push(
+          `websocket: ${renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)}`,
+        )
+      }
       if (patch.remote?.auth) {
         const a = patch.remote.auth
         const ap: string[] = []
@@ -2601,7 +2695,10 @@ function ensureNestedClientRemote(objLiteral: string, patch: NuxtConfigPatch): s
         parts.push(`auth: { ${ap.join(', ')} }`)
       }
       if (patch.remoteService) {
-        const entry = `{ path: '${patch.remoteService.path}'${patch.remoteService.methods?.length ? `, methods: ${JSON.stringify(patch.remoteService.methods)}` : ''} }`
+        const methodsPart = patch.remoteService.methods?.length
+          ? `, methods: ${JSON.stringify(patch.remoteService.methods)}`
+          : ''
+        const entry = `{ path: '${patch.remoteService.path}'${methodsPart} }`
         parts.push(`services: [${entry}]`)
       }
       patchedClient = insertProp(patchedClient, `remote: { ${parts.join(', ')} }`)
@@ -2658,7 +2755,10 @@ function patchNestedRemoteObject(clientObjLiteral: string, patch: NuxtConfigPatc
     if (/\bwebsocket\s*:/.test(patched)) {
       const websocketBlock = locateObjectLiteral(patched, /\bwebsocket\s*:\s*\{/)
       if (websocketBlock)
-        patched = patched.slice(0, websocketBlock.start) + `websocket: ${websocketConfig}` + patched.slice(websocketBlock.end)
+        patched =
+          patched.slice(0, websocketBlock.start)
+          + `websocket: ${websocketConfig}`
+          + patched.slice(websocketBlock.end)
     } else {
       patched = insertProp(patched, `websocket: ${websocketConfig}`)
     }
@@ -2684,7 +2784,10 @@ function patchNestedRemoteObject(clientObjLiteral: string, patch: NuxtConfigPatc
 
   // remote services registration
   if (patch.remoteService) {
-    const entry = `{ path: '${patch.remoteService.path}'${patch.remoteService.methods?.length ? `, methods: ${JSON.stringify(patch.remoteService.methods)}` : ''} }`
+    const methodsPart = patch.remoteService.methods?.length
+      ? `, methods: ${JSON.stringify(patch.remoteService.methods)}`
+      : ''
+    const entry = `{ path: '${patch.remoteService.path}'${methodsPart} }`
     if (/\bservices\s*:/.test(patched)) {
       // naive: if the path already exists, do nothing; otherwise append.
       if (!new RegExp(`path\s*:\s*['"]${escapeRegExp(patch.remoteService.path)}['"]`).test(patched)) {
@@ -2715,19 +2818,27 @@ function patchNestedAuthObject(remoteObjLiteral: string, auth: NonNullable<NuxtC
     else patched = insertProp(patched, `enabled: ${auth.enabled}`)
   }
   if (auth?.payloadMode) {
-    if (/\bpayloadMode\s*:/.test(patched)) patched = patched.replace(/\bpayloadMode\s*:\s*['"][^'"]*['"]/, `payloadMode: '${auth.payloadMode}'`)
+    if (/\bpayloadMode\s*:/.test(patched)) {
+      patched = patched.replace(/\bpayloadMode\s*:\s*['"][^'"]*['"]/, `payloadMode: '${auth.payloadMode}'`)
+    }
     else patched = insertProp(patched, `payloadMode: '${auth.payloadMode}'`)
   }
   if (auth?.strategy) {
-    if (/\bstrategy\s*:/.test(patched)) patched = patched.replace(/\bstrategy\s*:\s*['"][^'"]*['"]/, `strategy: '${auth.strategy}'`)
+    if (/\bstrategy\s*:/.test(patched)) {
+      patched = patched.replace(/\bstrategy\s*:\s*['"][^'"]*['"]/, `strategy: '${auth.strategy}'`)
+    }
     else patched = insertProp(patched, `strategy: '${auth.strategy}'`)
   }
   if (auth?.tokenField) {
-    if (/\btokenField\s*:/.test(patched)) patched = patched.replace(/\btokenField\s*:\s*['"][^'"]*['"]/, `tokenField: '${auth.tokenField}'`)
+    if (/\btokenField\s*:/.test(patched)) {
+      patched = patched.replace(/\btokenField\s*:\s*['"][^'"]*['"]/, `tokenField: '${auth.tokenField}'`)
+    }
     else patched = insertProp(patched, `tokenField: '${auth.tokenField}'`)
   }
   if (auth?.servicePath) {
-    if (/\bservicePath\s*:/.test(patched)) patched = patched.replace(/\bservicePath\s*:\s*['"][^'"]*['"]/, `servicePath: '${auth.servicePath}'`)
+    if (/\bservicePath\s*:/.test(patched)) {
+      patched = patched.replace(/\bservicePath\s*:\s*['"][^'"]*['"]/, `servicePath: '${auth.servicePath}'`)
+    }
     else patched = insertProp(patched, `servicePath: '${auth.servicePath}'`)
   }
   if (auth?.reauth !== undefined) {

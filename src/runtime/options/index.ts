@@ -101,7 +101,9 @@ export type ModuleConfig = Partial<Omit<ModuleOptions, 'auth'> & {
 }>
 
 
-function toPublicRemoteClientConfig(client: ResolvedClientOptions | false | undefined): FeathersPublicRuntimeConfig['client'] {
+function toPublicRemoteClientConfig(
+  client: ResolvedClientOptions | false | undefined,
+): FeathersPublicRuntimeConfig['client'] {
   if (!client)
     return undefined
 
@@ -144,20 +146,28 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
    * nuxt issue: https://github.com/nuxt/nuxt/issues/28995#issuecomment-2843183972
    *
    * WORKAROUND:
-   * Ha a compatibilityVersion: 4, akkor a buildDir a node_modules/.cache/nuxt/.nuxt könyvtárba kerül, ahonnan nem tudja betölteni a ts fájlokat.
+   * With compatibilityVersion: 4, buildDir can end up under
+   * node_modules/.cache/nuxt/.nuxt, where local ts files should not be resolved from.
    * Ezért itt manuálisan felülirom a régi (.nuxt) könyvtárra.   *
    */
   const resolver = createResolver(import.meta.url)
   // if (nuxt.options.test || nuxt.options.dev) {
 
-  const templateDir = /node_modules/.test(buildDir) ? resolver.resolve(rootDir, '.nuxt/feathers') : resolver.resolve(buildDir, 'feathers')
+  const templateDir = /node_modules/.test(buildDir)
+    ? resolver.resolve(rootDir, '.nuxt/feathers')
+    : resolver.resolve(buildDir, 'feathers')
 
   const templates = resolveTemplatesOptions(options.templates, rootDir)
 
   const transports = resolveTransportsOptions(options.transports, ssr)
   const database = resolveDataBaseOptions(options.database)
   const servicesDirs = resolveServicesDirs(options.servicesDirs, rootDir)
-  const server = await resolveServerOptions(options.server, rootDir, serverDir, (transports.rest as any)?.framework ?? 'express')
+  const server = await resolveServerOptions(
+    options.server,
+    rootDir,
+    serverDir,
+    (transports.rest as any)?.framework ?? 'express',
+  )
   const client = await resolveClientOptions(options.client, !!database.mongo, rootDir, srcDir)
   const validator = resolveValidatorOptions(options.validator)
   const swagger = resolveSwaggerOptions(options.swagger, transports)
@@ -189,7 +199,12 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     auth = resolveAuthOptions(withJwtDefault, { client: !!client, mode: 'embedded' }, servicesImports, appDir)
   }
   else {
-    auth = resolveAuthOptions(options.auth, { client: !!client, mode: getResolvedClientMode(client) }, servicesImports, appDir)
+    auth = resolveAuthOptions(
+      options.auth,
+      { client: !!client, mode: getResolvedClientMode(client) },
+      servicesImports,
+      appDir,
+    )
   }
   const loadFeathersConfig = options.loadFeathersConfig
 

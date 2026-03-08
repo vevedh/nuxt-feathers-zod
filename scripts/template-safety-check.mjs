@@ -9,7 +9,7 @@ const checks = [
   },
   {
     name: 'nested-template-healthcheck',
-    ok: !content.includes("`${basePath}health`") && !content.includes("`${basePath}/health`"),
+    ok: !content.includes('${' + 'basePath}health') && !content.includes('${' + 'basePath}/health'),
     message: 'Nested template literal interpolation still present in generated healthcheck module template',
   },
 ]

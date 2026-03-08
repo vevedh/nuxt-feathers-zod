@@ -1,10 +1,25 @@
 import type { ModuleDependencies, Nuxt } from '@nuxt/schema'
-import type { FeathersPublicRuntimeConfig, FeathersRuntimeConfig, ModuleConfig, ModuleOptions, ResolvedOptions } from './runtime/options'
+import type {
+  FeathersPublicRuntimeConfig,
+  FeathersRuntimeConfig,
+  ModuleConfig,
+  ModuleOptions,
+  ResolvedOptions,
+} from './runtime/options'
 import type { ClientOptions } from './runtime/options/client'
 import type { PiniaModuleOptions } from './runtime/options/client/pinia'
 
 import { createRequire } from 'node:module'
-import { addImports, addImportsDir, addPlugin, addServerPlugin, addTemplate, createResolver, defineNuxtModule, hasNuxtModule } from '@nuxt/kit'
+import {
+  addImports,
+  addImportsDir,
+  addPlugin,
+  addServerPlugin,
+  addTemplate,
+  createResolver,
+  defineNuxtModule,
+  hasNuxtModule,
+} from '@nuxt/kit'
 import { consola } from 'consola'
 import defu from 'defu'
 
@@ -209,7 +224,10 @@ export default defineNuxtModule<ModuleOptions>({
         // Auth bootstrap is needed in two situations:
         // 1) Embedded auth pipeline is enabled (local/jwt/oauth) AND server is enabled
         // 2) Remote mode has auth enabled (authentication-client)
-        const enableAuthBootstrap = Boolean((resolvedOptions.auth && serverEnabled) || isResolvedRemoteAuthEnabled(resolvedOptions))
+        const enableAuthBootstrap = Boolean(
+          (resolvedOptions.auth && serverEnabled) ||
+          isResolvedRemoteAuthEnabled(resolvedOptions),
+        )
         if (enableAuthBootstrap) {
           addImports({ from: resolver.resolve('./runtime/stores/auth'), name: 'useAuthStore' })
           addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/feathers-auth') })
