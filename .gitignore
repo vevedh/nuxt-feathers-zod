@@ -70,3 +70,5 @@ CONTEXT*
 PATCH*
 PROMPT*
 SCENARIOS.md
+
+bun.lock
