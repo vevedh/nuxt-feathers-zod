@@ -18,8 +18,9 @@ export default async function bodyParserServerModule(app: any, ctx: any = {}) {
   const jsonOptions = options && typeof options === 'object' ? options.json : undefined
   const urlencodedOptions = options && typeof options === 'object' ? options.urlencoded : undefined
 
-  if (jsonOptions !== false)
+  if (jsonOptions !== false) {
     expressApp.use(json(jsonOptions === true || jsonOptions === undefined ? undefined : jsonOptions))
+  }
 
   if (urlencodedOptions !== false)
     expressApp.use(

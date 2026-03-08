@@ -6,8 +6,8 @@ import type { AuthLocalOptions } from './local'
 import { capitalCase } from 'change-case'
 import defu from 'defu'
 import { klona } from 'klona'
-import { digest } from 'ohash'
 import consola from 'consola'
+import { digest } from 'ohash'
 import { NuxtFeathersError } from '../../errors'
 import { resolveAuthClientOptions } from './client'
 import { getAuthJwtDefaults } from './jwt'
@@ -91,7 +91,6 @@ function getEntityClass(authOptions: AuthOptions): string {
 export const authClientDefaultOptions: AuthClientOptions = {
   storageKey: 'feathers-jwt',
 }
-
 
 export interface ResolveAuthContext {
   client: boolean

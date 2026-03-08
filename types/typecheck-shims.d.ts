@@ -7,6 +7,7 @@
 declare module '#app' {
   export * from 'nuxt/app'
 }
+
 declare module '#imports' {
   export * from 'nuxt/app'
   export * from 'nuxt/composables'
@@ -22,6 +23,7 @@ declare function useNuxtApp<T = any>(): T
  */
 declare module 'nuxt-feathers-zod/server' {
   import type { Application as FeathersApp, HookContext as FeathersHookContext, Params } from '@feathersjs/feathers'
+
   export type Application = FeathersApp
   export type HookContext = FeathersHookContext
   export type { Params }
@@ -31,6 +33,7 @@ declare module 'nuxt-feathers-zod/server' {
 
 declare module 'nuxt-feathers-zod/client' {
   import type { Application as FeathersApp } from '@feathersjs/feathers'
+
   export type ClientApplication = FeathersApp
   // Augmented per-service by generated code
   export interface ServiceTypes {}

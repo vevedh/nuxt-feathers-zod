@@ -22,7 +22,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     return
 
   const rc = useRuntimeConfig()
-  const pub = rc.public as any
+  const pub = rc.public
 
   const kcPub = pub?._feathers?.keycloak ?? {}
   const serverUrl = kcPub.serverUrl ?? pub.KC_URL
@@ -61,7 +61,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
   }).catch(() => ({ authenticated: false } as const))
 
-  const authenticated = (keycloak.authenticated === true) && (initResult as any)?.authenticated !== false
+  const authenticated = keycloak.authenticated === true && (initResult as { authenticated?: boolean })?.authenticated !== false
   const userid = keycloak?.tokenParsed?.preferred_username
 
   const clientMode = getPublicClientMode(pub)
@@ -119,7 +119,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     instance: keycloak,
     authenticated,
     userid,
-    tokenParsed: keycloak.tokenParsed as any,
+    tokenParsed: keycloak.tokenParsed,
     token: () => keycloak.token,
     login: async (opts?: any) => { await keycloak.login(opts) },
     logout: async (opts?: any) => { await keycloak.logout(opts) },
@@ -154,11 +154,10 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
         ? (remoteAuth?.servicePath || 'authentication')
         : 'authentication'
 
-      const res = await nuxtApp.$api.service(servicePath).create(payload)
+      const res: { user?: any, permissions?: any[] } = await nuxtApp.$api.service(servicePath).create(payload)
 
-      // Typical Feathers auth result: { accessToken, authentication, user }
-      provided.user = (res as any)?.user ?? provided.user
-      provided.permissions = (res as any)?.permissions || provided.permissions || []
+      provided.user = res?.user ?? provided.user
+      provided.permissions = res?.permissions || provided.permissions || []
       return res
     }
     catch {

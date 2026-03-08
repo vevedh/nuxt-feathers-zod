@@ -80,7 +80,7 @@ ${puts([
       if (transportOverride === 'socketio')
         return ${put(sio, 'sioConnectionResolved', put(rest, 'restConnectionResolved', 'undefined as any'))}
       // auto
-      return ${put(rest && sio, "import.meta.server ? restConnectionResolved : sioConnectionResolved", puts([
+      return ${put(rest && sio, 'import.meta.server ? restConnectionResolved : sioConnectionResolved', puts([
         [rest || !sio, put(rest, 'restConnectionResolved', 'undefined as any')],
         [sio, put(sio, 'sioConnectionResolved', put(rest, 'restConnectionResolved', 'undefined as any'))],
       ]))}

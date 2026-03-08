@@ -28,8 +28,8 @@ import { detectResolvedMode, isResolvedRemoteAuthEnabled, isResolvedServerEnable
 import { serverDefaults } from './runtime/options/server'
 import { addServicesImports, getServicesImports } from './runtime/services'
 import { getClientTemplates } from './runtime/templates/client'
-import { getServerTemplates } from './runtime/templates/server'
 import { resolveTemplateOverrideForFilename } from './runtime/templates/overrides'
+import { getServerTemplates } from './runtime/templates/server'
 
 declare module '@nuxt/schema' {
   interface NuxtConfig {
@@ -88,7 +88,6 @@ function setTsIncludes(options: ResolvedOptions, nuxt: Nuxt) {
   })
 }
 
-
 /**
  * Pinia module alignment (best effort).
  * If @pinia/nuxt is installed but not activated, register it in Nuxt modules.
@@ -114,12 +113,11 @@ async function ensurePinia(client: ClientOptions, nuxt: Nuxt) {
       nuxt.options.modules.push('@pinia/nuxt')
       consola.info('[nuxt-feathers-zod] Added @pinia/nuxt to Nuxt modules because feathers.client.pinia is enabled.')
     }
-    return
   }
   catch {
     consola.warn(
-      `[nuxt-feathers-zod] feathers.client.pinia is enabled but @pinia/nuxt is not installed.${storesHint} ` +
-      `Install it manually: bun add -D @pinia/nuxt and add '@pinia/nuxt' to your app modules.`,
+      `[nuxt-feathers-zod] feathers.client.pinia is enabled but @pinia/nuxt is not installed.${storesHint} `
+      + `Install it manually: bun add -D @pinia/nuxt and add '@pinia/nuxt' to your app modules.`,
     )
   }
 }
@@ -225,8 +223,8 @@ export default defineNuxtModule<ModuleOptions>({
         // 1) Embedded auth pipeline is enabled (local/jwt/oauth) AND server is enabled
         // 2) Remote mode has auth enabled (authentication-client)
         const enableAuthBootstrap = Boolean(
-          (resolvedOptions.auth && serverEnabled) ||
-          isResolvedRemoteAuthEnabled(resolvedOptions),
+          (resolvedOptions.auth && serverEnabled)
+          || isResolvedRemoteAuthEnabled(resolvedOptions),
         )
         if (enableAuthBootstrap) {
           addImports({ from: resolver.resolve('./runtime/stores/auth'), name: 'useAuthStore' })

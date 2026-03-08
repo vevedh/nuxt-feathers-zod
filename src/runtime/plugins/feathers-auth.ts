@@ -24,10 +24,10 @@ export default defineNuxtPlugin({
     if (!('$api' in nuxtApp) || !nuxtApp.$api)
       return
 
-    if (!(nuxtApp as any).$pinia)
+    if (!nuxtApp.$pinia)
       return
 
-    const auth = useAuthStore((nuxtApp as any).$pinia)
+    const auth = useAuthStore(nuxtApp.$pinia)
     try {
       await auth.reAuthenticate()
     }

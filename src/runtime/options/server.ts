@@ -1,5 +1,6 @@
-import type { ModuleOptions } from '.'
 import type { Import } from 'unimport'
+
+import type { ModuleOptions } from '.'
 import type { PluginOptions, ResolvedPluginOptions, ResolvedPlugins } from './plugins'
 import { createResolver } from '@nuxt/kit'
 import { resolvePluginsOptions } from './plugins'
@@ -168,13 +169,12 @@ async function resolveServerModuleEntries(
   }
 
   return resolved.filter((plugin, index, self) =>
-    index === self.findIndex((p) =>
-      p.from === plugin.from &&
-      JSON.stringify((p as any).options) === JSON.stringify((plugin as any).options),
+    index === self.findIndex(p =>
+      p.from === plugin.from
+      && JSON.stringify((p as any).options) === JSON.stringify((plugin as any).options),
     ),
   )
 }
-
 
 function hasMeaningfulValue(value: any): boolean {
   if (value === false || value === undefined || value === null)

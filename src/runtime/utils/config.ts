@@ -1,4 +1,4 @@
-export type PublicFeathersRuntimeLike = {
+export interface PublicFeathersRuntimeLike {
   _feathers?: {
     client?: {
       mode?: 'embedded' | 'remote'

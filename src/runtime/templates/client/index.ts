@@ -31,8 +31,7 @@ export function getClientTemplates(options: ResolvedOptions, resolver: Resolver)
       filename: 'feathers/client/authentication.ts',
       getContents: getClientAuthContents(options),
       write: true,
-    },
-    )
+    })
   }
 
   return clientTemplates

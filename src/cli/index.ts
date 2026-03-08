@@ -2,12 +2,9 @@ import { resolve } from 'node:path'
 
 import consola from 'consola'
 
+import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind } from './core'
+
 import {
-  type Adapter,
-  type IdField,
-  type MiddlewareTarget,
-  type SchemaKind,
-  type RunCliOptions,
   findProjectRoot,
   generateCustomService,
   generateMiddleware,
@@ -22,7 +19,6 @@ import {
 
 export type { RunCliOptions } from './core'
 export { generateCustomService, generateService } from './core'
-
 
 function parseBooleanFlag(value: string | boolean | undefined, fallback: boolean): boolean {
   if (value === undefined)
@@ -407,7 +403,8 @@ export async function runCli(argv: string[], opts: RunCliOptions) {
     if (target === 'server-module' || target === 'module') {
       await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
     }
-  } catch (err) {
+  }
+  catch (err) {
     handleCliError(err)
   }
 }

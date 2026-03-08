@@ -2,11 +2,11 @@ export function getAccessTokenFromResult(result: any): string | null {
   if (!result || typeof result !== 'object')
     return null
 
-  const direct = (result as any).accessToken
+  const direct = result.accessToken
   if (typeof direct === 'string' && direct)
     return direct
 
-  const nested = (result as any).authentication?.accessToken
+  const nested = result.authentication?.accessToken
   if (typeof nested === 'string' && nested)
     return nested
 

@@ -88,6 +88,7 @@
     "@feathersjs/socketio": "latest",
     "@feathersjs/socketio-client": "latest",
     "@gabortorma/feathers-nitro-adapter": "latest",
+    "@koa/cors": "latest",
     "@nuxt/kit": "latest",
     "ajv-formats": "^3.0.1",
     "change-case": "latest",
@@ -100,17 +101,16 @@
     "helmet": "^7.1.0",
     "jose": "^5.10.0",
     "keycloak-js": "^24.0.5",
+    "koa-compress": "latest",
+    "koa-helmet": "latest",
+    "koa-static": "latest",
     "mongodb": "^6.21.0",
     "pinia": "latest",
     "socket.io": "latest",
     "socket.io-client": "latest",
     "swagger-ui-dist": "^5.31.0",
     "unimport": "^3.14.6",
-    "zod": "^3.25.76",
-    "@koa/cors": "latest",
-    "koa-compress": "latest",
-    "koa-helmet": "latest",
-    "koa-static": "latest"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@antfu/ni": "latest",
@@ -121,10 +121,11 @@
     "@nuxt/module-builder": "latest",
     "@nuxt/schema": "latest",
     "@nuxt/test-utils": "latest",
+    "@pinia/nuxt": "^0.11.0",
     "@playwright/test": "latest",
     "@types/node": "latest",
-    "dotenv-cli": "latest",
     "dotenv": "^16.4.5",
+    "dotenv-cli": "latest",
     "eslint": "^9.39.2",
     "nuxt": "^4.3.0",
     "release-it": "latest",
@@ -132,7 +133,6 @@
     "vitest": "latest",
     "vitest-mongodb": "latest",
     "vue": "latest",
-    "vue-router": "latest",
-    "@pinia/nuxt": "^0.11.0"
+    "vue-router": "latest"
   }
 }

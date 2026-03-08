@@ -1,6 +1,7 @@
+import type { ResolvedOptions } from '../options'
+
 import { existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import type { ResolvedOptions } from '../options'
 
 export type TemplateKey = string
 
@@ -23,7 +24,7 @@ export function matchGlobLite(pattern: string, value: string): boolean {
   // Escape regex special chars except * and /
   const esc = (s: string) => s.replace(/[.+^${}()|[\]\\]/g, '\\$&')
 
-  const parts = p.split('/').map(seg => {
+  const parts = p.split('/').map((seg) => {
     if (seg === '**')
       return '.*'
     // "*" -> any chars except "/"
@@ -65,7 +66,6 @@ export function resolveTemplateOverrideForFilename(
         const msg = `[nuxt-feathers-zod] templates override blocked by allow-list: ${key} (found in ${relative(options.templateDir ?? process.cwd(), cand)})`
         if (t.strict)
           throw new Error(msg)
-        // eslint-disable-next-line no-console
         console.warn(msg)
       }
     }

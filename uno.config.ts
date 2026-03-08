@@ -3,8 +3,8 @@
 // The module's devtools/console UI kit can extend this via presets/shortcuts as needed.
 import {
   defineConfig,
-  presetUno,
   presetAttributify,
+  presetUno,
   presetIcons,
   transformerDirectives,
   transformerVariantGroup,

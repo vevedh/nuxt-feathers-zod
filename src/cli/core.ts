@@ -1503,8 +1503,7 @@ function renderClass(
       '// For more information about this file see',
       '// https://dove.feathersjs.com/guides/cli/service.class.html#custom-services',
       '',
-    ].join('
-') + `
+    ].join('\n') + `
 
 import type { Params } from '@feathersjs/feathers'
 import type { MemoryServiceOptions } from '@feathersjs/memory'
@@ -1534,8 +1533,7 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
     '// For more information about this file see',
     '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
     '',
-  ].join('
-') + `
+  ].join('\n') + `
 
 import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'
@@ -1686,8 +1684,7 @@ function renderClassNoSchema(ids: ReturnType<typeof createServiceIds>, adapter: 
       '// For more information about this file see',
       '// https://dove.feathersjs.com/guides/cli/service.class.html#custom-services',
       '',
-    ].join('
-')}
+    ].join('\n')}
 
 import type { Params } from '@feathersjs/feathers'
 import type { MemoryServiceOptions } from '@feathersjs/memory'
@@ -1719,8 +1716,7 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
     '// For more information about this file see',
     '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
     '',
-  ].join('
-')}
+  ].join('\n')}
 
 import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'

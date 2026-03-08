@@ -9,7 +9,7 @@ type AuthProvider = 'keycloak' | 'local' | 'remote' | 'none'
 export function useAuth() {
   const nuxtApp = useNuxtApp()
   const rc = useRuntimeConfig()
-  const pub = rc.public as any
+  const pub = rc.public
 
   const provider = computed<AuthProvider>(() => {
     // Allow an explicit override via env/runtimeConfig.
@@ -123,15 +123,15 @@ export function useAuth() {
     if (provider.value === 'keycloak')
       return keycloak.value?.login?.(options)
     if (provider.value === 'local')
-      return (authStore.value as any)?.login?.(options)
+      return authStore.value?.login?.(options)
     if (provider.value === 'remote') {
-      const pub = (useRuntimeConfig().public as any)
+      const pub = useRuntimeConfig().public
       const ra = getPublicRemoteAuthConfig(pub)
       const token = options?.token || options?.accessToken || options?.access_token
       if (!token)
         throw new Error('Remote login requires a token (options.token)')
       const payload = buildRemoteAuthPayload(token, ra)
-      return (authStore.value as any)?.authenticate?.(payload)
+      return authStore.value?.authenticate?.(payload)
     }
   }
 
@@ -139,9 +139,9 @@ export function useAuth() {
     if (provider.value === 'keycloak')
       return keycloak.value?.logout?.(options)
     if (provider.value === 'local')
-      return (authStore.value as any)?.logout?.(options)
+      return authStore.value?.logout?.(options)
     if (provider.value === 'remote')
-      return (authStore.value as any)?.logout?.(options)
+      return authStore.value?.logout?.(options)
   }
 
   return {

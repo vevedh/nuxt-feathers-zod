@@ -13,14 +13,14 @@ declare module 'nuxt-feathers-zod/server' {
 declare module 'nuxt-feathers-zod/client' {
   export interface ClientApplication {
     // The Feathers app supports a simple key/value store.
-    get<T = any>(key: string): T
-    set?(key: string, value: any): this
+    get<T = any>(key: string): T,
+    set?(key: string, value: any): this,
 
     // Keep generic so repo-level `tsc` accepts type arguments.
-    service<T = any>(path: string): T
+    service<T = any>(path: string): T,
 
     // Client-side service registration used by the generated `*.shared.ts` files.
-    use(path: string, service: any, options?: { methods?: string[]; [k: string]: any }): this
+    use(path: string, service: any, options?: { methods?: string[]; [k: string]: any }): this,
   }
 
   // In apps, this is augmented by generated `*.shared.ts` files.

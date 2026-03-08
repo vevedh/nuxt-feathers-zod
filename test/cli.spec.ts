@@ -78,7 +78,6 @@ describe('nuxt-feathers-zod CLI generators', () => {
   })
 
 
-
   it('generates an adapter-less service via generateService --custom', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
@@ -115,7 +114,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(klass).toContain('async preview')
 
     const shared = await readFile(sharedFile, 'utf8')
-    expect(shared).toContain("methods: ['find', 'run', 'preview']")
+    expect(shared).toContain('methods: ['find', 'run', 'preview']')
   })
 
   it('generates a Nitro middleware', async () => {

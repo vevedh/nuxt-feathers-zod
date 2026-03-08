@@ -26,7 +26,8 @@ export function resolveServicesDirs(servicesDirs: ModuleOptions['servicesDirs'],
   const seen = new Set<string>()
   const out: string[] = []
   for (const dir of resolvedServicesDirs.map(dir => rootResolver.resolve(dir))) {
-    if (seen.has(dir)) continue
+    if (seen.has(dir))
+      continue
     seen.add(dir)
     out.push(dir)
   }

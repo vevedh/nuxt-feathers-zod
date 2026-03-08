@@ -31,7 +31,7 @@ export const userDataSchema = userSchema.pick({
 export type UserData = z.infer<typeof userDataSchema>
 export const userDataValidator = getZodValidator(userDataSchema, { kind: 'data' })
 export const userDataResolver = resolve<User, any>({
-  password: passwordHash({ strategy: 'local' }) as any,
+  password: passwordHash({ strategy: 'local' }),
 })
 
 // Schema for updating existing entries
@@ -39,7 +39,7 @@ export const userPatchSchema = userSchema.partial()
 export type UserPatch = z.infer<typeof userPatchSchema>
 export const userPatchValidator = getZodValidator(userPatchSchema, { kind: 'data' })
 export const userPatchResolver = resolve<User, any>({
-  password: passwordHash({ strategy: 'local' }) as any,
+  password: passwordHash({ strategy: 'local' }),
 })
 
 // Schema for allowed query properties
