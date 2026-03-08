@@ -2,15 +2,30 @@ import { defineConfig } from 'vitepress'
 
 const isProd = process.env.NODE_ENV === 'production'
 
+const internalGuideLinks = [
+  '/guide/open-core',
+  '/guide/playground',
+  '/en/guide/open-core',
+  '/en/guide/playground',
+]
+
+const internalGuideSrcExclude = [
+  'guide/open-core.md',
+  'guide/playground.md',
+  'en/guide/open-core.md',
+  'en/guide/playground.md',
+]
+
 function withInternalGuide(items: Array<{ text: string; link: string }>) {
   if (!isProd) return items
-  return items.filter((item) => !['/guide/open-core', '/guide/playground', '/en/guide/open-core', '/en/guide/playground'].includes(item.link))
+  return items.filter((item) => !internalGuideLinks.includes(item.link))
 }
 
 export default defineConfig({
   base: '/nuxt-feathers-zod/',
   cleanUrls: true,
   lastUpdated: true,
+  srcExclude: isProd ? internalGuideSrcExclude : [],
 
   locales: {
     root: {
@@ -38,6 +53,8 @@ export default defineConfig({
                 { text: 'Politique de support', link: '/guide/support-policy' },
                 { text: 'Matrice de compatibilité', link: '/guide/compatibility-matrix' },
                 { text: 'Limites connues', link: '/guide/known-limits' },
+                { text: 'Checklist de release', link: '/guide/release-checklist' },
+                { text: 'Scénarios smoke', link: '/guide/smoke-scenarios' },
                 { text: 'Modes (embedded/remote)', link: '/guide/modes' },
                 { text: 'Mode remote', link: '/guide/remote' },
                 { text: 'Playground (tests)', link: '/guide/playground' },
@@ -133,6 +150,8 @@ export default defineConfig({
                 { text: 'Support policy', link: '/en/guide/support-policy' },
                 { text: 'Compatibility matrix', link: '/en/guide/compatibility-matrix' },
                 { text: 'Known limits', link: '/en/guide/known-limits' },
+                { text: 'Release checklist', link: '/en/guide/release-checklist' },
+                { text: 'Smoke scenarios', link: '/en/guide/smoke-scenarios' },
                 { text: 'Modes (embedded/remote)', link: '/en/guide/modes' },
                 { text: 'Remote mode', link: '/en/guide/remote' },
                 { text: 'Playground (tests)', link: '/en/guide/playground' },
