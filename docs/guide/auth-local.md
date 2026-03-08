@@ -3,19 +3,26 @@ editLink: false
 ---
 # Auth locale (JWT)
 
-Quand `feathers.auth = true` (et que tu **n’es pas** en Keycloak-only), le module active l’auth Feathers classique :
+Quand `feathers.auth = true` en mode embedded, le module peut utiliser l’auth Feathers classique :
 
-- stratégie `local` (login/password)
-- endpoint `/feathers/authentication`
-- JWT envoyé en `Authorization: Bearer ...`
+- stratégie `local`
+- endpoint `authentication`
+- JWT côté client
 
-## 1) Générer `users`
+## Exemple : nouvelle app Nuxt 4 + auth locale
 
 ```bash
-bunx nuxt-feathers-zod add service users --adapter mongodb --auth --idField _id --docs
+bunx nuxi@latest init my-nfz-auth
+cd my-nfz-auth
+bun install
+bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force --auth --swagger
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id --docs
+bun dev
 ```
 
-## 2) Créer un user
+## Créer un utilisateur
 
 ```bash
 curl -X POST http://localhost:3000/feathers/users \
@@ -23,7 +30,7 @@ curl -X POST http://localhost:3000/feathers/users \
   -d '{"userId":"demo","password":"demo123"}'
 ```
 
-## 3) Login
+## Se connecter
 
 ```bash
 curl -X POST http://localhost:3000/feathers/authentication \
@@ -31,15 +38,15 @@ curl -X POST http://localhost:3000/feathers/authentication \
   -d '{"strategy":"local","userId":"demo","password":"demo123"}'
 ```
 
-Réponse : `{ accessToken, user, ... }`.
-
-## 4) Appeler un service protégé
+## Appeler un service protégé
 
 ```bash
-curl http://localhost:3000/feathers/articles \
+curl http://localhost:3000/feathers/users \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
-## Frontend
+## Notes de stabilisation
 
-Si `client.pinia` est activé, tu peux utiliser les helpers `feathers-pinia` (ex: `useAuth()`).
+- `users` reste le service de référence pour l’auth embedded
+- générer `users` via la CLI
+- éviter d’activer `auth` sans service `users` détectable

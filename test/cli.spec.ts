@@ -77,6 +77,47 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(svc).toContain('docs:')
   })
 
+
+
+  it('generates an adapter-less service via generateService --custom', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    const servicesDir = join(root, 'services')
+
+    await generateService({
+      projectRoot: root,
+      servicesDir,
+      name: 'actions',
+      adapter: 'memory',
+      auth: true,
+      idField: 'id',
+      docs: false,
+      schema: 'none',
+      dry: false,
+      force: false,
+      custom: true,
+      methods: 'find',
+      customMethods: 'run,preview',
+    })
+
+    const base = join(servicesDir, 'actions')
+    const classFile = join(base, 'actions.class.ts')
+    const sharedFile = join(base, 'actions.shared.ts')
+    const svcFile = join(base, 'actions.ts')
+    const hooksFile = join(base, 'actions.hooks.ts')
+
+    expect(existsSync(classFile)).toBe(true)
+    expect(existsSync(sharedFile)).toBe(true)
+    expect(existsSync(svcFile)).toBe(true)
+    expect(existsSync(hooksFile)).toBe(true)
+
+    const klass = await readFile(classFile, 'utf8')
+    expect(klass).toContain('async run')
+    expect(klass).toContain('async preview')
+
+    const shared = await readFile(sharedFile, 'utf8')
+    expect(shared).toContain("methods: ['find', 'run', 'preview']")
+  })
+
   it('generates a Nitro middleware', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
 

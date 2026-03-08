@@ -2,17 +2,31 @@ import type { CommonTransportOptions } from '.'
 import defu from 'defu'
 import { checkPath } from './utils'
 
-export interface WebsocketOptions extends CommonTransportOptions {
-  connectTimeout?: number
+export interface WebsocketCorsOptions {
+  origin?: boolean | string | string[]
+  credentials?: boolean
+  methods?: string[]
 }
 
-export type ResolvedWebsocketOptions = Required<WebsocketOptions>
+export interface WebsocketOptions extends CommonTransportOptions {
+  connectTimeout?: number
+  transports?: Array<'websocket' | 'polling'>
+  cors?: WebsocketCorsOptions
+}
+
+export interface ResolvedWebsocketOptions extends CommonTransportOptions {
+  path: string
+  connectTimeout: number
+  transports: Array<'websocket' | 'polling'>
+  cors?: WebsocketCorsOptions
+}
 
 export type ResolvedWebsocketOptionsOrDisabled = ResolvedWebsocketOptions | false
 
 export const websocketDefaults: ResolvedWebsocketOptions = {
   path: '/socket.io',
-  connectTimeout: 45000, // default settings for socket.io
+  connectTimeout: 45000, // socket.io default
+  transports: ['websocket'],
 }
 
 export function resolveWebsocketTransportsOptions(websocket: WebsocketOptions | boolean | undefined): ResolvedWebsocketOptionsOrDisabled {
@@ -23,7 +37,8 @@ export function resolveWebsocketTransportsOptions(websocket: WebsocketOptions | 
   }
   else if (websocket !== false) {
     resolvedWebsocket = defu(websocket, websocketDefaults)
-    checkPath(resolvedWebsocket.path)
+    if (resolvedWebsocket)
+      checkPath(resolvedWebsocket.path)
   }
 
   return resolvedWebsocket

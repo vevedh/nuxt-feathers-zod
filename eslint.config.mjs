@@ -8,11 +8,11 @@ export default withNuxt(
       '**/*.md',
       '**/*.mts',
       'docs/**',
+      'playground/**',
     ],
     // ✅ on utilise un tsconfig dédié au lint
     typescript: {
       parserOptions: {
-        project: ['./tsconfig.eslint.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -32,6 +32,7 @@ export default withNuxt(
       'style/max-statements-per-line': 'off',
       'ts/no-misused-promises': 'off',
       'style/max-len': 'off',
+      'vue/html-self-closing': ['warn', { html: { void: 'always', normal: 'never', component: 'always' }, svg: 'always', math: 'always' }],
     },
   }),
 )

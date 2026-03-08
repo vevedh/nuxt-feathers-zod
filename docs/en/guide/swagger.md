@@ -3,17 +3,37 @@ editLink: false
 ---
 # Swagger (legacy)
 
-Swagger UI integration is optional and provided through `feathers-swagger`.
+The module supports `feathers-swagger` in legacy mode.
 
-## Install
+## Example: new Nuxt 4 app + Swagger
 
 ```bash
-bun add feathers-swagger swagger-ui-dist
+bunx nuxi@latest init my-nfz-swagger
+cd my-nfz-swagger
+bun install
+bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force --swagger
+bunx nuxt-feathers-zod add service users --docs
+bun dev
 ```
 
-## Validated setup notes
+## Manual activation
 
-- Do **not** set `docsJsonPath` in `swagger({ ... })` (keep default behavior)
-- Swagger UI uses `/swagger.json` by default
-- If the UI is served at `http://localhost:3000/feathers/docs/`, set the spec URL in the UI to `../swagger.json`
-- The `swaggerInitBlock` must be placed **before** `app.nitroApp = nitroApp;` in `src/runtime/templates/server/plugin.ts`
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    swagger: true
+  }
+})
+```
+
+## Usual URLs
+
+- UI: `http://localhost:3000/feathers/docs/`
+- Spec: `http://localhost:3000/feathers/swagger.json`
+
+## Stable point to preserve
+
+In this integration, the spec is served via `../swagger.json` from the UI.

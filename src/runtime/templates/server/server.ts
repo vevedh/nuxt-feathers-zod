@@ -26,7 +26,7 @@ ${puts([
   [koa, `import type { Application as FeathersApplication } from '@feathersjs/koa'`],
   [exp, `import type { Application as FeathersApplication } from '@feathersjs/express'`],
 ])}
-${put(auth, `import type { User } from '${entityImport?.from}'`)}
+${put(auth && entityImport?.from, `import type { User } from '${entityImport?.from}'`)}
 // import type { ModuleOptions } from '???'
 import type { NitroApp } from 'nitropack'
 
@@ -54,7 +54,21 @@ export type HookContext<S = any> = FeathersHookContext<Application, S>
 
 export type FeathersServerPlugin = Parameters<Application['configure']>['0']
 
+export interface FeathersServerModuleContext {
+  nitroApp: NitroApp
+  config: Record<string, any>
+  transports: Record<string, any>
+  server: Record<string, any>
+  moduleOptions?: any
+}
+
+export type FeathersServerModule = (app: Application, ctx: FeathersServerModuleContext) => void | Promise<void>
+
 export function defineFeathersServerPlugin(def: FeathersServerPlugin): FeathersServerPlugin {
+  return def
+}
+
+export function defineFeathersServerModule(def: FeathersServerModule): FeathersServerModule {
   return def
 }
 ${put(auth, `  

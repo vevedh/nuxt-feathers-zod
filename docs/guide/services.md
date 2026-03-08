@@ -3,9 +3,28 @@ editLink: false
 ---
 # Services (Zod-first)
 
-Un service généré suit une convention stable :
+Le parcours recommandé reste :
 
+1. initialiser le module,
+2. générer les services via la CLI,
+3. ajuster ensuite les fichiers générés.
+
+## Exemple : nouvelle app Nuxt 4 + premier service
+
+```bash
+bunx nuxi@latest init my-nfz-services
+cd my-nfz-services
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add service articles --adapter mongodb --collection articles --idField _id --docs
+bun dev
 ```
+
+## Structure attendue
+
+```txt
 services/<name>/
   <name>.ts
   <name>.class.ts
@@ -13,32 +32,71 @@ services/<name>/
   <name>.shared.ts
 ```
 
-## Zod et hooks
+## Rôle des fichiers
 
-- `*.schema.ts` définit les schémas Zod (data, patch, query, result)
-- Les hooks Feathers branchent la validation via `@feathersjs/schema` (style v5)
+- `<name>.ts` : enregistrement du service
+- `<name>.class.ts` : implémentation du service
+- `<name>.schema.ts` : schémas Zod / validateurs / résolveurs quand activés
+- `<name>.shared.ts` : contrat client + types + comportement partagé
 
-## Exemple : créer `articles`
+## Adapters supportés
+
+### Memory
+
+Adapter par défaut, utile pour :
+
+- démos,
+- smoke tests,
+- démarrage rapide.
 
 ```bash
-bunx nuxt-feathers-zod add service articles \
-  --adapter mongodb \
-  --auth \
-  --idField _id \
-  --docs
+bunx nuxt-feathers-zod add service messages
 ```
 
-## Endpoints
+### MongoDB
 
-Avec `transports.rest.path = '/feathers'`, le service est exposé en :
+À utiliser quand un `mongodbClient` embedded est configuré.
+
+```bash
+bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
+```
+
+## Schémas
+
+Par défaut, le générateur vise aujourd’hui un démarrage simple.
+
+```bash
+bunx nuxt-feathers-zod add service messages --schema none
+```
+
+Activer des schémas explicitement :
+
+```bash
+bunx nuxt-feathers-zod add service messages --schema zod
+bunx nuxt-feathers-zod add service messages --schema json
+```
+
+## Auth sur un service
+
+```bash
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
+```
+
+En pratique, `users` reste le service de référence pour l’auth embedded.
+
+## Endpoints REST
+
+Avec `rest.path = '/feathers'` :
 
 - `GET /feathers/articles`
+- `GET /feathers/articles/:id`
 - `POST /feathers/articles`
 - `PATCH /feathers/articles/:id`
-- etc.
+- `DELETE /feathers/articles/:id`
 
-## Règles importantes
+## Bonnes pratiques
 
-- Ne modifie pas les exports à la main sans comprendre le scan `servicesDirs`.
-- Garde les services dans les dossiers déclarés dans `servicesDirs`.
-- Évite les chemins Windows ambigus : privilégie toujours des chemins relatifs simples.
+- conserver `servicesDirs: ['services']`
+- ne pas déplacer les services hors d’un dossier scanné
+- générer via la CLI puis personnaliser
+- ne pas casser `*.shared.ts` sans comprendre son rôle côté client

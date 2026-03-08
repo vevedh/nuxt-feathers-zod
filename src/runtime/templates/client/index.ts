@@ -25,7 +25,8 @@ export function getClientTemplates(options: ResolvedOptions, resolver: Resolver)
     },
   ]
 
-  if (options.auth) {
+  const remoteAuthEnabled = Boolean((options.client as any)?.remote?.auth?.enabled)
+  if (options.auth || remoteAuthEnabled) {
     clientTemplates.push({
       filename: 'feathers/client/authentication.ts',
       getContents: getClientAuthContents(options),

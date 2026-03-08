@@ -1,3 +1,5 @@
+import { defineNuxtConfig } from 'nuxt/config'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: 'latest',
@@ -22,7 +24,7 @@ export default defineNuxtConfig({
       },
     },
     keycloak: {
-      serverUrl: 'https://svrkeycloak.agglo.local:8443',
+      serverUrl: 'https://svrkeycloak.domain.ltd:8443',
       realm: 'AGGLO',
       clientId: 'nuxt4app',
       authServicePath: '/_keycloak',

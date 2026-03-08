@@ -1,9 +1,9 @@
 ---
-title: Service custom (sans adapter) + méthode custom
+title: Service sans adapter + méthode custom
 layout: false
 ---
 
-# Service custom (sans adapter) + méthode custom
+# Service sans adapter + méthode custom
 
 Cette page documente un **template “copy/paste”** livré dans l’archive du dépôt :
 
@@ -12,7 +12,7 @@ Cette page documente un **template “copy/paste”** livré dans l’archive du
 Objectif :
 
 - créer un service **sans adapter** (pas de MongoDB/Memory/etc.)
-- exposer une méthode custom type **“action”** (`run`)
+- exposer une méthode custom comme `run`
 - garder le style **Zod-first** (validateData/resolveData/resolveResult)
 - obtenir un typage client complet (REST + custom method)
 

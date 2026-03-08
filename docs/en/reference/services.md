@@ -1,10 +1,20 @@
 ---
 editLink: false
 ---
-# Services reference
+# Services
 
-Services are discovered from `feathers.servicesDirs`.
+Embedded services are typically generated with:
 
-- **Server**: registers services from the service entry file (`<name>.ts`)
-- **Client**: registers services from `<name>.shared.ts`
-- **Schemas**: Zod schemas live in `<name>.schema.ts`
+```bash
+bunx nuxt-feathers-zod add service users
+```
+
+## Expected structure
+
+```txt
+services/<name>/
+  <name>.ts
+  <name>.class.ts
+  <name>.schema.ts
+  <name>.shared.ts
+```

@@ -9,21 +9,30 @@ import { useAuthStore } from '../stores/auth'
  *
  * We only attempt to re-authenticate in the browser and only when the Feathers
  * client has been injected.
+ *
+ * IMPORTANT: we guard on `nuxtApp.$pinia` instead of declaring a plugin dependsOn,
+ * to avoid noisy build-time warnings when Pinia is enabled dynamically by the module.
  */
-export default defineNuxtPlugin(async (nuxtApp) => {
-  if (import.meta.server)
-    return
+export default defineNuxtPlugin({
+  name: 'nfz:feathers-auth',
+  async setup(nuxtApp: any) {
+    if (import.meta.server)
+      return
 
-  // If the Feathers client plugin has not been registered for some reason,
-  // avoid throwing at runtime.
-  if (!('$api' in nuxtApp) || !nuxtApp.$api)
-    return
+    // If the Feathers client plugin has not been registered for some reason,
+    // avoid throwing at runtime.
+    if (!('$api' in nuxtApp) || !nuxtApp.$api)
+      return
 
-  const auth = useAuthStore()
-  try {
-    await auth.reAuthenticate()
-  }
-  catch (e) {
-    // Ignore invalid/expired tokens at boot.
-  }
+    if (!(nuxtApp as any).$pinia)
+      return
+
+    const auth = useAuthStore((nuxtApp as any).$pinia)
+    try {
+      await auth.reAuthenticate()
+    }
+    catch {
+      // Ignore invalid/expired tokens at boot.
+    }
+  },
 })

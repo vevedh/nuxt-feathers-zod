@@ -62,3 +62,11 @@ test-results
 Network Trash Folder
 Temporary Items
 .apdisk
+
+
+# AI / patch helper files
+AI_CONTEXT/
+CONTEXT*
+PATCH*
+PROMPT*
+SCENARIOS.md

@@ -3,32 +3,100 @@ editLink: false
 ---
 # Services (Zod-first)
 
-A Feathers service is an object/class that implements standard service methods (CRUD). `nuxt-feathers-zod` scans your services directory and wires both server and client automatically.
+The recommended path remains:
 
-## Recommended structure
+1. initialize the module,
+2. generate services with the CLI,
+3. then refine the generated files.
 
-```
-services/<name>/
-  <name>.ts          # server registration (app.use/app.configure)
-  <name>.class.ts    # service implementation
-  <name>.schema.ts   # Zod schemas + validators/resolvers
-  <name>.shared.ts   # client registration + typings
-```
-
-## Manual services vs CLI
-
-You *can* create services manually, but for the **first** service it is strongly recommended to use:
+## Example: new Nuxt 4 app + first service
 
 ```bash
-bunx nuxt-feathers-zod add service users
+bunx nuxi@latest init my-nfz-services
+cd my-nfz-services
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add service articles --adapter mongodb --collection articles --idField _id --docs
+bun dev
 ```
 
-This avoids missing type exports and registration mismatches that can lead to errors like:
+## Expected structure
 
-- `Services typeExports []`
-- `Entity class ... not found`
+```txt
+services/<name>/
+  <name>.ts
+  <name>.class.ts
+  <name>.schema.ts
+  <name>.shared.ts
+```
 
-## Service discovery
+## File roles
 
-- **Server**: the module registers services from your `servicesDirs` using the service entry file (`<name>.ts`)
-- **Client**: the module registers client services from `<name>.shared.ts`
+- `<name>.ts`: service registration
+- `<name>.class.ts`: service implementation
+- `<name>.schema.ts`: Zod schemas / validators / resolvers when enabled
+- `<name>.shared.ts`: client contract + types + shared behavior
+
+## Supported adapters
+
+### Memory
+
+Default adapter, useful for:
+
+- demos,
+- smoke tests,
+- fast start.
+
+```bash
+bunx nuxt-feathers-zod add service messages
+```
+
+### MongoDB
+
+Use it when an embedded `mongodbClient` is configured.
+
+```bash
+bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
+```
+
+## Schemas
+
+By default, the generator currently aims for a simple start.
+
+```bash
+bunx nuxt-feathers-zod add service messages --schema none
+```
+
+Enable schemas explicitly:
+
+```bash
+bunx nuxt-feathers-zod add service messages --schema zod
+bunx nuxt-feathers-zod add service messages --schema json
+```
+
+## Auth on a service
+
+```bash
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
+```
+
+In practice, `users` remains the reference service for embedded auth.
+
+## REST endpoints
+
+With `rest.path = '/feathers'`:
+
+- `GET /feathers/articles`
+- `GET /feathers/articles/:id`
+- `POST /feathers/articles`
+- `PATCH /feathers/articles/:id`
+- `DELETE /feathers/articles/:id`
+
+## Best practices
+
+- keep `servicesDirs: ['services']`
+- do not move services outside a scanned directory
+- generate through the CLI, then customize
+- do not break `*.shared.ts` unless you understand its client-side role

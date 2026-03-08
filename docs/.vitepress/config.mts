@@ -1,5 +1,12 @@
 import { defineConfig } from 'vitepress'
 
+const isProd = process.env.NODE_ENV === 'production'
+
+function withInternalGuide(items: Array<{ text: string; link: string }>) {
+  if (!isProd) return items
+  return items.filter((item) => !['/guide/open-core', '/guide/playground', '/en/guide/open-core', '/en/guide/playground'].includes(item.link))
+}
+
 export default defineConfig({
   base: '/nuxt-feathers-zod/',
   cleanUrls: true,
@@ -14,7 +21,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Guide', link: '/guide/getting-started' },
-          { text: 'Référence', link: '/reference/config' },
+          { text: 'Référence', link: '/reference/' },
           { text: 'CLI', link: '/guide/cli' },
           { text: 'Keycloak SSO', link: '/guide/keycloak-sso' },
           { text: 'Dépannage', link: '/guide/troubleshooting' },
@@ -24,28 +31,50 @@ export default defineConfig({
           '/guide/': [
             {
               text: 'Guide',
-              items: [
+              items: withInternalGuide([
                 { text: 'Démarrage rapide', link: '/guide/getting-started' },
+                { text: 'Socle open source standard', link: '/guide/open-core' },
+                { text: 'Open core vs Pro', link: '/guide/open-core-vs-pro' },
+                { text: 'Politique de support', link: '/guide/support-policy' },
+                { text: 'Matrice de compatibilité', link: '/guide/compatibility-matrix' },
+                { text: 'Limites connues', link: '/guide/known-limits' },
+                { text: 'Modes (embedded/remote)', link: '/guide/modes' },
+                { text: 'Mode remote', link: '/guide/remote' },
+                { text: 'Playground (tests)', link: '/guide/playground' },
                 { text: 'Services (Zod-first)', link: '/guide/services' },
                 { text: 'Services manuels', link: '/guide/manual-service' },
-                { text: 'Custom services', link: '/guide/custom-services' },
-                //{ text: 'Service custom (action)', link: '/guide/custom-service-action' },
+                { text: 'Services avec méthodes custom', link: '/guide/custom-services' },
                 { text: 'Utilisation frontend (useService, Pinia)', link: '/guide/frontend' },
                 { text: 'Auth locale (JWT)', link: '/guide/auth-local' },
                 { text: 'Keycloak SSO (Keycloak-only)', link: '/guide/keycloak-sso' },
                 { text: 'Swagger (legacy)', link: '/guide/swagger' },
+                { text: 'Overrides des templates', link: '/guide/template-overrides' },
                 { text: 'Dépannage', link: '/guide/troubleshooting' },
-                
-            ],
+              ]),
             },
           ],
           '/reference/': [
             {
               text: 'Référence',
               items: [
-                { text: 'Configuration Nuxt', link: '/reference/config' },
+                { text: "Vue d'ensemble", link: '/reference/' },
+                { text: 'Architecture', link: '/reference/architecture' },
+                { text: 'Architecture du module', link: '/reference/module' },
+                { text: 'Configuration', link: '/reference/configuration' },
+                { text: 'Options', link: '/reference/options' },
+                { text: 'CLI', link: '/reference/cli' },
+                { text: 'API runtime', link: '/reference/runtime' },
+                { text: 'Mode embedded', link: '/reference/embedded' },
+                { text: 'Mode remote', link: '/reference/remote' },
+                { text: 'Services', link: '/reference/services' },
+                { text: 'Middleware', link: '/reference/middleware' },
+                { text: 'Authentification', link: '/reference/authentication' },
+                { text: 'Templates', link: '/reference/templates' },
+                { text: 'Server modules', link: '/reference/server-modules' },
+                { text: 'Doctor', link: '/reference/doctor' },
+                { text: 'Dépannage', link: '/reference/troubleshooting' },
                 { text: 'RuntimeConfig', link: '/reference/runtime-config' },
-                { text: 'Conventions de génération', link: '/reference/conventions' },
+                { text: 'Conventions', link: '/reference/conventions' },
               ],
             },
           ],
@@ -67,7 +96,6 @@ export default defineConfig({
           copyright: 'MIT',
         },
 
-        // UI labels (FR)
         outline: { label: 'Sur cette page' },
         docFooter: { prev: 'Page précédente', next: 'Page suivante' },
         lastUpdatedText: 'Mis à jour le',
@@ -88,39 +116,60 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Guide', link: '/en/guide/getting-started' },
-          { text: 'Reference', link: '/en/reference/config' },
+          { text: 'Reference', link: '/en/reference/' },
           { text: 'CLI', link: '/en/guide/cli' },
           { text: 'Keycloak SSO', link: '/en/guide/keycloak-sso' },
           { text: 'Troubleshooting', link: '/en/guide/troubleshooting' },
-                { text: 'Manual services', link: '/en/guide/manual-service' },
-                { text: 'Custom services', link: '/en/guide/custom-services' },
         ],
 
         sidebar: {
           '/en/guide/': [
             {
               text: 'Guide',
-              items: [
+              items: withInternalGuide([
                 { text: 'Quick start', link: '/en/guide/getting-started' },
+                { text: 'Open source core', link: '/en/guide/open-core' },
+                { text: 'Open core vs Pro', link: '/en/guide/open-core-vs-pro' },
+                { text: 'Support policy', link: '/en/guide/support-policy' },
+                { text: 'Compatibility matrix', link: '/en/guide/compatibility-matrix' },
+                { text: 'Known limits', link: '/en/guide/known-limits' },
+                { text: 'Modes (embedded/remote)', link: '/en/guide/modes' },
+                { text: 'Remote mode', link: '/en/guide/remote' },
+                { text: 'Playground (tests)', link: '/en/guide/playground' },
                 { text: 'Services (Zod-first)', link: '/en/guide/services' },
-                //{ text: 'Custom service (action)', link: '/en/guide/custom-service-action' },
                 { text: 'Manual services', link: '/en/guide/manual-service' },
-                { text: 'Custom services', link: '/en/guide/custom-services' },
+                { text: 'Adapter-less services', link: '/en/guide/custom-services' },
                 { text: 'Frontend usage (useService, Pinia)', link: '/en/guide/frontend' },
                 { text: 'Local auth (JWT)', link: '/en/guide/auth-local' },
                 { text: 'Keycloak SSO (Keycloak-only)', link: '/en/guide/keycloak-sso' },
                 { text: 'Swagger (legacy)', link: '/en/guide/swagger' },
+                { text: 'Template overrides', link: '/en/guide/template-overrides' },
                 { text: 'Troubleshooting', link: '/en/guide/troubleshooting' },
-              ],
+              ]),
             },
           ],
           '/en/reference/': [
             {
               text: 'Reference',
               items: [
-                { text: 'Nuxt configuration', link: '/en/reference/config' },
+                { text: 'Overview', link: '/en/reference/' },
+                { text: 'Architecture', link: '/en/reference/architecture' },
+                { text: 'Module architecture', link: '/en/reference/module' },
+                { text: 'Configuration', link: '/en/reference/configuration' },
+                { text: 'Options', link: '/en/reference/options' },
+                { text: 'CLI', link: '/en/reference/cli' },
+                { text: 'Runtime API', link: '/en/reference/runtime' },
+                { text: 'Embedded mode', link: '/en/reference/embedded' },
+                { text: 'Remote mode', link: '/en/reference/remote' },
+                { text: 'Services', link: '/en/reference/services' },
+                { text: 'Middleware', link: '/en/reference/middleware' },
+                { text: 'Authentication', link: '/en/reference/authentication' },
+                { text: 'Templates', link: '/en/reference/templates' },
+                { text: 'Server modules', link: '/en/reference/server-modules' },
+                { text: 'Doctor', link: '/en/reference/doctor' },
+                { text: 'Troubleshooting', link: '/en/reference/troubleshooting' },
                 { text: 'RuntimeConfig', link: '/en/reference/runtime-config' },
-                { text: 'Generation conventions', link: '/en/reference/conventions' },
+                { text: 'Conventions', link: '/en/reference/conventions' },
               ],
             },
           ],
@@ -133,7 +182,7 @@ export default defineConfig({
         search: { provider: 'local' },
 
         editLink: {
-          pattern: 'https://github.com/<your-org>/nuxt-feathers-zod/edit/main/docs/:path',
+          pattern: 'https://github.com/vevedh/nuxt-feathers-zod/edit/main/docs/:path',
           text: 'Edit this page',
         },
 
@@ -142,7 +191,6 @@ export default defineConfig({
           copyright: 'MIT',
         },
 
-        // UI labels (EN)
         outline: { label: 'On this page' },
         docFooter: { prev: 'Previous page', next: 'Next page' },
         lastUpdatedText: 'Last updated',
@@ -156,7 +204,6 @@ export default defineConfig({
   },
 
   themeConfig: {
-    // Language switch in navbar
     localeLinks: {
       text: 'Language',
       items: [

@@ -21,5 +21,14 @@ export function resolveServicesDirs(servicesDirs: ModuleOptions['servicesDirs'],
     resolvedServicesDirs.push(servicesDirDefault)
 
   const rootResolver = createResolver(rootDir)
-  return resolvedServicesDirs.map(dir => rootResolver.resolve(dir)) as ResolvedServicesDirs
+  // Normalize + dedupe after resolving to avoid accidental duplicates like
+  // ['services', './services'] which both resolve to the same absolute path.
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const dir of resolvedServicesDirs.map(dir => rootResolver.resolve(dir))) {
+    if (seen.has(dir)) continue
+    seen.add(dir)
+    out.push(dir)
+  }
+  return out as ResolvedServicesDirs
 }

@@ -3,19 +3,66 @@ editLink: false
 ---
 # Frontend usage
 
-On the Nuxt side you use the injected Feathers client.
+The module injects a Feathers client into Nuxt and provides a consistent base for `useService()` and `feathers-pinia`.
 
-```ts
-const api = useNuxtApp().$api
-const users = await api.service('users').find()
+## Example: new Nuxt 4 remote app
+
+```bash
+bunx nuxi@latest init my-nfz-frontend
+cd my-nfz-frontend
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
+bunx nuxt-feathers-zod add remote-service articles --path articles --methods find,get
+bun dev
 ```
 
-## Auth usage
+## `useService()`
 
-Depending on your project setup you may use:
+```ts
+const articles = useService('articles')
+const res = await articles.find({ query: { $limit: 10 } })
+const items = Array.isArray(res) ? res : res.data
+```
 
-- a Pinia auth store
-- a composable like `useAuth()`
-- Keycloak-only SSO flow
+## `useFeathers()`
 
-Keep auth initialization **SSR-safe** (avoid browser-only APIs during SSR).
+```ts
+const { api, client } = useFeathers()
+await client.service('articles').find({ query: { $limit: 5 } })
+```
+
+## Component example
+
+```vue
+<script setup lang="ts">
+const articles = useService('articles')
+const items = ref<any[]>([])
+
+onMounted(async () => {
+  const res = await articles.find({ query: { $limit: 20 } })
+  items.value = Array.isArray(res) ? res : res.data
+})
+</script>
+
+<template>
+  <ul>
+    <li v-for="item in items" :key="item.id ?? item._id">
+      {{ item.title }}
+    </li>
+  </ul>
+</template>
+```
+
+## Frontend auth
+
+- local mode: `useAuth()` / `useAuthStore()` depending on setup
+- Keycloak mode: bridge via `authentication.create(...)`
+- remote JWT mode: `reAuthenticate()` when enabled
+
+## Stabilization tips
+
+- start with `useService()` for baseline examples
+- keep richer abstractions in separately documented layers
+- keep demo pages simple and reproducible

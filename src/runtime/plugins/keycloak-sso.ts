@@ -1,5 +1,7 @@
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
 import Keycloak from 'keycloak-js'
+import { buildRemoteAuthPayload } from '../utils/auth'
+import { getPublicClientMode, getPublicRemoteAuthConfig } from '../utils/config'
 
 interface KeycloakProvide {
   user?: any
@@ -15,7 +17,7 @@ interface KeycloakProvide {
   whoami(): Promise<{ user?: any, permissions?: any[] } | null>
 }
 
-export default defineNuxtPlugin(async (nuxtApp) => {
+export default defineNuxtPlugin(async (nuxtApp: any) => {
   if (import.meta.server)
     return
 
@@ -62,7 +64,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const authenticated = (keycloak.authenticated === true) && (initResult as any)?.authenticated !== false
   const userid = keycloak?.tokenParsed?.preferred_username
 
-  const authServicePath = (pub?._feathers?.keycloak?.authServicePath || '/_keycloak') as string
+  const clientMode = getPublicClientMode(pub)
+  const remoteAuth = getPublicRemoteAuthConfig(pub)
 
   // --- whoami refresh helpers (Keycloak SSO-only)
   // In SSO-only mode, the token can be refreshed (updateToken) without a full app reload.
@@ -142,13 +145,23 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     if (!token)
       return null
 
+    // Hybrid mode support (remote + embedded):
+    // Always materialize a Feathers auth session by posting the Keycloak token to the `authentication` service.
+    // This keeps the app auth logic identical across both modes.
     try {
-      const res = await nuxtApp.$api.service(authServicePath).create({ access_token: token })
-      provided.user = res?.user
-      provided.permissions = res?.permissions || []
+      const payload = buildRemoteAuthPayload(token, remoteAuth)
+      const servicePath = (clientMode === 'remote' && remoteAuth?.enabled)
+        ? (remoteAuth?.servicePath || 'authentication')
+        : 'authentication'
+
+      const res = await nuxtApp.$api.service(servicePath).create(payload)
+
+      // Typical Feathers auth result: { accessToken, authentication, user }
+      provided.user = (res as any)?.user ?? provided.user
+      provided.permissions = (res as any)?.permissions || provided.permissions || []
       return res
     }
-    catch (e) {
+    catch {
       return null
     }
   }

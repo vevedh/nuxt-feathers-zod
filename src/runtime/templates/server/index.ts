@@ -3,7 +3,9 @@ import type { Templates } from '../types'
 import { getServerAuthContents } from './authentication'
 import { getServerKeycloakContents } from './keycloak'
 import { getServerMongodbContents } from './mongodb'
+import { getServerAppContents } from './app'
 import { getServerPluginContents } from './plugin'
+import { getSecureDefaultsModuleContents } from './secure-defaults'
 import { getServerContents } from './server'
 
 export function getServerTemplates(options: ResolvedOptions): Templates {
@@ -11,6 +13,16 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
     {
       filename: 'feathers/server/server.ts',
       getContents: getServerContents(options),
+      write: true,
+    },
+    {
+      filename: 'feathers/server/app.ts',
+      getContents: getServerAppContents(options),
+      write: true,
+    },
+    {
+      filename: 'feathers/server/modules/secure-defaults.ts',
+      getContents: getSecureDefaultsModuleContents(options),
       write: true,
     },
     {

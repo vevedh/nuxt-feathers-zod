@@ -8,7 +8,6 @@ export async function getServicesImports(servicesDirs: ServicesDirs): Promise<Im
     filePatterns: ['**/*.schema.ts'],
   })
   const typeExports = exports.filter(({ type }) => type)
-  console.log('Services typeExports', typeExports.map(({ as }) => as))
   return typeExports
 }
 

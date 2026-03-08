@@ -5,51 +5,58 @@ editLink: false
 
 ## 1) `Services typeExports []` / `Entity class User not found`
 
-**Cause** :
+Cause la plus fréquente :
 
-- `feathers.servicesDirs` mal configuré
-- service créé manuellement (non supporté)
+- `servicesDirs` incorrect,
+- service créé manuellement,
+- auth activée avant la génération de `users`.
 
-**Fix** :
-
-- Mets `servicesDirs: ['services']`
-- Génère `users` via la CLI :
+Fix recommandé :
 
 ```bash
-bunx nuxt-feathers-zod add service users --adapter mongodb --auth --idField _id --docs
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
 ```
 
-## 2) Windows / ESM : `Could not load .../src/module(.ts)`
-
-**Cause** : import du module local sans extension ou erreur TS au chargement.
-
-**Fix** :
+et vérifier :
 
 ```ts
-modules: ['../src/module.ts']
+feathers: {
+  servicesDirs: ['services']
+}
 ```
 
-## 3) `[vue-tsc] Cannot find global type 'Array'` + libs TS introuvables
+## 2) `Could not load .../src/module.ts`
 
-**Cause** : bug/corruption de `vite-plugin-checker` (bundle `typescript-vue-tsc`) dans le playground.
+Ce message peut masquer une vraie erreur TypeScript dans un fichier importé.
 
-**Fix stable** :
+Vérifier en priorité :
 
-- désactiver le typecheck du playground :
+- templates générés,
+- imports locaux `.ts` sous Windows,
+- template strings cassées.
 
-```ts
-// playground/nuxt.config.ts
-export default defineNuxtConfig({
-  typescript: { typeCheck: false },
-})
+## 3) Swagger UI ne charge pas la spec
+
+Utiliser `../swagger.json` depuis `/feathers/docs/`.
+
+## 4) Le build docs VitePress casse sur du frontmatter
+
+Toujours fermer correctement le bloc YAML avant le contenu Markdown.
+
+## 5) Le mode remote semble OK mais rien ne répond
+
+Vérifier :
+
+- `client.remote.url`
+- `transport`
+- `restPath` / `websocketPath`
+- services déclarés dans `client.remote.services`
+- auth remote si activée
+
+## Commandes utiles
+
+```bash
+bunx nuxt-feathers-zod doctor
+bun run build
+bun run docs:dev
 ```
-
-- faire le typecheck au root via `vue-tsc -p tsconfig.typecheck.json`.
-
-## 4) Swagger UI ne charge pas la spec
-
-Si l’UI est sur `/feathers/docs/`, la spec peut devoir être réglée manuellement à :
-
-- `../swagger.json`
-
-Et il est recommandé de **ne pas surcharger** `docsJsonPath` côté configuration.

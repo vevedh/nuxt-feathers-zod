@@ -4,7 +4,7 @@ editLink: false
 ---
 # Custom service example (action-style)
 
-An “action” service is a custom service exposing RPC-like methods such as `run`, `status`, `reindex`, etc.
+An “action-style” service is an adapter-less service exposing custom methods such as `run`, `status`, or `reindex`.
 
 The reference template includes:
 

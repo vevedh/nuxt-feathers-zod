@@ -1,8 +1,10 @@
 import { useNuxtApp, useRuntimeConfig } from '#imports'
 import { computed, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { buildRemoteAuthPayload } from '../utils/auth'
+import { getForcedAuthProvider, getPublicClientMode, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from '../utils/config'
 
-type AuthProvider = 'keycloak' | 'local' | 'none'
+type AuthProvider = 'keycloak' | 'local' | 'remote' | 'none'
 
 export function useAuth() {
   const nuxtApp = useNuxtApp()
@@ -10,7 +12,27 @@ export function useAuth() {
   const pub = rc.public as any
 
   const provider = computed<AuthProvider>(() => {
-    if (pub?._feathers?.keycloak)
+    // Allow an explicit override via env/runtimeConfig.
+    // Note: `NUXT_PUBLIC_FEATHERS_AUTH_PROVIDER=keycloak` becomes `public.FEATHERS_AUTH_PROVIDER`.
+    const forced = getForcedAuthProvider(pub)
+    if (forced === 'keycloak')
+      return 'keycloak'
+    if (forced === 'remote')
+      return 'remote'
+    if (forced === 'local')
+      return 'local'
+
+    const cm = getPublicClientMode(pub)
+    const remoteAuth = getPublicRemoteAuthConfig(pub)
+
+    // Hybrid mode: Keycloak SSO + remote Feathers auth.
+    // If Keycloak is configured, prefer it when remote auth payload is keycloak.
+    if (hasPublicKeycloakConfig(pub) && cm === 'remote' && remoteAuth?.enabled && remoteAuth?.payloadMode === 'keycloak')
+      return 'keycloak'
+
+    if (isPublicRemoteAuthEnabled(pub))
+      return 'remote'
+    if (hasPublicKeycloakConfig(pub))
       return 'keycloak'
     if (pub?._feathers?.auth)
       return 'local'
@@ -32,15 +54,15 @@ export function useAuth() {
   const isAuthenticated = computed(() => {
     if (provider.value === 'keycloak')
       return Boolean(keycloak.value?.authenticated)
-    if (provider.value === 'local')
-      return Boolean(authStore.value?.authenticated || authStore.value?.isAuthenticated)
+    if (provider.value === 'local' || provider.value === 'remote')
+      return Boolean(authStore.value?.authenticated)
     return false
   })
 
   const user = computed(() => {
     if (provider.value === 'keycloak')
       return keycloak.value?.user ?? null
-    if (provider.value === 'local')
+    if (provider.value === 'local' || provider.value === 'remote')
       return authStore.value?.user ?? null
     return null
   })
@@ -54,7 +76,7 @@ export function useAuth() {
   const token = computed<string | null>(() => {
     if (provider.value === 'keycloak')
       return keycloak.value?.token?.() ?? null
-    if (provider.value === 'local')
+    if (provider.value === 'local' || provider.value === 'remote')
       return authStore.value?.accessToken ?? null
     return null
   })
@@ -82,11 +104,15 @@ export function useAuth() {
       }
     }
 
-    // Local auth: attempt restore if store supports it
-    if (provider.value === 'local') {
+    // Local/Remote auth: attempt restore if store supports it, otherwise try api.reAuthenticate
+    if (provider.value === 'local' || provider.value === 'remote') {
       const s: any = authStore.value
       if (s?.restore) {
         await s.restore().catch(() => {})
+      }
+      else {
+        const api: any = (nuxtApp as any).$api
+        await api?.reAuthenticate?.().catch(() => {})
       }
     }
 
@@ -98,12 +124,23 @@ export function useAuth() {
       return keycloak.value?.login?.(options)
     if (provider.value === 'local')
       return (authStore.value as any)?.login?.(options)
+    if (provider.value === 'remote') {
+      const pub = (useRuntimeConfig().public as any)
+      const ra = getPublicRemoteAuthConfig(pub)
+      const token = options?.token || options?.accessToken || options?.access_token
+      if (!token)
+        throw new Error('Remote login requires a token (options.token)')
+      const payload = buildRemoteAuthPayload(token, ra)
+      return (authStore.value as any)?.authenticate?.(payload)
+    }
   }
 
   async function logout(options?: any) {
     if (provider.value === 'keycloak')
       return keycloak.value?.logout?.(options)
     if (provider.value === 'local')
+      return (authStore.value as any)?.logout?.(options)
+    if (provider.value === 'remote')
       return (authStore.value as any)?.logout?.(options)
   }
 

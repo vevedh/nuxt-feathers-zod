@@ -1,312 +1,143 @@
-# nuxt-feathers-zod 
-[guide](https://vevedh.github.io/nuxt-feathers-zod/)
+# nuxt-feathers-zod
 
-### Guide officiel d’initialisation – Nuxt 4 (Bun, Feathers v5, Zod)
+[Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
-Ce guide décrit **la seule procédure valide et supportée** pour initialiser correctement **nuxt-feathers-zod** dans un projet **Nuxt 4**, en se basant **strictement sur le comportement réel du module**.
+`nuxt-feathers-zod` is a Nuxt 4 module that integrates **FeathersJS v5 (Dove)** with a **CLI-first** workflow and a Zod-oriented service generation approach.
 
-Il évite volontairement toute “magie implicite” ou création manuelle non supportée.
+It supports two main usage patterns:
 
----
+- **embedded mode**: a Feathers server runs inside Nuxt/Nitro
+- **remote mode**: a Nuxt app uses a Feathers client against an external API
 
-## 1. Objectif du module
+## What is already in the open source core
 
-`nuxt-feathers-zod` permet d’embarquer un **backend FeathersJS v5 (Dove)** directement dans **Nitro**, avec :
+- Nuxt 4 + Nitro integration
+- embedded and remote modes
+- REST and Socket.IO transports
+- embedded server with **Express** or **Koa**
+- CLI bootstrap for `init embedded`, `init remote`, `init templates`
+- CLI service generation with `add service`
+- adapter-less service generation with `add service --custom`
+- remote-service registration with `add remote-service`
+- local/JWT auth flows
+- Keycloak SSO bridge
+- optional legacy Swagger support
+- template overrides
+- embedded server modules
+- client-side helpers with Pinia / feathers-pinia support
 
-* API REST (`/feathers/*`)
-* WebSocket (Socket.IO)
-* Validation **Zod-first**
-* Authentification **Local + JWT**
-* Adapters (MongoDB, Memory, etc.)
-* Swagger legacy (optionnel)
-* Composables client (`useService`, `useAuth`, stores Pinia)
-
-👉 Il **n’y a pas de backend séparé** : Feathers est monté **dans Nuxt**.
-
----
-
-## 2. Pré-requis
-
-* **Bun** (recommandé et supporté)
-* **Node.js ≥ 18**
-* **Nuxt 4**
-* MongoDB (optionnel mais recommandé)
-
----
-
-## 3. Création du projet Nuxt 4
-
-```bash
-bunx nuxi@latest init my-site
-cd my-site
-bun install
-bun run dev
-```
-
-➡️ Vérifie que Nuxt démarre **avant toute intégration Feathers**.
-
----
-
-## 4. Installation des dépendances
-
-### 4.1 Module principal
+## Installation
 
 ```bash
 bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
 ```
 
-### 4.2 (Optionnel) Swagger legacy
+Optional Swagger dependencies:
 
 ```bash
 bun add feathers-swagger swagger-ui-dist
 ```
 
-> ⚠️ `swagger-ui-dist` est requis si `feathers.swagger = true`
-
----
-
-## 5. Configuration **obligatoire** (`nuxt.config.ts`)
-
-> ⚠️ **Cette configuration est critique**.
-> Une mauvaise initialisation provoque des erreurs bloquantes au démarrage.
-
-```ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    /**
-     * RÈGLE D’OR :
-     * Le module scanne UNIQUEMENT ces dossiers
-     */
-    servicesDirs: ['services'],
-
-    /**
-     * Transports
-     */
-    transports: {
-      rest: {
-        path: '/feathers',
-        framework: 'koa',
-      },
-      websocket: true,
-    },
-
-    /**
-     * Base de données (MongoDB recommandé)
-     */
-    database: {
-      mongo: {
-        url: 'mongodb://127.0.0.1:27017/my-site',
-      },
-    },
-
-    /**
-     * Authentification
-     */
-    auth: true,
-
-    /**
-     * Swagger legacy (optionnel)
-     */
-    swagger: false,
-  },
-})
-```
-
----
-
-## 6. RÈGLE FONDAMENTALE – À NE JAMAIS VIOLER
-
-> ❌ **Ne jamais créer un service manuellement**
-> ✅ **Toujours utiliser la CLI officielle**
-
-Cette règle est **imposée par le code interne du module**.
-
----
-
-## 7. Création du premier service : `users` (OBLIGATOIRE)
+## Recommended quick start — new Nuxt 4 app in embedded mode
 
 ```bash
-bunx nuxt-feathers-zod add service users \
-  --adapter mongodb \
-  --auth \
-  --idField _id \
-  --docs
-```
-
-### Structure générée (attendue)
-
-```
-services/users/
-  users.ts
-  users.class.ts
-  users.schema.ts
-  users.shared.ts
-```
-
-### Pourquoi `users` est obligatoire ?
-
-* Le module **résout l’authentification** via une `entityClass` nommée **`User`**
-* Cette classe est **recherchée dynamiquement** dans les exports scannés
-* Sans ce service :
-
-  * `Services typeExports []`
-  * `Entity class User not found in services imports`
-  * **Boot impossible**
-
-👉 Le service `users` est la **clé de voûte** de tout projet `nuxt-feathers-zod`.
-
----
-
-## 8. Création d’un service métier (exemple : `articles`)
-
-```bash
-bunx nuxt-feathers-zod add service articles \
-  --adapter mongodb \
-  --auth \
-  --idField _id \
-  --docs
-```
-
-Structure :
-
-```
-services/articles/
-  articles.ts
-  articles.class.ts
-  articles.schema.ts
-  articles.shared.ts
-```
-
----
-
-## 9. Démarrage et tests REST
-
-```bash
-bun run dev
-```
-
-### 9.1 Création d’un utilisateur
-
-```bash
-curl -X POST http://localhost:3000/feathers/users \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"demo","password":"demo123"}'
-```
-
-### 9.2 Authentification
-
-```bash
-curl -X POST http://localhost:3000/feathers/authentication \
-  -H "Content-Type: application/json" \
-  -d '{"strategy":"local","userId":"demo","password":"demo123"}'
-```
-
-### 9.3 Accès à un service protégé
-
-```bash
-curl http://localhost:3000/feathers/articles \
-  -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
-
----
-
-## 10. Swagger legacy (optionnel)
-
-### 10.1 Activer Swagger
-
-```ts
-feathers: {
-  swagger: true,
-}
-```
-
-### 10.2 Accès
-
-* UI :
-  `http://localhost:3000/feathers/docs/`
-* Spec :
-  `http://localhost:3000/feathers/swagger.json`
-
-### ⚠️ Important
-
-Dans l’UI Swagger, la spec doit être définie manuellement à :
-
-```
-../swagger.json
-```
-
-(C’est un comportement connu et assumé du module.)
-
----
-
-## 11. Plugins serveur Feathers (seed, hooks globaux)
-
-### Exemple : `server/feathers/dummy.ts`
-
-```ts
-import { defineFeathersServerPlugin } from 'nuxt-feathers-zod/server'
-
-export default defineFeathersServerPlugin((app) => {
-  app.hooks({
-    setup: [
-      async (context, next) => {
-        await context.app.service('users').create({
-          userId: 'admin',
-          password: 'admin123',
-        })
-        await next()
-      },
-    ],
-  })
-})
-```
-
-➡️ Ces fichiers sont des **plugins Feathers**, pas des services.
-
----
-
-## 12. Erreurs courantes et causes réelles
-
-### ❌ `Services typeExports []`
-
-Causes :
-
-* `servicesDirs` incorrect
-* services créés manuellement
-* fichiers mal nommés (`users.ts` manquant)
-
-### ❌ `Entity class User not found in services imports`
-
-Cause exacte :
-
-* le service `users` n’existe pas ou n’a pas été généré via la CLI
-
-✅ Solution universelle :
-
-```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users
+bun dev
 ```
 
----
+## Embedded mode with local auth
 
-## 13. Bonnes pratiques figées
+```bash
+bunx nuxi@latest init my-nfz-auth
+cd my-nfz-auth
+bun install
+bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force --auth --swagger
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id --docs
+bun dev
+```
 
-* ✅ **Toujours** générer les services avec la CLI
-* ✅ `services/<name>/<name>.ts` obligatoire
-* ✅ Zod-first (`*.schema.ts`)
-* ❌ Pas de création manuelle
-* ❌ Pas de renommage arbitraire de `User`
-* ❌ Pas de déplacement hors `servicesDirs`
+## Remote mode quick start
 
----
+```bash
+bunx nuxi@latest init my-nfz-remote
+cd my-nfz-remote
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
+bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
+bun dev
+```
 
-## 14. Résumé express (checklist)
+## Canonical CLI commands
 
-1. `bunx nuxi init`
-2. `bun add nuxt-feathers-zod feathers-pinia`
-3. `servicesDirs: ['services']`
-4. `bunx nuxt-feathers-zod add service users`
-5. `bunx nuxt-feathers-zod add service <business>`
-6. `bun run dev`
+```bash
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
+bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
+bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
+bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
+bunx nuxt-feathers-zod doctor
+```
+
+## Open source core boundary
+
+The project is being stabilized around a predictable **standard open source core**.
+
+That core currently includes:
+
+- runtime + transports
+- auth basics
+- CLI generation
+- template overrides
+- server modules
+- docs and playground validation
+
+Potential future **license-key / Pro** candidates are intentionally kept outside that frozen core, such as advanced visual consoles, premium diagnostics, builders, enterprise presets, and packaged RBAC/policy layers.
+
+## Development commands
+
+```bash
+bun install
+bun run build
+bun run typecheck
+bun run docs:dev
+bun run docs:build
+```
+
+## Publishing to npm
+
+```bash
+npm login
+bun install
+bun run build
+npm pack --dry-run
+npm version patch
+npm publish --access public
+```
+
+For a beta release:
+
+```bash
+npm version prerelease --preid beta
+npm publish --tag beta --access public
+```
+
+## Notes
+
+- The recommended convention is `servicesDirs: ['services']`.
+- The recommended path is **CLI-first**.
+- Historical aliases may remain supported for backward compatibility, but the public docs only foreground the canonical forms.
+
+## License
+
+MIT

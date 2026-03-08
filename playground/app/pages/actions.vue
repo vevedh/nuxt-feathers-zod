@@ -63,12 +63,12 @@ async function runAction() {
     <div class="card">
       <label>
         Action
-        <input v-model="form.action" type="text" placeholder="reindex">
+        <input v-model="form.action" type="text" placeholder="reindex" />
       </label>
 
       <label>
         Payload (JSON)
-        <textarea v-model="form.payload" rows="6" placeholder='{"dryRun":true}' />
+        <textarea v-model="form.payload" rows="6" placeholder="{&quot;dryRun&quot;:true}"></textarea>
       </label>
 
       <div class="row">
@@ -103,7 +103,14 @@ async function runAction() {
   max-width: 820px;
   margin: 24px auto;
   padding: 0 16px;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial;
 }
 
 .card {
@@ -119,14 +126,14 @@ label {
   gap: 6px;
   font-size: 14px;
 }
-
-input, textarea {
+input,
+textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 .row {
@@ -150,8 +157,8 @@ button {
   border-radius: 10px;
   border: 1px solid #e5e7eb;
 }
-
-.error, .result {
+.error,
+.result {
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 10px;

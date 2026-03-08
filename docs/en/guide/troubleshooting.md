@@ -3,26 +3,60 @@ editLink: false
 ---
 # Troubleshooting
 
-## `Services typeExports []` / `Entity class ... not found`
+## 1) `Services typeExports []` / `Entity class User not found`
 
-Most of the time the module was not initialized according to the documentation.
+Most common cause:
 
-Fix:
+- wrong `servicesDirs`,
+- manually created service,
+- auth enabled before generating `users`.
 
-1) Ensure `feathers.servicesDirs = ['services']` is present in `nuxt.config.ts`
-2) Remove any manually created first service that does not match the module structure
-3) Generate the first service with:
+Recommended fix:
 
 ```bash
-bunx nuxt-feathers-zod add service users
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
 ```
 
-Restart Nuxt.
+and verify:
 
-## Type-check issues in playground
+```ts
+feathers: {
+  servicesDirs: ['services']
+}
+```
 
-If you hit `vite-plugin-checker` cache issues (ENOTEMPTY/ENOENT), clean `node_modules/vite-plugin-checker` and caches, or disable type checking in the playground temporarily.
+## 2) `Could not load .../src/module.ts`
 
-## Windows ESM path issue (module dev)
+This message may hide a real TypeScript error in an imported file.
 
-When developing the module on Windows, use explicit `.ts` extensions in `nuxt.config.ts` when pointing to local module sources to avoid “Could not load .../src/module”.
+Check first:
+
+- generated templates,
+- local `.ts` imports on Windows,
+- broken template strings.
+
+## 3) Swagger UI does not load the spec
+
+Use `../swagger.json` from `/feathers/docs/`.
+
+## 4) VitePress docs build breaks on frontmatter
+
+Always close the YAML block before Markdown content.
+
+## 5) Remote mode looks correct but nothing responds
+
+Check:
+
+- `client.remote.url`
+- `transport`
+- `restPath` / `websocketPath`
+- services declared in `client.remote.services`
+- remote auth if enabled
+
+## Useful commands
+
+```bash
+bunx nuxt-feathers-zod doctor
+bun run build
+bun run docs:dev
+```

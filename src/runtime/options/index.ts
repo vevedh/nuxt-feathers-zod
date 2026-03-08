@@ -9,17 +9,20 @@ import type { ServicesDir, ServicesDirs } from './services'
 import type { ResolvedSwaggerOptionsOrDisabled, SwaggerOptions, SwaggerOptionsOrDisabled } from './swagger'
 import type { ResolvedTransportsOptions, TransportsOptions } from './transports'
 import type { ResolvedValidatorOptions, ValidatorOptions } from './validator'
+import type { ResolvedTemplatesOptions, TemplatesOptions } from './templates'
 import { createResolver } from '@nuxt/kit'
 import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
 import { resolveClientOptions } from './client'
 import { resolveDataBaseOptions } from './database'
 import { resolveKeycloakOptions } from './keycloak'
+import { getResolvedClientMode, isRemoteClientMode } from './mode'
 import { resolveServerOptions } from './server'
 import { resolveServicesDirs } from './services'
 import { resolveSwaggerOptions } from './swagger'
 import { resolveTransportsOptions } from './transports'
 import { resolveValidatorOptions } from './validator'
+import { resolveTemplatesOptions } from './templates'
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
@@ -33,6 +36,7 @@ export interface ModuleOptions {
   validator: ValidatorOptions
   loadFeathersConfig: boolean
   swagger?: SwaggerOptionsOrDisabled
+  templates?: TemplatesOptions
 }
 
 export interface ResolvedOptions {
@@ -47,15 +51,40 @@ export interface ResolvedOptions {
   validator: ResolvedValidatorOptions
   loadFeathersConfig: boolean
   swagger?: ResolvedSwaggerOptionsOrDisabled
+  templates: ResolvedTemplatesOptions
 }
 
 export interface FeathersRuntimeConfig {
   auth?: ResolvedAuthOptions
-  keycloak?: ResolvedKeycloakOptions
+  // Runtime config only needs a subset on the server.
+  // Keep it loose to avoid forcing full Keycloak options here.
+  keycloak?: Partial<ResolvedKeycloakOptions>
 }
 
 export interface FeathersPublicRuntimeConfig {
   transports: ResolvedTransportsOptions
+  client?: {
+    mode: 'embedded' | 'remote'
+    remote?: {
+      url: string
+      transport?: 'auto' | 'rest' | 'socketio'
+      restPath?: string
+      websocketPath?: string
+      auth?: {
+        enabled?: boolean
+        servicePath?: string
+        payloadMode?: 'jwt' | 'keycloak'
+        strategy?: string
+        tokenField?: string
+        reauth?: boolean
+        storageKey?: string
+      }
+      services?: Array<{
+        path: string
+        methods?: string[]
+      }>
+    }
+  }
   auth?: PublicAuthOptions
   pinia?: PiniaOptions
   keycloak?: {
@@ -70,6 +99,43 @@ export interface FeathersPublicRuntimeConfig {
 export type ModuleConfig = Partial<Omit<ModuleOptions, 'auth'> & {
   auth: Omit<AuthOptions, 'entityImport'> | boolean
 }>
+
+
+function toPublicRemoteClientConfig(client: ResolvedClientOptions | false | undefined): FeathersPublicRuntimeConfig['client'] {
+  if (!client)
+    return undefined
+
+  const remote = client.remote
+    ? {
+        url: client.remote.url,
+        transport: client.remote.transport,
+        restPath: client.remote.restPath,
+        websocketPath: client.remote.websocketPath,
+        auth: client.remote.auth
+          ? {
+              enabled: client.remote.auth.enabled,
+              servicePath: client.remote.auth.servicePath,
+              payloadMode: client.remote.auth.payloadMode,
+              strategy: client.remote.auth.strategy,
+              tokenField: client.remote.auth.tokenField,
+              reauth: client.remote.auth.reauth,
+              storageKey: client.remote.auth.storageKey,
+            }
+          : undefined,
+        services: Array.isArray(client.remote.services)
+          ? client.remote.services.map(service => ({
+              path: service.path,
+              methods: Array.isArray(service.methods) ? [...service.methods] : undefined,
+            }))
+          : undefined,
+      }
+    : undefined
+
+  return {
+    mode: client.mode,
+    remote,
+  }
+}
 
 export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promise<ResolvedOptions> {
   const { rootDir, srcDir, serverDir, appDir, buildDir, ssr } = nuxt.options
@@ -86,23 +152,50 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
 
   const templateDir = /node_modules/.test(buildDir) ? resolver.resolve(rootDir, '.nuxt/feathers') : resolver.resolve(buildDir, 'feathers')
 
+  const templates = resolveTemplatesOptions(options.templates, rootDir)
+
   const transports = resolveTransportsOptions(options.transports, ssr)
   const database = resolveDataBaseOptions(options.database)
   const servicesDirs = resolveServicesDirs(options.servicesDirs, rootDir)
-  const server = await resolveServerOptions(options.server, rootDir, serverDir)
+  const server = await resolveServerOptions(options.server, rootDir, serverDir, (transports.rest as any)?.framework ?? 'express')
   const client = await resolveClientOptions(options.client, !!database.mongo, rootDir, srcDir)
   const validator = resolveValidatorOptions(options.validator)
   const swagger = resolveSwaggerOptions(options.swagger, transports)
-  const servicesImports = await getServicesImports(servicesDirs) // TODO move
-  // const auth = resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
+  const isRemote = isRemoteClientMode(client)
+  const servicesImports = isRemote ? [] : await getServicesImports(servicesDirs) // TODO move
   const keycloak = resolveKeycloakOptions(options.keycloak)
 
-  // Keycloak-only: disable local/jwt auth pipeline entirely
-  const auth = keycloak ? false : resolveAuthOptions(options.auth, !!client, servicesImports, appDir)
+  // Keycloak SSO can run in two ways:
+  // - historical: SSO-only bridge service (/_keycloak)
+  // - unified: always materialize a Feathers auth session via `authentication.create({ strategy, ...token })`
+  //
+  // To support the unified flow in **embedded** mode, keep the authentication service enabled by default
+  // when Keycloak is configured (JWT strategy only unless the user explicitly overrides authStrategies).
+  let auth: any
+  // Authentication resolution:
+  // - embedded: requires local service schema imports (entityImport) to type the auth entity
+  // - remote: does NOT require local schema imports (entityImport optional)
+  if (options.auth === false) {
+    auth = false
+  }
+  else if (!isRemote && keycloak) {
+    const base: any = (options.auth === true || options.auth == null)
+      ? { authStrategies: ['jwt'] as const }
+      : options.auth
+    const withJwtDefault = (base && typeof base === 'object' && !base.authStrategies)
+      ? { ...base, authStrategies: ['jwt'] as const }
+      : base
+
+    auth = resolveAuthOptions(withJwtDefault, { client: !!client, mode: 'embedded' }, servicesImports, appDir)
+  }
+  else {
+    auth = resolveAuthOptions(options.auth, { client: !!client, mode: getResolvedClientMode(client) }, servicesImports, appDir)
+  }
   const loadFeathersConfig = options.loadFeathersConfig
 
   const resolvedOptions = {
     templateDir,
+    templates,
     transports,
     database,
     servicesDirs,
@@ -114,7 +207,6 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     loadFeathersConfig,
     swagger,
   }
-  console.dir(resolvedOptions, { depth: null })
   return resolvedOptions
 }
 
@@ -138,6 +230,11 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
   const publicRuntimeConfig: FeathersPublicRuntimeConfig = {
     transports: options.transports,
   }
+
+  const client = options.client as ResolvedClientOptions
+  const publicClient = toPublicRemoteClientConfig(client)
+  if (publicClient)
+    publicRuntimeConfig.client = publicClient
   const auth = options.auth as ResolvedAuthOptions
   if (auth?.client) {
     publicRuntimeConfig.auth = {
@@ -148,7 +245,6 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
       client: auth.client,
     }
   }
-  const client = options.client as ResolvedClientOptions
   if (client?.pinia) {
     publicRuntimeConfig.pinia = client.pinia
   }
