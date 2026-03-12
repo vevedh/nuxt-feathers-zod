@@ -34,11 +34,11 @@ function parseStringArray(raw?: string) {
 }
 
 function parseMode(cfg: string) {
-  return cfg.match(/client\s*:\s*\{[\s\S]*?mode\s*:\s*['"](embedded|remote)['"]/)?[1] ?? 'embedded(?)'
+  return cfg.match(/client\s*:\s*\{[\s\S]*?mode\s*:\s*['"](embedded|remote)['"]/)?.[1] ?? 'embedded(?)'
 }
 
 function parseRestPath(cfg: string) {
-  return cfg.match(/rest\s*:\s*\{[\s\S]*?path\s*:\s*['"]([^'"]+)['"]/)?[1] ?? '/feathers'
+  return cfg.match(/rest\s*:\s*\{[\s\S]*?path\s*:\s*['"]([^'"]+)['"]/)?.[1] ?? '/feathers'
 }
 
 function parseServicesDirs(cfg: string, projectRoot: string, mode: string) {

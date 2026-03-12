@@ -33,6 +33,7 @@ nuxt-feathers-zod
 - [Middleware](/reference/middleware)
 - [Authentification](/reference/authentication)
 - [Templates](/reference/templates)
+- [MongoDB management](/reference/mongodb-management)
 - [Doctor](/reference/doctor)
 - [RuntimeConfig](/reference/runtime-config)
 - [Conventions](/reference/conventions)
@@ -58,4 +59,5 @@ client Feathers vers une API externe.
 - [Architecture](/reference/architecture)
 - [Options](/reference/options)
 - [Server modules](/reference/server-modules)
+- [MongoDB management](/reference/mongodb-management)
 - [Dépannage](/reference/troubleshooting)

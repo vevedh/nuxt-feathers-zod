@@ -15,6 +15,7 @@ export function getServerAppContents(options: ResolvedOptions) {
 
     const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
     const auth = (authStrategies || []).length > 0
+    const mongo = !!options.database?.mongo
 
     const restPath = (transports?.rest as RestOptions)?.path
     const websocketOptions = (transports?.websocket as WebsocketOptions) || undefined
@@ -39,6 +40,8 @@ ${puts([
   [sio, `import socketio from '@feathersjs/socketio'`],
 ])}
 ${put(rest, `import { ${framework}ErrorHandler } from '@gabortorma/feathers-nitro-adapter/handlers'`)}
+${put(auth, `import authentication from './authentication.js'`)}
+${put(mongo, `import mongodb from './mongodb.js'`)}
 
 export async function createFeathersApp(nitroApp, config) {
   const app = ${puts([
@@ -74,6 +77,22 @@ ${websocketConnectTimeout}${websocketTransports}${websocketCors}  }))
 
   return app
 }
+
+export async function configureFeathersInfrastructure(app, config) {
+  const mongoConfig = config?.database?.mongo
+  const mongoEnabled = !!(mongoConfig && mongoConfig.enabled && mongoConfig.url)
+
+  if (mongoEnabled) {
+    app.set('mongodb', mongoConfig.url)
+    app.set('mongoPath', mongoConfig.management?.basePath || '/mongo')
+  }
+
+${put(auth, `  if (config?.auth?.enabled !== false)
+    await app.configure(authentication)
+
+`)}${put(mongo, `  if (mongoEnabled)
+    await mongodb(app)
+`)} }
 `
   }
 }

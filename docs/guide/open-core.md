@@ -22,7 +22,7 @@ Le socle standard couvre déjà les usages suivants.
 - transports **REST** et **Socket.IO**
 - serveur embedded **Express** ou **Koa**
 
-### 2) CLI supportée
+### 2) CLI supportée dans le core OSS
 
 - `init embedded`
 - `init remote`
@@ -31,6 +31,9 @@ Le socle standard couvre déjà les usages suivants.
 - `add service --custom`
 - `add remote-service`
 - `add middleware`
+- `add server-module`
+- `add mongodb-compose`
+- `auth service`
 - `doctor`
 
 ### 3) Services et runtime client
@@ -47,24 +50,34 @@ Le socle standard couvre déjà les usages suivants.
 - auth locale / JWT
 - auth remote JWT
 - bridge **Keycloak SSO**
+- bascule CLI de hooks auth sur un service existant via `auth service <name>`
 
 ### 5) DX embedded
 
 - secure defaults
 - server modules intégrés
+- presets `server-module` Express
 - Swagger legacy optionnel
 - template overrides
 - playground de validation
+- gestion MongoDB optionnelle via `database.mongo.management`
 
-## Ce qui doit rester “standard”
+## Validation OSS core retenue
 
-Pour le socle open source, la règle recommandée est :
+Une capacité fait partie du core open source seulement si elle respecte les règles suivantes :
 
-- une fonctionnalité documentée,
-- un exemple minimal reproductible,
-- un comportement testé,
+- fonctionnalité documentée,
+- exemple minimal reproductible,
+- comportement testé ou validé par smoke scenario,
 - pas de dépendance à une console propriétaire,
-- pas de couplage fort à un service SaaS tiers.
+- pas de couplage fort à un service SaaS tiers,
+- pas de régression de parsing CLI sous Bun/Windows.
+
+Ce dernier point est désormais **explicitement** dans le contrat de stabilité du core : la commande suivante doit rester parse-safe et exploitable :
+
+```bash
+bunx nuxt-feathers-zod --help
+```
 
 ## Ce qui peut devenir premium plus tard
 
@@ -91,6 +104,7 @@ Les parcours à garantir en priorité sont :
 3. **Nouvelle app Nuxt 4 + remote REST**
 4. **Nouvelle app Nuxt 4 + remote Socket.IO**
 5. **Nouvelle app Nuxt 4 + Keycloak SSO**
+6. **CLI parse-safe sous Bun/Windows**
 
 ### Standardiser la méthode officielle
 
@@ -109,16 +123,18 @@ et éviter les créations manuelles tant qu’un générateur officiel existe.
 
 - `servicesDirs: ['services']`
 - CLI-first
-- `memory` par défaut
-- `--schema none` par défaut
-- alias historique supporté mais non recommandé
+- adapter par défaut = `memory`
+- schéma par défaut = `none`
+- alias historiques supportés mais non recommandés
 - config publique client cohérente en mode remote
+- options MongoDB management explicites et opt-in
 
 ## Proposition de feuille de route open source
 
 ### Niveau 1 — stabilité
 
 - smoke tests CLI pour `init embedded` et `init remote`
+- smoke test `bunx nuxt-feathers-zod --help`
 - smoke test build pour `playground`
 - smoke test docs VitePress
 - matrice Windows + Linux
@@ -128,6 +144,7 @@ et éviter les créations manuelles tant qu’un générateur officiel existe.
 - exemples “new Nuxt 4 app” sur chaque grande page
 - pages de référence alignées sur les vraies options
 - section “known limits” explicite
+- doc dédiée pour MongoDB management et server modules
 
 ### Niveau 3 — maintenance
 

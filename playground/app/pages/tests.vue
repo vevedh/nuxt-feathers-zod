@@ -9,7 +9,7 @@ const config = useRuntimeConfig()
 
 // Unified auth (supports: keycloak | local | remote | none)
 const auth = useAuth()
-const { scenarioId, title } = usePlaygroundScenario()
+const { scenarioId, title, embeddedMongoMode } = usePlaygroundScenario()
 onMounted(() => {
   auth.init().catch(() => {})
 })
@@ -88,7 +88,9 @@ function serializeError(e: any): AnyObj {
 }
 
 const publicClient = computed(() => (config.public as any)?._feathers?.client ?? {})
+const playgroundFlags = computed(() => (config.public as any)?.nfzPlayground ?? {})
 const mode = computed(() => publicClient.value?.mode ?? 'embedded')
+const embeddedMongoEnabled = computed(() => playgroundFlags.value?.embeddedMongoEnabled !== false)
 
 // ---- Connection test ----
 const connectionLoading = ref(false)
@@ -103,7 +105,7 @@ const serviceCandidates = computed<string[]>(() => {
     // Fallback (common service names in demos)
     return ['ldapusers', 'users', 'messages']
   }
-  return ['users', 'messages', 'actions', 'mongos']
+  return embeddedMongoEnabled.value ? ['users', 'messages', 'actions', 'mongos'] : ['users', 'messages', 'actions']
 })
 
 const pingService = ref<string>('')
@@ -433,6 +435,10 @@ async function logout() {
     </p>
 
     <p>
+      Mongo mode: <code>{{ embeddedMongoMode }}</code>
+    </p>
+
+    <p>
       This page is designed to validate the <strong>dual-mode client</strong> behavior:
       <code>embedded</code> vs <code>remote</code>.
     </p>
@@ -449,6 +455,8 @@ async function logout() {
       user: auth.user,
       storageKey,
       storedTokenPreview: storedToken ? storedToken.slice(0, 24) + (storedToken.length > 24 ? '…' : '') : '',
+      embeddedMongoMode,
+      embeddedMongoEnabled,
     } }}</pre>
 
     <div v-if="mode === 'remote'" style="display: grid; gap: 10px; max-width: 920px; margin-top: 12px;">

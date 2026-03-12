@@ -43,6 +43,8 @@ Cette matrice décrit le périmètre **visé et validé** pour le socle open sou
 
 ```bash
 bun install
+bun run sanity:templates
+bun run sanity:syntax
 bun run build
 bun run docs:build
 ```

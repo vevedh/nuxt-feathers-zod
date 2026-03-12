@@ -1,7 +1,11 @@
 import type { Import } from 'unimport'
 import type { ModuleImport } from './utils'
+
+import { existsSync } from 'node:fs'
 import { createResolver } from '@nuxt/kit'
+import { consola } from 'consola'
 import { scanDirExports, scanExports } from 'unimport'
+
 import { filterExports, setImportsMeta } from './utils'
 
 export type PluginDir = string
@@ -57,7 +61,17 @@ export function resolvePluginDirs(pluginDirs: PluginDir | PluginDirs | undefined
 }
 
 export async function resolvePluginsFromPluginDirs(pluginDirs: PluginDirs): Promise<ResolvedPlugins> {
-  const imports = await scanDirExports(pluginDirs, {
+  const existingPluginDirs = pluginDirs.filter(dir => existsSync(dir))
+
+  const missingPluginDirs = pluginDirs.filter(dir => !existsSync(dir))
+  for (const dir of missingPluginDirs) {
+    consola.debug(`[nuxt-feathers-zod] Skipping missing plugin directory: ${dir}`)
+  }
+
+  if (!existingPluginDirs.length)
+    return []
+
+  const imports = await scanDirExports(existingPluginDirs, {
     filePatterns: ['*.ts'],
     types: false,
   })

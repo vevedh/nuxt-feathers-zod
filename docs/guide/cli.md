@@ -11,12 +11,21 @@ Elle évite la majorité des dérives classiques :
 - `servicesDirs` incohérent,
 - auth activée sans service `users`,
 - service créé à la main mais non scanné,
-- runtime client et runtime public désalignés.
+- runtime client et runtime public désalignés,
+- régressions de parsing Bun/TypeScript sur la CLI publique.
 
 ## Commande d’entrée
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
+```
+
+## Vérification minimale de stabilité
+
+Sur une version publiée du core OSS, cette commande doit rester fonctionnelle :
+
+```bash
+bunx nuxt-feathers-zod --help
 ```
 
 ## Parcours recommandé : nouvelle app Nuxt 4
@@ -69,6 +78,9 @@ bun dev
 - `add service`
 - `add remote-service`
 - `add middleware`
+- `add server-module`
+- `add mongodb-compose`
+- `auth service`
 - `doctor`
 
 ## Règles DX importantes
@@ -183,15 +195,7 @@ bunx nuxt-feathers-zod init remote --url https://api.example.com --transport res
 ### Exemple remote + payload Keycloak
 
 ```bash
-bunx nuxt-feathers-zod init remote \
-  --url https://api.example.com \
-  --transport rest \
-  --auth true \
-  --payloadMode keycloak \
-  --strategy jwt \
-  --tokenField access_token \
-  --servicePath authentication \
-  --force
+bunx nuxt-feathers-zod init remote   --url https://api.example.com   --transport rest   --auth true   --payloadMode keycloak   --strategy jwt   --tokenField access_token   --servicePath authentication   --force
 ```
 
 ## `remote auth keycloak`
@@ -199,10 +203,7 @@ bunx nuxt-feathers-zod init remote \
 Configure le bridge Keycloak côté app.
 
 ```bash
-bunx nuxt-feathers-zod remote auth keycloak \
-  --ssoUrl https://sso.example.com \
-  --realm myrealm \
-  --clientId myapp
+bunx nuxt-feathers-zod remote auth keycloak   --ssoUrl https://sso.example.com   --realm myrealm   --clientId myapp
 ```
 
 ## `add service <name>`
@@ -222,6 +223,7 @@ Options utiles :
 - `--path <servicePath>`
 - `--collection <name>`
 - `--docs true|false`
+- `--authAware true|false`
 - `--servicesDir <dir>`
 - `--force`
 - `--dry`
@@ -260,7 +262,7 @@ bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,
 Génère un artefact middleware.
 
 ```bash
-bunx nuxt-feathers-zod add middleware auth --target client
+bunx nuxt-feathers-zod add middleware trace-headers --target nitro
 ```
 
 Cibles supportées :
@@ -269,6 +271,58 @@ Cibles supportées :
 - `feathers`
 - `server-module`
 - `module`
+
+## `add server-module <name>`
+
+Génère directement un module serveur embedded dans `server/feathers/modules`.
+
+```bash
+bunx nuxt-feathers-zod add server-module helmet --preset helmet
+```
+
+Exemple baseline :
+
+```bash
+bunx nuxt-feathers-zod add server-module express-baseline --preset express-baseline
+```
+
+## `add mongodb-compose`
+
+Génère un fichier `docker-compose-db.yaml` pour démarrer rapidement MongoDB en local.
+
+```bash
+bunx nuxt-feathers-zod add mongodb-compose
+```
+
+Exemple plus explicite :
+
+```bash
+bunx nuxt-feathers-zod add mongodb-compose   --out docker-compose-db.yaml   --service mongodb   --database app   --rootUser root   --rootPassword change-me
+```
+
+## `auth service <name>`
+
+Active ou désactive les hooks auth JWT sur un service embedded existant.
+
+```bash
+bunx nuxt-feathers-zod auth service users --enabled true
+```
+
+Exemple de désactivation :
+
+```bash
+bunx nuxt-feathers-zod auth service users --enabled false
+```
+
+## Dépannage MongoDB
+
+Si un service a été généré avec `--adapter mongodb` mais que `feathers.database.mongo` n'est pas configuré en mode embedded, le démarrage échoue désormais avec un message explicite indiquant que `app.get('mongodbClient')` est absent.
+
+Correctifs possibles :
+
+- activer `feathers.database.mongo` dans `nuxt.config.ts`
+- ou régénérer le service avec `--adapter memory`
+- ou lancer `bunx nuxt-feathers-zod doctor` pour confirmer l'absence de signaux MongoDB
 
 ## `doctor`
 

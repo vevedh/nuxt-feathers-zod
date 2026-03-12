@@ -103,15 +103,15 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const srcDir = nuxt.options.srcDir
   const servicesDirs = resolveServicesDirs(options.servicesDirs, rootDir)
   const templateDir = createResolver(nuxt.options.buildDir).resolve('feathers')
-  const transports = resolveTransportsOptions(options.transports)
+  const transports = resolveTransportsOptions(options.transports, nuxt.options.ssr)
   const database = resolveDataBaseOptions(options.database)
   const server = await resolveServerOptions(options.server, rootDir, srcDir)
-  const client = await resolveClientOptions(options.client, database.mongo, rootDir, srcDir)
+  const client = await resolveClientOptions(options.client, Boolean(database.mongo), rootDir, srcDir)
   const validator = resolveValidatorOptions(options.validator)
-  const swagger = resolveSwaggerOptions(options.swagger)
+  const swagger = resolveSwaggerOptions(options.swagger, transports)
   const templates = resolveTemplatesOptions(options.templates, rootDir)
 
-  const servicesImports = getResolvedClientMode({ client }) === 'embedded'
+  const servicesImports = getResolvedClientMode(client) === 'embedded'
     ? await getServicesImports(servicesDirs)
     : []
 
@@ -119,7 +119,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     options.auth,
     {
       client: Boolean(client),
-      mode: client && isRemoteClientMode({ client }) ? 'remote' : 'embedded',
+      mode: client && isRemoteClientMode(client) ? 'remote' : 'embedded',
     },
     servicesImports,
     rootDir,

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { MongoMemoryServer } from 'mongodb-memory-server'
+import { MongoClient } from 'mongodb'
 import { defineNuxtConfig } from 'nuxt/config'
 
 // NOTE: `nuxi dev playground` runs Nuxt with `playground/` as the app root.
@@ -37,14 +38,6 @@ loadEnvFile(playgroundEnvPath)
 
 // DX log (dev only): show effective values read from .env files.
 // Helps debug Windows/Bun/Nuxt CLI environment precedence.
-if (process.env.NODE_ENV !== 'production') {
-  const mode = process.env.NFZ_CLIENT_MODE || 'embedded'
-  const url = process.env.NFZ_REMOTE_URL || ''
-  // eslint-disable-next-line no-console
-  console.info(`[NFZ DX] NFZ_CLIENT_MODE=${mode}`)
-  // eslint-disable-next-line no-console
-  console.info(`[NFZ DX] NFZ_REMOTE_URL=${url}`)
-}
 
 
 function envBool(name: string, fallback = false) {
@@ -83,7 +76,78 @@ function buildPlaygroundKeycloakConfig() {
 }
 
 const keycloakConfig = buildPlaygroundKeycloakConfig()
-const mongod = await MongoMemoryServer.create()
+const embeddedMongoEnabled = envBool('NFZ_PLAYGROUND_EMBEDDED_MONGODB', true)
+const requestedMongoUrl = (process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB_URL || process.env.MONGO_URL || '').trim()
+const fallbackToMemory = envBool('NFZ_PLAYGROUND_EMBEDDED_MONGODB_FALLBACK_TO_MEMORY', true)
+
+async function canConnectToMongo(url: string) {
+  let client: MongoClient | null = null
+  try {
+    client = await MongoClient.connect(url, {
+      serverSelectionTimeoutMS: 3000,
+      connectTimeoutMS: 3000,
+      maxPoolSize: 1,
+    })
+    await client.db().admin().ping()
+    return true
+  }
+  catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      const message = error instanceof Error ? error.message : String(error || '')
+      console.warn(`[NFZ DX] Mongo URL probe failed: ${message}`)
+    }
+    return false
+  }
+  finally {
+    await client?.close().catch(() => {})
+  }
+}
+
+let embeddedMongoMode: 'disabled' | 'memory' | 'url' = 'disabled'
+let mongod: MongoMemoryServer | null = null
+let effectiveMongoUrl = ''
+let embeddedMongoFallbackUsed = false
+
+if (embeddedMongoEnabled) {
+  if (requestedMongoUrl) {
+    const externalMongoReachable = await canConnectToMongo(requestedMongoUrl)
+    if (externalMongoReachable) {
+      embeddedMongoMode = 'url'
+      effectiveMongoUrl = requestedMongoUrl
+    }
+    else if (fallbackToMemory) {
+      mongod = await MongoMemoryServer.create()
+      embeddedMongoMode = 'memory'
+      effectiveMongoUrl = mongod.getUri()
+      embeddedMongoFallbackUsed = true
+    }
+    else {
+      throw new Error(`[NFZ DX] Unable to connect to MongoDB URL and fallback is disabled: ${requestedMongoUrl}`)
+    }
+  }
+  else {
+    mongod = await MongoMemoryServer.create()
+    embeddedMongoMode = 'memory'
+    effectiveMongoUrl = mongod.getUri()
+  }
+}
+
+// DX log (dev only): show effective values read from .env files.
+// Helps debug Windows/Bun/Nuxt CLI environment precedence and Mongo mode selection.
+if (process.env.NODE_ENV !== 'production') {
+  const mode = process.env.NFZ_CLIENT_MODE || 'embedded'
+  const url = process.env.NFZ_REMOTE_URL || ''
+  // eslint-disable-next-line no-console
+  console.info(`[NFZ DX] NFZ_CLIENT_MODE=${mode}`)
+  // eslint-disable-next-line no-console
+  console.info(`[NFZ DX] NFZ_REMOTE_URL=${url}`)
+  // eslint-disable-next-line no-console
+  console.info(`[NFZ DX] NFZ_PLAYGROUND_EMBEDDED_MONGODB_MODE=${embeddedMongoMode}`)
+  // eslint-disable-next-line no-console
+  console.info(`[NFZ DX] NFZ_PLAYGROUND_EMBEDDED_MONGODB_URL=${effectiveMongoUrl ? '[configured]' : ''}`)
+  // eslint-disable-next-line no-console
+  console.info(`[NFZ DX] NFZ_PLAYGROUND_EMBEDDED_MONGODB_FALLBACK_USED=${embeddedMongoFallbackUsed ? 'true' : 'false'}`)
+}
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-23',
@@ -103,6 +167,9 @@ export default defineNuxtConfig({
   feathers: {
     swagger: { enabled: true },
     servicesDirs: '../services',
+    server: {
+      pluginDirs: ['server/feathers'],
+    },
     transports: {
       rest: { path: '/feathers', framework: 'express' },
       websocket: {
@@ -115,11 +182,13 @@ export default defineNuxtConfig({
         },
       },
     },
-    database: {
-      mongo: {
-        url: mongod.getUri(),
-      },
-    },
+    database: embeddedMongoEnabled
+      ? {
+          mongo: {
+            url: effectiveMongoUrl,
+          },
+        }
+      : undefined,
     keycloak: keycloakConfig,
 
     client: {
@@ -155,9 +224,20 @@ export default defineNuxtConfig({
     },
   },
 
+  runtimeConfig: {
+    public: {
+      nfzPlayground: {
+        embeddedMongoEnabled,
+        embeddedMongoMode,
+        embeddedMongoUrlConfigured: !!effectiveMongoUrl,
+        embeddedMongoFallbackUsed,
+      },
+    },
+  },
+
   hooks: {
     close: async () => {
-      await mongod.stop()
+      await mongod?.stop()
     },
   },
 

@@ -122,8 +122,12 @@ export function useAuth() {
   async function login(options?: any) {
     if (provider.value === 'keycloak')
       return keycloak.value?.login?.(options)
-    if (provider.value === 'local')
-      return authStore.value?.login?.(options)
+    if (provider.value === 'local') {
+      const store: any = authStore.value
+      if (typeof store?.login === 'function')
+        return store.login(options)
+      return store?.authenticate?.(options)
+    }
     if (provider.value === 'remote') {
       const pub = useRuntimeConfig().public
       const ra = getPublicRemoteAuthConfig(pub)
@@ -138,10 +142,8 @@ export function useAuth() {
   async function logout(options?: any) {
     if (provider.value === 'keycloak')
       return keycloak.value?.logout?.(options)
-    if (provider.value === 'local')
-      return authStore.value?.logout?.(options)
-    if (provider.value === 'remote')
-      return authStore.value?.logout?.(options)
+    if (provider.value === 'local' || provider.value === 'remote')
+      return (authStore.value as any)?.logout?.()
   }
 
   return {

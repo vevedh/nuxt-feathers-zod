@@ -9,13 +9,48 @@ interface MongoUrlOption {
   url: string
 }
 
+export interface MongoManagementOptions {
+  enabled?: boolean
+  auth?: boolean
+  exposeDatabasesService?: boolean
+  exposeCollectionsService?: boolean
+  exposeUsersService?: boolean
+  exposeCollectionCrud?: boolean
+  basePath?: string
+}
+
+export interface ResolvedMongoManagementOptions {
+  enabled: boolean
+  auth: boolean
+  exposeDatabasesService: boolean
+  exposeCollectionsService: boolean
+  exposeUsersService: boolean
+  exposeCollectionCrud: boolean
+  basePath: string
+}
+
 type SerializableMongoClientOptions = PickSerializable<MongoClientOptions>
 
-export type MongoOptions = MongoUrlOption & SerializableMongoClientOptions
+export type MongoOptions = MongoUrlOption & SerializableMongoClientOptions & {
+  management?: MongoManagementOptions
+}
 
-export type ResolvedMongoOptions = MongoOptions
+export type ResolvedMongoOptions = MongoUrlOption & SerializableMongoClientOptions & {
+  management: ResolvedMongoManagementOptions
+}
 
 export function resolveMongoOptions(mongodb: MongoOptions): ResolvedMongoOptions {
-  // let resolvedMongodb: ResolvedMongoOptions
-  return mongodb
+  const basePath = mongodb.management?.basePath || '/mongo'
+  return {
+    ...mongodb,
+    management: {
+      enabled: mongodb.management?.enabled === true,
+      auth: mongodb.management?.auth !== false,
+      exposeDatabasesService: mongodb.management?.exposeDatabasesService !== false,
+      exposeCollectionsService: mongodb.management?.exposeCollectionsService !== false,
+      exposeUsersService: mongodb.management?.exposeUsersService === true,
+      exposeCollectionCrud: mongodb.management?.exposeCollectionCrud !== false,
+      basePath: basePath.startsWith('/') ? basePath : `/${basePath}`,
+    },
+  }
 }

@@ -36,9 +36,11 @@ export function resolveWebsocketTransportsOptions(websocket: WebsocketOptions | 
     resolvedWebsocket = websocketDefaults
   }
   else if (websocket !== false) {
-    resolvedWebsocket = defu(websocket, websocketDefaults)
-    if (resolvedWebsocket)
-      checkPath(resolvedWebsocket.path)
+    const merged = defu(websocket, websocketDefaults) as ResolvedWebsocketOptions
+    if (merged.cors == null)
+      delete (merged as any).cors
+    resolvedWebsocket = merged
+    checkPath(merged.path)
   }
 
   return resolvedWebsocket

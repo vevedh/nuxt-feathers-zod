@@ -33,6 +33,7 @@ nuxt-feathers-zod
 - [Middleware](/en/reference/middleware)
 - [Authentication](/en/reference/authentication)
 - [Templates](/en/reference/templates)
+- [MongoDB management](/en/reference/mongodb-management)
 - [Doctor](/en/reference/doctor)
 - [RuntimeConfig](/en/reference/runtime-config)
 - [Conventions](/en/reference/conventions)
@@ -42,4 +43,5 @@ nuxt-feathers-zod
 - [Architecture](/en/reference/architecture)
 - [Options](/en/reference/options)
 - [Server modules](/en/reference/server-modules)
+- [MongoDB management](/en/reference/mongodb-management)
 - [Troubleshooting](/en/reference/troubleshooting)

@@ -4,28 +4,63 @@ const isProd = process.env.NODE_ENV === 'production'
 
 const internalGuideLinks = [
   '/guide/open-core',
+  '/guide/open-core-vs-pro',
+  '/guide/support-policy',
   '/guide/playground',
   '/en/guide/open-core',
+  '/en/guide/open-core-vs-pro',
+  '/en/guide/support-policy',
   '/en/guide/playground',
+]
+
+const alwaysHiddenGuideLinks = [
+  '/guide/release-checklist',
+  '/en/guide/release-checklist',
 ]
 
 const internalGuideSrcExclude = [
   'guide/open-core.md',
+  'guide/open-core-vs-pro.md',
+  'guide/support-policy.md',
   'guide/playground.md',
   'en/guide/open-core.md',
+  'en/guide/open-core-vs-pro.md',
+  'en/guide/support-policy.md',
   'en/guide/playground.md',
 ]
 
+const alwaysHiddenSrcExclude = [
+  'guide/release-checklist.md',
+  'en/guide/release-checklist.md',
+]
+
 function withInternalGuide(items: Array<{ text: string; link: string }>) {
-  if (!isProd) return items
-  return items.filter((item) => !internalGuideLinks.includes(item.link))
+  const visible = items.filter((item) => !alwaysHiddenGuideLinks.includes(item.link))
+  if (!isProd) return visible
+  return visible.filter((item) => !internalGuideLinks.includes(item.link))
 }
 
 export default defineConfig({
   base: '/nuxt-feathers-zod/',
+  srcExclude: [
+    '**/release-checklist.md',
+    '**/release-checklist.fr.md',
+    '**/open-core-vs-pro.md',
+    '**/open-core.md',
+    '**/support-policy.md',
+    '**/playground.md',
+    '**/en/guide/release-checklist.md',
+    '**/en/guide/open-core-vs-pro.md',
+    '**/en/guide/open-core.md',
+    '**/en/guide/support-policy.md',
+    '**/en/guide/playground.md',
+    '**/README_private.md',
+    '**/private/**',
+    '**/admin/**'
+  ],
   cleanUrls: true,
   lastUpdated: true,
-  srcExclude: isProd ? internalGuideSrcExclude : [],
+  srcExclude: isProd ? [...internalGuideSrcExclude, ...alwaysHiddenSrcExclude] : alwaysHiddenSrcExclude,
 
   locales: {
     root: {
@@ -88,6 +123,7 @@ export default defineConfig({
                 { text: 'Authentification', link: '/reference/authentication' },
                 { text: 'Templates', link: '/reference/templates' },
                 { text: 'Server modules', link: '/reference/server-modules' },
+                { text: 'MongoDB management', link: '/reference/mongodb-management' },
                 { text: 'Doctor', link: '/reference/doctor' },
                 { text: 'Dépannage', link: '/reference/troubleshooting' },
                 { text: 'RuntimeConfig', link: '/reference/runtime-config' },
@@ -185,6 +221,7 @@ export default defineConfig({
                 { text: 'Authentication', link: '/en/reference/authentication' },
                 { text: 'Templates', link: '/en/reference/templates' },
                 { text: 'Server modules', link: '/en/reference/server-modules' },
+                { text: 'MongoDB management', link: '/en/reference/mongodb-management' },
                 { text: 'Doctor', link: '/en/reference/doctor' },
                 { text: 'Troubleshooting', link: '/en/reference/troubleshooting' },
                 { text: 'RuntimeConfig', link: '/en/reference/runtime-config' },

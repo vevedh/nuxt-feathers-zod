@@ -65,3 +65,20 @@ bunx nuxt-feathers-zod add service actions --custom --methods find --customMetho
 ```
 
 Expected: the service and its custom methods are generated without using a persistence adapter.
+
+
+## 6. Minimal CLI surface
+
+```bash
+bunx nuxt-feathers-zod --help
+```
+
+Expected: the CLI renders without Bun/TypeScript parsing errors.
+
+## 7. Local MongoDB bootstrap
+
+```bash
+bunx nuxt-feathers-zod add mongodb-compose
+```
+
+Expected: a usable `docker-compose-db.yaml` file is generated for local tests.

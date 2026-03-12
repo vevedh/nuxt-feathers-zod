@@ -40,6 +40,9 @@ jobs:
       - name: Template sanity check
         run: bun run sanity:templates
 
+      - name: Typecheck
+        run: bun run typecheck
+
       - name: Build module
         run: bun run prepare
 
@@ -48,3 +51,6 @@ jobs:
 
       - name: Build docs
         run: bun run docs:build
+
+      - name: CLI smoke
+        run: bun run cli:smoke

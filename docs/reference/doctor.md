@@ -21,6 +21,7 @@ analyse la configuration du projet courant.
 - services embedded détectés
 - signaux MongoDB
 - plugins Feathers détectés
+- indices de configuration `database.mongo`
 
 ### Mode remote
 
@@ -39,3 +40,4 @@ Le doctor doit fournir des messages actionnables, par exemple :
 - activer `servicesDirs`
 - corriger la config auth
 - vérifier la cible remote
+- repérer un socle CLI/runtime incohérent avant de poursuivre une release OSS core

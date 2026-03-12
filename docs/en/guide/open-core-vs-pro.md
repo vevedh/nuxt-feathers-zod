@@ -17,7 +17,10 @@ The open source core should stay focused on:
 - official CLI
 - service generation
 - remote-service registry
-- server modules
+- `auth service` to enable or disable auth hooks
+- `add mongodb-compose` for local MongoDB bootstrap
+- server modules and Express presets
+- optional `database.mongo.management` layer
 - optional legacy Swagger
 - template overrides
 - validation playground
@@ -43,3 +46,4 @@ The open source core should remain:
 - documented
 - reproducible
 - free of license gating for essential flows
+- stable on Bun/Windows for the public CLI

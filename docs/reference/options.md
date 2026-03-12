@@ -12,6 +12,16 @@ export default defineNuxtConfig({
       websocket: { path: '/socket.io' }
     },
     servicesDirs: ['services'],
+    database: {
+      mongo: {
+        url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+        management: {
+          enabled: false,
+          auth: true,
+          basePath: '/mongo'
+        }
+      }
+    },
     server: {
       enabled: true,
       pluginDirs: ['server/feathers'],
@@ -48,6 +58,26 @@ Convention recommandée :
 ```ts
 servicesDirs: ['services']
 ```
+
+### `database`
+
+#### `database.mongo`
+
+- `url`
+- options Mongo sérialisables compatibles `MongoClient`
+- `management`
+
+#### `database.mongo.management`
+
+- `enabled`
+- `auth`
+- `basePath`
+- `exposeDatabasesService`
+- `exposeCollectionsService`
+- `exposeUsersService`
+- `exposeCollectionCrud`
+
+Cette couche est **optionnelle** et destinée à exposer une surface de gestion MongoDB via le template embedded `feathers/server/mongodb.ts`.
 
 ### `server`
 

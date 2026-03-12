@@ -45,3 +45,9 @@ Useful checks:
 ## Why the playground matters
 
 To freeze the open source core, it should remain a simple and stable validation ground.
+
+
+## Toggle MongoDB memory in remote-only runs
+
+If you only want to validate remote mode without starting `mongodb-memory-server`, set `NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`.
+The default remains `true` so the embedded MongoDB scenario stays available out of the box.

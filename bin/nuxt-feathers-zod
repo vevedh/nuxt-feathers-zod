@@ -1,5 +1,11 @@
 #!/usr/bin/env bun
 
+import { handleCliError } from '../src/cli/core.ts'
 import { runCli } from '../src/cli/index.ts'
 
-await runCli(process.argv.slice(2), { cwd: process.cwd() })
+try {
+  await runCli(process.argv.slice(2), { cwd: process.cwd() })
+}
+catch (err) {
+  handleCliError(err)
+}

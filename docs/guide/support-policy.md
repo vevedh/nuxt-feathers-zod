@@ -15,7 +15,9 @@ Le support prioritaire couvre :
 - auth locale / JWT
 - bridge Keycloak SSO
 - CLI de génération
+- `auth service`, `add mongodb-compose`, `add server-module`
 - Swagger legacy optionnel
+- MongoDB management en mode opt-in
 
 ## Ce qui est supporté en priorité
 
@@ -26,6 +28,7 @@ Quand une régression apparaît, les parcours à protéger en premier sont :
 3. remote REST
 4. remote Socket.IO
 5. Keycloak bridge
+6. `bunx nuxt-feathers-zod --help` sous Bun/Windows
 
 ## Dépréciations
 
@@ -43,3 +46,4 @@ Une correction “core” doit privilégier :
 - exemple minimal mis à jour
 - docs FR/EN alignées
 - journalisation dans `PATCHLOG.md` et `PROMPT_CONTEXT.md`
+- validation explicite du parsing CLI Bun/TypeScript quand une erreur de syntaxe a déjà été rencontrée

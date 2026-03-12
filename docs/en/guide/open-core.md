@@ -22,7 +22,7 @@ The standard core already covers the following use cases.
 - **REST** and **Socket.IO** transports
 - embedded server with **Express** or **Koa**
 
-### 2) Supported CLI
+### 2) CLI surface supported in the OSS core
 
 - `init embedded`
 - `init remote`
@@ -31,6 +31,9 @@ The standard core already covers the following use cases.
 - `add service --custom`
 - `add remote-service`
 - `add middleware`
+- `add server-module`
+- `add mongodb-compose`
+- `auth service`
 - `doctor`
 
 ### 3) Services and client runtime
@@ -47,24 +50,34 @@ The standard core already covers the following use cases.
 - local / JWT auth
 - remote JWT auth
 - **Keycloak SSO** bridge
+- CLI auth hook toggle on existing services with `auth service <name>`
 
 ### 5) Embedded DX
 
 - secure defaults
 - built-in server modules
+- Express `server-module` presets
 - optional Swagger legacy
 - template overrides
 - validation playground
+- optional MongoDB management via `database.mongo.management`
 
-## What should remain standard
+## OSS core validation rules
 
-For the open source core, the recommended rule is:
+A capability belongs to the open source core only if it satisfies these rules:
 
-- a documented feature,
-- a minimal reproducible example,
-- a tested behavior,
+- documented feature,
+- minimal reproducible example,
+- tested behavior or smoke validation,
 - no dependency on a proprietary console,
-- no hard coupling to a SaaS service.
+- no hard coupling to a SaaS service,
+- no Bun/Windows CLI parsing regression.
+
+That last point is now explicitly part of the stability contract. The following command must stay parse-safe and usable:
+
+```bash
+bunx nuxt-feathers-zod --help
+```
 
 ## What can become premium later
 
@@ -91,6 +104,7 @@ The priority flows to guarantee are:
 3. **New Nuxt 4 app + remote REST**
 4. **New Nuxt 4 app + remote Socket.IO**
 5. **New Nuxt 4 app + Keycloak SSO**
+6. **Bun/Windows parse-safe CLI**
 
 ### Standardize the official method
 
@@ -111,14 +125,16 @@ Public conventions worth keeping:
 - CLI-first
 - default adapter = `memory`
 - default schema = `none`
-- historical alias supported but not recommended
+- historical aliases supported but not recommended
 - consistent public client config in remote mode
+- explicit opt-in MongoDB management options
 
 ## Proposed open source roadmap
 
 ### Level 1 — stability
 
 - CLI smoke tests for `init embedded` and `init remote`
+- `bunx nuxt-feathers-zod --help` smoke test
 - `playground` build smoke test
 - VitePress docs smoke test
 - Windows + Linux matrix
@@ -128,6 +144,7 @@ Public conventions worth keeping:
 - “new Nuxt 4 app” examples on every major page
 - reference pages aligned with real options
 - explicit “known limits” section
+- dedicated documentation for MongoDB management and server modules
 
 ### Level 3 — maintenance
 

@@ -6,27 +6,33 @@ import { getServerKeycloakContents } from './keycloak'
 import { getServerMongodbContents } from './mongodb'
 import { getServerPluginContents } from './plugin'
 import { getSecureDefaultsModuleContents } from './secure-defaults'
-import { getServerContents } from './server'
+import { getServerRuntimeContents } from './server-runtime'
+import { getServerTypesContents } from './server-types'
 
 export function getServerTemplates(options: ResolvedOptions): Templates {
   const serverTemplates: Templates = [
     {
-      filename: 'feathers/server/server.ts',
-      getContents: getServerContents(options),
+      filename: 'feathers/server/server.js',
+      getContents: getServerRuntimeContents(options),
       write: true,
     },
     {
-      filename: 'feathers/server/app.ts',
+      filename: 'feathers/server/server.d.ts',
+      getContents: getServerTypesContents(options),
+      write: true,
+    },
+    {
+      filename: 'feathers/server/app.js',
       getContents: getServerAppContents(options),
       write: true,
     },
     {
-      filename: 'feathers/server/modules/secure-defaults.ts',
+      filename: 'feathers/server/modules/secure-defaults.js',
       getContents: getSecureDefaultsModuleContents(options),
       write: true,
     },
     {
-      filename: 'feathers/server/plugin.ts',
+      filename: 'feathers/server/plugin.js',
       getContents: getServerPluginContents(options),
       write: true,
     },
@@ -34,7 +40,7 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
 
   if (options.database.mongo) {
     serverTemplates.push({
-      filename: 'feathers/server/mongodb.ts',
+      filename: 'feathers/server/mongodb.js',
       getContents: getServerMongodbContents(options),
       write: true,
     })
@@ -42,7 +48,7 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
 
   if (options.auth) {
     serverTemplates.push({
-      filename: 'feathers/server/authentication.ts',
+      filename: 'feathers/server/authentication.js',
       getContents: getServerAuthContents(options),
       write: true,
     })
@@ -50,7 +56,7 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
 
   if (options.keycloak) {
     serverTemplates.push({
-      filename: 'feathers/server/keycloak.ts',
+      filename: 'feathers/server/keycloak.js',
       getContents: getServerKeycloakContents(options),
       write: true,
     })

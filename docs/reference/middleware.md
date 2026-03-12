@@ -3,7 +3,7 @@ editLink: false
 ---
 # Middleware
 
-Le module peut générer plusieurs familles de middleware.
+Le module peut générer plusieurs familles de middleware et modules serveur.
 
 ## Middleware Nitro
 
@@ -11,42 +11,42 @@ Cible : `--target nitro`
 
 Utilisé pour la couche Nuxt/Nitro elle-même.
 
-## Middleware Feathers
+Exemple :
+
+```bash
+bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+```
+
+## Plugin serveur Feathers
 
 Cible : `--target feathers`
 
-Utilisé pour générer des plugins ou modules serveur Feathers dans l'application.
-
-## Middleware client
-
-Cible : `--target client`
+Utilisé pour générer un plugin sous `server/feathers/*.ts`.
 
 Exemple :
 
 ```bash
-bunx nuxt-feathers-zod add middleware auth --target client
+bunx nuxt-feathers-zod add middleware audit --target feathers
 ```
 
-Fichiers générés :
+## Server modules embedded
 
-```txt
-app/plugins/nfz-auth.client.ts
-app/middleware/auth.global.ts
-```
+Cible : `--target server-module` ou commande dédiée `add server-module`.
 
-## Usage
-
-Cette couche auth client :
-
-- initialise `useAuth()` côté navigateur
-- protège les routes par défaut
-- respecte `definePageMeta({ auth: false })`
-- peut rediriger vers `/login`
-- peut déclencher un flux Keycloak selon la configuration
-
-
-## Server modules
+Exemples :
 
 ```bash
 bunx nuxt-feathers-zod add middleware metrics --target server-module
+bunx nuxt-feathers-zod add server-module helmet --preset helmet
 ```
+
+## Cibles supportées
+
+- `nitro`
+- `feathers`
+- `server-module`
+- `module`
+
+## Important
+
+La documentation plus ancienne mentionnait parfois `--target client`. Ce n’est **pas** une cible supportée par la CLI actuelle du core OSS.

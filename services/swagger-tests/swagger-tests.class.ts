@@ -3,6 +3,8 @@
 import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'
 import type { Db } from 'mongodb'
+
+type MongoClientLike = Promise<Db>
 import type { Application } from 'nuxt-feathers-zod/server'
 import type { SwaggerTests, SwaggerTestsData, SwaggerTestsPatch, SwaggerTestsQuery } from './swagger-tests.schema'
 import { MongoDBService } from '@feathersjs/mongodb'
@@ -20,12 +22,21 @@ export class SwaggerTestsService<ServiceParams extends Params = SwaggerTestsPara
 > {}
 
 export function getOptions(app: Application): MongoDBAdapterOptions {
+  const mongoClient = app.get('mongodbClient') as MongoClientLike | undefined
+
+  if (!mongoClient || typeof (mongoClient as any).then !== 'function') {
+    throw new Error(
+      `[nuxt-feathers-zod] Service 'swagger-tests' uses adapter 'mongodb' but app.get('mongodbClient') is not configured. `
+      + `Enable feathers.database.mongo in embedded mode, or regenerate this service with --adapter memory.`,
+    )
+  }
+
   return {
     paginate: {
       default: 10,
       max: 100,
     },
     multi: true,
-    Model: app.get('mongodbClient').then((db: Db) => db.collection('swagger-tests')),
+    Model: mongoClient.then((db: Db) => db.collection('swagger-tests')),
   }
 }

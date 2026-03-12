@@ -46,9 +46,12 @@ jobs:
         run: |
           bun run lint
           bun run sanity:templates
+          bun run sanity:syntax
+          bun run typecheck
           bun run prepare
           bun run build
           bun run docs:build
+          bun run cli:smoke
 
       - name: Dry run pack
         run: npm pack --dry-run

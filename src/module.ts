@@ -48,7 +48,7 @@ declare module '@nuxt/schema' {
 function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
   const resolver = createResolver(import.meta.url)
   const aliases = {
-    'nuxt-feathers-zod/server': resolver.resolve(options.templateDir, 'server/server'),
+    'nuxt-feathers-zod/server': resolver.resolve(options.templateDir, 'server/server.js'),
     'nuxt-feathers-zod/validators': resolver.resolve('runtime/zod/validators'),
     'nuxt-feathers-zod/query': resolver.resolve('runtime/zod/query'),
     'nuxt-feathers-zod/zod': resolver.resolve('runtime/zod/index'),
@@ -199,7 +199,7 @@ export default defineNuxtModule<ModuleOptions>({
         const tpl = addTemplate(ov
           ? { filename: serverTemplate.filename, src: ov.absPath, write: true, options: resolvedOptions }
           : { ...serverTemplate, options: resolvedOptions })
-        if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin'))
+        if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin.js') || serverTemplate.filename?.endsWith('server/plugin'))
           serverPluginDst = tpl.dst
       }
       addServerPlugin(serverPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'server/plugin.ts'))
@@ -213,10 +213,11 @@ export default defineNuxtModule<ModuleOptions>({
       // If Pinia is enabled, enable auth/bootstrap plugins as needed.
       if (piniaEnabled) {
         nuxt.hook('vite:extendConfig', (config) => {
-          config.optimizeDeps = config.optimizeDeps || {}
-          config.optimizeDeps.include = config.optimizeDeps.include || []
-          if (!config.optimizeDeps.include.includes('feathers-pinia'))
-            config.optimizeDeps.include.push('feathers-pinia')
+          const mutableConfig = config as any
+          mutableConfig.optimizeDeps ||= {}
+          mutableConfig.optimizeDeps.include ||= []
+          if (!mutableConfig.optimizeDeps.include.includes('feathers-pinia'))
+            mutableConfig.optimizeDeps.include.push('feathers-pinia')
         })
 
         // Auth bootstrap is needed in two situations:

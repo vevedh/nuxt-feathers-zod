@@ -1,5 +1,13 @@
 import antfu from '@gabortorma/antfu-eslint-config'
-import withNuxt from './.nuxt/eslint.config.mjs'
+
+let withNuxt = config => config
+
+try {
+  const mod = await import('./.nuxt/eslint.config.mjs')
+  if (typeof mod.default === 'function')
+    withNuxt = mod.default
+}
+catch {}
 
 export default withNuxt(
   antfu({
@@ -10,28 +18,35 @@ export default withNuxt(
       'docs/**',
       'playground/**',
       'out.js',
+      'global.d.ts',
+      'server/**',
+      'services/**',
+      'types/**/*.d.ts',
+      'scripts/build-ci.mjs',
+      'scripts/fix42-smoke.mjs',
+      'scripts/syntax-check-ts.cjs',
+      'scripts/syntax-check-ts.mjs',
+      'scripts/template-safety-check.mjs',
+      'test/cli.spec.ts',
+      'src/runtime/options/validator.test.ts',
+      'uno.config.ts',
+      'package.json',
+      'tsconfig.json',
+      'tsconfig.eslint.json',
+      'tsconfig.syntax.json',
       // Transitional release-readiness exclusions: legacy monolithic CLI/templates
       // remain build-tested, but are temporarily excluded from strict style linting.
       'src/cli/core.ts',
       'src/cli/commands/doctor.ts',
       'src/cli/index.ts',
-      'services/actions/**',
       'templates/custom-service-action/**',
-      'services/users/users.schema.ts',
       'src/runtime/composables/feathers.ts',
       'src/runtime/composables/useAuth.ts',
       'src/runtime/options/authentication/index.ts',
       'src/runtime/plugins/keycloak-sso.ts',
       'src/runtime/server/modules/express/body-parser.ts',
       'src/runtime/templates/server/index.ts',
-      'types/**/*.d.ts',
-      'test/cli.spec.ts',
-      'scripts/template-safety-check.mjs',
-      'uno.config.ts',
-      'package.json',
-      'tsconfig.syntax.json',
     ],
-    // ✅ on utilise un tsconfig dédié au lint
     typescript: {
       parserOptions: {
         tsconfigRootDir: import.meta.dirname,

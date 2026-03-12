@@ -231,7 +231,7 @@ function buildSecureServerModules(server: ModuleOptions['server']): ServerModule
     push('compression', compression)
 
   const serveStatic = secure.serveStatic
-  if (serveStatic && serveStatic !== false)
+  if (serveStatic)
     push('serve-static', serveStatic)
 
   return out

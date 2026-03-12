@@ -32,7 +32,34 @@ export default defineFeathersServerPlugin((app) => {
 
         if (!keycloakEnabled) {
           try {
-            await context.app.service('users').create({ userId: 'test', password: '12345' })
+            const users = context.app.service('users')
+            let exists = false
+
+            try {
+              const found = await users.find({ query: { userId: 'test', $limit: 1 } as any }) as any
+              const items = Array.isArray(found) ? found : (Array.isArray(found?.data) ? found.data : [])
+              exists = items.some((item: any) => item?.userId === 'test')
+            }
+            catch {
+              // ignore lookup failure and try create
+            }
+
+            if (!exists)
+              await users.create({ userId: 'test', password: '12345' })
+
+            try {
+              const found = await users.find({ query: { userId: 'test', $limit: 1 } as any }) as any
+              const items = Array.isArray(found) ? found : (Array.isArray(found?.data) ? found.data : [])
+              exists = items.some((item: any) => item?.userId === 'test')
+            }
+            catch {
+              // ignore recheck failure
+            }
+
+            if (exists)
+              console.log('[dummy] local auth seed ready: test / 12345')
+            else
+              console.warn('[dummy] local auth seed could not be verified for userId=test')
           }
           catch (err) {
             console.warn('[dummy] users seed failed (ignored):', err)
@@ -42,11 +69,20 @@ export default defineFeathersServerPlugin((app) => {
           console.log('[dummy] users seed skipped (keycloak enabled)')
         }
 
-        try {
-          await context.app.service('mongos').create({ text: 'mongo' })
+        const embeddedMongoEnabled
+          = process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB !== 'false'
+            && process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB !== '0'
+
+        if (embeddedMongoEnabled) {
+          try {
+            await context.app.service('mongos').create({ text: 'mongo' })
+          }
+          catch (err) {
+            console.warn('[dummy] mongos seed failed (ignored):', err)
+          }
         }
-        catch (err) {
-          console.warn('[dummy] mongos seed failed (ignored):', err)
+        else {
+          console.log('[dummy] mongos seed skipped (embedded mongo disabled)')
         }
 
         await next()

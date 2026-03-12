@@ -28,6 +28,10 @@ Aujourd’hui, le socle stable couvre déjà les fonctions suivantes :
 - **Swagger legacy** en option,
 - **template overrides** pour surcharger les templates générés,
 - **server modules** embedded (CORS, helmet, compression, body-parser, serve-static, rate-limit, healthcheck),
+- **presets server-module** Express via la CLI,
+- **bootstrap MongoDB local** via `add mongodb-compose`,
+- **activation/désactivation des hooks auth** d’un service existant via `auth service`,
+- **MongoDB management** optionnel via `database.mongo.management`,
 - playground de validation pour les scénarios embedded / remote.
 
 ## Pré-requis

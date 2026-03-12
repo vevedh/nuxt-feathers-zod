@@ -31,6 +31,9 @@ dist
 
 # Env
 .env
+.env.*
+!.env.example
+!*.example
 
 # Testing
 reports
@@ -63,12 +66,18 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-
 # AI / patch helper files
 AI_CONTEXT/
-CONTEXT*
-PATCH*
-PROMPT*
+AI_*/
+.claude/
+.cursor/
+.continue/
+.windsurf/
+.roo/
+.qodo/
+CONTEXT*.md
+PATCH*.md
+PROMPT*.md
+JOURNAL.md
 SCENARIOS.md
-
-bun.lock
+README_private.md

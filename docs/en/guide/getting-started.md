@@ -28,6 +28,10 @@ The current stable base already covers:
 - optional **legacy Swagger** support,
 - **template overrides** for generated templates,
 - embedded **server modules** (CORS, helmet, compression, body-parser, serve-static, rate-limit, healthcheck),
+- Express **server-module presets** through the CLI,
+- local **MongoDB bootstrap** through `add mongodb-compose`,
+- **auth hook enable/disable** on an existing service through `auth service`,
+- optional **MongoDB management** through `database.mongo.management`,
 - a playground used to validate embedded / remote scenarios.
 
 ## Prerequisites

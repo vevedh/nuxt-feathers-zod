@@ -1,19 +1,47 @@
 <script setup lang="ts">
 const auth = useAuth()
 onMounted(() => { auth.init().catch(() => {}) })
-const { publicClient, scenarioId, title } = usePlaygroundScenario()
+const { publicClient, scenarioId, title, embeddedMongoEnabled, embeddedMongoMode } = usePlaygroundScenario()
 
 const scenarios = computed(() => [
   {
     id: 'embedded-local',
-    title: 'embedded + auth local inchangé',
+    title: 'embedded + auth local',
     env: `NFZ_CLIENT_MODE=embedded
-NFZ_KEYCLOAK_ENABLED=false`,
+NFZ_KEYCLOAK_ENABLED=false
+NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`,
     checks: [
       'Page / charge sans erreur',
       'Login local sur / fonctionne',
       'reAuthenticate() fonctionne sur /tests',
-      'Service embedded (messages/users/mongos) répond',
+      'Services embedded memory (messages/users/actions) répondent',
+    ],
+  },
+  {
+    id: 'embedded-local-mongo',
+    title: 'embedded + auth local + MongoDB memory',
+    env: `NFZ_CLIENT_MODE=embedded
+NFZ_KEYCLOAK_ENABLED=false
+NFZ_PLAYGROUND_EMBEDDED_MONGODB=true`,
+    checks: [
+      'MongoMemoryServer démarre',
+      'Le service mongos répond',
+      'Les services Mongo générés répondent',
+      'Le seed mongos s’exécute sans erreur bloquante',
+    ],
+  },
+  {
+    id: 'embedded-local-mongo-url',
+    title: 'embedded + auth local + MongoDB URL',
+    env: `NFZ_CLIENT_MODE=embedded
+NFZ_KEYCLOAK_ENABLED=false
+NFZ_PLAYGROUND_EMBEDDED_MONGODB=true
+NFZ_PLAYGROUND_EMBEDDED_MONGODB_URL=mongodb://root:changeMe@localhost:27017/app?authSource=admin`,
+    checks: [
+      'Aucun MongoMemoryServer local n’est démarré',
+      'La base Mongo externe est joignable',
+      'Le service mongos répond',
+      'Le mode détecté dans /validation et /tests est url',
     ],
   },
   {
@@ -97,6 +125,7 @@ KC_CLIENT_ID=myclient`,
       <h1>Playground — scénarios de validation</h1>
       <p>Scénario détecté : <strong>{{ title }}</strong> (<code>{{ scenarioId }}</code>)</p>
       <p>Provider détecté : <code>{{ auth.provider }}</code></p>
+      <p>Mode Mongo détecté : <code>{{ embeddedMongoMode }}</code> — activé: <code>{{ embeddedMongoEnabled }}</code></p>
       <p><NuxtLink to="/tests">Ouvrir la page de tests</NuxtLink></p>
       <pre style="white-space: pre-wrap">{{ publicClient }}</pre>
     </div>

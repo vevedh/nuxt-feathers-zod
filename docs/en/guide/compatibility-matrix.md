@@ -43,6 +43,8 @@ This matrix defines the **targeted and validated** scope for the open source cor
 
 ```bash
 bun install
+bun run sanity:templates
+bun run sanity:syntax
 bun run build
 bun run docs:build
 ```

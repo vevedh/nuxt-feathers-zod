@@ -2,28 +2,29 @@
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
-`nuxt-feathers-zod` is a Nuxt 4 module that integrates **FeathersJS v5 (Dove)** with a **CLI-first** workflow and a Zod-oriented service generation approach.
+`nuxt-feathers-zod` is an official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
 It supports two main usage patterns:
 
 - **embedded mode**: a Feathers server runs inside Nuxt/Nitro
 - **remote mode**: a Nuxt app uses a Feathers client against an external API
 
-## What is already in the open source core
+## Open source scope
+
+The public OSS module includes:
 
 - Nuxt 4 + Nitro integration
 - embedded and remote modes
 - REST and Socket.IO transports
 - embedded server with **Express** or **Koa**
 - CLI bootstrap for `init embedded`, `init remote`, `init templates`
-- CLI service generation with `add service`
-- adapter-less service generation with `add service --custom`
-- remote-service registration with `add remote-service`
+- CLI generation for services, remote services, middleware and server modules
+- schema modes `none | zod | json`
 - local/JWT auth flows
-- Keycloak SSO bridge
+- Keycloak SSO bridge for remote mode
 - optional legacy Swagger support
 - template overrides
-- embedded server modules
+- optional MongoDB management surface via `database.mongo.management`
 - client-side helpers with Pinia / feathers-pinia support
 
 ## Installation
@@ -39,7 +40,7 @@ Optional Swagger dependencies:
 bun add feathers-swagger swagger-ui-dist
 ```
 
-## Recommended quick start — new Nuxt 4 app in embedded mode
+## Quick start — embedded mode
 
 ```bash
 bunx nuxi@latest init my-nfz-app
@@ -61,7 +62,7 @@ bun install
 bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force --auth --swagger
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id --docs
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod --collection users --idField _id --docs
 bun dev
 ```
 
@@ -83,110 +84,94 @@ bun dev
 ```bash
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
-bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
+bunx nuxt-feathers-zod add service users --adapter mongodb --schema zod --collection users --idField _id
+bunx nuxt-feathers-zod add service users --auth --authAware --schema zod --adapter mongodb --collection users --idField _id
 bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
+bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add server-module helmet --preset helmet
+bunx nuxt-feathers-zod add mongodb-compose
+bunx nuxt-feathers-zod auth service users --enabled true
+bunx nuxt-feathers-zod schema users --show
 bunx nuxt-feathers-zod doctor
 ```
 
-## Open source core boundary
+## Auth-aware generation for `users`
 
-The project is being stabilized around a predictable **standard open source core**.
+For the `users` service, `--auth` and `--authAware` are distinct concerns:
 
-That core currently includes:
+- `--auth` protects service methods with JWT hooks
+- `--authAware` enables local-auth-aware password handling
 
-- runtime + transports
-- auth basics
-- CLI generation
-- template overrides
-- server modules
-- docs and playground validation
+When generating `users --auth`, the CLI keeps an **auto-safe default** and enables auth-aware behavior unless it is explicitly disabled.
 
-Potential future **license-key / Pro** candidates are intentionally kept outside that frozen core, such as advanced visual consoles, premium diagnostics, builders, enterprise presets, and packaged RBAC/policy layers.
+Auth-aware generation ensures the generated service handles password concerns consistently across `schema=none|zod|json` and `adapter=memory|mongodb`:
 
-## Development commands
+- hashes `password` with `passwordHash({ strategy: 'local' })`
+- strips `password` from returned records/results
+- persists the `authAware` state in the service manifest
+
+Examples:
 
 ```bash
-bun install
-bun run build
-bun run typecheck
-bun run docs:dev
-bun run docs:build
+bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory --force
+bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
+bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
 ```
 
+## Optional MongoDB management surface
 
-## Quality gates
+The OSS core can expose an optional MongoDB management layer from the generated `feathers/server/mongodb.ts` template, backed by `feathers-mongodb-management-ts`.
 
-The repository includes a standard open-source CI workflow on GitHub Actions.
-It validates the main surfaces of the module:
+Example:
 
-- install dependencies with Bun
-- lint the repository
-- run the template sanity check
-- build the Nuxt module
-- build the playground application
-- build the VitePress documentation
-
-The workflow file is located at `.github/workflows/ci.yml`.
-
-## Release process
-
-The repository now includes two GitHub Actions workflows:
-
-- `.github/workflows/ci.yml` for the standard open-source validation gates
-- `.github/workflows/publish.yml` for validated npm publication on tag or manual trigger
-
-Manual release checklist:
-
-```bash
-bun install
-bun run lint
-bun run sanity:templates
-bun run prepare
-bun run build
-bun run docs:build
-npm pack --dry-run
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    database: {
+      mongo: {
+        url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+        management: {
+          enabled: true,
+          auth: true,
+          basePath: '/mongo',
+          exposeDatabasesService: true,
+          exposeCollectionsService: true,
+          exposeCollectionCrud: true,
+        },
+      },
+    },
+  },
+})
 ```
 
-Then publish with either:
+This adds a controlled, opt-in management layer for:
+
+- `/mongo/databases`
+- `/mongo/<db>/collections`
+- `/mongo/<db>/<collection>`
+
+## Protecting an existing service after generation
 
 ```bash
-npm version patch
-npm publish --access public
+bunx nuxt-feathers-zod auth service users --enabled true
+bunx nuxt-feathers-zod auth service users --enabled false
 ```
 
-or:
+## Generating a local MongoDB Docker Compose file
 
 ```bash
-npm version prerelease --preid beta
-npm publish --tag beta --access public
-```
-
-Public documentation builds intentionally exclude internal guide pages such as `open-core` and `playground` in production builds.
-
-## Publishing to npm
-
-```bash
-npm login
-bun install
-bun run build
-npm pack --dry-run
-npm version patch
-npm publish --access public
-```
-
-For a beta release:
-
-```bash
-npm version prerelease --preid beta
-npm publish --tag beta --access public
+bunx nuxt-feathers-zod add mongodb-compose
+bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --database app --rootPassword secret --force
 ```
 
 ## Notes
 
-- The recommended convention is `servicesDirs: ['services']`.
-- The recommended path is **CLI-first**.
-- Historical aliases may remain supported for backward compatibility, but the public docs only foreground the canonical forms.
+- Recommended convention: `servicesDirs: ['services']`
+- Recommended path: **CLI-first**
+- Historical aliases may remain supported for backward compatibility, but the public docs foreground canonical commands only
+- Maintainer-only publication and admin procedures are kept in `README_private.md` and intentionally excluded from the public repository surface
 
 ## License
 

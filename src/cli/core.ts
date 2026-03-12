@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,6 +37,32 @@ export type CollectionName = string
 
 export interface RunCliOptions {
   cwd: string
+  throwOnError?: boolean
+}
+
+
+export interface ServiceSchemaField {
+  type: string
+  required?: boolean
+  default?: string | number | boolean | null
+  secret?: boolean
+}
+
+export interface ServiceManifest {
+  name: string
+  path: string
+  adapter: Adapter
+  auth: boolean
+  custom?: boolean
+  authAware?: boolean
+  idField?: IdField
+  collectionName?: string
+  methods?: string[]
+  customMethods?: string[]
+  schema: {
+    mode: SchemaKind
+    fields: Record<string, ServiceSchemaField>
+  }
 }
 
 export { runDoctor } from './commands/doctor'
@@ -68,6 +94,9 @@ Commands:
   add service <name>            Generate an embedded service (or a service with custom methods via --custom)
   add remote-service <name>     Register a remote service (client-only)
   add middleware <name>         Generate middleware (target nitro|feathers)
+  add mongodb-compose           Generate docker-compose-db.yaml for MongoDB
+  schema <service>              Inspect schema state or switch schema mode
+  auth service <name>           Enable/disable JWT auth hooks on an existing service
   doctor                        Diagnose current project configuration
 
 Global flags (most commands):
@@ -92,6 +121,8 @@ Examples:
   bunx nuxt-feathers-zod init remote --url http://localhost:3030
   bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport rest
   bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
+  bunx nuxt-feathers-zod add mongodb-compose
+  bunx nuxt-feathers-zod auth service users --enabled true
   bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example --realm myrealm --clientId myapp
   bunx nuxt-feathers-zod doctor
 
@@ -101,6 +132,7 @@ Flags overview:
     --dir <dir>                (default: feathers/templates)
     --force
     --dry
+    --diff                      show manifest diff before applying changes
 
   init embedded:
     --framework express|koa      (default: express)
@@ -174,8 +206,38 @@ Flags overview:
     --methods find,get,create,patch,remove,custom (optional)
     --dry
 
+  add mongodb-compose:
+    --out <file>                (default: docker-compose-db.yaml)
+    --service <name>            (default: mongodb)
+    --port <port>               (default: 27017)
+    --database <name>           (default: app)
+    --rootUser <user>           (default: root)
+    --rootPassword <pass>       (default: change-me)
+    --volume <name>             (default: mongodb_data)
+    --force
+    --dry
+
+  auth service <name>:
+    --servicesDir <dir>         (default: services)
+    --enabled true|false        (default: true)
+    --dry
+
   add middleware <name>:
     --target nitro|feathers|server-module|module (default: nitro)
+    --force
+    --dry
+
+  schema <service>:
+    --show                      human-readable schema summary
+    --json                      machine-readable schema summary
+    --export                    write schema summary to services/.nfz/exports
+    --get                       compatibility alias of --show
+    --set-mode none|zod|json    switch schema mode
+    --add-field <spec>          add field (ex: userId:string!, isActive:boolean=true)
+    --remove-field <name>       remove field from manifest/schema
+    --set-field <spec>          create or replace field definition
+    --rename-field <from:to>    rename field preserving definition
+    --servicesDir <dir>         (default: services)
     --force
     --dry
 
@@ -1056,6 +1118,744 @@ function normalizeServiceName(raw: string) {
   return kebabCase(raw)
 }
 
+
+
+function getNfzRoot(servicesDir: string) {
+  return join(servicesDir, '.nfz')
+}
+
+function getServiceManifestPath(servicesDir: string, serviceNameKebab: string) {
+  return join(getNfzRoot(servicesDir), 'services', `${serviceNameKebab}.json`)
+}
+
+function getGlobalManifestPath(servicesDir: string) {
+  return join(getNfzRoot(servicesDir), 'manifest.json')
+}
+
+function parseSharedServicePath(source: string, ids: ReturnType<typeof createServiceIds>) {
+  const byCamel = source.match(new RegExp(`export const ${ids.baseCamel}Path = ['\"]([^'\"]+)['\"]`))?.[1]
+  if (byCamel)
+    return byCamel
+  const generic = source.match(/export const [A-Za-z0-9_]+Path = ['\"]([^'\"]+)['\"]/)?.[1]
+  return generic || ids.serviceNameKebab
+}
+
+function parseMethodsFromShared(source: string, ids: ReturnType<typeof createServiceIds>) {
+  const byCamel = source.match(new RegExp(`export const ${ids.baseCamel}Methods[^=]*= \[(.*?)\]`, 's'))?.[1]
+  const generic = source.match(/export const [A-Za-z0-9_]+Methods[^=]*= \[(.*?)\]/s)?.[1]
+  const raw = byCamel || generic || ''
+  return raw.split(',').map(v => v.trim().replace(/^['\"]|['\"]$/g, '')).filter(Boolean)
+}
+
+function inferFieldTypeFromZodExpression(expr: string): string {
+  const value = expr.replace(/\s+/g, ' ').trim()
+  if (/objectIdSchema\(\)/.test(value))
+    return 'id'
+  if (/z\.string\(\)/.test(value))
+    return 'string'
+  if (/z\.number\(\)/.test(value))
+    return 'number'
+  if (/z\.boolean\(\)/.test(value))
+    return 'boolean'
+  if (/z\.date\(\)/.test(value))
+    return 'date'
+  if (/z\.array\(\s*z\.string\(\)\s*\)/.test(value))
+    return 'string[]'
+  if (/z\.array\(\s*z\.number\(\)\s*\)/.test(value))
+    return 'number[]'
+  if (/z\.array\(\s*z\.boolean\(\)\s*\)/.test(value))
+    return 'boolean[]'
+  if (/z\.array\(/.test(value))
+    return 'array'
+  if (/z\.record\(/.test(value) || /z\.object\(/.test(value))
+    return 'object'
+  return 'string'
+}
+
+function parseDefaultLiteral(raw: string): string | number | boolean | null {
+  const value = raw.trim()
+  if (value === 'true')
+    return true
+  if (value === 'false')
+    return false
+  if (value === 'null')
+    return null
+  if (/^['\"].*['\"]$/.test(value))
+    return value.slice(1, -1)
+  const num = Number(value)
+  if (Number.isFinite(num))
+    return num
+  return value
+}
+
+function parseDefaultFromZodExpression(expr: string): string | number | boolean | null | undefined {
+  const match = expr.match(/\.default\(([^)]+)\)/)
+  if (!match)
+    return undefined
+  return parseDefaultLiteral(match[1])
+}
+
+function parseZodFields(source: string): Record<string, ServiceSchemaField> {
+  const block = source.match(/export const [A-Za-z0-9_]+Schema = z\.object\((\{[\s\S]*?\})\)/)
+  if (!block)
+    return {}
+  const body = block[1].slice(1, -1)
+  const fields: Record<string, ServiceSchemaField> = {}
+  for (const line of body.split('\n')) {
+    const trimmed = line.trim().replace(/,$/, '')
+    if (!trimmed || trimmed.startsWith('//'))
+      continue
+    const idx = trimmed.indexOf(':')
+    if (idx === -1)
+      continue
+    const name = trimmed.slice(0, idx).trim()
+    const expr = trimmed.slice(idx + 1).trim()
+    if (!/^[A-Za-z0-9_]+$/.test(name))
+      continue
+    const def = parseDefaultFromZodExpression(expr)
+    fields[name] = {
+      type: inferFieldTypeFromZodExpression(expr),
+      required: !(/\.optional\(\)|\.nullish\(\)/.test(expr)),
+      ...(def !== undefined ? { default: def } : {}),
+      ...(name.toLowerCase().includes('password') ? { secret: true } : {}),
+    }
+  }
+  return fields
+}
+
+function parseJsonFields(source: string): Record<string, ServiceSchemaField> {
+  const fields: Record<string, ServiceSchemaField> = {}
+  const requiredMatch = source.match(/required:\s*\[([^\]]*)\]/)
+  const required = new Set((requiredMatch?.[1] || '').split(',').map(v => v.trim().replace(/^['\"]|['\"]$/g, '')).filter(Boolean))
+  for (const line of source.split('\n')) {
+    const trimmed = line.trim().replace(/,$/, '')
+    const match = trimmed.match(/^([A-Za-z0-9_]+):\s*\{\s*type:\s*['\"]([^'\"]+)['\"](?:,\s*default:\s*([^,}]+))?.*\}$/)
+    if (!match)
+      continue
+    const [, name, type, rawDefault] = match
+    fields[name] = {
+      type,
+      required: required.has(name),
+      ...(rawDefault !== undefined ? { default: parseDefaultLiteral(rawDefault) } : {}),
+      ...(name.toLowerCase().includes('password') ? { secret: true } : {}),
+    }
+  }
+  return fields
+}
+
+
+const SUPPORTED_FIELD_TYPES = new Set(['string', 'number', 'boolean', 'date', 'object', 'array', 'id', 'string[]', 'number[]', 'boolean[]'])
+
+function assertSupportedFieldType(type: string) {
+  if (!SUPPORTED_FIELD_TYPES.has(type))
+    throw new Error(`Unsupported field type '${type}'. Supported types: ${Array.from(SUPPORTED_FIELD_TYPES).join(', ')}`)
+}
+
+function parseFieldSpec(spec: string): { name: string, field: ServiceSchemaField } {
+  const raw = String(spec || '').trim()
+  if (!raw)
+    throw new Error('Missing field spec. Expected format <name>:<type>[!][=<default>]')
+
+  const idx = raw.indexOf(':')
+  if (idx <= 0)
+    throw new Error(`Invalid field spec '${raw}'. Expected format <name>:<type>[!][=<default>]`)
+
+  const name = raw.slice(0, idx).trim()
+  let rest = raw.slice(idx + 1).trim()
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name))
+    throw new Error(`Invalid field name '${name}'. Use letters, numbers and underscore only.`)
+
+  let defaultValue: string | number | boolean | null | undefined
+  const eqIdx = rest.indexOf('=')
+  if (eqIdx !== -1) {
+    defaultValue = parseDefaultLiteral(rest.slice(eqIdx + 1))
+    rest = rest.slice(0, eqIdx).trim()
+  }
+
+  let required = false
+  if (rest.endsWith('!')) {
+    required = true
+    rest = rest.slice(0, -1).trim()
+  }
+
+  const type = rest
+  assertSupportedFieldType(type)
+
+  const field: ServiceSchemaField = {
+    type,
+    required,
+    ...(defaultValue !== undefined ? { default: defaultValue } : {}),
+    ...(name.toLowerCase().includes('password') ? { secret: true } : {}),
+  }
+
+  return { name, field }
+}
+
+function parseRenameFieldSpec(spec: string): { from: string, to: string } {
+  const raw = String(spec || '').trim()
+  const idx = raw.indexOf(':')
+  if (idx <= 0)
+    throw new Error(`Invalid rename spec '${raw}'. Expected format <from>:<to>`)
+  const from = raw.slice(0, idx).trim()
+  const to = raw.slice(idx + 1).trim()
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(from) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(to))
+    throw new Error(`Invalid rename spec '${raw}'. Field names must use letters, numbers and underscore only.`)
+  return { from, to }
+}
+
+async function inferServiceManifest(projectRoot: string, servicesDir: string, name: string): Promise<ServiceManifest> {
+  const serviceNameKebab = normalizeServiceName(name)
+  const ids = createServiceIds(serviceNameKebab)
+  const manifestPath = getServiceManifestPath(servicesDir, serviceNameKebab)
+  if (existsSync(manifestPath))
+    return JSON.parse(await readFile(manifestPath, 'utf8')) as ServiceManifest
+
+  const dir = join(servicesDir, serviceNameKebab)
+  const sharedPath = join(dir, `${serviceNameKebab}.shared.ts`)
+  const classPath = join(dir, `${serviceNameKebab}.class.ts`)
+  const servicePathFile = join(dir, `${serviceNameKebab}.ts`)
+  const schemaPath = join(dir, `${serviceNameKebab}.schema.ts`)
+
+  if (!existsSync(sharedPath) || !existsSync(classPath) || !existsSync(servicePathFile))
+    throw new Error(`Service '${serviceNameKebab}' not found in ${relativeToCwd(servicesDir)}`)
+
+  const sharedSource = await readFile(sharedPath, 'utf8')
+  const classSource = await readFile(classPath, 'utf8')
+  const serviceSource = await readFile(servicePathFile, 'utf8')
+  const schemaSource = existsSync(schemaPath) ? await readFile(schemaPath, 'utf8') : ''
+
+  const adapter: Adapter = classSource.includes('@feathersjs/mongodb') || classSource.includes('MongoDBService') ? 'mongodb' : 'memory'
+  const custom = !(classSource.includes('MemoryService') || classSource.includes('MongoDBService'))
+  const schemaMode: SchemaKind = !schemaSource ? 'none' : (schemaSource.includes("from 'zod'") || schemaSource.includes('zodQuerySyntax')) ? 'zod' : 'json'
+  const methods = parseMethodsFromShared(sharedSource, ids)
+  const fields = schemaMode === 'zod' ? parseZodFields(schemaSource) : schemaMode === 'json' ? parseJsonFields(schemaSource) : {}
+  const path = parseSharedServicePath(sharedSource, ids)
+  const collectionName = adapter === 'mongodb'
+    ? (classSource.match(/collection\('([^']+)'\)/)?.[1] || classSource.match(/Service \\\'([^']+)\\\'/)?.[1] || serviceNameKebab)
+    : undefined
+  const idField: IdField = schemaSource.includes('_id') || classSource.includes('_id') ? '_id' : 'id'
+
+  return {
+    name: serviceNameKebab,
+    path,
+    adapter,
+    auth: serviceSource.includes("authenticate('jwt')"),
+    custom,
+    idField,
+    ...(collectionName ? { collectionName } : {}),
+    ...(methods.length ? { methods } : {}),
+    ...(custom ? { customMethods: methods.filter(m => !STD_SERVICE_METHODS.has(m)) } : {}),
+    schema: {
+      mode: schemaMode,
+      fields,
+    },
+  }
+}
+
+async function writeServiceManifest(servicesDir: string, manifest: ServiceManifest, io: { dry: boolean, force: boolean }) {
+  const nfzRoot = getNfzRoot(servicesDir)
+  const serviceManifestPath = getServiceManifestPath(servicesDir, manifest.name)
+  const globalManifestPath = getGlobalManifestPath(servicesDir)
+  await ensureDir(join(nfzRoot, 'services'), io.dry)
+  await writeFileSafe(serviceManifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { dry: io.dry, force: true })
+
+  const global = existsSync(globalManifestPath)
+    ? JSON.parse(await readFile(globalManifestPath, 'utf8'))
+    : { services: {} as Record<string, any> }
+  global.services[manifest.name] = {
+    path: manifest.path,
+    adapter: manifest.adapter,
+    auth: manifest.auth,
+    custom: !!manifest.custom,
+    schemaMode: manifest.schema.mode,
+  }
+  await ensureDir(nfzRoot, io.dry)
+  await writeFileSafe(globalManifestPath, `${JSON.stringify(global, null, 2)}\n`, { dry: io.dry, force: true })
+}
+
+function formatFieldFlags(field: ServiceSchemaField) {
+  const flags: string[] = [field.required ? 'required' : 'optional']
+  if (field.secret)
+    flags.push('secret')
+  if (field.default !== undefined)
+    flags.push(`default=${JSON.stringify(field.default)}`)
+  return flags.join(' ')
+}
+
+function renderManifestShow(manifest: ServiceManifest) {
+  const lines = [
+    `Service: ${manifest.name}`,
+    `Path: ${manifest.path}`,
+    `Adapter: ${manifest.adapter}`,
+    `Auth: ${manifest.auth ? 'yes' : 'no'}`,
+    `Custom: ${manifest.custom ? 'yes' : 'no'}`,
+    `Auth-aware: ${resolveAuthAwareFlag(manifest.name, manifest.auth, manifest.authAware) ? 'yes' : 'no'}`,
+    `Schema mode: ${manifest.schema.mode}`,
+    ...renderAuthCompatibilityLine(manifest),
+    '',
+    'Fields:',
+  ]
+  const entries = Object.entries(manifest.schema.fields)
+  if (!entries.length)
+    lines.push('- (none)')
+  else
+    for (const [name, field] of entries)
+      lines.push(`- ${name.padEnd(12)} ${String(field.type).padEnd(10)} ${formatFieldFlags(field)}`.trimEnd())
+  return lines.join('\n')
+}
+
+function summarizeManifestDiff(before: ServiceManifest, after: ServiceManifest) {
+  const lines: string[] = []
+  if (before.authAware !== after.authAware)
+    lines.push(`~ authAware: ${String(before.authAware)} -> ${String(after.authAware)}`)
+  if (before.schema.mode !== after.schema.mode)
+    lines.push(`~ schema.mode: ${before.schema.mode} -> ${after.schema.mode}`)
+
+  const beforeFields = before.schema.fields || {}
+  const afterFields = after.schema.fields || {}
+  const names = Array.from(new Set([...Object.keys(beforeFields), ...Object.keys(afterFields)])).sort()
+  for (const name of names) {
+    const prev = beforeFields[name]
+    const next = afterFields[name]
+    if (!prev && next) {
+      lines.push(`+ field ${name}: ${next.type}${next.required ? ' required' : ''}${next.default !== undefined ? ` default=${JSON.stringify(next.default)}` : ''}`)
+      continue
+    }
+    if (prev && !next) {
+      lines.push(`- field ${name}`)
+      continue
+    }
+    if (JSON.stringify(prev) !== JSON.stringify(next)) {
+      lines.push(`~ field ${name}: ${JSON.stringify(prev)} -> ${JSON.stringify(next)}`)
+    }
+  }
+
+  return lines.length ? lines.join('\n') : '(no changes)'
+}
+
+function protectedAuthFields(manifest: ServiceManifest) {
+  if (manifest.auth && manifest.name === 'users')
+    return new Set(['userId', 'password'])
+  return new Set<string>()
+}
+
+function getAuthCompatibility(manifest: ServiceManifest) {
+  const issues: string[] = []
+  if (!(manifest.auth && manifest.name === 'users'))
+    return { applicable: false as const, ok: true, issues }
+
+  const authAware = resolveAuthAwareFlag(manifest.name, manifest.auth, manifest.authAware)
+  if (!authAware)
+    issues.push('auth-aware generation is disabled; local-auth password hashing and password masking are not guaranteed')
+
+  if (manifest.schema.mode !== 'none') {
+    const userId = manifest.schema.fields.userId
+    if (!userId)
+      issues.push("missing required field 'userId'")
+    else {
+      if (userId.type !== 'string')
+        issues.push("field 'userId' must be type string")
+      if (userId.required === false)
+        issues.push("field 'userId' must be required")
+    }
+
+    const password = manifest.schema.fields.password
+    if (!password)
+      issues.push("missing required field 'password'")
+    else {
+      if (password.type !== 'string')
+        issues.push("field 'password' must be type string")
+      if (password.required === false)
+        issues.push("field 'password' must be required")
+    }
+  }
+
+  return {
+    applicable: true as const,
+    ok: issues.length === 0,
+    issues,
+  }
+}
+
+function renderAuthCompatibilityLine(manifest: ServiceManifest) {
+  const auth = getAuthCompatibility(manifest)
+  if (!auth.applicable)
+    return ['Auth compatibility: n/a']
+
+  const lines = [`Auth compatibility: ${auth.ok ? 'yes' : 'no'}`]
+  if (!auth.ok) {
+    lines.push('Auth issues:')
+    for (const issue of auth.issues)
+      lines.push(`- ${issue}`)
+  }
+  return lines
+}
+
+
+function enforceAuthSchemaGuard(_manifest: ServiceManifest, _nextMode: SchemaKind, _force: boolean) {
+}
+
+function enforceAuthFieldGuards(manifest: ServiceManifest, opts: { removeField?: string, renameField?: string, setField?: string, force: boolean }) {
+  const protectedFields = protectedAuthFields(manifest)
+  if (!protectedFields.size)
+    return
+
+  const deny = (field: string, action: string) => {
+    const msg = `Field '${field}' is protected for auth-enabled users service; cannot ${action} without --force.`
+    if (!opts.force)
+      throw new Error(msg)
+    consola.warn(`[nfz] ${msg} Proceeding because --force was provided.`)
+  }
+
+  if (opts.removeField) {
+    const field = String(opts.removeField).trim()
+    if (protectedFields.has(field))
+      deny(field, 'remove it')
+  }
+
+  if (opts.renameField) {
+    const { from, to } = parseRenameFieldSpec(opts.renameField)
+    if (protectedFields.has(from) || protectedFields.has(to))
+      deny(protectedFields.has(from) ? from : to, 'rename it')
+  }
+
+  if (opts.setField) {
+    const { name } = parseFieldSpec(opts.setField)
+    if (protectedFields.has(name))
+      deny(name, 'modify it')
+  }
+}
+
+export async function showServiceSchema(opts: { projectRoot: string, servicesDir: string, name: string, format: 'show' | 'json', exportFile?: string }) {
+  const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
+  await writeServiceManifest(opts.servicesDir, manifest, { dry: false, force: true })
+  const output = opts.format === 'json'
+    ? `${JSON.stringify(manifest, null, 2)}\n`
+    : `${renderManifestShow(manifest)}\n`
+  if (opts.exportFile) {
+    const exportPath = resolve(opts.projectRoot, opts.exportFile)
+    await ensureDir(resolve(exportPath, '..'), false)
+    await writeFile(exportPath, output, 'utf8')
+    consola.success(`Exported schema view to ${relativeToCwd(exportPath)}`)
+    return
+  }
+  process.stdout.write(output)
+}
+
+function inferIdFieldFromFields(fields: Record<string, ServiceSchemaField>, fallback: IdField): IdField {
+  if ('_id' in fields)
+    return '_id'
+  if ('id' in fields)
+    return 'id'
+  return fallback
+}
+
+function pickCreateFieldMap(fields: Record<string, ServiceSchemaField>, idField: IdField) {
+  return Object.fromEntries(Object.entries(fields).filter(([name]) => name !== idField))
+}
+
+
+function renderJsonField(field: ServiceSchemaField, adapter: Adapter) {
+  const normalizedType = field.type === 'id'
+    ? (adapter === 'mongodb' ? 'string' : 'number')
+    : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+
+  const pieces = [`type: '${normalizedType}'`]
+
+  if (normalizedType === 'array') {
+    let itemType = 'string'
+    if (field.type === 'number[]')
+      itemType = 'number'
+    else if (field.type === 'boolean[]')
+      itemType = 'boolean'
+    pieces.push(`items: { type: '${itemType}' }`)
+  }
+
+  if (field.type === 'date')
+    pieces.push("format: 'date-time'")
+
+  if (field.default !== undefined)
+    pieces.push(`default: ${JSON.stringify(field.default)}`)
+
+  return `{ ${pieces.join(', ')} }`
+}
+
+function renderJsonProperties(fields: Record<string, ServiceSchemaField>, adapter: Adapter) {
+  return Object.entries(fields)
+    .map(([name, field]) => `${name}: ${renderJsonField(field, adapter)}`)
+    .join(',\n    ')
+}
+
+function jsonRequired(fields: Record<string, ServiceSchemaField>) {
+  return Object.entries(fields)
+    .filter(([, field]) => field.required !== false)
+    .map(([name]) => name)
+}
+
+function renderZodFieldExpression(field: ServiceSchemaField, adapter: Adapter) {
+  let base = 'z.string()'
+  switch (field.type) {
+    case 'id':
+      base = adapter === 'mongodb' ? 'objectIdSchema()' : 'z.number().int()'
+      break
+    case 'string':
+      base = 'z.string()'
+      break
+    case 'number':
+      base = 'z.number()'
+      break
+    case 'boolean':
+      base = 'z.boolean()'
+      break
+    case 'date':
+      base = 'z.date()'
+      break
+    case 'string[]':
+      base = 'z.array(z.string())'
+      break
+    case 'number[]':
+      base = 'z.array(z.number())'
+      break
+    case 'boolean[]':
+      base = 'z.array(z.boolean())'
+      break
+    case 'array':
+      base = 'z.array(z.any())'
+      break
+    case 'object':
+      base = 'z.record(z.string(), z.any())'
+      break
+    default:
+      base = 'z.string()'
+  }
+  if (field.default !== undefined)
+    base += `.default(${JSON.stringify(field.default)})`
+  if (field.required === false)
+    base += '.optional()'
+  return base
+}
+
+function renderSchemaFromManifest(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField, schemaKind: SchemaKind, fields: Record<string, ServiceSchemaField>, auth = false, authAware?: boolean) {
+  if (schemaKind === 'zod')
+    return renderZodSchema(ids, adapter, idField, fields, auth, authAware)
+  if (schemaKind === 'json')
+    return renderJsonSchema(ids, adapter, idField, fields, auth, authAware)
+  return ''
+}
+
+async function applyServiceManifest(opts: { servicesDir: string, manifest: ServiceManifest, dry: boolean, force: boolean }) {
+  const next: ServiceManifest = {
+    ...opts.manifest,
+    idField: inferIdFieldFromFields(opts.manifest.schema.fields, opts.manifest.idField || (opts.manifest.adapter === 'mongodb' ? '_id' : 'id')),
+  }
+
+  const ids = createServiceIds(next.name)
+  const dir = join(opts.servicesDir, next.name)
+  const schemaFile = join(dir, `${next.name}.schema.ts`)
+  const hooksFile = join(dir, `${next.name}.hooks.ts`)
+  const classFile = join(dir, `${next.name}.class.ts`)
+  const sharedFile = join(dir, `${next.name}.shared.ts`)
+  const serviceFile = join(dir, `${next.name}.ts`)
+
+  await ensureDir(dir, opts.dry)
+
+  if (next.custom) {
+    const methodList = next.methods?.filter(Boolean) || ['find']
+    const stdMethods = methodList.filter(m => STD_SERVICE_METHODS.has(m))
+    const customMethods = next.customMethods?.filter(Boolean) || methodList.filter(m => !STD_SERVICE_METHODS.has(m))
+    await writeFileSafe(classFile, renderCustomClass(ids, stdMethods, customMethods, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(sharedFile, renderCustomShared(ids, next.path, stdMethods, customMethods, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(serviceFile, renderCustomService(ids, next.path, stdMethods, customMethods, next.auth, false, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(hooksFile, renderEmptyHooks(ids), { dry: opts.dry, force: true })
+  }
+  else {
+    await writeFileSafe(classFile, renderClass(ids, next.adapter, next.collectionName || next.path, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(sharedFile, renderShared(ids, next.path, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(serviceFile, renderService(ids, next.auth, false, next.schema.mode, next.authAware), { dry: opts.dry, force: true })
+    if (next.schema.mode === 'none')
+      await writeFileSafe(hooksFile, renderHooksNoSchema(ids, next.auth, next.authAware), { dry: opts.dry, force: true })
+  }
+
+  if (next.schema.mode === 'none') {
+    if (opts.dry) {
+      if (existsSync(schemaFile))
+        consola.info(`[dry] remove ${relativeToCwd(schemaFile)}`)
+    }
+    else {
+      await rm(schemaFile, { force: true })
+    }
+  }
+  else {
+    await writeFileSafe(
+      schemaFile,
+      renderSchemaFromManifest(ids, next.adapter, next.idField || (next.adapter === 'mongodb' ? '_id' : 'id'), next.schema.mode, next.schema.fields, next.auth, next.authAware),
+      { dry: opts.dry, force: true },
+    )
+  }
+
+  await writeServiceManifest(opts.servicesDir, next, { dry: opts.dry, force: true })
+  return next
+}
+
+export async function setServiceSchemaMode(opts: { projectRoot: string, servicesDir: string, name: string, mode: SchemaKind, dry: boolean, force: boolean, diff?: boolean }) {
+  const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
+  enforceAuthSchemaGuard(manifest, opts.mode, opts.force)
+  const next: ServiceManifest = {
+    ...manifest,
+    authAware: true,
+    schema: {
+      ...manifest.schema,
+      mode: opts.mode,
+    },
+  }
+
+  if (opts.diff)
+    consola.box(`Schema diff for '${manifest.name}'\n${summarizeManifestDiff(manifest, next)}`)
+
+  const applied = await applyServiceManifest({ servicesDir: opts.servicesDir, manifest: next, dry: opts.dry, force: opts.force })
+  if (!opts.dry)
+    consola.success(`Updated schema mode for '${applied.name}' -> ${opts.mode}`)
+}
+
+export async function mutateServiceFields(opts: {
+  projectRoot: string
+  servicesDir: string
+  name: string
+  addField?: string
+  removeField?: string
+  setField?: string
+  renameField?: string
+  dry: boolean
+  force: boolean
+  diff?: boolean
+}) {
+  const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
+  enforceAuthFieldGuards(manifest, { removeField: opts.removeField, renameField: opts.renameField, setField: opts.setField, force: opts.force })
+  const fields = { ...manifest.schema.fields }
+  const actions: string[] = []
+
+  if (opts.addField) {
+    const { name, field } = parseFieldSpec(opts.addField)
+    if (fields[name])
+      throw new Error(`Field '${name}' already exists. Use --set-field to replace it.`)
+    fields[name] = field
+    actions.push(`add-field ${name}`)
+  }
+
+  if (opts.setField) {
+    const { name, field } = parseFieldSpec(opts.setField)
+    fields[name] = field
+    actions.push(`set-field ${name}`)
+  }
+
+  if (opts.removeField) {
+    const target = String(opts.removeField).trim()
+    if (!fields[target])
+      throw new Error(`Field '${target}' does not exist.`)
+    delete fields[target]
+    actions.push(`remove-field ${target}`)
+  }
+
+  if (opts.renameField) {
+    const { from, to } = parseRenameFieldSpec(opts.renameField)
+    if (!fields[from])
+      throw new Error(`Field '${from}' does not exist.`)
+    if (fields[to])
+      throw new Error(`Field '${to}' already exists.`)
+    const current = { ...fields[from] }
+    delete fields[from]
+    fields[to] = {
+      ...current,
+      ...(to.toLowerCase().includes('password') ? { secret: true } : {}),
+    }
+    actions.push(`rename-field ${from} -> ${to}`)
+  }
+
+  if (!actions.length)
+    throw new Error('No field mutation requested. Use --add-field, --remove-field, --set-field or --rename-field.')
+
+  const next: ServiceManifest = {
+    ...manifest,
+    authAware: true,
+    schema: {
+      ...manifest.schema,
+      fields,
+    },
+  }
+
+  if (opts.diff)
+    consola.box(`Schema diff for '${manifest.name}'\n${summarizeManifestDiff(manifest, next)}`)
+
+  const applied = await applyServiceManifest({ servicesDir: opts.servicesDir, manifest: next, dry: opts.dry, force: opts.force })
+  if (!opts.dry)
+    consola.success(`Updated fields for '${applied.name}': ${actions.join(', ')}`)
+}
+
+
+export async function validateServiceSchema(opts: { projectRoot: string, servicesDir: string, name: string, format?: 'show' | 'json' }) {
+  const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
+  await writeServiceManifest(opts.servicesDir, manifest, { dry: false, force: true })
+  const auth = getAuthCompatibility(manifest)
+  const payload = {
+    service: manifest.name,
+    ok: auth.ok,
+    authApplicable: auth.applicable,
+    issues: auth.issues,
+    manifest,
+  }
+
+  if (opts.format === 'json') {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`)
+  }
+  else {
+    if (auth.applicable) {
+      process.stdout.write(`${auth.ok ? 'Schema validation: OK' : 'Schema validation: FAILED'}\n`)
+      for (const issue of auth.issues)
+        process.stdout.write(`- ${issue}\n`)
+    }
+    else {
+      process.stdout.write('Schema validation: OK (no auth-specific invariants)\n')
+    }
+  }
+
+  if (!auth.ok)
+    throw new Error(`Schema validation failed for '${manifest.name}'.`)
+}
+
+export async function repairAuthServiceSchema(opts: { projectRoot: string, servicesDir: string, name: string, dry: boolean, diff?: boolean, force?: boolean }) {
+  const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
+  if (!(manifest.auth && manifest.name === 'users'))
+    throw new Error(`--repair-auth is only supported for auth-enabled 'users' service.`)
+
+  const next: ServiceManifest = {
+    ...manifest,
+    authAware: true,
+    schema: {
+      ...manifest.schema,
+      mode: 'zod',
+      fields: {
+        ...manifest.schema.fields,
+        userId: {
+          type: 'string',
+          required: true,
+        },
+        password: {
+          type: 'string',
+          required: true,
+          secret: true,
+        },
+      },
+    },
+  }
+
+  if (opts.diff)
+    consola.box(`Schema diff for '${manifest.name}'\n${summarizeManifestDiff(manifest, next)}`)
+
+  const applied = await applyServiceManifest({ servicesDir: opts.servicesDir, manifest: next, dry: opts.dry, force: true })
+  if (!opts.dry)
+    consola.success(`Repaired auth schema for '${applied.name}'`)
+}
+
 function normalizeServicePath(raw: string) {
   // Feathers service paths are usually kebab-case and can include slashes.
   // We keep user intent, but normalize leading/trailing slashes.
@@ -1107,6 +1907,7 @@ export interface GenerateServiceOptions {
   dry: boolean
   force: boolean
   custom?: boolean
+  authAware?: boolean
   methods?: string
   customMethods?: string
 }
@@ -1129,6 +1930,7 @@ export async function generateService(opts: GenerateServiceOptions) {
     return
   }
   const serviceNameKebab = normalizeServiceName(opts.name)
+  const authAware = resolveAuthAwareFlag(serviceNameKebab, opts.auth, opts.authAware)
   const ids = createServiceIds(serviceNameKebab)
 
   const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
@@ -1147,16 +1949,16 @@ export async function generateService(opts: GenerateServiceOptions) {
 
   const files: Array<{ path: string, content: string }> = [
     ...(schemaKind === 'zod'
-      ? [{ path: schemaFile, content: renderZodSchema(ids, opts.adapter, opts.idField) }]
+      ? [{ path: schemaFile, content: renderZodSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware) }]
       : schemaKind === 'json'
-        ? [{ path: schemaFile, content: renderJsonSchema(ids, opts.adapter, opts.idField) }]
+        ? [{ path: schemaFile, content: renderJsonSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware) }]
         : []),
     { path: classFile, content: renderClass(ids, opts.adapter, collectionName, schemaKind) },
     ...(schemaKind === 'none'
-      ? [{ path: hooksFile, content: renderHooksNoSchema(ids, opts.auth) }]
+      ? [{ path: hooksFile, content: renderHooksNoSchema(ids, opts.auth, authAware) }]
       : []),
     { path: sharedFile, content: renderShared(ids, servicePath, schemaKind) },
-    { path: serviceFile, content: renderService(ids, opts.auth, opts.docs, schemaKind) },
+    { path: serviceFile, content: renderService(ids, opts.auth, opts.docs, schemaKind, authAware) },
   ]
 
   await ensureDir(dir, opts.dry)
@@ -1168,6 +1970,26 @@ export async function generateService(opts: GenerateServiceOptions) {
   if (opts.docs) {
     await ensureFeathersSwaggerSupport(opts.projectRoot, { dry: opts.dry, force: opts.force })
   }
+
+  await writeServiceManifest(opts.servicesDir, {
+    name: serviceNameKebab,
+    path: servicePath,
+    adapter: opts.adapter,
+    auth: opts.auth,
+    custom: false,
+    authAware,
+    idField: opts.idField,
+    ...(opts.adapter === 'mongodb' ? { collectionName } : {}),
+    methods: ['find', 'get', 'create', 'patch', 'remove'],
+    schema: {
+      mode: schemaKind,
+      fields: schemaKind === 'none'
+        ? {}
+        : schemaKind === 'zod'
+          ? parseZodFields(renderZodSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware))
+          : parseJsonFields(renderJsonSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware)),
+    },
+  }, { dry: opts.dry, force: true })
 
   if (!opts.dry) {
     consola.success(`Generated service '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
@@ -1192,7 +2014,29 @@ async function ensureFeathersSwaggerSupport(projectRoot: string, io: { dry: bool
   ].join('\n')
 
   await ensureDir(typesDir, io.dry)
-  await writeFileSafe(typesFile, typesContent, { dry: io.dry, force: io.force })
+  if (existsSync(typesFile) && !io.force) {
+    try {
+      const existing = await readFile(typesFile, 'utf8')
+      if (existing === typesContent) {
+        if (io.dry) {
+          consola.info(`[dry] keep existing ${relativeToCwd(typesFile)}`)
+        }
+      }
+      else {
+        consola.warn(
+          `Keeping existing ${relativeToCwd(typesFile)} (use --force to overwrite).`,
+        )
+      }
+    }
+    catch {
+      consola.warn(
+        `Keeping existing ${relativeToCwd(typesFile)} (use --force to overwrite).`,
+      )
+    }
+  }
+  else {
+    await writeFileSafe(typesFile, typesContent, { dry: io.dry, force: io.force })
+  }
 
   // 2) Best-effort dependency hint (we do not auto-install dependencies)
   try {
@@ -1221,6 +2065,28 @@ export interface GenerateMiddlewareOptions {
   dry: boolean
   force: boolean
   preset?: string
+}
+
+
+export interface GenerateMongoComposeOptions {
+  projectRoot: string
+  outFile?: string
+  serviceName?: string
+  port?: number
+  database?: string
+  rootUser?: string
+  rootPassword?: string
+  volume?: string
+  dry: boolean
+  force: boolean
+}
+
+export interface ToggleServiceAuthOptions {
+  projectRoot: string
+  servicesDir: string
+  name: string
+  enabled: boolean
+  dry: boolean
 }
 
 export interface GenerateCustomServiceOptions {
@@ -1282,7 +2148,7 @@ export async function generateCustomService(opts: GenerateCustomServiceOptions) 
   const hooksFile = join(dir, `${serviceNameKebab}.hooks.ts`)
 
   const files: Array<{ path: string, content: string }> = [
-    { path: classFile, content: renderCustomClass(ids, stdMethods, customMethods) },
+    { path: classFile, content: renderCustomClass(ids, stdMethods, customMethods, schemaKind) },
     { path: sharedFile, content: renderCustomShared(ids, servicePath, stdMethods, customMethods, schemaKind) },
     {
       path: serviceFile,
@@ -1304,6 +2170,20 @@ export async function generateCustomService(opts: GenerateCustomServiceOptions) 
   if (opts.docs) {
     await ensureFeathersSwaggerSupport(opts.projectRoot, { dry: opts.dry, force: opts.force })
   }
+
+  await writeServiceManifest(opts.servicesDir, {
+    name: serviceNameKebab,
+    path: servicePath,
+    adapter: 'memory',
+    auth: opts.auth,
+    custom: true,
+    methods: uniq([...stdMethods, ...customMethods]),
+    customMethods,
+    schema: {
+      mode: schemaKind,
+      fields: schemaKind === 'zod' ? parseZodFields(renderCustomSchema(ids, stdMethods, customMethods)) : {},
+    },
+  }, { dry: opts.dry, force: true })
 
   if (!opts.dry) {
     consola.success(`Generated adapter-less service '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
@@ -1342,6 +2222,105 @@ function safeMethodName(name: string) {
   return isValidIdentifier(name) ? name : kebabCase(name).replace(/-([a-z])/g, (_, c) => c.toUpperCase())
 }
 
+
+function renderMongoComposeFile(opts: GenerateMongoComposeOptions) {
+  const serviceName = opts.serviceName || 'mongodb'
+  const port = opts.port || 27017
+  const database = opts.database || 'app'
+  const rootUser = opts.rootUser || 'root'
+  const rootPassword = opts.rootPassword || 'change-me'
+  const volume = opts.volume || 'mongodb_data'
+
+  return `services:
+  ${serviceName}:
+    image: mongo:7
+    container_name: ${serviceName}
+    restart: unless-stopped
+    ports:
+      - '${port}:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${rootUser}
+      MONGO_INITDB_ROOT_PASSWORD: ${rootPassword}
+      MONGO_INITDB_DATABASE: ${database}
+    volumes:
+      - ${volume}:/data/db
+
+volumes:
+  ${volume}:
+`
+}
+
+export async function generateMongoCompose(opts: GenerateMongoComposeOptions) {
+  const outFile = opts.outFile || 'docker-compose-db.yaml'
+  const outPath = join(opts.projectRoot, outFile)
+  const content = renderMongoComposeFile(opts)
+  await writeFileSafe(outPath, content, { dry: opts.dry, force: opts.force })
+  if (!opts.dry)
+    consola.success(`Generated MongoDB compose file in ${relativeToCwd(outPath)}`)
+}
+
+function withAuthImport(content: string, enabled: boolean) {
+  const importLine = "import { authenticate } from '@feathersjs/authentication'\n"
+  const hasImport = content.includes(importLine)
+
+  if (enabled && !hasImport) {
+    if (/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/.test(content))
+      return content.replace(/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/, `${importLine}import type { Application } from 'nuxt-feathers-zod/server'\n`)
+    return `${importLine}${content}`
+  }
+
+  if (!enabled && hasImport)
+    return content.replace(importLine, '')
+
+  return content
+}
+
+function withMethodAuthBlocks(content: string, enabled: boolean) {
+  const replacements = {
+    find: enabled ? "find: [authenticate('jwt')]" : 'find: []',
+    get: enabled ? "get: [authenticate('jwt')]" : 'get: []',
+    create: 'create: []',
+    patch: enabled ? "patch: [authenticate('jwt')]" : 'patch: []',
+    remove: enabled ? "remove: [authenticate('jwt')]" : 'remove: []',
+    update: enabled ? "update: [authenticate('jwt')]" : 'update: []',
+  }
+
+  let out = content
+  for (const [method, replacement] of Object.entries(replacements)) {
+    const re = new RegExp(String.raw`(^\s*)${method}:\s*\[(?:[^\]]*)\]`, 'm')
+    if (re.test(out))
+      out = out.replace(re, `$1${replacement}`)
+  }
+
+  if (/before:\s*\{[\s\S]*?all:\s*\[(?:[^\]]*)\]/m.test(out)) {
+    out = out.replace(/(^\s*)all:\s*\[(?:[^\]]*)\]/m, (_m, indent) => `${indent}all: ${enabled ? "[authenticate('jwt')]" : '[]'}`)
+  }
+
+  return out
+}
+
+export async function toggleServiceAuth(opts: ToggleServiceAuthOptions) {
+  const serviceNameKebab = normalizeServiceName(opts.name)
+  const dir = join(opts.servicesDir, serviceNameKebab)
+  const hooksFile = join(dir, `${serviceNameKebab}.hooks.ts`)
+  const serviceFile = join(dir, `${serviceNameKebab}.ts`)
+
+  const target = existsSync(hooksFile) ? hooksFile : serviceFile
+  if (!existsSync(target))
+    throw new Error(`Service file not found for '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
+
+  let content = await readFile(target, 'utf8')
+  content = withAuthImport(content, opts.enabled)
+  content = withMethodAuthBlocks(content, opts.enabled)
+
+  if (opts.dry) {
+    consola.info(`[dry] Updated auth hooks for ${relativeToCwd(target)} (enabled=${opts.enabled})`)
+    return
+  }
+
+  await writeFile(target, content, 'utf8')
+  consola.success(`Updated auth hooks for service '${serviceNameKebab}' in ${relativeToCwd(target)}`)
+}
 
 export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
   const fileBase = kebabCase(opts.name)
@@ -1418,32 +2397,262 @@ function relativeToCwd(p: string) {
   }
 }
 
-function renderZodSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField) {
+
+function resolveAuthAwareFlag(serviceNameKebab: string, auth: boolean, authAware?: boolean) {
+  if (!auth)
+    return false
+  if (authAware !== undefined)
+    return Boolean(authAware)
+  return serviceNameKebab === 'users'
+}
+
+function isAuthUsersService(ids: ReturnType<typeof createServiceIds>, auth: boolean, authAware?: boolean) {
+  return resolveAuthAwareFlag(ids.serviceNameKebab, auth, authAware)
+}
+
+function renderAuthUsersZodSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  idField: IdField,
+  fields?: Record<string, ServiceSchemaField>,
+  authAware = true,
+) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
+  const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
+    ? fields
+    : {
+        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        userId: { type: 'string', required: true },
+        password: { type: 'string', required: true, secret: true },
+      }
 
-  const idSchemaField = idField
-  const idSchema = adapter === 'mongodb'
+  const schemaEntries = Object.entries(fieldMap)
+  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
     ? `
 const objectIdRegex = /^[0-9a-f]{24}$/i
 export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid ObjectId')
 `
     : ''
 
-  const mainSchema = adapter === 'mongodb'
-    ? `export const ${base}Schema = z.object({
-  ${idSchemaField}: objectIdSchema(),
-  text: z.string(),
-})`
-    : `export const ${base}Schema = z.object({
-  ${idSchemaField}: z.number().int(),
-  text: z.string(),
-})`
+  const mainSchema = schemaEntries
+    .map(([name, field]) => `  ${name}: ${renderZodFieldExpression(field, adapter)},`)
+    .join('\n')
 
-  const pickCreate = adapter === 'mongodb'
-    ? `{ text: true }`
-    : `{ text: true }`
+  const queryPick = fieldMap.userId
+    ? `{ ${idField}: true, userId: true }`
+    : `{ ${idField}: true }`
+
+  const patchResolver = fieldMap.password
+    ? `
+export const ${base}PatchResolver = resolve<${Base}, any>({
+  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+})
+`
+    : `
+export const ${base}PatchResolver = resolve<${Base}, HookContext<${serviceClass}>>({})
+`
+
+  return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.schemas.html
+
+import type { HookContext } from 'nuxt-feathers-zod/server'
+import type { ${serviceClass} } from './${ids.serviceNameKebab}.class'
+import { passwordHash } from '@feathersjs/authentication-local'
+import { resolve } from '@feathersjs/schema'
+import { zodQuerySyntax } from 'nuxt-feathers-zod/query'
+import { getZodValidator } from 'nuxt-feathers-zod/validators'
+import { z } from 'zod'
+${idSchema}// Main data model schema
+export const ${base}Schema = z.object({
+${mainSchema}
+})
+export type ${Base} = z.infer<typeof ${base}Schema>
+export const ${base}Validator = getZodValidator(${base}Schema, { kind: 'data' })
+export const ${base}Resolver = resolve<${Base}, HookContext<${serviceClass}>>({})
+
+export const ${base}ExternalResolver = resolve<${Base}, HookContext<${serviceClass}>>({
+  password: async () => undefined,
+})
+
+// Schema for creating new entries
+export const ${base}DataSchema = ${base}Schema.pick({
+  userId: true,
+  password: true,
+})
+export type ${Base}Data = z.infer<typeof ${base}DataSchema>
+export const ${base}DataValidator = getZodValidator(${base}DataSchema, { kind: 'data' })
+export const ${base}DataResolver = resolve<${Base}, any>({
+  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+})
+
+// Schema for updating existing entries
+export const ${base}PatchSchema = ${base}Schema.partial()
+export type ${Base}Patch = z.infer<typeof ${base}PatchSchema>
+export const ${base}PatchValidator = getZodValidator(${base}PatchSchema, { kind: 'data' })${patchResolver}
+
+// Schema for allowed query properties
+export const ${base}QuerySchema = zodQuerySyntax(${base}Schema.pick(${queryPick}))
+export type ${Base}Query = z.infer<typeof ${base}QuerySchema>
+export const ${base}QueryValidator = getZodValidator(${base}QuerySchema, { kind: 'query' })
+export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceClass}>>({
+  ${idField}: async (value: unknown, _user: unknown, context: HookContext<${serviceClass}>) => {
+    const authUser = (context.params as any).user
+    if (authUser && authUser.${idField} != null)
+      return authUser.${idField}
+    return value
+  },
+})
+`
+}
+
+function renderAuthUsersJsonSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  idField: IdField,
+  fields?: Record<string, ServiceSchemaField>,
+  authAware = true,
+) {
+  const base = ids.baseCamel
+  const Base = ids.basePascal
+  const serviceClass = `${Base}Service`
+  const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
+    ? fields
+    : {
+        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        userId: { type: 'string', required: true },
+        password: { type: 'string', required: true, secret: true },
+      }
+
+  const properties = renderJsonProperties(fieldMap, adapter)
+  const createFields = pickCreateFieldMap(fieldMap, idField)
+  const dataProperties = renderJsonProperties(createFields, adapter)
+  const required = jsonRequired(createFields)
+  const patchProperties = renderJsonProperties(fieldMap, adapter)
+  const queryProperties = [
+    `${idField}: ${renderJsonField(fieldMap[idField] || { type: adapter === 'mongodb' ? 'id' : 'number', required: true }, adapter)}`,
+    fieldMap.userId ? `userId: ${renderJsonField(fieldMap.userId, adapter)}` : '',
+  ].filter(Boolean).join(',\n    ')
+
+  return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.schemas.html
+
+import type { HookContext } from 'nuxt-feathers-zod/server'
+import type { ${serviceClass} } from './${ids.serviceNameKebab}.class'
+import { passwordHash } from '@feathersjs/authentication-local'
+import { resolve } from '@feathersjs/schema'
+import { Ajv, addFormats, getValidator, querySyntax } from '@feathersjs/schema'
+import type { FormatsPluginOptions } from '@feathersjs/schema'
+
+const formats: FormatsPluginOptions = [
+  'date-time', 'time', 'date', 'email', 'hostname', 'ipv4', 'ipv6', 'uri', 'uri-reference', 'uuid', 'uri-template', 'json-pointer', 'relative-json-pointer', 'regex',
+]
+const dataValidatorAjv: Ajv = addFormats(new Ajv({}), formats)
+const queryValidatorAjv: Ajv = addFormats(new Ajv({ coerceTypes: true }), formats)
+
+export const ${base}Schema = {
+  $id: '${Base}',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    ${properties}
+  },
+} as const
+export type ${Base} = Record<string, any>
+export const ${base}Validator = getValidator(${base}Schema as any, dataValidatorAjv)
+export const ${base}Resolver = resolve<${Base}, HookContext<${serviceClass}>>({})
+export const ${base}ExternalResolver = resolve<${Base}, HookContext<${serviceClass}>>({
+  password: async () => undefined,
+})
+
+export const ${base}DataSchema = {
+  $id: '${Base}Data',
+  type: 'object',
+  additionalProperties: true,
+  required: ${required},
+  properties: {
+    ${dataProperties}
+  },
+} as const
+export type ${Base}Data = Record<string, any>
+export const ${base}DataValidator = getValidator(${base}DataSchema as any, dataValidatorAjv)
+export const ${base}DataResolver = resolve<${Base}, any>({
+  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+})
+
+export const ${base}PatchSchema = {
+  $id: '${Base}Patch',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    ${patchProperties}
+  },
+} as const
+export type ${Base}Patch = Partial<${Base}>
+export const ${base}PatchValidator = getValidator(${base}PatchSchema as any, dataValidatorAjv)
+export const ${base}PatchResolver = resolve<${Base}, any>({
+  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+})
+
+export const ${base}QueryProperties = {
+    ${queryProperties}
+} as const
+export const ${base}QuerySchema = querySyntax(${base}QueryProperties, { additionalProperties: false })
+export type ${Base}Query = Record<string, any>
+export const ${base}QueryValidator = getValidator(${base}QuerySchema as any, queryValidatorAjv)
+export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceClass}>>({
+  ${idField}: async (value: unknown, _user: unknown, context: HookContext<${serviceClass}>) => {
+    const authUser = (context.params as any).user
+    if (authUser && authUser.${idField} != null)
+      return authUser.${idField}
+    return value
+  },
+})
+`
+}
+
+function renderZodSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  idField: IdField,
+  fields?: Record<string, ServiceSchemaField>,
+  auth = false,
+  authAware?: boolean,
+) {
+  if (isAuthUsersService(ids, auth, authAware))
+    return renderAuthUsersZodSchema(ids, adapter, idField, fields, authAware)
+  const base = ids.baseCamel
+  const Base = ids.basePascal
+  const serviceClass = `${Base}Service`
+
+  const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
+    ? fields
+    : {
+        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        text: { type: 'string', required: true },
+      }
+
+  const schemaEntries = Object.entries(fieldMap)
+  const createFields = pickCreateFieldMap(fieldMap, idField)
+  const queryFields = Object.fromEntries(schemaEntries.filter(([name]) => name === idField || name === 'text' || name === 'userId'))
+
+  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
+    ? `
+const objectIdRegex = /^[0-9a-f]{24}$/i
+export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid ObjectId')
+`
+    : ''
+
+  const mainSchema = schemaEntries
+    .map(([name, field]) => `  ${name}: ${renderZodFieldExpression(field, adapter)},`)
+    .join('\n')
+
+  const pickCreate = Object.keys(createFields).length
+    ? `{ ${Object.keys(createFields).map(name => `${name}: true`).join(', ')} }`
+    : '{}'
+
+  const queryPick = Object.keys(queryFields).length
+    ? `{ ${Object.keys(queryFields).map(name => `${name}: true`).join(', ')} }`
+    : `{ ${idField}: true }`
 
   return `// For more information about this file see https://dove.feathersjs.com/guides/cli/service.schemas.html
 
@@ -1454,9 +2663,10 @@ import { zodQuerySyntax } from 'nuxt-feathers-zod/query'
 import { getZodValidator } from 'nuxt-feathers-zod/validators'
 import { z } from 'zod'
 ${idSchema}
-
 // Main data model schema
+export const ${base}Schema = z.object({
 ${mainSchema}
+})
 export type ${Base} = z.infer<typeof ${base}Schema>
 export const ${base}Validator = getZodValidator(${base}Schema, { kind: 'data' })
 export const ${base}Resolver = resolve<${Base}, HookContext<${serviceClass}>>({})
@@ -1476,7 +2686,7 @@ export const ${base}PatchValidator = getZodValidator(${base}PatchSchema, { kind:
 export const ${base}PatchResolver = resolve<${Base}, HookContext<${serviceClass}>>({})
 
 // Schema for allowed query properties
-export const ${base}QuerySchema = zodQuerySyntax(${base}Schema)
+export const ${base}QuerySchema = zodQuerySyntax(${base}Schema.pick(${queryPick}))
 export type ${Base}Query = z.infer<typeof ${base}QuerySchema>
 export const ${base}QueryValidator = getZodValidator(${base}QuerySchema, { kind: 'query' })
 export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceClass}>>({})
@@ -1553,7 +2763,15 @@ export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> exten
 > {}
 
 export function getOptions(app: Application): MongoDBAdapterOptions {
-  const mongoClient = app.get('mongodbClient')
+  const mongoClient = app.get('mongodbClient') as Promise<{ collection: (name: string) => any }> | undefined
+
+  if (!mongoClient || typeof (mongoClient as any).then !== 'function') {
+    throw new Error(
+      '[nuxt-feathers-zod] Service \\\'${collectionName}\\\' uses adapter \\\'mongodb\\\' but app.get(\\\'mongodbClient\\\') is not configured. '
+      + 'Enable feathers.database.mongo in embedded mode, or regenerate this service with --adapter memory.',
+    )
+  }
+
   return {
     paginate: {
       default: 10,
@@ -1567,19 +2785,65 @@ export function getOptions(app: Application): MongoDBAdapterOptions {
 }
 
 
-function renderJsonSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField) {
+function renderJsonSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  idField: IdField,
+  fields?: Record<string, ServiceSchemaField>,
+  auth = false,
+  authAware?: boolean,
+) {
+  if (isAuthUsersService(ids, auth, authAware))
+    return renderAuthUsersJsonSchema(ids, adapter, idField, fields, authAware)
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
 
-  const idSchemaField = idField
-  const idType = adapter === 'mongodb' ? 'string' : 'number'
+  const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
+    ? fields
+    : {
+        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        text: { type: 'string', required: true },
+      }
 
-  const idSchema = adapter === 'mongodb'
+  const props = Object.entries(fieldMap)
+    .map(([name, field]) => {
+      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+      const pieces = [`type: '${type}'`]
+      if (field.default !== undefined)
+        pieces.push(`default: ${JSON.stringify(field.default)}`)
+      return `    ${name}: { ${pieces.join(', ')} },`
+    })
+    .join('\n')
+
+  const createFields = Object.entries(fieldMap).filter(([name]) => name !== idField)
+  const createProps = createFields
+    .map(([name, field]) => {
+      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+      const pieces = [`type: '${type}'`]
+      if (field.default !== undefined)
+        pieces.push(`default: ${JSON.stringify(field.default)}`)
+      return `    ${name}: { ${pieces.join(', ')} },`
+    })
+    .join('\n')
+  const requiredCreate = createFields.filter(([, field]) => field.required !== false).map(([name]) => `'${name}'`)
+
+  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
     ? `
 const objectIdRegex = '^[0-9a-f]{24}$'
 `
     : ''
+
+  const queryFields = Object.entries(fieldMap).filter(([name]) => name === idField || name === 'text' || name === 'userId')
+  const queryProps = (queryFields.length ? queryFields : Object.entries(fieldMap).filter(([name]) => name === idField))
+    .map(([name, field]) => {
+      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+      const pieces = [`type: '${type}'`]
+      if (field.default !== undefined)
+        pieces.push(`default: ${JSON.stringify(field.default)}`)
+      return `    ${name}: { ${pieces.join(', ')} },`
+    })
+    .join('\n')
 
   return `// JSON Schema variant (generated by nuxt-feathers-zod CLI)
 // For more information about Feathers schemas see https://dove.feathersjs.com/guides/cli/service.schemas.html
@@ -1591,7 +2855,6 @@ import { getValidator, querySyntax } from '@feathersjs/schema'
 import { addFormats, Ajv } from '@feathersjs/schema'
 import type { FormatsPluginOptions } from '@feathersjs/schema'
 ${idSchema}
-
 const formats: FormatsPluginOptions = [
   'date-time',
   'time',
@@ -1618,16 +2881,11 @@ export const ${base}Schema = {
   type: 'object',
   additionalProperties: true,
   properties: {
-    ${idSchemaField}: { type: '${idType}' },
-    text: { type: 'string' },
+${props}
   },
 } as const
 
-export type ${Base} = {
-  ${idSchemaField}: ${adapter === 'mongodb' ? 'string' : 'number'}
-  text: string
-  [key: string]: any
-}
+export type ${Base} = Record<string, any>
 
 export const ${base}Validator = getValidator(${base}Schema as any, dataValidatorAjv)
 export const ${base}Resolver = resolve<${Base}, HookContext<${serviceClass}>>({})
@@ -1637,16 +2895,13 @@ export const ${base}ExternalResolver = resolve<${Base}, HookContext<${serviceCla
 export const ${base}DataSchema = {
   ...${base}Schema,
   $id: '${Base}Data',
-  required: ['text'],
+  required: [${requiredCreate.join(', ')}],
   properties: {
-    text: { type: 'string' },
+${createProps}
   },
 } as const
 
-export type ${Base}Data = {
-  text: string
-  [key: string]: any
-}
+export type ${Base}Data = Record<string, any>
 
 export const ${base}DataValidator = getValidator(${base}DataSchema as any, dataValidatorAjv)
 export const ${base}DataResolver = resolve<${Base}, HookContext<${serviceClass}>>({})
@@ -1662,16 +2917,17 @@ export const ${base}PatchValidator = getValidator(${base}PatchSchema as any, dat
 export const ${base}PatchResolver = resolve<${Base}, HookContext<${serviceClass}>>({})
 
 // Schema for allowed query properties
-export const ${base}QuerySchema = querySyntax(${base}Schema as any)
+export const ${base}QueryProperties = {
+${queryProps}
+} as const
+export const ${base}QuerySchema = querySyntax(${base}QueryProperties as any, {
+  additionalProperties: false,
+})
 export type ${Base}Query = Record<string, any>
 export const ${base}QueryValidator = getValidator(${base}QuerySchema as any, queryValidatorAjv)
 export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceClass}>>({})
 `
 }
-
-
-
-
 
 function renderClassNoSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, collectionName: string) {
   const Base = ids.basePascal
@@ -1739,7 +2995,15 @@ export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> exten
 > {}
 
 export function getOptions(app: Application): MongoDBAdapterOptions {
-  const mongoClient = app.get('mongodbClient')
+  const mongoClient = app.get('mongodbClient') as Promise<{ collection: (name: string) => any }> | undefined
+
+  if (!mongoClient || typeof (mongoClient as any).then !== 'function') {
+    throw new Error(
+      '[nuxt-feathers-zod] Service \\\'${collectionName}\\\' uses adapter \\\'mongodb\\\' but app.get(\\\'mongodbClient\\\') is not configured. '
+      + 'Enable feathers.database.mongo in embedded mode, or regenerate this service with --adapter memory.',
+    )
+  }
+
   return {
     paginate: {
       default: 10,
@@ -1795,13 +3059,13 @@ declare module 'nuxt-feathers-zod/client' {
 `
 }
 
-function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, schemaKind: SchemaKind) {
+function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, schemaKind: SchemaKind, authAware?: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
   if (schemaKind === 'none') {
-    return renderServiceNoSchema(ids, auth, docs)
+    return renderServiceNoSchema(ids, auth, docs, authAware)
   }
 
   const authImports = auth ? 'import { authenticate } from \'@feathersjs/authentication\'\n' : ''
@@ -1907,7 +3171,7 @@ declare module 'nuxt-feathers-zod/server' {
 
 
 
-function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean) {
+function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, authAware?: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
@@ -1951,11 +3215,26 @@ declare module 'nuxt-feathers-zod/server' {
 `
 }
 
-function renderHooksNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean) {
+function renderHooksNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean, authAware?: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const Service = `${Base}Service`
   const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authAwareUsers = isAuthUsersService(ids, auth, authAware)
+  const passwordImports = authAwareUsers ? "import { passwordHash } from '@feathersjs/authentication-local'\n" : ''
+  const helperBlock = authAwareUsers
+    ? `
+const stripPassword = (value: unknown) => {
+  if (Array.isArray(value))
+    return value.map(stripPassword)
+  if (!value || typeof value !== 'object')
+    return value
+  const clone = { ...(value as Record<string, unknown>) }
+  delete clone.password
+  return clone
+}
+`
+    : ''
 
   const authAround = auth
     ? `
@@ -1973,22 +3252,36 @@ function renderHooksNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boo
     remove: [],
 `
 
+  const aroundAll = authAwareUsers
+    ? `[async (context, next) => {
+      await next()
+      context.result = stripPassword(context.result)
+    }]`
+    : '[]'
+
+  const createHooks = authAwareUsers
+    ? `[passwordHash({ strategy: 'local' })]`
+    : '[]'
+  const patchHooks = authAwareUsers
+    ? `[passwordHash({ strategy: 'local' })]`
+    : '[]'
+
   return `// For more information about this file see https://dove.feathersjs.com/guides/cli/hooks.html
 
 import type { HooksObject } from '@feathersjs/feathers'
-${authImports}import type { Application } from 'nuxt-feathers-zod/server'
+${authImports}${passwordImports}import type { Application } from 'nuxt-feathers-zod/server'
 import type { ${Service} } from './${ids.serviceNameKebab}.class'
-
+${helperBlock}
 // No schema: keep hooks file so the service stays "initiatives-like" and easy to extend.
 export const ${base}Hooks: HooksObject<Application, ${Service}> = {
   around: {
-    all: [],${authAround}  },
+    all: ${aroundAll},${authAround}  },
   before: {
     all: [],
     find: [],
     get: [],
-    create: [],
-    patch: [],
+    create: ${createHooks},
+    patch: ${patchHooks},
     remove: [],
   },
   after: {
@@ -2054,9 +3347,11 @@ function renderCustomClass(
   ids: ReturnType<typeof createServiceIds>,
   stdMethods: string[],
   customMethods: string[],
+  schemaKind: SchemaKind,
 ) {
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
+  const useSchema = schemaKind === 'zod'
 
   const uniqueStdMethods = uniq(stdMethods)
   const stdImpl = uniqueStdMethods.length
@@ -2111,8 +3406,8 @@ function renderCustomClass(
     ? uniqueCustomMethods
         .map((m) => {
           const M = pascalCase(m)
-          const DataT = `${Base}${M}Data`
-          const ResT = `${Base}${M}Result`
+          const DataT = useSchema ? `${Base}${M}Data` : 'any'
+          const ResT = useSchema ? `${Base}${M}Result` : 'any'
 
           if (m === 'run') {
             return `
@@ -2133,10 +3428,10 @@ function renderCustomClass(
         .join('\n')
     : ''
 
-  const schemaImports = uniq(customMethods).map((m) => {
+  const schemaImports = useSchema ? uniq(customMethods).map((m) => {
     const M = pascalCase(m)
     return `type ${Base}${M}Data, type ${Base}${M}Result`
-  })
+  }) : []
 
   const schemaImportLine = schemaImports.length
     ? `import { ${schemaImports.join(', ')} } from './${ids.serviceNameKebab}.schema'`
@@ -2170,6 +3465,7 @@ function renderCustomShared(
 
   const stdList = uniq(stdMethods)
   const customList = uniq(customMethods)
+  const useSchema = schemaKind === 'zod'
 
   const allClientMethods = uniq([...stdList, ...customList])
 
@@ -2184,8 +3480,8 @@ function renderCustomShared(
 
   const patches = customList.length ? customList.map((m) => {
     const M = pascalCase(m)
-    const DataT = `${Base}${M}Data`
-    const ResT = `${Base}${M}Result`
+    const DataT = useSchema ? `${Base}${M}Data` : 'any'
+    const ResT = useSchema ? `${Base}${M}Result` : 'any'
     return `
 function attach_${m}(client: ClientApplication, remote: any) {
   if (typeof remote?.${m} === 'function')
@@ -2247,7 +3543,9 @@ export const ${base}Methods = ${JSON.stringify(allClientMethods)} as const
 export type ${Base}ClientService = RestService & {
 ${customList.map((m) => {
     const M = pascalCase(m)
-    return `  ${m}(data: ${Base}${M}Data, params?: Params): Promise<${Base}${M}Result>`
+    const DataT = useSchema ? `${Base}${M}Data` : 'any'
+    const ResT = useSchema ? `${Base}${M}Result` : 'any'
+    return `  ${m}(data: ${DataT}, params?: Params): Promise<${ResT}>`
   }).join('\n')}
 }
 
@@ -2300,16 +3598,16 @@ function renderCustomService(
     ? `      all: [authenticate('jwt')],\n`
     : ''
 
-  const schemaHookImports = customMethods.length
+  const schemaHookImports = useSchema && customMethods.length
     ? "import { schemaHooks } from '@feathersjs/schema'\n"
     : ''
 
-  const schemaImports = customMethods.length ? customMethods.map((m) => {
+  const schemaImports = useSchema && customMethods.length ? customMethods.map((m) => {
     const M = pascalCase(m)
     return `${base}${M}DataSchema, ${base}${M}ResultSchema`
   }).join(', ') : ''
 
-  const customHookBlocks = customMethods.length ? customMethods.map((m) => {
+  const customHookBlocks = useSchema && customMethods.length ? customMethods.map((m) => {
     const M = pascalCase(m)
     return `      ${m}: [
         schemaHooks.validateData(${base}${M}DataSchema),
@@ -2318,7 +3616,7 @@ function renderCustomService(
   }).join('\n') : ''
 
   // custom result validation is applied as around hooks (required pattern)
-  const customAroundBlocks = customMethods.length ? customMethods.map((m) => {
+  const customAroundBlocks = useSchema && customMethods.length ? customMethods.map((m) => {
     const M = pascalCase(m)
     return `      ${m}: [
         async (context) => {
@@ -2331,7 +3629,7 @@ function renderCustomService(
   return `// ! Generated by nuxt-feathers-zod - adapter-less service template
 import type { Application } from 'nuxt-feathers-zod/server'
 ${authImports}${schemaHookImports}import { ${serviceClass} } from './${serviceName}.class'
-${customMethods.length ? `import { ${schemaImports} } from './${serviceName}.schema'\n` : ''}
+${useSchema && customMethods.length ? `import { ${schemaImports} } from './${serviceName}.schema'\n` : ''}
 
 export const ${base}Path = '${servicePath}'
 export const ${methodsConst} = ${JSON.stringify(allMethods)} as const

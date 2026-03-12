@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 
+import { defineCommand, runMain } from 'citty'
 import consola from 'consola'
 
 import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind } from './core'
@@ -8,17 +9,23 @@ import {
   findProjectRoot,
   generateCustomService,
   generateMiddleware,
+  generateMongoCompose,
   generateService,
+  toggleServiceAuth,
   handleCliError,
   initTemplates,
-  parseFlags,
   printHelp,
   runDoctor,
+  setServiceSchemaMode,
+  showServiceSchema,
+  mutateServiceFields,
+  validateServiceSchema,
+  repairAuthServiceSchema,
   tryPatchNuxtConfig,
 } from './core'
 
 export type { RunCliOptions } from './core'
-export { generateCustomService, generateService } from './core'
+export { generateCustomService, generateMiddleware, generateService } from './core'
 
 function parseBooleanFlag(value: string | boolean | undefined, fallback: boolean): boolean {
   if (value === undefined)
@@ -63,14 +70,14 @@ function parseCorsOriginFlag(value: string | boolean | undefined): boolean | str
   return normalized
 }
 
-function parseWebsocketOptions(flags: Record<string, string | boolean>) {
-  const connectTimeout = parseNumberFlag(flags.websocketConnectTimeout)
-  const transports = parseCsvFlag(flags.websocketTransports)
-  const corsOrigin = parseCorsOriginFlag(flags.websocketCorsOrigin)
-  const corsCredentials = flags.websocketCorsCredentials === undefined
+function parseWebsocketOptions(args: Record<string, unknown>) {
+  const connectTimeout = parseNumberFlag(args.websocketConnectTimeout as string | boolean | undefined)
+  const transports = parseCsvFlag(args.websocketTransports as string | boolean | undefined)
+  const corsOrigin = parseCorsOriginFlag(args.websocketCorsOrigin as string | boolean | undefined)
+  const corsCredentials = args.websocketCorsCredentials === undefined
     ? undefined
-    : parseBooleanFlag(flags.websocketCorsCredentials, false)
-  const corsMethods = parseCsvFlag(flags.websocketCorsMethods)
+    : parseBooleanFlag(args.websocketCorsCredentials as string | boolean | undefined, false)
+  const corsMethods = parseCsvFlag(args.websocketCorsMethods as string | boolean | undefined)
 
   const websocket: {
     connectTimeout?: number
@@ -100,311 +107,833 @@ function parseWebsocketOptions(flags: Record<string, string | boolean>) {
   return Object.keys(websocket).length ? websocket : undefined
 }
 
-export async function runCli(argv: string[], opts: RunCliOptions) {
-  try {
-    const cwd = resolve(opts.cwd)
-    const [cmd, subcmd, nameOrTarget, ...rest] = argv
+type CliContextArgs = Record<string, unknown> & { _: string[] }
 
-    if (!cmd || cmd === '-h' || cmd === '--help') {
-      printHelp()
-      return
-    }
+function hasDefinedFlag(args: Record<string, unknown>, key: string) {
+  return args[key] !== undefined
+}
 
-    if (cmd === 'doctor') {
-      const projectRoot = await findProjectRoot(cwd)
-      await runDoctor(projectRoot)
-      return
-    }
+export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolean, adapter: Adapter) {
+  const hasCollection = typeof args.collection === 'string' && String(args.collection).trim().length > 0
+  const hasMethods = typeof args.methods === 'string' && String(args.methods).trim().length > 0
+  const hasCustomMethods = typeof args.customMethods === 'string' && String(args.customMethods).trim().length > 0
+  const hasIdField = hasDefinedFlag(args, 'idField')
 
-    if (cmd === 'remote' && subcmd === 'auth' && nameOrTarget === 'keycloak') {
-      const flags = parseFlags(rest)
-      const projectRoot = await findProjectRoot(cwd)
-      const dry = Boolean(flags.dry)
+  if (custom) {
+    if (adapter !== 'memory')
+      throw new Error('Invalid flags for `add service --custom`: --adapter is not supported for adapter-less custom services.')
+    if (hasCollection)
+      throw new Error('Invalid flags for `add service --custom`: --collection is only valid with --adapter mongodb.')
+    if (hasIdField)
+      throw new Error('Invalid flags for `add service --custom`: --idField is not used by adapter-less custom services.')
+    return
+  }
 
-      const ssoUrl = typeof flags.ssoUrl === 'string'
-        ? String(flags.ssoUrl)
-        : (typeof flags.url === 'string' ? String(flags.url) : '')
-      const realm = typeof flags.realm === 'string' ? String(flags.realm) : ''
-      const clientId = typeof flags.clientId === 'string' ? String(flags.clientId) : ''
+  if (hasMethods || hasCustomMethods) {
+    throw new Error('Invalid flags for `add service`: --methods and --customMethods are only supported with --custom.')
+  }
 
-      if (!ssoUrl || !realm || !clientId) {
-        consola.error('Missing required flags: --ssoUrl <url> --realm <realm> --clientId <id>')
-        printHelp()
-        process.exitCode = 1
-        return
-      }
+  if (hasCollection && adapter !== 'mongodb') {
+    throw new Error('Invalid flags for `add service`: --collection requires --adapter mongodb.')
+  }
+}
 
-      await tryPatchNuxtConfig(projectRoot, {
-        clientMode: 'remote',
-        remote: {
-          url: '',
-          auth: {
-            enabled: true,
-            payloadMode: 'keycloak',
-            strategy: 'jwt',
-            tokenField: 'accessToken',
-            servicePath: 'authentication',
-            reauth: true,
-          },
-        },
-        keycloak: {
-          serverUrl: ssoUrl,
-          realm,
-          clientId,
-          onLoad: 'check-sso',
-        },
-      }, { dry })
-      return
-    }
+export function assertInitRemoteArgs(args: CliContextArgs, transport: 'auto' | 'rest' | 'socketio', authEnabled: boolean) {
+  const websocketRelated = [
+    'websocketPath',
+    'websocketTransports',
+    'websocketConnectTimeout',
+    'websocketCorsOrigin',
+    'websocketCorsCredentials',
+    'websocketCorsMethods',
+  ]
+  const hasWebsocketFlags = websocketRelated.some(key => hasDefinedFlag(args, key))
+  if (transport === 'rest' && hasWebsocketFlags) {
+    throw new Error('Invalid flags for `init remote`: websocket options are not supported when --transport rest is used.')
+  }
 
-    if (cmd === 'init') {
-      const initTarget = subcmd
-      if (initTarget !== 'templates' && initTarget !== 'embedded' && initTarget !== 'remote') {
-        consola.error(`Unknown init target: ${initTarget ?? '(missing)'}`)
-        printHelp()
-        process.exitCode = 1
-        return
-      }
+  const authRelated = ['payloadMode', 'strategy', 'tokenField', 'servicePath', 'reauth']
+  const hasAuthFlags = authRelated.some(key => hasDefinedFlag(args, key))
+  if (!authEnabled && hasAuthFlags) {
+    throw new Error('Invalid flags for `init remote`: auth options require --auth true.')
+  }
+}
 
-      const flags = parseFlags([nameOrTarget, ...rest].filter(Boolean) as string[])
-      const projectRoot = await findProjectRoot(cwd)
-      const dry = Boolean(flags.dry)
+export function assertInitEmbeddedArgs(args: CliContextArgs, framework: 'express' | 'koa', serveStaticEnabled: boolean, serverModulesPreset?: string) {
+  if (!serveStaticEnabled && (hasDefinedFlag(args, 'serveStaticPath') || hasDefinedFlag(args, 'serveStaticDir'))) {
+    throw new Error('Invalid flags for `init embedded`: --serveStaticPath/--serveStaticDir require --serveStatic true.')
+  }
 
-      if (initTarget === 'templates') {
-        const dir = typeof flags.dir === 'string' ? String(flags.dir) : 'feathers/templates'
-        const force = Boolean(flags.force)
-        await initTemplates({ projectRoot, outDir: resolve(projectRoot, dir), force, dry })
-        await tryPatchNuxtConfig(projectRoot, { templatesDir: dir }, { dry })
-        return
-      }
+  if (framework === 'koa' && serverModulesPreset === 'express-baseline') {
+    throw new Error('Invalid flags for `init embedded`: express-baseline preset is only available with --framework express.')
+  }
+}
 
-      if (initTarget === 'embedded') {
-        const servicesDir = typeof flags.servicesDir === 'string' ? String(flags.servicesDir) : 'services'
-        const framework = (typeof flags.framework === 'string' ? String(flags.framework) : 'express') as 'express' | 'koa'
-        const restPath = typeof flags.restPath === 'string' ? String(flags.restPath) : '/feathers'
-        const websocketPath = typeof flags.websocketPath === 'string' ? String(flags.websocketPath) : '/socket.io'
-        const websocket = parseWebsocketOptions(flags)
-        const secureDefaults = parseBooleanFlag(flags.secureDefaults, true)
-        const enableAuth = parseBooleanFlag(flags.auth, false)
-        const enableSwagger = parseBooleanFlag(flags.swagger, false)
-        const serveStaticEnabled = parseBooleanFlag(flags.serveStatic, false)
-        const serverModulesPreset = typeof flags.serverModulesPreset === 'string'
-          ? String(flags.serverModulesPreset)
-          : (flags.expressBaseline ? 'express-baseline' : undefined)
+async function withProjectRoot(cwd: string) {
+  return await findProjectRoot(resolve(cwd))
+}
 
-        if (serverModulesPreset === 'express-baseline') {
-          await generateMiddleware({
-            projectRoot,
-            name: 'express-baseline',
-            target: 'server-module',
-            dry,
-            force: Boolean(flags.force),
-            preset: 'express-baseline',
-          })
-        }
+async function handleDoctorCommand(cwd: string) {
+  const projectRoot = await withProjectRoot(cwd)
+  await runDoctor(projectRoot)
+}
 
-        await tryPatchNuxtConfig(projectRoot, {
-          clientMode: 'embedded',
-          servicesDir,
-          ensureServerModuleDir: serverModulesPreset ? 'server/feathers/modules' : undefined,
-          embedded: {
-            framework,
-            restPath,
-            websocketPath,
-            websocket,
-            secureDefaults,
-            auth: enableAuth,
-            swagger: enableSwagger,
-            secure: {
-              cors: parseBooleanFlag(flags.cors, true),
-              compression: parseBooleanFlag(flags.compression, true),
-              helmet: parseBooleanFlag(flags.helmet, true),
-              bodyParser: {
-                json: parseBooleanFlag(flags.bodyParserJson, true),
-                urlencoded: parseBooleanFlag(flags.bodyParserUrlencoded, true),
-              },
-              serveStatic: serveStaticEnabled
-                ? {
-                    path: typeof flags.serveStaticPath === 'string' ? String(flags.serveStaticPath) : '/',
-                    dir: typeof flags.serveStaticDir === 'string' ? String(flags.serveStaticDir) : 'public',
-                  }
-                : false,
-            },
-          },
-        }, { dry })
-        return
-      }
+async function handleRemoteAuthKeycloakCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
 
-      const flagsUrl = typeof flags.url === 'string' ? String(flags.url) : ''
-      const transport = (
-        typeof flags.transport === 'string' ? String(flags.transport) : 'socketio'
-      ) as 'auto' | 'rest' | 'socketio'
-      const restPath = typeof flags.restPath === 'string' ? String(flags.restPath) : '/feathers'
-      const websocketPath = typeof flags.websocketPath === 'string' ? String(flags.websocketPath) : '/socket.io'
-      const websocket = parseWebsocketOptions(flags)
+  const ssoUrl = typeof args.ssoUrl === 'string'
+    ? String(args.ssoUrl)
+    : (typeof args.url === 'string' ? String(args.url) : '')
+  const realm = typeof args.realm === 'string' ? String(args.realm) : ''
+  const clientId = typeof args.clientId === 'string' ? String(args.clientId) : ''
 
-      if (!flagsUrl) {
-        consola.error('Missing required flag: --url <http(s)://...>')
-        printHelp()
-        process.exitCode = 1
-        return
-      }
+  if (!ssoUrl || !realm || !clientId)
+    throw new Error('Missing required flags: --ssoUrl <url> --realm <realm> --clientId <id>')
 
-      const authEnabled = parseBooleanFlag(flags.auth, false)
-      const payloadMode = (typeof flags.payloadMode === 'string' ? String(flags.payloadMode) : 'jwt') as 'jwt' | 'keycloak'
-      const strategy = typeof flags.strategy === 'string' ? String(flags.strategy) : 'jwt'
-      const tokenField = typeof flags.tokenField === 'string' ? String(flags.tokenField) : 'accessToken'
-      const servicePath = typeof flags.servicePath === 'string' ? String(flags.servicePath) : 'authentication'
-      const reauth = parseBooleanFlag(flags.reauth, true)
+  await tryPatchNuxtConfig(projectRoot, {
+    clientMode: 'remote',
+    remote: {
+      url: '',
+      auth: {
+        enabled: true,
+        payloadMode: 'keycloak',
+        strategy: 'jwt',
+        tokenField: 'accessToken',
+        servicePath: 'authentication',
+        reauth: true,
+      },
+    },
+    keycloak: {
+      serverUrl: ssoUrl,
+      realm,
+      clientId,
+      onLoad: 'check-sso',
+    },
+  }, { dry })
+}
 
-      await tryPatchNuxtConfig(projectRoot, {
-        clientMode: 'remote',
-        remote: {
-          url: flagsUrl,
-          transport,
-          restPath,
-          websocketPath,
-          websocket,
-          auth: authEnabled
-            ? { enabled: true, payloadMode, strategy, tokenField, servicePath, reauth }
-            : { enabled: false },
-        },
-      }, { dry })
-      return
-    }
+async function handleAuthServiceCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
 
-    if (cmd !== 'add') {
-      consola.error(`Unknown command: ${cmd}`)
-      printHelp()
-      process.exitCode = 1
-      return
-    }
+  const projectRoot = await withProjectRoot(cwd)
+  const servicesDirName = typeof args.servicesDir === 'string' ? String(args.servicesDir) : 'services'
+  const enabled = parseBooleanFlag(args.enabled as string | boolean | undefined, true)
+  const dry = Boolean(args.dry)
 
-    if (
-      subcmd !== 'service' &&
-      subcmd !== 'custom-service' &&
-      subcmd !== 'remote-service' &&
-      subcmd !== 'middleware' &&
-      subcmd !== 'server-module'
-    ) {
-      consola.error(`Unknown add target: ${subcmd ?? '(missing)'}`)
-      printHelp()
-      process.exitCode = 1
-      return
-    }
+  await toggleServiceAuth({
+    projectRoot,
+    servicesDir: resolve(projectRoot, servicesDirName),
+    name,
+    enabled,
+    dry,
+  })
+}
 
-    if (!nameOrTarget) {
-      consola.error('Missing <name>.')
-      printHelp()
-      process.exitCode = 1
-      return
-    }
+async function handleInitTemplatesCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
+  const dir = typeof args.dir === 'string' ? String(args.dir) : 'feathers/templates'
+  const force = Boolean(args.force)
+  await initTemplates({ projectRoot, outDir: resolve(projectRoot, dir), force, dry })
+  await tryPatchNuxtConfig(projectRoot, { templatesDir: dir }, { dry })
+}
 
-    const flags = parseFlags(rest)
+async function handleInitEmbeddedCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
+  const servicesDir = typeof args.servicesDir === 'string' ? String(args.servicesDir) : 'services'
+  const framework = (typeof args.framework === 'string' ? String(args.framework) : 'express') as 'express' | 'koa'
+  const restPath = typeof args.restPath === 'string' ? String(args.restPath) : '/feathers'
+  const websocketPath = typeof args.websocketPath === 'string' ? String(args.websocketPath) : '/socket.io'
+  const websocket = parseWebsocketOptions(args)
+  const secureDefaults = parseBooleanFlag(args.secureDefaults as string | boolean | undefined, true)
+  const enableAuth = parseBooleanFlag(args.auth as string | boolean | undefined, false)
+  const enableSwagger = parseBooleanFlag(args.swagger as string | boolean | undefined, false)
+  const serveStaticEnabled = parseBooleanFlag(args.serveStatic as string | boolean | undefined, false)
+  const serverModulesPreset = typeof args.serverModulesPreset === 'string'
+    ? String(args.serverModulesPreset)
+    : (args.expressBaseline ? 'express-baseline' : undefined)
 
-    if (subcmd === 'service' || subcmd === 'custom-service') {
-      const adapter = (flags.adapter as Adapter | undefined) ?? 'memory'
-      const auth = Boolean(flags.auth)
-      const custom = subcmd === 'custom-service'
-        || parseBooleanFlag(flags.custom, false)
-        || flags.type === 'custom'
-        || typeof flags.customMethods === 'string'
-      const idField = (flags.idField as IdField | undefined) ?? (adapter === 'mongodb' ? '_id' : 'id')
-      const servicePath = typeof flags.path === 'string' ? String(flags.path) : undefined
-      const collectionName = typeof flags.collection === 'string' ? String(flags.collection) : undefined
-      const methods = typeof flags.methods === 'string' ? String(flags.methods) : undefined
-      const customMethods = typeof flags.customMethods === 'string' ? String(flags.customMethods) : undefined
-      const docs = Boolean(flags.docs)
-      const schema = (flags.schema as SchemaKind | undefined) ?? 'none'
-      const dry = Boolean(flags.dry)
-      const force = Boolean(flags.force)
-      const projectRoot = await findProjectRoot(cwd)
-      const servicesDirName = typeof flags.servicesDir === 'string' ? String(flags.servicesDir) : 'services'
-      const servicesDir = resolve(projectRoot, servicesDirName)
+  assertInitEmbeddedArgs(args, framework, serveStaticEnabled, serverModulesPreset)
 
-      if (subcmd === 'custom-service' && !dry) {
-        consola.warn('[nfz] `add custom-service` is kept as a compatibility alias. Prefer `add service <name> --custom`.')
-      }
-
-      await generateService({
-        projectRoot,
-        servicesDir,
-        name: nameOrTarget,
-        adapter,
-        auth,
-        idField,
-        servicePath,
-        collectionName,
-        docs,
-        schema,
-        dry,
-        force,
-        custom,
-        methods,
-        customMethods,
-      })
-      await tryPatchNuxtConfig(projectRoot, { servicesDir: servicesDirName }, { dry })
-      return
-    }
-
-    if (subcmd === 'server-module') {
-      const dry = Boolean(flags.dry)
-      const force = Boolean(flags.force)
-      const preset = typeof flags.preset === 'string'
-        ? String(flags.preset)
-        : (flags.preset === true ? nameOrTarget : undefined)
-      const projectRoot = await findProjectRoot(cwd)
-
-      await generateMiddleware({
-        projectRoot,
-        name: nameOrTarget,
-        target: 'server-module',
-        dry,
-        force,
-        preset,
-      })
-
-      await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
-      return
-    }
-
-    if (subcmd === 'remote-service') {
-      const dry = Boolean(flags.dry)
-      const projectRoot = await findProjectRoot(cwd)
-      const methods = typeof flags.methods === 'string'
-        ? String(flags.methods).split(',').map(s => s.trim()).filter(Boolean)
-        : undefined
-      const path = typeof flags.path === 'string' ? String(flags.path) : nameOrTarget
-
-      await tryPatchNuxtConfig(projectRoot, {
-        clientMode: 'remote',
-        remoteService: { path, methods },
-      }, { dry })
-      return
-    }
-
-    const target = (flags.target as MiddlewareTarget | undefined) ?? 'nitro'
-    const dry = Boolean(flags.dry)
-    const force = Boolean(flags.force)
-    const projectRoot = await findProjectRoot(cwd)
-
+  if (serverModulesPreset === 'express-baseline') {
     await generateMiddleware({
       projectRoot,
-      name: nameOrTarget,
-      target,
+      name: 'express-baseline',
+      target: 'server-module',
       dry,
-      force,
+      force: Boolean(args.force),
+      preset: 'express-baseline',
     })
+  }
 
-    if (target === 'feathers') {
-      await tryPatchNuxtConfig(projectRoot, { ensureServerFeathersPluginsDir: true }, { dry })
-    }
+  await tryPatchNuxtConfig(projectRoot, {
+    clientMode: 'embedded',
+    servicesDir,
+    ensureServerModuleDir: serverModulesPreset ? 'server/feathers/modules' : undefined,
+    embedded: {
+      framework,
+      restPath,
+      websocketPath,
+      websocket,
+      secureDefaults,
+      auth: enableAuth,
+      swagger: enableSwagger,
+      secure: {
+        cors: parseBooleanFlag(args.cors as string | boolean | undefined, true),
+        compression: parseBooleanFlag(args.compression as string | boolean | undefined, true),
+        helmet: parseBooleanFlag(args.helmet as string | boolean | undefined, true),
+        bodyParser: {
+          json: parseBooleanFlag(args.bodyParserJson as string | boolean | undefined, true),
+          urlencoded: parseBooleanFlag(args.bodyParserUrlencoded as string | boolean | undefined, true),
+        },
+        serveStatic: serveStaticEnabled
+          ? {
+              path: typeof args.serveStaticPath === 'string' ? String(args.serveStaticPath) : '/',
+              dir: typeof args.serveStaticDir === 'string' ? String(args.serveStaticDir) : 'public',
+            }
+          : false,
+      },
+    },
+  }, { dry })
+}
 
-    if (target === 'server-module' || target === 'module') {
-      await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
-    }
+async function handleInitRemoteCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
+  const remoteUrl = typeof args.url === 'string' ? String(args.url) : ''
+  const transport = (typeof args.transport === 'string' ? String(args.transport) : 'socketio') as 'auto' | 'rest' | 'socketio'
+  const restPath = typeof args.restPath === 'string' ? String(args.restPath) : '/feathers'
+  const websocketPath = typeof args.websocketPath === 'string' ? String(args.websocketPath) : '/socket.io'
+  const websocket = parseWebsocketOptions(args)
+
+  if (!remoteUrl)
+    throw new Error('Missing required flag: --url <http(s)://...>')
+
+  const authEnabled = parseBooleanFlag(args.auth as string | boolean | undefined, false)
+  assertInitRemoteArgs(args, transport, authEnabled)
+  const payloadMode = (typeof args.payloadMode === 'string' ? String(args.payloadMode) : 'jwt') as 'jwt' | 'keycloak'
+  const strategy = typeof args.strategy === 'string' ? String(args.strategy) : 'jwt'
+  const tokenField = typeof args.tokenField === 'string' ? String(args.tokenField) : 'accessToken'
+  const servicePath = typeof args.servicePath === 'string' ? String(args.servicePath) : 'authentication'
+  const reauth = parseBooleanFlag(args.reauth as string | boolean | undefined, true)
+
+  await tryPatchNuxtConfig(projectRoot, {
+    clientMode: 'remote',
+    remote: {
+      url: remoteUrl,
+      transport,
+      restPath,
+      websocketPath,
+      websocket,
+      auth: authEnabled
+        ? { enabled: true, payloadMode, strategy, tokenField, servicePath, reauth }
+        : { enabled: false },
+    },
+  }, { dry })
+}
+
+async function handleAddMongoComposeCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
+  const force = Boolean(args.force)
+  const outFile = typeof args.out === 'string' ? String(args.out) : 'docker-compose-db.yaml'
+  const serviceName = typeof args.service === 'string' ? String(args.service) : 'mongodb'
+  const port = parseNumberFlag(args.port as string | boolean | undefined)
+  const database = typeof args.database === 'string' ? String(args.database) : 'app'
+  const rootUser = typeof args.rootUser === 'string' ? String(args.rootUser) : 'root'
+  const rootPassword = typeof args.rootPassword === 'string' ? String(args.rootPassword) : 'change-me'
+  const volume = typeof args.volume === 'string' ? String(args.volume) : 'mongodb_data'
+
+  await generateMongoCompose({
+    projectRoot,
+    outFile,
+    serviceName,
+    port,
+    database,
+    rootUser,
+    rootPassword,
+    volume,
+    dry,
+    force,
+  })
+}
+
+async function handleAddServiceCommand(cwd: string, args: CliContextArgs, compatibilityAlias = false) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
+
+  const adapter = (args.adapter as Adapter | undefined) ?? 'memory'
+  const auth = parseBooleanFlag(args.auth as string | boolean | undefined, false)
+  const custom = compatibilityAlias
+    || parseBooleanFlag(args.custom as string | boolean | undefined, false)
+    || args.type === 'custom'
+    || typeof args.customMethods === 'string'
+  assertServiceGenerationArgs(args, custom, adapter)
+  const idField = (args.idField as IdField | undefined) ?? (adapter === 'mongodb' ? '_id' : 'id')
+  const servicePath = typeof args.path === 'string' ? String(args.path) : undefined
+  const collectionName = typeof args.collection === 'string' ? String(args.collection) : undefined
+  const methods = typeof args.methods === 'string' ? String(args.methods) : undefined
+  const customMethods = typeof args.customMethods === 'string' ? String(args.customMethods) : undefined
+  const docs = parseBooleanFlag(args.docs as string | boolean | undefined, false)
+  const authAware = args.authAware === undefined ? undefined : parseBooleanFlag(args.authAware as string | boolean | undefined, false)
+  const schema = (args.schema as SchemaKind | undefined) ?? 'none'
+  const dry = parseBooleanFlag(args.dry as string | boolean | undefined, false)
+  const force = parseBooleanFlag(args.force as string | boolean | undefined, false)
+  const diff = parseBooleanFlag(args.diff as string | boolean | undefined, false)
+  const projectRoot = await withProjectRoot(cwd)
+  const servicesDirName = typeof args.servicesDir === 'string' ? String(args.servicesDir) : 'services'
+  const servicesDir = resolve(projectRoot, servicesDirName)
+
+  if (compatibilityAlias && !dry)
+    consola.warn('[nfz] `add custom-service` is kept as a compatibility alias. Prefer `add service <name> --custom`.')
+
+  await generateService({
+    projectRoot,
+    servicesDir,
+    name,
+    adapter,
+    auth,
+    idField,
+    servicePath,
+    collectionName,
+    docs,
+    authAware,
+    schema,
+    dry,
+    force,
+    custom,
+    methods,
+    customMethods,
+  })
+  await tryPatchNuxtConfig(projectRoot, { servicesDir: servicesDirName }, { dry })
+}
+
+async function handleAddServerModuleCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
+
+  const dry = Boolean(args.dry)
+  const force = Boolean(args.force)
+  const preset = typeof args.preset === 'string' ? String(args.preset) : undefined
+  const projectRoot = await withProjectRoot(cwd)
+
+  await generateMiddleware({
+    projectRoot,
+    name,
+    target: 'server-module',
+    dry,
+    force,
+    preset,
+  })
+
+  await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
+}
+
+async function handleAddRemoteServiceCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
+
+  const dry = Boolean(args.dry)
+  const projectRoot = await withProjectRoot(cwd)
+  const methods = typeof args.methods === 'string'
+    ? String(args.methods).split(',').map(s => s.trim()).filter(Boolean)
+    : undefined
+  const path = typeof args.path === 'string' ? String(args.path) : name
+
+  await tryPatchNuxtConfig(projectRoot, {
+    clientMode: 'remote',
+    remoteService: { path, methods },
+  }, { dry })
+}
+
+async function handleAddMiddlewareCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
+
+  const target = (args.target as MiddlewareTarget | undefined) ?? 'nitro'
+  const dry = Boolean(args.dry)
+  const force = Boolean(args.force)
+  const projectRoot = await withProjectRoot(cwd)
+
+  await generateMiddleware({
+    projectRoot,
+    name,
+    target,
+    dry,
+    force,
+  })
+
+  if (target === 'feathers')
+    await tryPatchNuxtConfig(projectRoot, { ensureServerFeathersPluginsDir: true }, { dry })
+
+  if (target === 'server-module' || target === 'module')
+    await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
+}
+
+
+async function handleSchemaCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <service>.')
+
+  const projectRoot = await withProjectRoot(cwd)
+  const servicesDirName = typeof args.servicesDir === 'string' ? String(args.servicesDir) : 'services'
+  const servicesDir = resolve(projectRoot, servicesDirName)
+  const dry = parseBooleanFlag(args.dry as string | boolean | undefined, false)
+  const force = parseBooleanFlag(args.force as string | boolean | undefined, false)
+  const diff = parseBooleanFlag(args.diff as string | boolean | undefined, false)
+  const setMode = typeof args.setMode === 'string'
+    ? String(args.setMode) as SchemaKind
+    : (typeof (args as any)['set-mode'] === 'string' ? String((args as any)['set-mode']) as SchemaKind : undefined)
+  const show = Boolean(args.show) || Boolean(args.get)
+  const json = Boolean(args.json)
+  const exportFile = args.export ? `services/.nfz/exports/${name}.schema.${json ? 'json' : 'txt'}` : undefined
+  const addField = typeof args.addField === 'string'
+    ? String(args.addField)
+    : (typeof (args as any)['add-field'] === 'string' ? String((args as any)['add-field']) : undefined)
+  const validate = Boolean((args as any).validate)
+  const repairAuth = Boolean((args as any).repairAuth) || Boolean((args as any)['repair-auth'])
+  const removeField = typeof args.removeField === 'string'
+    ? String(args.removeField)
+    : (typeof (args as any)['remove-field'] === 'string' ? String((args as any)['remove-field']) : undefined)
+  const setField = typeof args.setField === 'string'
+    ? String(args.setField)
+    : (typeof (args as any)['set-field'] === 'string' ? String((args as any)['set-field']) : undefined)
+  const renameField = typeof args.renameField === 'string'
+    ? String(args.renameField)
+    : (typeof (args as any)['rename-field'] === 'string' ? String((args as any)['rename-field']) : undefined)
+
+  if (setMode)
+    await setServiceSchemaMode({ projectRoot, servicesDir, name, mode: setMode, dry, force, diff })
+
+  if (addField || removeField || setField || renameField)
+    await mutateServiceFields({ projectRoot, servicesDir, name, addField, removeField, setField, renameField, dry, force, diff })
+
+  if (repairAuth)
+    await repairAuthServiceSchema({ projectRoot, servicesDir, name, dry, diff, force })
+
+  if (validate)
+    await validateServiceSchema({ projectRoot, servicesDir, name, format: json ? 'json' : 'show' })
+
+  const hasMutation = Boolean(setMode || addField || removeField || setField || renameField || repairAuth)
+  const hasView = Boolean(show || args.get || json || exportFile)
+
+  if (!hasMutation && validate && !hasView)
+    return
+
+  if (args.get)
+    consola.warn('[nfz] `schema --get` is a compatibility alias. Prefer `schema --show`.')
+
+  if (hasView) {
+    await showServiceSchema({
+      projectRoot,
+      servicesDir,
+      name,
+      format: json ? 'json' : 'show',
+      exportFile,
+    })
+    return
+  }
+
+  if (!hasMutation)
+    await showServiceSchema({ projectRoot, servicesDir, name, format: 'show' })
+}
+
+export function createCliCommand() {
+  const doctorCommand = defineCommand({
+    meta: {
+      name: 'doctor',
+      description: 'Diagnose current project configuration',
+    },
+    run: async () => {
+      await handleDoctorCommand(process.cwd())
+    },
+  })
+
+  const initTemplatesCommand = defineCommand({
+    meta: {
+      name: 'templates',
+      description: 'Initialize template overrides',
+    },
+    args: {
+      dir: { type: 'string', description: 'Templates output directory' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleInitTemplatesCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const initEmbeddedCommand = defineCommand({
+    meta: {
+      name: 'embedded',
+      description: 'Initialize embedded server mode',
+    },
+    args: {
+      framework: { type: 'enum', options: ['express', 'koa'], description: 'Embedded framework' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      restPath: { type: 'string', description: 'REST path' },
+      websocketPath: { type: 'string', description: 'WebSocket path' },
+      websocketTransports: { type: 'string', description: 'Comma-separated websocket transports' },
+      websocketConnectTimeout: { type: 'string', description: 'WebSocket connect timeout in ms' },
+      websocketCorsOrigin: { type: 'string', description: 'WebSocket CORS origin' },
+      websocketCorsCredentials: { type: 'boolean', description: 'WebSocket CORS credentials' },
+      websocketCorsMethods: { type: 'string', description: 'Comma-separated WebSocket CORS methods' },
+      secureDefaults: { type: 'boolean', description: 'Enable secure defaults' },
+      cors: { type: 'boolean', description: 'Enable CORS module' },
+      compression: { type: 'boolean', description: 'Enable compression module' },
+      helmet: { type: 'boolean', description: 'Enable helmet module' },
+      bodyParserJson: { type: 'boolean', description: 'Enable JSON body parser' },
+      bodyParserUrlencoded: { type: 'boolean', description: 'Enable URL-encoded body parser' },
+      serveStatic: { type: 'boolean', description: 'Enable static serving' },
+      serveStaticPath: { type: 'string', description: 'Static path prefix' },
+      serveStaticDir: { type: 'string', description: 'Static directory' },
+      auth: { type: 'boolean', description: 'Enable embedded auth' },
+      swagger: { type: 'boolean', description: 'Enable swagger legacy docs' },
+      serverModulesPreset: { type: 'string', description: 'Server modules preset' },
+      expressBaseline: { type: 'boolean', description: 'Compatibility alias for express-baseline preset' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleInitEmbeddedCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const initRemoteCommand = defineCommand({
+    meta: {
+      name: 'remote',
+      description: 'Initialize remote client mode',
+    },
+    args: {
+      url: { type: 'string', required: true, description: 'Remote Feathers URL' },
+      transport: { type: 'enum', options: ['auto', 'rest', 'socketio'], description: 'Remote transport' },
+      restPath: { type: 'string', description: 'REST path' },
+      websocketPath: { type: 'string', description: 'WebSocket path' },
+      websocketTransports: { type: 'string', description: 'Comma-separated websocket transports' },
+      websocketConnectTimeout: { type: 'string', description: 'WebSocket connect timeout in ms' },
+      websocketCorsOrigin: { type: 'string', description: 'WebSocket CORS origin' },
+      websocketCorsCredentials: { type: 'boolean', description: 'WebSocket CORS credentials' },
+      websocketCorsMethods: { type: 'string', description: 'Comma-separated WebSocket CORS methods' },
+      auth: { type: 'boolean', description: 'Enable remote auth' },
+      payloadMode: { type: 'enum', options: ['jwt', 'keycloak'], description: 'Remote auth payload mode' },
+      strategy: { type: 'string', description: 'Auth strategy name' },
+      tokenField: { type: 'string', description: 'Token field name' },
+      servicePath: { type: 'string', description: 'Authentication service path' },
+      reauth: { type: 'boolean', description: 'Enable reauthentication' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleInitRemoteCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const initCommand = defineCommand({
+    meta: {
+      name: 'init',
+      description: 'Initialize templates or client/server modes',
+    },
+    subCommands: {
+      templates: initTemplatesCommand,
+      embedded: initEmbeddedCommand,
+      remote: initRemoteCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const remoteAuthKeycloakCommand = defineCommand({
+    meta: {
+      name: 'keycloak',
+      description: 'Configure remote auth payload mode for Keycloak',
+    },
+    args: {
+      ssoUrl: { type: 'string', alias: 'url', required: true, description: 'Keycloak server URL' },
+      realm: { type: 'string', required: true, description: 'Keycloak realm' },
+      clientId: { type: 'string', required: true, description: 'Keycloak client id' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleRemoteAuthKeycloakCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const remoteAuthCommand = defineCommand({
+    meta: {
+      name: 'auth',
+      description: 'Remote auth helpers',
+    },
+    subCommands: {
+      keycloak: remoteAuthKeycloakCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const remoteCommand = defineCommand({
+    meta: {
+      name: 'remote',
+      description: 'Remote mode helpers',
+    },
+    subCommands: {
+      auth: remoteAuthCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const addServiceCommand = defineCommand({
+    meta: {
+      name: 'service',
+      description: 'Generate an embedded service',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      custom: { type: 'boolean', description: 'Generate an adapter-less custom service' },
+      type: { type: 'enum', options: ['adapter', 'custom'], description: 'Service kind' },
+      adapter: { type: 'enum', options: ['memory', 'mongodb'], description: 'Service adapter' },
+      schema: { type: 'enum', options: ['none', 'zod', 'json'], description: 'Schema generation mode' },
+      auth: { type: 'boolean', description: 'Enable JWT auth hooks' },
+      authAware: { type: 'boolean', description: 'Enable auth-aware password hashing/masking for users service' },
+      idField: { type: 'enum', options: ['id', '_id'], description: 'Service id field' },
+      path: { type: 'string', description: 'Service path' },
+      collection: { type: 'string', description: 'MongoDB collection name' },
+      methods: { type: 'string', description: 'Comma-separated standard methods' },
+      customMethods: { type: 'string', description: 'Comma-separated custom methods' },
+      docs: { type: 'boolean', description: 'Enable swagger legacy docs metadata' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddServiceCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const addCustomServiceCommand = defineCommand({
+    meta: {
+      name: 'custom-service',
+      description: 'Compatibility alias for add service --custom',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      schema: { type: 'enum', options: ['none', 'zod', 'json'], description: 'Schema generation mode' },
+      auth: { type: 'boolean', description: 'Enable JWT auth hooks' },
+      authAware: { type: 'boolean', description: 'Enable auth-aware password hashing/masking for users service' },
+      path: { type: 'string', description: 'Service path' },
+      methods: { type: 'string', description: 'Comma-separated standard methods' },
+      customMethods: { type: 'string', description: 'Comma-separated custom methods' },
+      docs: { type: 'boolean', description: 'Enable swagger legacy docs metadata' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddServiceCommand(process.cwd(), args as CliContextArgs, true)
+    },
+  })
+
+  const addRemoteServiceCommand = defineCommand({
+    meta: {
+      name: 'remote-service',
+      description: 'Register a remote service (client-only)',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      path: { type: 'string', description: 'Remote service path' },
+      methods: { type: 'string', description: 'Comma-separated service methods' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddRemoteServiceCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const addMiddlewareCommand = defineCommand({
+    meta: {
+      name: 'middleware',
+      description: 'Generate middleware',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Middleware name' },
+      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module'], description: 'Middleware target' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddMiddlewareCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const addServerModuleCommand = defineCommand({
+    meta: {
+      name: 'server-module',
+      description: 'Generate a reusable server module',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Module name' },
+      preset: {
+        type: 'enum',
+        options: ['helmet', 'security-headers', 'request-logger', 'healthcheck', 'rate-limit', 'express-baseline'],
+        description: 'Server module preset',
+      },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddServerModuleCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const addMongoComposeCommand = defineCommand({
+    meta: {
+      name: 'mongodb-compose',
+      description: 'Generate docker-compose-db.yaml for MongoDB',
+    },
+    args: {
+      out: { type: 'string', description: 'Output file path' },
+      service: { type: 'string', description: 'MongoDB service name' },
+      port: { type: 'string', description: 'MongoDB port' },
+      database: { type: 'string', description: 'MongoDB database name' },
+      rootUser: { type: 'string', description: 'MongoDB root username' },
+      rootPassword: { type: 'string', description: 'MongoDB root password' },
+      volume: { type: 'string', description: 'MongoDB volume name' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddMongoComposeCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const addCommand = defineCommand({
+    meta: {
+      name: 'add',
+      description: 'Generate services, middleware, and compose files',
+    },
+    subCommands: {
+      service: addServiceCommand,
+      'custom-service': addCustomServiceCommand,
+      'remote-service': addRemoteServiceCommand,
+      middleware: addMiddlewareCommand,
+      'server-module': addServerModuleCommand,
+      'mongodb-compose': addMongoComposeCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const authServiceCommand = defineCommand({
+    meta: {
+      name: 'service',
+      description: 'Enable or disable JWT auth hooks on an existing service',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      enabled: { type: 'boolean', description: 'Whether auth should be enabled' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAuthServiceCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+
+  const schemaCommand = defineCommand({
+    meta: {
+      name: 'schema',
+      description: 'Inspect or change the schema mode of an existing service',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      show: { type: 'boolean', description: 'Show human-readable schema summary' },
+      get: { type: 'boolean', description: 'Compatibility alias for --show' },
+      json: { type: 'boolean', description: 'Print machine-readable JSON schema summary' },
+      export: { type: 'boolean', description: 'Export schema summary to services/.nfz/exports' },
+      'set-mode': { type: 'enum', options: ['none', 'zod', 'json'], description: 'Switch schema mode' },
+      'add-field': { type: 'string', description: 'Add field spec (ex: userId:string!, isActive:boolean=true)' },
+      'remove-field': { type: 'string', description: 'Remove field by name' },
+      'set-field': { type: 'string', description: 'Create or replace field spec' },
+      'rename-field': { type: 'string', description: 'Rename field using from:to' },
+      validate: { type: 'boolean', description: 'Validate auth compatibility and manifest invariants' },
+      'repair-auth': { type: 'boolean', description: 'Repair auth-compatible users schema (restores zod + userId/password)' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+      diff: { type: 'boolean', description: 'Show manifest diff before applying changes' },
+      force: { type: 'boolean', description: 'Allow overwriting generated artifacts' },
+    },
+    run: async ({ args }) => {
+      await handleSchemaCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const authCommand = defineCommand({
+    meta: {
+      name: 'auth',
+      description: 'Auth-related helpers',
+    },
+    subCommands: {
+      service: authServiceCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  return defineCommand({
+    meta: {
+      name: 'nuxt-feathers-zod',
+      description: 'Feathers API integration for Nuxt',
+    },
+    subCommands: {
+      doctor: doctorCommand,
+      init: initCommand,
+      remote: remoteCommand,
+      add: addCommand,
+      schema: schemaCommand,
+      auth: authCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+}
+
+export const mainCommand = createCliCommand()
+
+export async function runCli(argv: string[], opts: RunCliOptions) {
+  const previousCwd = process.cwd()
+
+  try {
+    process.chdir(resolve(opts.cwd))
+    await runMain(mainCommand, { rawArgs: argv })
   }
   catch (err) {
+    if (opts.throwOnError)
+      throw err
     handleCliError(err)
+  }
+  finally {
+    process.chdir(previousCwd)
   }
 }

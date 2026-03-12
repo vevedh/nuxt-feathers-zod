@@ -45,3 +45,15 @@ Contrôles utiles :
 ## Pourquoi le playground est important
 
 Pour figer le core open source, il doit rester un terrain de validation simple et stable.
+
+
+## Embedded + MongoDB
+
+Le playground inclut désormais un scénario `embedded+mongodb` prêt à l'emploi via `playground/.env.embedded-mongodb.example`.
+Le mode utilise `mongodb-memory-server` pour fournir un `mongodbClient` valide aux services générés avec l'adapter `mongodb`.
+
+
+## Désactiver MongoDB mémoire pour les runs remote-only
+
+Si vous voulez valider uniquement le mode remote sans démarrer `mongodb-memory-server`, définissez `NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`.
+La valeur par défaut reste `true` pour conserver le scénario embedded + MongoDB prêt à l'emploi.
