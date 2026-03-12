@@ -34,6 +34,18 @@ const alwaysHiddenSrcExclude = [
   'en/guide/release-checklist.md',
 ]
 
+const privateDocsSrcExclude = [
+  '**/private/**',
+  '**/admin/**',
+  '**/*private*.md',
+]
+
+const hiddenDocsSrcExclude = [
+  ...internalGuideSrcExclude,
+  ...alwaysHiddenSrcExclude,
+  ...privateDocsSrcExclude,
+]
+
 function withInternalGuide(items: Array<{ text: string; link: string }>) {
   const visible = items.filter((item) => !alwaysHiddenGuideLinks.includes(item.link))
   if (!isProd) return visible
@@ -42,25 +54,11 @@ function withInternalGuide(items: Array<{ text: string; link: string }>) {
 
 export default defineConfig({
   base: '/nuxt-feathers-zod/',
-  srcExclude: [
-    '**/release-checklist.md',
-    '**/release-checklist.fr.md',
-    '**/open-core-vs-pro.md',
-    '**/open-core.md',
-    '**/support-policy.md',
-    '**/playground.md',
-    '**/en/guide/release-checklist.md',
-    '**/en/guide/open-core-vs-pro.md',
-    '**/en/guide/open-core.md',
-    '**/en/guide/support-policy.md',
-    '**/en/guide/playground.md',
-    '**/README_private.md',
-    '**/private/**',
-    '**/admin/**'
-  ],
   cleanUrls: true,
   lastUpdated: true,
-  srcExclude: isProd ? [...internalGuideSrcExclude, ...alwaysHiddenSrcExclude] : alwaysHiddenSrcExclude,
+  // These pages are intentionally removed from the generated public site.
+  // Hiding them from nav is not enough because VitePress would still emit them.
+  srcExclude: hiddenDocsSrcExclude,
 
   locales: {
     root: {
