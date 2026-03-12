@@ -12,28 +12,64 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/types.d.mts",
+      "types": "./types.d.mts",
       "import": "./dist/module.mjs"
     },
-    "./options": "./dist/runtime/options/index.js",
-    "./ofetch-adapter": "./dist/runtime/adapters/ofetch.js",
-    "./validators": "./dist/runtime/zod/validators.js",
-    "./objectId": "./dist/runtime/zod/objectId.js",
-    "./query": "./dist/runtime/zod/query.js",
-    "./format": "./dist/runtime/zod/format.js",
-    "./zod": "./dist/runtime/zod/index.js"
+    "./options": {
+      "types": "./dist/runtime/options/index.d.ts",
+      "import": "./dist/runtime/options/index.js"
+    },
+    "./ofetch-adapter": {
+      "types": "./dist/runtime/adapters/ofetch.d.ts",
+      "import": "./dist/runtime/adapters/ofetch.js"
+    },
+    "./validators": {
+      "types": "./dist/runtime/zod/validators.d.ts",
+      "import": "./dist/runtime/zod/validators.js"
+    },
+    "./objectId": {
+      "types": "./dist/runtime/zod/objectId.d.ts",
+      "import": "./dist/runtime/zod/objectId.js"
+    },
+    "./query": {
+      "types": "./dist/runtime/zod/query.d.ts",
+      "import": "./dist/runtime/zod/query.js"
+    },
+    "./format": {
+      "types": "./dist/runtime/zod/format.d.ts",
+      "import": "./dist/runtime/zod/format.js"
+    },
+    "./zod": {
+      "types": "./dist/runtime/zod/index.d.ts",
+      "import": "./dist/runtime/zod/index.js"
+    }
   },
   "main": "./dist/module.mjs",
   "typesVersions": {
     "*": {
       ".": [
-        "./dist/types.d.mts"
+        "./types.d.mts"
       ],
       "options": [
-        "./dist/runtime/options/index.d.mts"
+        "./dist/runtime/options/index.d.ts"
       ],
       "ofetch-adapter": [
-        "./dist/runtime/adapters/ofetch.d.mts"
+        "./dist/runtime/adapters/ofetch.d.ts"
+      ],
+      "validators": [
+        "./dist/runtime/zod/validators.d.ts"
+      ],
+      "objectId": [
+        "./dist/runtime/zod/objectId.d.ts"
+      ],
+      "query": [
+        "./dist/runtime/zod/query.d.ts"
+      ],
+      "format": [
+        "./dist/runtime/zod/format.d.ts"
+      ],
+      "zod": [
+        "./dist/runtime/zod/index.d.ts"
       ]
     }
   },
@@ -44,7 +80,8 @@
     "bin",
     "dist",
     "src/cli",
-    "src/runtime/server/modules"
+    "src/runtime/server/modules",
+    "types.d.mts"
   ],
   "scripts": {
     "prepack": "nuxt-module-build build",
@@ -143,5 +180,6 @@
     "vitest-mongodb": "latest",
     "vue": "latest",
     "vue-router": "latest"
-  }
+  },
+  "types": "./types.d.mts"
 }
