@@ -1,13 +1,13 @@
 import type { ResolvedOptions } from '../../../runtime/options'
 import type { Templates } from '../types'
-import { getServerAuthContents } from './authentication'
-import { getServerAppContents } from './app'
-import { getServerKeycloakContents } from './keycloak'
-import { getServerMongodbContents } from './mongodb'
-import { getServerPluginContents } from './plugin'
-import { getSecureDefaultsModuleContents } from './secure-defaults'
-import { getServerRuntimeContents } from './server-runtime'
-import { getServerTypesContents } from './server-types'
+import { getServerAuthContents } from './authentication.js'
+import { getServerAppContents } from './app.js'
+import { getServerKeycloakContents } from './keycloak.js'
+import { getServerMongodbContents } from './mongodb.js'
+import { getServerPluginContents } from './plugin.js'
+import { getSecureDefaultsModuleContents } from './secure-defaults.js'
+import { getServerRuntimeContents } from './server-runtime.js'
+import { getServerTypesContents } from './server-types.js'
 
 export function getServerTemplates(options: ResolvedOptions): Templates {
   const serverTemplates: Templates = [
