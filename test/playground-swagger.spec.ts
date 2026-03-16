@@ -13,7 +13,7 @@ function read(relPath: string) {
 describe('playground swagger smoke-test', () => {
   it('enables module flag feathers.swagger in playground', () => {
     const cfg = read('playground/nuxt.config.ts')
-    expect(cfg).toMatch(/swagger:\s*true/)
+    expect(cfg).toMatch(/swagger:\s*\{\s*enabled:\s*true/)
   })
 
   it('includes a service with legacy swagger docs block', () => {

@@ -70,6 +70,30 @@ async function goProtected() {
     </p>
 
     <p style="margin-top: 8px">
+      <NuxtLink to="/remote/socketio">
+        Remote Socket.IO validation
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
+      <NuxtLink to="/remote/rest">
+        Remote REST validation
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
+      <NuxtLink to="/embedded">
+        Embedded validation
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
+      <NuxtLink to="/middleware">
+        Middleware / modules validation
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
       <NuxtLink to="/validation">
         Scenario matrix: /validation
       </NuxtLink>

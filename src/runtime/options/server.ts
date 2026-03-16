@@ -9,12 +9,14 @@ export interface ServerModuleObject {
   src: string
   options?: any
   enabled?: boolean
+  phase?: 'pre' | 'post'
 }
 
 export type ServerModuleEntry = string | Import | ServerModuleObject
 
 export interface ResolvedServerModule extends Import {
   options?: any
+  phase?: 'pre' | 'post'
   meta: {
     importId: string
     import: string
@@ -22,6 +24,8 @@ export interface ResolvedServerModule extends Import {
 }
 
 export interface ServerOptions extends PluginOptions {
+  enabled?: boolean
+
   /**
    * Server modules are executed (called) in the embedded server plugin.
    * They are NOT Feathers `app.configure` plugins.
@@ -32,6 +36,7 @@ export interface ServerOptions extends PluginOptions {
    */
   moduleDirs?: string | string[]
   modules?: ServerModuleEntry | ServerModuleEntry[]
+  loadOrder?: Array<'modules:pre' | 'plugins' | 'services' | 'modules:post'>
 
   /**
    * Apply "secure defaults" middleware preset for the embedded REST server (Express only for now):
@@ -63,14 +68,20 @@ export interface ServerOptions extends PluginOptions {
 }
 
 export interface ResolvedServerOptions extends ResolvedPluginOptions {
+  enabled?: boolean
+  loadOrder?: Array<'modules:pre' | 'plugins' | 'services' | 'modules:post'>
+  secureDefaults?: boolean
+  secure?: ServerOptions['secure']
   modules: ResolvedServerModule[]
 }
 
 export const serverDefaults: ServerOptions = {
+  enabled: true,
   pluginDirs: [],
   plugins: [],
   moduleDirs: [],
   modules: [],
+  loadOrder: ['modules:pre', 'plugins', 'services', 'modules:post'],
   secureDefaults: true,
   secure: {
     cors: true,
@@ -121,10 +132,11 @@ async function resolveServerModuleEntries(
     'rate-limit': packageRootResolver.resolve(`${builtinBase}/rate-limit.ts`),
   }
 
-  const toResolvedBuiltin = (from: string, options?: any) => {
+  const toResolvedBuiltin = (from: string, options?: any, phase: 'pre' | 'post' = 'pre') => {
     const builtinImport = setImportMeta({ name: 'default', from } as Import) as ResolvedServerModule
     if (options !== undefined)
       builtinImport.options = options
+    builtinImport.phase = phase
     return builtinImport
   }
 
@@ -134,9 +146,10 @@ async function resolveServerModuleEntries(
     if (isServerModuleObject(entry)) {
       if (entry.enabled === false)
         continue
+      const phase = entry.phase === 'post' ? 'post' : 'pre'
       const builtin = builtins[entry.src]
       if (builtin) {
-        resolved.push(toResolvedBuiltin(builtin, entry.options))
+        resolved.push(toResolvedBuiltin(builtin, entry.options, phase))
         continue
       }
       const target = rootResolver.resolve(entry.src)
@@ -146,6 +159,7 @@ async function resolveServerModuleEntries(
         continue
       const moduleImport = setImportMeta(picked) as ResolvedServerModule
       moduleImport.options = entry.options
+      moduleImport.phase = phase
       resolved.push(moduleImport)
       continue
     }
@@ -153,7 +167,7 @@ async function resolveServerModuleEntries(
     if (typeof entry === 'string') {
       const builtin = builtins[entry]
       if (builtin) {
-        resolved.push(toResolvedBuiltin(builtin))
+        resolved.push(toResolvedBuiltin(builtin, undefined, 'pre'))
         continue
       }
       const target = rootResolver.resolve(entry)
@@ -161,11 +175,15 @@ async function resolveServerModuleEntries(
       const picked = imports.find(i => i.name === 'default') || imports[0]
       if (!picked)
         continue
-      resolved.push(setImportMeta(picked) as ResolvedServerModule)
+      const moduleImport = setImportMeta(picked) as ResolvedServerModule
+      moduleImport.phase = 'pre'
+      resolved.push(moduleImport)
       continue
     }
 
-    resolved.push(setImportMeta(entry) as ResolvedServerModule)
+    const moduleImport = setImportMeta(entry) as ResolvedServerModule
+    moduleImport.phase = 'pre'
+    resolved.push(moduleImport)
   }
 
   return resolved.filter((plugin, index, self) =>
@@ -206,7 +224,7 @@ function buildSecureServerModules(server: ModuleOptions['server']): ServerModule
   const push = (src: string, options?: any) => {
     if (options === false)
       return
-    out.push({ src, options: options === undefined ? true : options })
+    out.push({ src, options: options === undefined ? true : options, phase: 'pre' })
   }
 
   const bodyParser = secure.bodyParser
@@ -268,6 +286,10 @@ export async function resolveServerOptions(
 
   return {
     ...resolvedPlugins,
+    enabled: (server as any)?.enabled ?? serverDefaults.enabled,
+    loadOrder: forceArray((server as any)?.loadOrder).length ? forceArray((server as any)?.loadOrder) as any : serverDefaults.loadOrder,
+    secureDefaults: (server as any)?.secureDefaults ?? serverDefaults.secureDefaults,
+    secure: (server as any)?.secure ?? serverDefaults.secure,
     modules: [
       ...(resolvedModulesFromDirs.plugins as ResolvedServerModule[]),
       ...resolvedNormalizedSecureModules,

@@ -39,7 +39,7 @@ Utiliser `.env.embedded-mongodb.example` comme scénario de référence pour val
 ## embedded+mongodb+url
 
 Le playground supporte maintenant un mode `embedded + mongodb + url` sans démarrer `mongodb-memory-server`.
-Utiliser `.env.embedded-mongodb-url.example` comme scénario de référence.
+Utiliser `.env.embedded-mongodb-url.example` comme scénario de référence. Dans le playground OSS, la couche Mongo management est désormais activée par défaut sur `/feathers/mongo`.
 Variables clés :
 
 - `NFZ_PLAYGROUND_EMBEDDED_MONGODB=true`
@@ -57,3 +57,25 @@ Par défaut ce fallback est activé uniquement pour le playground afin de prése
 
 Si vous voulez valider uniquement le mode remote sans démarrer `mongodb-memory-server`, définissez `NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`.
 La valeur par défaut reste `true` pour conserver le scénario embedded + MongoDB prêt à l'emploi.
+
+
+## DevTools
+
+When running in dev, open the **NFZ** tab in Nuxt DevTools to inspect:
+
+- resolved mode (embedded / remote)
+- server enabled/disabled state
+- selected REST framework (express / koa)
+- detected local services or declared remote services
+- OSS diagnostics and known-good scenarios
+
+
+Endpoints utiles dans le playground :
+
+- `/feathers/mongo/databases` (alias legacy accepté: `/feathers/mongo`)
+- `/feathers/mongo/<db>/collections`
+- `/feathers/mongo/<db>/stats`
+- `/feathers/mongo/<db>/<collection>/indexes`
+- `/feathers/mongo/<db>/<collection>/count`
+- `/feathers/mongo/<db>/<collection>/schema`
+- `/feathers/mongo/<db>/<collection>/documents`

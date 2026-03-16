@@ -111,6 +111,9 @@ feathers: {
 
 ### `feathers.transports`
 
+Used for **embedded mode/server transports only**. In **remote** mode, prefer `feathers.client.remote.transport`, `restPath`, and `websocketPath`.
+
+
 - `rest.path`: chemin REST local, par défaut `/feathers`
 - `rest.framework`: `express | koa`
 - `websocket.path`: chemin Socket.IO local

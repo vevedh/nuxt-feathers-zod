@@ -16,7 +16,7 @@ Key fields:
 
 - `transports` (embedded)
 - `client.mode`: `'embedded' | 'remote'`
-- `client.remote`: url / transport / restPath / websocketPath / services
+- `client.remote`: url / transport / restPath / websocketPath / services (remote-mode source of truth)
 - `client.auth`: auth config (servicePath, strategy, tokenField, payloadMode…)
 - `keycloak`: Keycloak config (serverUrl, realm, clientId, onLoad…)
 

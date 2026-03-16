@@ -14,19 +14,19 @@ export function getServerMongodbContents(options: ResolvedOptions) {
     const mongoClientOptions = mongoOptions as MongoClientOptions
     const authEnabled = !!options.auth
     const authImport = authEnabled
-      ? 'import { authenticate } from \'@feathersjs/authentication\'\n'
+      ? `import { authenticate } from '@feathersjs/authentication'\n`
       : ''
 
     const authHookBody = authEnabled
       ? [
-          '  if (!management.auth)',
-          '    return',
-          '  app.service(path).hooks({',
-          '    around: { all: [authenticate(\'jwt\')] },',
-          '    before: { all: [] },',
-          '    after: { all: [] },',
-          '    error: { all: [] },',
-          '  })',
+          `  if (!management.auth)`,
+          `    return`,
+          `  app.service(path).hooks({`,
+          `    around: { all: [authenticate('jwt')] },`,
+          `    before: { all: [] },`,
+          `    after: { all: [] },`,
+          `    error: { all: [] },`,
+          `  })`,
         ].join('\n')
       : '  return'
 
@@ -45,27 +45,33 @@ import {
   stats,
   users,
 } from 'feathers-mongodb-management-ts'
-${authImport}import { defineFeathersServerPlugin } from './server.js'
-
-const mongodbConnection = ${JSON.stringify(mongoUrl)}
+${authImport}const mongodbConnection = ${JSON.stringify(mongoUrl)}
 const mongodbOptions = ${JSON.stringify(mongoClientOptions, null, 2)}
 const management = ${JSON.stringify(management, null, 2)}
 
+function ensureLeadingSlash(value) {
+  const input = String(value || '').trim()
+  if (!input)
+    return '/'
+  return input.startsWith('/') ? input : '/' + input
+}
+
 function stripEdgeSlashes(value) {
-  let result = value
+  let result = String(value || '')
   while (result.startsWith('/')) result = result.slice(1)
   while (result.endsWith('/')) result = result.slice(0, -1)
   return result
 }
 
-function normalizePath(...parts) {
+function normalizePath() {
+  const parts = Array.from(arguments)
   const normalized = parts
     .filter(part => part != null && String(part).trim() !== '')
     .map(part => stripEdgeSlashes(String(part)))
     .filter(Boolean)
     .join('/')
 
-  return normalized ? "/\${normalized}" : '/'
+  return normalized ? '/' + normalized : '/'
 }
 
 function hasService(app, path) {
@@ -77,16 +83,27 @@ function applyJwtAuthHook(app, path) {
 ${authHookBody}
 }
 
-export const mongodb = defineFeathersServerPlugin(async (app) => {
+function inferDatabaseName(connection) {
+  try {
+    const parsed = new URL(connection)
+    const pathname = String(parsed.pathname || '').replace(/^\\//, '')
+    return pathname || 'test'
+  }
+  catch {
+    return 'test'
+  }
+}
+
+export async function mongodb(app) {
   const connection = app.get('mongodb') || mongodbConnection
-  const mongoPath = app.get('mongoPath') || management.basePath || '/mongo'
+  const mongoPath = ensureLeadingSlash(app.get('mongoPath') || management.basePath || '/mongo')
 
   if (!connection || typeof connection !== 'string') {
     throw new Error('Missing MongoDB connection string in app.get("mongodb")')
   }
 
   const client = await MongoClient.connect(connection, mongodbOptions)
-  const databaseName = new URL(connection).pathname.replace(/^\\//, '') || 'test'
+  const databaseName = inferDatabaseName(connection)
   const db = client.db(databaseName)
 
   app.set('mongodbClient', Promise.resolve(db))
@@ -103,76 +120,51 @@ export const mongodb = defineFeathersServerPlugin(async (app) => {
     blacklistCollections: ['system.profile'],
   }
 
+  const mount = (path, factory) => {
+    if (hasService(app, path))
+      return
+    app.configure(factory(path))
+    applyJwtAuthHook(app, path)
+  }
+
   if (management.exposeDatabasesService) {
-    const path = normalizePath(mongoPath, 'databases')
-    if (!hasService(app, path)) {
-      app.configure(database({ db, serviceName: path, ...access }))
-      applyJwtAuthHook(app, path)
-    }
+    mount(normalizePath(mongoPath, 'databases'), path => database({ db, serviceName: path, ...access }))
   }
 
   if (management.exposeCollectionsService) {
-    const path = normalizePath(mongoPath, ':db', 'collections')
-    if (!hasService(app, path)) {
-      app.configure(collections({ db, serviceName: path, ...access }))
-      applyJwtAuthHook(app, path)
-    }
+    mount(normalizePath(mongoPath, ':db', 'collections'), path => collections({ db, serviceName: path, ...access }))
   }
 
   if (management.exposeUsersService) {
-    const path = normalizePath(mongoPath, 'users')
-    if (!hasService(app, path)) {
-      app.configure(users({ db, serviceName: path }))
-      applyJwtAuthHook(app, path)
-    }
+    mount(normalizePath(mongoPath, 'users'), path => users({ db, serviceName: path }))
   }
 
   if (management.exposeCollectionCrud) {
-    const statsPath = normalizePath(mongoPath, ':db', 'stats')
-    if (!hasService(app, statsPath)) {
-      app.configure(stats({ db, serviceName: statsPath, ...access }))
-      applyJwtAuthHook(app, statsPath)
-    }
-
-    const indexesPath = normalizePath(mongoPath, ':db', ':collection', 'indexes')
-    if (!hasService(app, indexesPath)) {
-      app.configure(indexes({ db, serviceName: indexesPath, ...access }))
-      applyJwtAuthHook(app, indexesPath)
-    }
-
-    const countPath = normalizePath(mongoPath, ':db', ':collection', 'count')
-    if (!hasService(app, countPath)) {
-      app.configure(count({ db, serviceName: countPath, ...access }))
-      applyJwtAuthHook(app, countPath)
-    }
-
-    const schemaPath = normalizePath(mongoPath, ':db', ':collection', 'schema')
-    if (!hasService(app, schemaPath)) {
-      app.configure(schema({ db, serviceName: schemaPath, sampleSize: 50, ...access }))
-      applyJwtAuthHook(app, schemaPath)
-    }
-
-    const documentsPath = normalizePath(mongoPath, ':db', ':collection', 'documents')
-    if (!hasService(app, documentsPath)) {
-      app.configure(documents({ db, serviceName: documentsPath, ...access }))
-      applyJwtAuthHook(app, documentsPath)
-    }
-
-    const aggregatePath = normalizePath(mongoPath, ':db', ':collection', 'aggregate')
-    if (!hasService(app, aggregatePath)) {
-      app.configure(aggregate({
-        db,
-        serviceName: aggregatePath,
-        maxPipelineStages: 20,
-        maxResultSize: 100,
-        ...access,
-      }))
-      applyJwtAuthHook(app, aggregatePath)
-    }
+    mount(normalizePath(mongoPath, ':db', 'stats'), path => stats({ db, serviceName: path, ...access }))
+    mount(normalizePath(mongoPath, ':db', ':collection', 'indexes'), path => indexes({ db, serviceName: path, ...access }))
+    mount(normalizePath(mongoPath, ':db', ':collection', 'count'), path => count({ db, serviceName: path, ...access }))
+    mount(normalizePath(mongoPath, ':db', ':collection', 'schema'), path => schema({ db, serviceName: path, sampleSize: 50, ...access }))
+    mount(normalizePath(mongoPath, ':db', ':collection', 'documents'), path => documents({ db, serviceName: path, ...access }))
+    mount(normalizePath(mongoPath, ':db', ':collection', 'aggregate'), path => aggregate({
+      db,
+      serviceName: path,
+      maxPipelineStages: 20,
+      maxResultSize: 100,
+      ...access,
+    }))
   }
-})
+}
 
 export default mongodb
 `
   }
+}
+
+export function getServerMongodbTypesContents(_options: ResolvedOptions) {
+  return () => `// ! Generated by nuxt-feathers-zod - do not change manually
+import type { Application } from './declarations'
+
+export declare function mongodb(app: Application): Promise<void>
+export default mongodb
+`
 }

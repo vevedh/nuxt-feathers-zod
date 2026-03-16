@@ -9,19 +9,44 @@ Commande d’entrée :
 bunx nuxt-feathers-zod
 ```
 
-## Commandes supportées dans le core open source
+Surface officielle OSS alignée sur la version **6.3.5**.
+
+## Catalogue des commandes
+
+### Initialisation
 
 - `init templates`
 - `init embedded`
 - `init remote`
 - `remote auth keycloak`
+
+### Services
+
 - `add service <name>`
 - `add service <name> --custom`
 - `add remote-service <name>`
+- `auth service <name>`
+- `schema <service>`
+
+### Runtime / Mongo
+
 - `add middleware <name>`
 - `add server-module <name>`
 - `add mongodb-compose`
-- `auth service <name>`
+- `mongo management`
+
+### Helpers OSS
+
+- `templates list`
+- `plugins list`
+- `plugins add <name>`
+- `modules list`
+- `modules add <name>`
+- `middlewares list`
+- `middlewares add <name>`
+
+### Diagnostic
+
 - `doctor`
 
 ## Exemples de référence
@@ -30,6 +55,7 @@ bunx nuxt-feathers-zod
 
 ```bash
 bunx nuxt-feathers-zod --help
+bunx nuxt-feathers-zod doctor
 ```
 
 ### Nouvelle app embedded
@@ -58,40 +84,42 @@ bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
 bun dev
 ```
 
-### Bootstrap MongoDB local
+### Services et schéma
 
 ```bash
-bunx nuxt-feathers-zod add mongodb-compose
-```
-
-### Basculer les hooks auth d’un service
-
-```bash
+bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id
+bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
 bunx nuxt-feathers-zod auth service users --enabled true
+bunx nuxt-feathers-zod schema users --set-mode zod
+bunx nuxt-feathers-zod schema users --add-field title:string!
 ```
 
-## Compatibilité historique
+### Runtime / Mongo
 
-`add custom-service <name>` reste accepté, mais la forme recommandée est :
+```bash
+bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add server-module helmet --preset helmet
+bunx nuxt-feathers-zod add mongodb-compose
+bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
+```
+
+### Helpers OSS
+
+```bash
+bunx nuxt-feathers-zod templates list
+bunx nuxt-feathers-zod plugins add audit-log
+bunx nuxt-feathers-zod modules add security-headers --preset security-headers
+bunx nuxt-feathers-zod middlewares add request-id --target nitro
+```
+
+## Notes de stabilité
+
+- `add custom-service <name>` reste accepté, mais la forme recommandée est :
 
 ```bash
 bunx nuxt-feathers-zod add service <name> --custom
 ```
 
-## Génération auth-aware de `users`
-
-`add service users --auth` supporte désormais un flag explicite `--authAware true|false`.
-
-Comportement attendu :
-
-- `--auth` = protection JWT du service
-- `--authAware` = sémantique hash/masquage du mot de passe pour l’auth locale
-- par défaut avec `users --auth` = mode auth-aware activé sauf désactivation explicite
-
-Exemples de référence :
-
-```bash
-bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory --force
-bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
-bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
-```
+- `doctor` reporte désormais aussi l’état de Mongo management.
+- En remote, `transport: auto` résout vers `socketio` dans le runtime OSS actuel.
+- La documentation détaillée des flags reste dans [Guide CLI](/guide/cli).

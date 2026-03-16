@@ -9,7 +9,7 @@ const config = useRuntimeConfig()
 
 // Unified auth (supports: keycloak | local | remote | none)
 const auth = useAuth()
-const { scenarioId, title, embeddedMongoMode } = usePlaygroundScenario()
+const { scenarioId, title, embeddedMongoMode, clientMode } = usePlaygroundScenario()
 onMounted(() => {
   auth.init().catch(() => {})
 })
@@ -91,6 +91,8 @@ const publicClient = computed(() => (config.public as any)?._feathers?.client ??
 const playgroundFlags = computed(() => (config.public as any)?.nfzPlayground ?? {})
 const mode = computed(() => publicClient.value?.mode ?? 'embedded')
 const embeddedMongoEnabled = computed(() => playgroundFlags.value?.embeddedMongoEnabled !== false)
+const resolvedRemoteBaseUrl = computed(() => mode.value === 'remote' ? buildRemoteRestUrl(pingService.value) : '')
+const resolvedRemoteQueryUrl = computed(() => mode.value === 'remote' ? buildRemoteRestUrl(pingService.value, 1) : '')
 
 // ---- Connection test ----
 const connectionLoading = ref(false)
@@ -114,14 +116,114 @@ watchEffect(() => {
     pingService.value = serviceCandidates.value[0] || 'users'
 })
 
+function buildRemoteRestUrl(servicePath: string, limit?: number) {
+  const base = String(publicClient.value?.remote?.url || '')
+  const restPath = String(publicClient.value?.remote?.restPath || '')
+  if (!base)
+    return ''
+  let url: URL
+  try {
+    url = new URL(base)
+  }
+  catch {
+    return ''
+  }
+  const originOnly = url.origin
+  const prefix = (url.pathname && url.pathname !== '/') ? url.pathname.replace(/\/$/, '') : ''
+  const normalizedRest = !restPath || restPath === '/' ? '' : (restPath.startsWith('/') ? restPath.replace(/\/$/, '') : `/${restPath.replace(/\/$/, '')}`)
+  const root = `${originOnly}${prefix}${normalizedRest}`.replace(/\/$/, '')
+  const basePath = `${root}/${encodeURIComponent(servicePath)}`
+  return typeof limit === 'number' ? `${basePath}?$limit=${limit}` : basePath
+}
+
 async function testConnection() {
   connectionLoading.value = true
   connectionError.value = null
   connectionResult.value = null
 
   try {
+    // In remote REST mode, start with raw fetch diagnostics before using any client wrapper.
+    if (mode.value === 'remote' && publicClient.value?.remote?.transport === 'rest') {
+      const baseUrl = buildRemoteRestUrl(pingService.value)
+      const queryUrl = buildRemoteRestUrl(pingService.value, 1)
+
+      const fetchDiagnostic = async (url: string) => {
+        console.info('[NFZ TEST FETCH]', { url, mode: mode.value, origin: window.location.origin })
+        const r = await fetch(url, { method: 'GET' })
+        const ct = r.headers.get('content-type') || ''
+        const bodyText = await r.text()
+        let parsed: any = bodyText
+        try {
+          parsed = ct.includes('json') ? JSON.parse(bodyText) : bodyText
+        }
+        catch {}
+        return {
+          ok: r.ok,
+          url,
+          status: r.status,
+          statusText: r.statusText,
+          contentType: ct,
+          bodyPreview: typeof parsed === 'string' ? parsed.slice(0, 600) : parsed,
+          parsed,
+        }
+      }
+
+      const baseDiag = await fetchDiagnostic(baseUrl)
+      let queryDiag: any = null
+      try {
+        queryDiag = await fetchDiagnostic(queryUrl)
+      }
+      catch (qe: any) {
+        queryDiag = { ok: false, url: queryUrl, error: serializeError(qe) }
+      }
+
+      if (!baseDiag.ok) {
+        connectionError.value = `${baseDiag.status} ${baseDiag.statusText}`
+        connectionResult.value = {
+          ok: false,
+          mode: mode.value,
+          service: pingService.value,
+          error: {
+            name: 'FetchError',
+            message: `HTTP ${baseDiag.status} ${baseDiag.statusText}`,
+            code: baseDiag.status,
+          },
+          runtimeClient: publicClient.value,
+          debugRestFetch: {
+            ok: false,
+            base: { ...baseDiag, parsed: undefined },
+            query: queryDiag,
+          },
+        }
+        return
+      }
+
+      connectionResult.value = {
+        ok: true,
+        mode: mode.value,
+        service: pingService.value,
+        resultType: Array.isArray(baseDiag.parsed) ? 'array' : typeof baseDiag.parsed,
+        sample: baseDiag.parsed,
+        runtimeClient: publicClient.value,
+        debugRestFetch: {
+          ok: true,
+          base: { ...baseDiag, parsed: undefined },
+          query: queryDiag,
+        },
+      }
+      return
+    }
+
     const svc: any = client.service(pingService.value)
-    // A lightweight call that works for most standard services
+    console.info('[NFZ TEST FEATHERS]', {
+      service: pingService.value,
+      mode: mode.value,
+      remoteUrl: publicClient.value?.remote?.url,
+      restPath: publicClient.value?.remote?.restPath,
+      resolvedBaseUrl: resolvedRemoteBaseUrl.value,
+      resolvedQueryUrl: resolvedRemoteQueryUrl.value,
+      locationOrigin: window.location.origin,
+    })
     const res = await svc.find({ query: { $limit: 1 } })
     connectionResult.value = {
       ok: true,
@@ -143,34 +245,51 @@ async function testConnection() {
       runtimeClient: publicClient.value,
     }
 
-    // Extra diagnostics for remote REST mode: try a raw fetch to see what the server returns
     try {
       if (mode.value === 'remote' && publicClient.value?.remote?.transport === 'rest') {
-        const base = String(publicClient.value?.remote?.url || '')
-        const restPath = String(publicClient.value?.remote?.restPath || '')
-        const url = new URL(base)
-        const originOnly = url.origin
-        const prefix = (url.pathname && url.pathname !== '/') ? url.pathname : ''
-
-        const restPrefix = restPath.startsWith('/') ? restPath : `/${restPath}`
-        const root = (originOnly + (prefix || '') + restPrefix).replace(/\/+$/, '')
-        const full = `${root}/${encodeURIComponent(pingService.value)}?$limit=1`
-
-        const r = await fetch(full, { method: 'GET' })
-        const ct = r.headers.get('content-type') || ''
-        const text = await r.text()
-        connectionResult.value.debugRestFetch = {
-          url: full,
-          status: r.status,
-          statusText: r.statusText,
-          contentType: ct,
-          bodyPreview: text.slice(0, 600),
+        const baseUrl = buildRemoteRestUrl(pingService.value)
+        const queryUrl = buildRemoteRestUrl(pingService.value, 1)
+        let base: any
+        let query: any
+        try {
+          const r = await fetch(baseUrl, { method: 'GET' })
+          const ct = r.headers.get('content-type') || ''
+          const bodyText = await r.text()
+          base = {
+            ok: r.ok,
+            url: baseUrl,
+            status: r.status,
+            statusText: r.statusText,
+            contentType: ct,
+            bodyPreview: bodyText.slice(0, 600),
+          }
         }
+        catch (be: any) {
+          base = { ok: false, url: baseUrl, error: serializeError(be) }
+        }
+        try {
+          const r = await fetch(queryUrl, { method: 'GET' })
+          const ct = r.headers.get('content-type') || ''
+          const bodyText = await r.text()
+          query = {
+            ok: r.ok,
+            url: queryUrl,
+            status: r.status,
+            statusText: r.statusText,
+            contentType: ct,
+            bodyPreview: bodyText.slice(0, 600),
+          }
+        }
+        catch (qe: any) {
+          query = { ok: false, url: queryUrl, error: serializeError(qe) }
+        }
+        connectionResult.value.debugRestFetch = { base, query }
       }
     }
     catch (e2: any) {
       connectionResult.value.debugRestFetch = {
         ok: false,
+        url: buildRemoteRestUrl(pingService.value, 1),
         error: serializeError(e2),
       }
     }
@@ -412,7 +531,8 @@ async function logout() {
       ok: true,
       mode: mode.value,
       type: 'logout',
-      provider: auth.provider.value,
+      clientMode: clientMode.value,
+      authProvider: auth.provider.value,
       authenticated: auth.isAuthenticated.value,
     }
   }
@@ -566,7 +686,7 @@ async function logout() {
 
     <div v-if="isKeycloak" style="max-width: 900px">
       <p>
-        Provider: <code>{{ auth.provider }}</code> — authenticated: <code>{{ auth.isAuthenticated }}</code>
+        Client mode: <code>{{ clientMode }}</code> — auth provider: <code>{{ auth.provider }}</code> — authenticated: <code>{{ auth.isAuthenticated }}</code>
       </p>
 
       <div style="display: flex; gap: 12px; flex-wrap: wrap">

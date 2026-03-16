@@ -3,7 +3,7 @@ import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { kebabCase, pascalCase } from 'change-case'
+import { camelCase, kebabCase, pascalCase } from 'change-case'
 import consola from 'consola'
 
 
@@ -31,7 +31,7 @@ export function handleCliError(err: unknown) {
 
 export type Adapter = 'mongodb' | 'memory'
 export type SchemaKind = 'none' | 'zod' | 'json'
-export type MiddlewareTarget = 'nitro' | 'feathers' | 'server-module' | 'module'
+export type MiddlewareTarget = 'nitro' | 'feathers' | 'server-module' | 'module' | 'client-module' | 'hook' | 'policy'
 export type IdField = 'id' | '_id'
 export type CollectionName = string
 
@@ -95,6 +95,7 @@ Commands:
   add remote-service <name>     Register a remote service (client-only)
   add middleware <name>         Generate middleware (target nitro|feathers)
   add mongodb-compose           Generate docker-compose-db.yaml for MongoDB
+  mongo management             Enable/update embedded MongoDB management routes
   schema <service>              Inspect schema state or switch schema mode
   auth service <name>           Enable/disable JWT auth hooks on an existing service
   doctor                        Diagnose current project configuration
@@ -122,6 +123,7 @@ Examples:
   bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport rest
   bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
   bunx nuxt-feathers-zod add mongodb-compose
+  bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
   bunx nuxt-feathers-zod auth service users --enabled true
   bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example --realm myrealm --clientId myapp
   bunx nuxt-feathers-zod doctor
@@ -162,7 +164,7 @@ Flags overview:
 
   init remote:
     --url <http(s)://...>       (required)
-    --transport socketio|rest   (default: socketio)
+    --transport socketio|rest|auto (default: socketio, auto resolves to socketio in remote mode)
     --restPath <path>           (default: /feathers)
     --websocketPath <path>      (default: /socket.io)
     --websocketTransports <list> (ex: websocket,polling)
@@ -220,6 +222,17 @@ Flags overview:
   auth service <name>:
     --servicesDir <dir>         (default: services)
     --enabled true|false        (default: true)
+    --dry
+
+  mongo management:
+    --url <mongodb-url>         set/update MongoDB connection URL
+    --enabled true|false        (default: true)
+    --auth true|false           (default: true)
+    --basePath <path>           (default: /mongo)
+    --exposeDatabasesService true|false   (default: true)
+    --exposeCollectionsService true|false (default: true)
+    --exposeUsersService true|false       (default: false)
+    --exposeCollectionCrud true|false     (default: true)
     --dry
 
   add middleware <name>:
@@ -344,6 +357,16 @@ export type NuxtConfigPatch = {
 
 // quick helper to register a remote service path (remote mode)
   remoteService?: { path: string, methods?: string[] }
+  mongoManagement?: {
+    url?: string
+    enabled?: boolean
+    auth?: boolean
+    basePath?: string
+    exposeDatabasesService?: boolean
+    exposeCollectionsService?: boolean
+    exposeUsersService?: boolean
+    exposeCollectionCrud?: boolean
+  }
 }
 
 export async function tryPatchNuxtConfig(projectRoot: string, patch: NuxtConfigPatch, opts: { dry: boolean }) {
@@ -528,6 +551,25 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     swagger: ${swaggerEnabled},`
   })()
 
+
+  const mongoManagementPart = (() => {
+    if (!patch.mongoManagement) return ''
+    const parts: string[] = []
+    if (patch.mongoManagement.url) parts.push(`url: '${patch.mongoManagement.url}'`)
+    const managementParts = [
+      patch.mongoManagement.enabled !== undefined ? `enabled: ${patch.mongoManagement.enabled}` : '',
+      patch.mongoManagement.auth !== undefined ? `auth: ${patch.mongoManagement.auth}` : '',
+      patch.mongoManagement.basePath ? `basePath: '${patch.mongoManagement.basePath}'` : '',
+      patch.mongoManagement.exposeDatabasesService !== undefined ? `exposeDatabasesService: ${patch.mongoManagement.exposeDatabasesService}` : '',
+      patch.mongoManagement.exposeCollectionsService !== undefined ? `exposeCollectionsService: ${patch.mongoManagement.exposeCollectionsService}` : '',
+      patch.mongoManagement.exposeUsersService !== undefined ? `exposeUsersService: ${patch.mongoManagement.exposeUsersService}` : '',
+      patch.mongoManagement.exposeCollectionCrud !== undefined ? `exposeCollectionCrud: ${patch.mongoManagement.exposeCollectionCrud}` : '',
+    ].filter(Boolean)
+    parts.push(`management: { ${managementParts.join(', ')} }`)
+    return `
+    database: { mongo: { ${parts.join(', ')} } },`
+  })()
+
   const keycloakParts = [
     patch.keycloak?.serverUrl ? `serverUrl: '${patch.keycloak.serverUrl}'` : '',
     patch.keycloak?.realm ? `realm: '${patch.keycloak.realm}'` : '',
@@ -582,14 +624,8 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
         services,
       ].filter(Boolean)
       const remoteObj = `remote: { ${remoteParts.join(', ')} }`
-      const transportRestPath = patch.remote?.restPath ?? '/feathers'
-      const transportWebsocket = websocket || `{ path: '${patch.remote?.websocketPath ?? '/socket.io'}' }`
 
       return `
-    transports: {
-      rest: { path: '${transportRestPath}' },
-      websocket: ${transportWebsocket}
-    },
     client: {
       mode: 'remote',
       ${remoteObj}
@@ -601,7 +637,7 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
   })()
 
   return `
-    feathers: {${servicesPart}${authPart}${templatesPart}${serverPart}${embeddedPart}${keycloakPart}${clientPart}
+    feathers: {${servicesPart}${authPart}${templatesPart}${serverPart}${embeddedPart}${mongoManagementPart}${keycloakPart}${clientPart}
     },`
 }
 
@@ -736,6 +772,29 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
 
 
 
+  if (patch.mongoManagement) {
+    const parts: string[] = []
+    if (patch.mongoManagement.url) parts.push(`url: '${patch.mongoManagement.url}'`)
+
+    const managementParts: string[] = []
+    if (patch.mongoManagement.enabled !== undefined) managementParts.push(`enabled: ${patch.mongoManagement.enabled}`)
+    if (patch.mongoManagement.auth !== undefined) managementParts.push(`auth: ${patch.mongoManagement.auth}`)
+    if (patch.mongoManagement.basePath) managementParts.push(`basePath: '${patch.mongoManagement.basePath}'`)
+    if (patch.mongoManagement.exposeDatabasesService !== undefined) managementParts.push(`exposeDatabasesService: ${patch.mongoManagement.exposeDatabasesService}`)
+    if (patch.mongoManagement.exposeCollectionsService !== undefined) managementParts.push(`exposeCollectionsService: ${patch.mongoManagement.exposeCollectionsService}`)
+    if (patch.mongoManagement.exposeUsersService !== undefined) managementParts.push(`exposeUsersService: ${patch.mongoManagement.exposeUsersService}`)
+    if (patch.mongoManagement.exposeCollectionCrud !== undefined) managementParts.push(`exposeCollectionCrud: ${patch.mongoManagement.exposeCollectionCrud}`)
+    parts.push(`management: { ${managementParts.join(', ')} }`)
+
+    const mongoValue = `mongo: { ${parts.join(', ')} }`
+    if (/database\s*:/.test(out)) {
+      out = ensureNestedDatabaseMongo(out, mongoValue)
+    } else {
+      out = insertProp(out, `database: { ${mongoValue} }`)
+    }
+  }
+
+
   // embedded extras (server secure defaults + transports + auth/swagger)
   if (patch.embedded) {
     // transports
@@ -782,6 +841,26 @@ if (patch.clientMode || patch.remote || patch.remoteService) {
   }
 
   return out
+}
+
+
+function ensureNestedDatabaseMongo(objLiteral: string, mongoValue: string): string {
+  const block = locateObjectLiteral(objLiteral, /database\s*:\s*\{/)
+  if (!block) return objLiteral
+  const before = objLiteral.slice(0, block.start)
+  let databaseObj = objLiteral.slice(block.start, block.end)
+  const after = objLiteral.slice(block.end)
+
+  if (/mongo\s*:/.test(databaseObj)) {
+    const mongoBlock = locateObjectLiteral(databaseObj, /mongo\s*:\s*\{/)
+    if (mongoBlock) {
+      databaseObj = databaseObj.slice(0, mongoBlock.start) + mongoValue + databaseObj.slice(mongoBlock.end)
+    }
+  } else {
+    databaseObj = insertProp(databaseObj, mongoValue)
+  }
+
+  return before + databaseObj + after
 }
 
 
@@ -1554,44 +1633,6 @@ function pickCreateFieldMap(fields: Record<string, ServiceSchemaField>, idField:
   return Object.fromEntries(Object.entries(fields).filter(([name]) => name !== idField))
 }
 
-
-function renderJsonField(field: ServiceSchemaField, adapter: Adapter) {
-  const normalizedType = field.type === 'id'
-    ? (adapter === 'mongodb' ? 'string' : 'number')
-    : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
-
-  const pieces = [`type: '${normalizedType}'`]
-
-  if (normalizedType === 'array') {
-    let itemType = 'string'
-    if (field.type === 'number[]')
-      itemType = 'number'
-    else if (field.type === 'boolean[]')
-      itemType = 'boolean'
-    pieces.push(`items: { type: '${itemType}' }`)
-  }
-
-  if (field.type === 'date')
-    pieces.push("format: 'date-time'")
-
-  if (field.default !== undefined)
-    pieces.push(`default: ${JSON.stringify(field.default)}`)
-
-  return `{ ${pieces.join(', ')} }`
-}
-
-function renderJsonProperties(fields: Record<string, ServiceSchemaField>, adapter: Adapter) {
-  return Object.entries(fields)
-    .map(([name, field]) => `${name}: ${renderJsonField(field, adapter)}`)
-    .join(',\n    ')
-}
-
-function jsonRequired(fields: Record<string, ServiceSchemaField>) {
-  return Object.entries(fields)
-    .filter(([, field]) => field.required !== false)
-    .map(([name]) => name)
-}
-
 function renderZodFieldExpression(field: ServiceSchemaField, adapter: Adapter) {
   let base = 'z.string()'
   switch (field.type) {
@@ -2325,6 +2366,36 @@ export async function toggleServiceAuth(opts: ToggleServiceAuthOptions) {
 export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
   const fileBase = kebabCase(opts.name)
 
+  if (opts.target === 'client-module') {
+    const dir = join(opts.projectRoot, 'app', 'plugins')
+    const file = join(dir, `${fileBase}.client.ts`)
+    await ensureDir(dir, opts.dry)
+    await writeFileSafe(file, renderClientFeathersModule(fileBase), { dry: opts.dry, force: opts.force })
+    if (!opts.dry)
+      consola.success(`Generated Feathers client module '${fileBase}' in ${relativeToCwd(file)}`)
+    return
+  }
+
+  if (opts.target === 'hook') {
+    const dir = join(opts.projectRoot, 'server', 'feathers', 'hooks')
+    const file = join(dir, `${fileBase}.ts`)
+    await ensureDir(dir, opts.dry)
+    await writeFileSafe(file, renderFeathersHook(fileBase), { dry: opts.dry, force: opts.force })
+    if (!opts.dry)
+      consola.success(`Generated Feathers hook '${fileBase}' in ${relativeToCwd(file)}`)
+    return
+  }
+
+  if (opts.target === 'policy') {
+    const dir = join(opts.projectRoot, 'server', 'feathers', 'policies')
+    const file = join(dir, `${fileBase}.ts`)
+    await ensureDir(dir, opts.dry)
+    await writeFileSafe(file, renderFeathersPolicy(fileBase), { dry: opts.dry, force: opts.force })
+    if (!opts.dry)
+      consola.success(`Generated Feathers policy '${fileBase}' in ${relativeToCwd(file)}`)
+    return
+  }
+
   if (opts.target === 'nitro') {
     const dir = join(opts.projectRoot, 'server', 'middleware')
     const file = join(dir, `${fileBase}.ts`)
@@ -2447,7 +2518,7 @@ export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid Obj
   const patchResolver = fieldMap.password
     ? `
 export const ${base}PatchResolver = resolve<${Base}, any>({
-  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+  password: passwordHash({ strategy: 'local' }),
 })
 `
     : `
@@ -2483,7 +2554,7 @@ export const ${base}DataSchema = ${base}Schema.pick({
 export type ${Base}Data = z.infer<typeof ${base}DataSchema>
 export const ${base}DataValidator = getZodValidator(${base}DataSchema, { kind: 'data' })
 export const ${base}DataResolver = resolve<${Base}, any>({
-  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+  password: passwordHash({ strategy: 'local' }),
 })
 
 // Schema for updating existing entries
@@ -2504,6 +2575,31 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
   },
 })
 `
+}
+
+function renderJsonField(field: ServiceSchemaField, adapter: Adapter) {
+  const type = field.type === 'id'
+    ? (adapter === 'mongodb' ? 'string' : 'number')
+    : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+
+  const pieces = [`type: '${type}'`]
+  if (field.default !== undefined)
+    pieces.push(`default: ${JSON.stringify(field.default)}`)
+
+  return `{ ${pieces.join(', ')} }`
+}
+
+function renderJsonProperties(fields: Record<string, ServiceSchemaField>, adapter: Adapter) {
+  return Object.entries(fields)
+    .map(([name, field]) => `    ${name}: ${renderJsonField(field, adapter)},`)
+    .join('\n')
+}
+
+function jsonRequired(fields: Record<string, ServiceSchemaField>) {
+  return Object.entries(fields)
+    .filter(([, field]) => field.required !== false)
+    .map(([name]) => `'${name}'`)
+    .join(', ')
 }
 
 function renderAuthUsersJsonSchema(
@@ -2576,7 +2672,7 @@ export const ${base}DataSchema = {
 export type ${Base}Data = Record<string, any>
 export const ${base}DataValidator = getValidator(${base}DataSchema as any, dataValidatorAjv)
 export const ${base}DataResolver = resolve<${Base}, any>({
-  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+  password: passwordHash({ strategy: 'local' }),
 })
 
 export const ${base}PatchSchema = {
@@ -2590,7 +2686,7 @@ export const ${base}PatchSchema = {
 export type ${Base}Patch = Partial<${Base}>
 export const ${base}PatchValidator = getValidator(${base}PatchSchema as any, dataValidatorAjv)
 export const ${base}PatchResolver = resolve<${Base}, any>({
-  ${authAware ? "password: passwordHash({ strategy: 'local' })," : ''}
+  password: passwordHash({ strategy: 'local' }),
 })
 
 export const ${base}QueryProperties = {
@@ -3671,6 +3767,51 @@ export default defineEventHandler(async (event) => {
   // Example: attach a request id
   // event.context.requestId = crypto.randomUUID()
 })
+`
+}
+
+function renderClientFeathersModule(name: string) {
+  const nice = name.replace(/-/g, ' ')
+  return `// Feathers client module: ${nice}
+// Loaded as a Nuxt client plugin. Use this to enrich $api or register client-side diagnostics.
+
+export default defineNuxtPlugin(() => {
+  const api = useNuxtApp().$api as any
+  if (!api)
+    return
+
+  api.set?.('${name}:clientModuleLoaded', true)
+})
+`
+}
+
+function renderFeathersHook(name: string) {
+  const fn = camelCase(name)
+  return `// Reusable Feathers hook: ${name}
+// Designed for Feathers v5 Dove. Compose it freely with standard hooks or feathers-utils helpers.
+
+import type { HookContext } from 'nuxt-feathers-zod/server'
+
+export async function ${fn}(context: HookContext) {
+  return context
+}
+`
+}
+
+function renderFeathersPolicy(name: string) {
+  const fn = camelCase(name)
+  return `// Reusable Feathers policy: ${name}
+// Return true to allow, false to deny, or throw an error.
+
+import { Forbidden } from '@feathersjs/errors'
+import type { HookContext } from 'nuxt-feathers-zod/server'
+
+export async function ${fn}(context: HookContext) {
+  const allowed = true
+  if (!allowed)
+    throw new Forbidden('${name} policy denied the request')
+  return context
+}
 `
 }
 

@@ -82,3 +82,8 @@ bunx nuxt-feathers-zod add mongodb-compose
 ```
 
 Attendu : génération d'un `docker-compose-db.yaml` exploitable pour les tests locaux.
+
+
+## Related
+
+- See also `known-good-configurations.md` for the OSS baseline combinations kept green by the stabilization work.

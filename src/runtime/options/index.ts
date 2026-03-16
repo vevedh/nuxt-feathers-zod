@@ -38,6 +38,7 @@ export interface ModuleOptions {
   loadFeathersConfig: boolean
   swagger?: SwaggerOptionsOrDisabled
   templates?: TemplatesOptions
+  devtools?: boolean
 }
 
 export interface ResolvedOptions {
@@ -53,6 +54,7 @@ export interface ResolvedOptions {
   loadFeathersConfig: boolean
   swagger?: ResolvedSwaggerOptionsOrDisabled
   templates: ResolvedTemplatesOptions
+  devtools: boolean
 }
 
 export interface FeathersRuntimeConfig {
@@ -61,7 +63,7 @@ export interface FeathersRuntimeConfig {
 }
 
 export interface FeathersPublicRuntimeConfig {
-  transports: ResolvedTransportsOptions
+  transports?: ResolvedTransportsOptions
   client?: {
     mode: 'embedded' | 'remote'
     remote?: {
@@ -103,10 +105,15 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const srcDir = nuxt.options.srcDir
   const servicesDirs = resolveServicesDirs(options.servicesDirs, rootDir)
   const templateDir = createResolver(nuxt.options.buildDir).resolve('feathers')
-  const transports = resolveTransportsOptions(options.transports, nuxt.options.ssr)
+  const transports = resolveTransportsOptions(options.transports, nuxt.options.ssr !== false)
   const database = resolveDataBaseOptions(options.database)
-  const server = await resolveServerOptions(options.server, rootDir, srcDir)
   const client = await resolveClientOptions(options.client, Boolean(database.mongo), rootDir, srcDir)
+  const serverFramework = transports.rest && typeof transports.rest === 'object' ? transports.rest.framework : 'express'
+  const explicitServer = typeof options.server === 'object' && options.server !== null ? options.server : undefined
+  const serverInput = getResolvedClientMode(client) === 'remote' && explicitServer?.enabled === undefined
+    ? { ...explicitServer, enabled: false }
+    : options.server
+  const server = await resolveServerOptions(serverInput, rootDir, srcDir, serverFramework)
   const validator = resolveValidatorOptions(options.validator)
   const swagger = resolveSwaggerOptions(options.swagger, transports)
   const templates = resolveTemplatesOptions(options.templates, rootDir)
@@ -140,6 +147,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     loadFeathersConfig: options.loadFeathersConfig,
     swagger,
     templates,
+    devtools: options.devtools !== false,
   }
 }
 
@@ -164,10 +172,10 @@ function toPublicRemoteClientConfig(client: ResolvedClientOptions['remote']) {
           storageKey: client.auth.storageKey,
         }
       : undefined,
-    services: client.services?.map(service => ({
-      path: service.path,
-      methods: service.methods,
-    })) ?? [],
+    services: client.services?.map((service) => {
+      const methods = Array.isArray(service.methods) && service.methods.length ? service.methods : undefined
+      return methods ? { path: service.path, methods } : { path: service.path }
+    }) ?? [],
   }
 }
 
@@ -180,7 +188,7 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
 
 export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPublicRuntimeConfig {
   return {
-    transports: options.transports,
+    transports: getResolvedClientMode(options.client) === 'embedded' ? options.transports : undefined,
     client: options.client
       ? {
           mode: options.client.mode,

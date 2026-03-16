@@ -52,7 +52,7 @@ function envList(name: string, fallback: string[] = []) {
   return raw.split(',').map(s => s.trim()).filter(Boolean)
 }
 
-const remoteServices = envList('NFZ_REMOTE_SERVICES', ['messages', 'users', 'ldapusers'])
+const remoteServices = envList('NFZ_REMOTE_SERVICES', ['users'])
 const keycloakEnabled = envBool('NFZ_KEYCLOAK_ENABLED', false)
 const remoteMode = ((process.env.NFZ_CLIENT_MODE as any) || 'embedded') === 'remote'
 const remoteTransport = (process.env.NFZ_REMOTE_TRANSPORT as any) || 'auto'
@@ -170,22 +170,32 @@ export default defineNuxtConfig({
     server: {
       pluginDirs: ['server/feathers'],
     },
-    transports: {
-      rest: { path: '/feathers', framework: 'express' },
-      websocket: {
-        path: process.env.NFZ_REMOTE_WS_PATH || '/socket.io',
-        transports: envList('NFZ_WEBSOCKET_TRANSPORTS', ['websocket', 'polling']),
-        connectTimeout: Number(process.env.NFZ_WEBSOCKET_CONNECT_TIMEOUT || '20000'),
-        cors: {
-          origin: process.env.NFZ_WEBSOCKET_CORS_ORIGIN || true,
-          credentials: envBool('NFZ_WEBSOCKET_CORS_CREDENTIALS', true),
+    ...(remoteMode ? {} : {
+      transports: {
+        rest: { path: '/feathers', framework: 'express' },
+        websocket: {
+          path: process.env.NFZ_REMOTE_WS_PATH || '/socket.io',
+          transports: envList('NFZ_WEBSOCKET_TRANSPORTS', ['websocket', 'polling']),
+          connectTimeout: Number(process.env.NFZ_WEBSOCKET_CONNECT_TIMEOUT || '20000'),
+          cors: {
+            origin: process.env.NFZ_WEBSOCKET_CORS_ORIGIN || true,
+            credentials: envBool('NFZ_WEBSOCKET_CORS_CREDENTIALS', true),
+          },
         },
       },
-    },
+    }),
     database: embeddedMongoEnabled
       ? {
           mongo: {
             url: effectiveMongoUrl,
+            management: {
+              enabled: true,
+              auth: false,
+              basePath: '/mongo',
+              exposeDatabasesService: true,
+              exposeCollectionsService: true,
+              exposeCollectionCrud: true,
+            },
           },
         }
       : undefined,
@@ -197,7 +207,7 @@ export default defineNuxtConfig({
         ? {
             url: process.env.NFZ_REMOTE_URL || 'https://api.domain.ltd',
             transport: remoteTransport,
-            restPath: process.env.NFZ_REMOTE_REST_PATH || '/api/v1',
+            restPath: process.env.NFZ_REMOTE_REST_PATH || '/',
             websocketPath: process.env.NFZ_REMOTE_WS_PATH || '/socket.io',
             auth: remoteAuthEnabled
               ? {
@@ -210,7 +220,7 @@ export default defineNuxtConfig({
                   reauth: envBool('NFZ_REMOTE_AUTH_REAUTH', true),
                 }
               : { enabled: false },
-            services: remoteServices.map(path => ({ path })),
+            services: remoteServices.map((path) => ({ path, methods: ['find'] })),
           }
         : undefined,
       pinia: {
@@ -231,6 +241,8 @@ export default defineNuxtConfig({
         embeddedMongoMode,
         embeddedMongoUrlConfigured: !!effectiveMongoUrl,
         embeddedMongoFallbackUsed,
+        embeddedMongoManagementEnabled: embeddedMongoEnabled,
+        embeddedMongoManagementBasePath: '/mongo',
       },
     },
   },

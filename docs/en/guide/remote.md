@@ -20,7 +20,7 @@ cd my-nfz-remote
 bun install
 bun add nuxt-feathers-zod feathers-pinia
 bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
+bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport socketio --force
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 bun dev
 ```
@@ -34,7 +34,7 @@ export default defineNuxtConfig({
     client: {
       mode: 'remote',
       remote: {
-        url: 'https://api.example.com',
+        url: 'http://localhost:3030',
         transport: 'socketio',
         restPath: '/feathers',
         websocketPath: '/socket.io',
@@ -51,14 +51,24 @@ export default defineNuxtConfig({
 ## Remote REST
 
 ```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --restPath /api/v1 --force
+bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport rest --restPath / --force
 ```
 
 ## Remote Socket.IO
 
 ```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --websocketPath /socket.io --force
+bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport socketio --websocketPath /socket.io --force
 ```
+
+## `transport: 'auto'` behavior
+
+In remote mode, `auto` (or an omitted value) currently resolves to **Socket.IO**.
+
+```bash
+bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport auto --force
+```
+
+For first-pass network or CORS diagnostics, prefer `--transport rest` so you can validate the effective URL and raw HTTP response more directly.
 
 ## Remote auth
 
@@ -66,7 +76,7 @@ When the remote API expects a standard JWT payload:
 
 ```bash
 bunx nuxt-feathers-zod init remote \
-  --url https://api.example.com \
+  --url http://localhost:3030 \
   --transport rest \
   --auth true \
   --payloadMode jwt \
@@ -80,7 +90,7 @@ When the API expects a Keycloak-derived token:
 
 ```bash
 bunx nuxt-feathers-zod init remote \
-  --url https://api.example.com \
+  --url http://localhost:3030 \
   --transport rest \
   --auth true \
   --payloadMode keycloak \

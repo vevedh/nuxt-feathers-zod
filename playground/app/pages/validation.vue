@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const auth = useAuth()
 onMounted(() => { auth.init().catch(() => {}) })
-const { publicClient, scenarioId, title, embeddedMongoEnabled, embeddedMongoMode } = usePlaygroundScenario()
+const { publicClient, clientMode, scenarioId, title, embeddedMongoEnabled, embeddedMongoMode } = usePlaygroundScenario()
 
 const scenarios = computed(() => [
   {
@@ -65,13 +65,13 @@ KC_CLIENT_ID=myclient`,
     env: `NFZ_CLIENT_MODE=remote
 NFZ_REMOTE_TRANSPORT=rest
 NFZ_REMOTE_URL=http://localhost:3030
-NFZ_REMOTE_REST_PATH=/feathers
+NFZ_REMOTE_REST_PATH=/
 NFZ_KEYCLOAK_ENABLED=false`,
     checks: [
-      'Test connection sur /tests via find($limit=1)',
+      'Test connection sur /tests via endpoint REST simple puis query Feathers ($limit)',
       'Pas de dépendance Socket.IO requise',
       'authenticate(payload) ou reAuthenticate() fonctionne',
-      'messages/users/ldapusers sont joignables côté REST',
+      'users est joignable côté REST',
     ],
   },
   {
@@ -80,7 +80,7 @@ NFZ_KEYCLOAK_ENABLED=false`,
     env: `NFZ_CLIENT_MODE=remote
 NFZ_REMOTE_TRANSPORT=socketio
 NFZ_REMOTE_URL=http://localhost:3030
-NFZ_REMOTE_REST_PATH=/feathers
+NFZ_REMOTE_REST_PATH=/
 NFZ_REMOTE_WS_PATH=/socket.io
 NFZ_REMOTE_AUTH_PAYLOAD_MODE=jwt
 NFZ_REMOTE_AUTH_STRATEGY=jwt
@@ -124,9 +124,11 @@ KC_CLIENT_ID=myclient`,
     <div>
       <h1>Playground — scénarios de validation</h1>
       <p>Scénario détecté : <strong>{{ title }}</strong> (<code>{{ scenarioId }}</code>)</p>
-      <p>Provider détecté : <code>{{ auth.provider }}</code></p>
+      <p>Mode client détecté : <code>{{ clientMode }}</code></p>
+      <p>Provider d’auth détecté : <code>{{ auth.provider }}</code></p>
       <p>Mode Mongo détecté : <code>{{ embeddedMongoMode }}</code> — activé: <code>{{ embeddedMongoEnabled }}</code></p>
-      <p><NuxtLink to="/tests">Ouvrir la page de tests</NuxtLink></p>
+      <p><NuxtLink to="/tests">Ouvrir la page de tests</NuxtLink> · <NuxtLink to="/mongo">Mongo management</NuxtLink></p>
+      <p><NuxtLink to="/remote/socketio">Remote Socket.IO</NuxtLink> · <NuxtLink to="/remote/rest">Remote REST</NuxtLink> · <NuxtLink to="/embedded">Embedded</NuxtLink> · <NuxtLink to="/middleware">Middleware</NuxtLink></p>
       <pre style="white-space: pre-wrap">{{ publicClient }}</pre>
     </div>
 

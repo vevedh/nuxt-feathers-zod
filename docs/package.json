@@ -4,9 +4,12 @@
   "private": true,
   "packageManager": "bun@1.3.6",
   "scripts": {
-    "docs:dev": "bunx vitepress dev . --host",
-    "docs:build": "bunx vitepress build .",
-    "docs:preview": "bunx vitepress preview ."
+    "dev": "bunx vitepress dev . --host",
+    "build": "bunx vitepress build .",
+    "preview": "bunx vitepress preview .",
+    "docs:dev": "bun run dev",
+    "docs:build": "bun run build",
+    "docs:preview": "bun run preview"
   },
   "devDependencies": {
     "vitepress": "^1.3.1"

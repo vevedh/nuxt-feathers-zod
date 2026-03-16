@@ -7,7 +7,7 @@ services:
       - '27017:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: changeMe
+      MONGO_INITDB_ROOT_PASSWORD: change-me
       MONGO_INITDB_DATABASE: app
     volumes:
       - mongodb_data:/data/db

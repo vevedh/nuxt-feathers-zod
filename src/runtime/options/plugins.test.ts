@@ -22,7 +22,7 @@ describe('resolvePluginDirs', () => {
   })
 })
 
-export const testRootDir = createResolver(import.meta.url).resolve('../../../tests')
+export const testRootDir = createResolver(import.meta.url).resolve('../../../test')
 
 const resolver = createResolver(testRootDir)
 

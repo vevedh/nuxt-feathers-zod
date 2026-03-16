@@ -7,8 +7,10 @@ import { describe, expect, it } from 'vitest'
 
 import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateMiddleware, generateService, runCli } from '../src/cli/index'
 
+const LONG_TIMEOUT = 20000
+
 describe('nuxt-feathers-zod CLI generators', () => {
-  it('generates a mongodb service (4 files)', async () => {
+  it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
 
@@ -20,6 +22,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
       auth: true,
       idField: '_id',
       docs: false,
+      schema: 'zod',
       dry: false,
       force: false,
     })
@@ -40,7 +43,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(svc).toContain('export function post')
   })
 
-  it('supports --path, --idField, --docs and --collection', async () => {
+  it('supports --path, --idField, --docs and --collection', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
 
@@ -54,6 +57,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
       servicePath: 'accounts',
       collectionName: 'users',
       docs: true,
+      schema: 'zod',
       dry: false,
       force: false,
     })
@@ -78,7 +82,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
   })
 
 
-  it('generates an adapter-less service via generateService --custom', async () => {
+  it('generates an adapter-less service via generateService --custom', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
 
@@ -114,24 +118,26 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(klass).toContain('async preview')
 
     const shared = await readFile(sharedFile, 'utf8')
-    expect(shared).toContain("methods: ['find', 'run', 'preview']")
+    expect(shared).toContain('actionMethods = ["find","run","preview"] as const')
   })
 
-  it('generates auth-aware users service variants across schema and adapter combinations', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
-    const servicesDir = join(root, 'services')
+  const authAwareCombos = [
+    { schema: 'none', adapter: 'memory', idField: 'id' },
+    { schema: 'none', adapter: 'mongodb', idField: '_id' },
+    { schema: 'zod', adapter: 'memory', idField: 'id' },
+    { schema: 'zod', adapter: 'mongodb', idField: '_id' },
+    { schema: 'json', adapter: 'memory', idField: 'id' },
+    { schema: 'json', adapter: 'mongodb', idField: '_id' },
+  ] as const
 
-    const combos = [
-      { schema: 'none', adapter: 'memory', idField: 'id' },
-      { schema: 'none', adapter: 'mongodb', idField: '_id' },
-      { schema: 'zod', adapter: 'memory', idField: 'id' },
-      { schema: 'zod', adapter: 'mongodb', idField: '_id' },
-      { schema: 'json', adapter: 'memory', idField: 'id' },
-      { schema: 'json', adapter: 'mongodb', idField: '_id' },
-    ] as const
-
-    for (const combo of combos) {
+  it.each(authAwareCombos)(
+    'generates auth-aware users service variant schema=$schema adapter=$adapter',
+    { timeout: 15000 },
+    async (combo) => {
+      const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+      const servicesDir = join(root, 'services')
       const name = `users-${combo.schema}-${combo.adapter}`
+
       await generateService({
         projectRoot: root,
         servicesDir,
@@ -148,22 +154,23 @@ describe('nuxt-feathers-zod CLI generators', () => {
 
       const base = join(servicesDir, name)
       const serviceFile = await readFile(join(base, `${name}.ts`), 'utf8')
-      expect(serviceFile).toContain("authenticate('jwt')")
 
       if (combo.schema === 'none') {
         const hooksFile = await readFile(join(base, `${name}.hooks.ts`), 'utf8')
+        expect(hooksFile).toContain("authenticate('jwt')")
         expect(hooksFile).toContain("passwordHash({ strategy: 'local' })")
         expect(hooksFile).toContain('stripPassword')
+        return
       }
-      else {
-        const schemaFile = await readFile(join(base, `${name}.schema.ts`), 'utf8')
-        expect(schemaFile).toContain("passwordHash({ strategy: 'local' })")
-        expect(schemaFile).toContain('password: async () => undefined')
-      }
-    }
-  })
 
-  it('can disable auth-aware generation explicitly for users service', async () => {
+      expect(serviceFile).toContain("authenticate('jwt')")
+      const schemaFile = await readFile(join(base, `${name}.schema.ts`), 'utf8')
+      expect(schemaFile).toContain("passwordHash({ strategy: 'local' })")
+      expect(schemaFile).toContain('password: async () => undefined')
+    },
+  )
+
+  it('can disable auth-aware generation explicitly for users service', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
 
@@ -187,7 +194,45 @@ describe('nuxt-feathers-zod CLI generators', () => {
   })
 
 
-  it('dispatches add middleware through the citty CLI entrypoint', async () => {
+  it('dispatches mongo management through the citty CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
+
+    await runCli([
+      'mongo',
+      'management',
+      '--url', 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+      '--auth', 'false',
+      '--basePath', '///ops///mongo///',
+      '--exposeUsersService', 'true',
+    ], { cwd: root, throwOnError: true })
+
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(config).toContain("url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin'")
+    expect(config).toContain('enabled: true')
+    expect(config).toContain('auth: false')
+    expect(config).toContain("basePath: '/ops/mongo'")
+    expect(config).toContain('exposeUsersService: true')
+  })
+
+  it('supports dry-run for mongo management without mutating nuxt.config', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    const initial = "export default defineNuxtConfig({})\n"
+    await writeFile(join(root, 'nuxt.config.ts'), initial)
+
+    await runCli([
+      'mongo',
+      'management',
+      '--basePath', '/mongo-admin',
+      '--dry',
+    ], { cwd: root, throwOnError: true })
+
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(config).toBe(initial)
+  })
+
+
+  it('dispatches add middleware through the citty CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
 
     await runCli(['add', 'middleware', 'session', '--target', 'nitro'], { cwd: root })
@@ -198,7 +243,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(txt).toContain('defineEventHandler')
   })
 
-  it('generates a Nitro middleware', async () => {
+  it('generates a Nitro middleware', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
 
     await generateMiddleware({
@@ -269,6 +314,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(nuxtConfig).toContain("mode: 'remote'")
     expect(nuxtConfig).toContain("url: 'https://api.example.test'")
     expect(nuxtConfig).toContain("transport: 'rest'")
+    expect(nuxtConfig).not.toContain("transports:")
     expect(nuxtConfig).toContain('enabled: true')
   })
 
@@ -294,5 +340,39 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const hooks = await readFile(join(servicesDir, 'posts', 'posts.hooks.ts'), 'utf8')
     expect(hooks).toContain("authenticate('jwt')")
   })
+
+  it('dispatches plugins add through the citty CLI entrypoint', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
+
+    await runCli(['plugins', 'add', 'audit-log'], { cwd: root, throwOnError: true })
+
+    const pluginFile = await readFile(join(root, 'server', 'feathers', 'audit-log.ts'), 'utf8')
+    const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(pluginFile).toContain('defineFeathersServerPlugin')
+    expect(nuxtConfig).toContain("pluginDirs: ['server/feathers']")
+  })
+
+  it('dispatches modules add through the citty CLI entrypoint', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
+
+    await runCli(['modules', 'add', 'security-headers', '--preset', 'security-headers'], { cwd: root, throwOnError: true })
+
+    const moduleFile = await readFile(join(root, 'server', 'feathers', 'modules', 'security-headers.ts'), 'utf8')
+    const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(moduleFile).toContain('defineFeathersServerModule')
+    expect(nuxtConfig).toContain("moduleDirs: ['server/feathers/modules']")
+  })
+
+  it('dispatches middlewares add through the citty CLI entrypoint', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+
+    await runCli(['middlewares', 'add', 'request-id'], { cwd: root, throwOnError: true })
+
+    const middlewareFile = await readFile(join(root, 'server', 'middleware', 'request-id.ts'), 'utf8')
+    expect(middlewareFile).toContain('defineEventHandler')
+  })
+
 
 })

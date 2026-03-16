@@ -18,7 +18,7 @@ function run(cmd: [string, ...string[]], cwd = process.cwd()) {
     throw new Error(`Command terminated by signal ${res.signal}: ${cmd.join(' ')}`)
   }
 
-  const exitCode = res.status
+  const exitCode = typeof res.status === 'number' ? res.status : null
 
   if (exitCode !== 0) {
     throw new Error(`Command failed (${String(exitCode)}): ${cmd.join(' ')}`)

@@ -1,10 +1,14 @@
+import { existsSync } from 'node:fs'
+import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 import { defineCommand, runMain } from 'citty'
 import consola from 'consola'
 
-import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind } from './core'
+import { getMongoManagementRoutes, normalizeMongoManagementBasePath } from '../runtime/options/database/mongodb'
 
+import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind } from './core'
+import { detectFeathersPlugins, detectServerModules, runDoctor } from './commands/doctor'
 import {
   findProjectRoot,
   generateCustomService,
@@ -15,7 +19,6 @@ import {
   handleCliError,
   initTemplates,
   printHelp,
-  runDoctor,
   setServiceSchemaMode,
   showServiceSchema,
   mutateServiceFields,
@@ -38,6 +41,26 @@ function parseBooleanFlag(value: string | boolean | undefined, fallback: boolean
   if (['false', '0', 'no', 'off'].includes(normalized))
     return false
   return fallback
+}
+
+
+function resolveBooleanCliArg(rawArgs: string[] | undefined, flagName: string, parsedValue: string | boolean | undefined, fallback: boolean): boolean {
+  if (Array.isArray(rawArgs)) {
+    const longFlag = `--${flagName}`
+    const idx = rawArgs.findIndex(arg => arg === longFlag)
+    if (idx >= 0) {
+      const next = rawArgs[idx + 1]
+      if (typeof next === 'string' && !next.startsWith('-'))
+        return parseBooleanFlag(next, fallback)
+      return true
+    }
+
+    const inline = rawArgs.find(arg => arg.startsWith(`${longFlag}=`))
+    if (typeof inline === 'string')
+      return parseBooleanFlag(inline.slice(longFlag.length + 1), fallback)
+  }
+
+  return parseBooleanFlag(parsedValue, fallback)
 }
 
 function parseNumberFlag(value: string | boolean | undefined): number | undefined {
@@ -170,7 +193,13 @@ export function assertInitEmbeddedArgs(args: CliContextArgs, framework: 'express
 }
 
 async function withProjectRoot(cwd: string) {
-  return await findProjectRoot(resolve(cwd))
+  const resolved = resolve(cwd)
+  try {
+    return await findProjectRoot(resolved)
+  }
+  catch {
+    return resolved
+  }
 }
 
 async function handleDoctorCommand(cwd: string) {
@@ -547,6 +576,127 @@ async function handleSchemaCommand(cwd: string, args: CliContextArgs) {
     await showServiceSchema({ projectRoot, servicesDir, name, format: 'show' })
 }
 
+
+
+async function listTsFiles(dir: string, filter?: (name: string) => boolean) {
+  if (!existsSync(dir))
+    return [] as string[]
+  const entries = await readdir(dir).catch(() => [])
+  return entries
+    .filter(name => name.endsWith('.ts'))
+    .filter(name => filter ? filter(name) : true)
+    .sort()
+}
+
+async function handleTemplatesListCommand(cwd: string) {
+  const projectRoot = await withProjectRoot(cwd)
+  const candidates = [resolve(projectRoot, 'feathers/templates'), resolve(projectRoot, 'templates')]
+  const found: string[] = []
+  for (const dir of candidates) {
+    const files = await listTsFiles(dir)
+    if (files.length)
+      found.push(`${dir}: ${files.join(', ')}`)
+  }
+
+  consola.box(`Templates\n${found.length ? found.join('\n') : '(none detected)'}`)
+}
+
+async function handlePluginsListCommand(cwd: string) {
+  const projectRoot = await withProjectRoot(cwd)
+  const plugins = await detectFeathersPlugins(projectRoot)
+  consola.box(`Feathers plugins\n${plugins.length ? plugins.join('\n') : '(none detected)'}`)
+}
+
+async function handlePluginsAddCommand(cwd: string, args: CliContextArgs) {
+  const nextArgs: CliContextArgs = { ...args, target: 'feathers' }
+  await handleAddMiddlewareCommand(cwd, nextArgs)
+}
+
+async function handleModulesListCommand(cwd: string) {
+  const projectRoot = await withProjectRoot(cwd)
+  const modules = await detectServerModules(projectRoot)
+  consola.box(`Server modules\n${modules.length ? modules.join('\n') : '(none detected)'}`)
+}
+
+async function handleModulesAddCommand(cwd: string, args: CliContextArgs) {
+  await handleAddServerModuleCommand(cwd, args)
+}
+
+async function handleMiddlewaresListCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const target = typeof args.target === 'string' ? String(args.target) : 'all'
+  const sections: string[] = []
+
+  const pushSection = async (label: string, dir: string, filter?: (name: string) => boolean) => {
+    const files = await listTsFiles(dir, filter)
+    if (files.length)
+      sections.push(`${label}: ${files.join(', ')}`)
+  }
+
+  if (target === 'all' || target === 'nitro')
+    await pushSection('nitro', resolve(projectRoot, 'server/middleware'))
+  if (target === 'all' || target === 'feathers')
+    await pushSection('feathers', resolve(projectRoot, 'server/feathers'))
+  if (target === 'all' || target === 'hook')
+    await pushSection('hook', resolve(projectRoot, 'server/feathers/hooks'))
+  if (target === 'all' || target === 'policy')
+    await pushSection('policy', resolve(projectRoot, 'server/feathers/policies'))
+  if (target === 'all' || target === 'client-module')
+    await pushSection('client-module', resolve(projectRoot, 'app/plugins'), name => name.endsWith('.client.ts'))
+  if (target === 'all' || target === 'server-module' || target === 'module')
+    await pushSection('server-module', resolve(projectRoot, 'server/feathers/modules'))
+
+  consola.box(`Middlewares (${target})\n${sections.length ? sections.join('\n') : '(none detected)'}`)
+}
+
+async function handleMiddlewaresAddCommand(cwd: string, args: CliContextArgs) {
+  await handleAddMiddlewareCommand(cwd, args)
+}
+
+async function handleMongoManagementCommand(cwd: string, args: CliContextArgs) {
+  const projectRoot = await withProjectRoot(cwd)
+  const dry = Boolean(args.dry)
+  const enabled = parseBooleanFlag(args.enabled as string | boolean | undefined, true)
+  const auth = parseBooleanFlag(args.auth as string | boolean | undefined, true)
+  const exposeDatabasesService = parseBooleanFlag(args.exposeDatabasesService as string | boolean | undefined, true)
+  const exposeCollectionsService = parseBooleanFlag(args.exposeCollectionsService as string | boolean | undefined, true)
+  const exposeUsersService = parseBooleanFlag(args.exposeUsersService as string | boolean | undefined, false)
+  const exposeCollectionCrud = parseBooleanFlag(args.exposeCollectionCrud as string | boolean | undefined, true)
+  const basePath = normalizeMongoManagementBasePath(typeof args.basePath === 'string' ? String(args.basePath) : '/mongo')
+  const url = typeof args.url === 'string' ? String(args.url).trim() : undefined
+
+  await tryPatchNuxtConfig(projectRoot, {
+    mongoManagement: {
+      url,
+      enabled,
+      auth,
+      basePath,
+      exposeDatabasesService,
+      exposeCollectionsService,
+      exposeUsersService,
+      exposeCollectionCrud,
+    },
+  }, { dry })
+
+  const routes = getMongoManagementRoutes({
+    enabled,
+    basePath,
+    exposeDatabasesService,
+    exposeCollectionsService,
+    exposeUsersService,
+    exposeCollectionCrud,
+  })
+
+  const routeList = routes.length ? `- ${routes.map(route => route.path).join('\n- ')}` : '(none)'
+
+  consola.box(`Mongo management ${enabled ? 'enabled' : 'disabled'}
+basePath: ${basePath}
+auth: ${auth}
+routes:
+${routeList}`)
+}
+
+
 export function createCliCommand() {
   const doctorCommand = defineCommand({
     meta: {
@@ -771,7 +921,7 @@ export function createCliCommand() {
     },
     args: {
       name: { type: 'positional', required: true, description: 'Middleware name' },
-      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module'], description: 'Middleware target' },
+      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
       force: { type: 'boolean', description: 'Overwrite existing files' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },
@@ -818,6 +968,203 @@ export function createCliCommand() {
     },
     run: async ({ args }) => {
       await handleAddMongoComposeCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const mongoManagementCommand = defineCommand({
+    meta: {
+      name: 'management',
+      description: 'Enable or update embedded MongoDB management routes',
+    },
+    args: {
+      url: { type: 'string', description: 'MongoDB connection URL' },
+      enabled: { type: 'boolean', description: 'Enable Mongo management surface' },
+      auth: { type: 'boolean', description: 'Protect management routes with JWT auth' },
+      basePath: { type: 'string', description: 'Mongo management base path' },
+      exposeDatabasesService: { type: 'boolean', description: 'Expose /databases route' },
+      exposeCollectionsService: { type: 'boolean', description: 'Expose /:db/collections route' },
+      exposeUsersService: { type: 'boolean', description: 'Expose /users route' },
+      exposeCollectionCrud: { type: 'boolean', description: 'Expose stats/indexes/count/schema/documents/aggregate routes' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args, rawArgs }) => {
+      await handleMongoManagementCommand(process.cwd(), {
+        ...(args as CliContextArgs),
+        enabled: resolveBooleanCliArg(rawArgs, 'enabled', (args as CliContextArgs).enabled as string | boolean | undefined, true),
+        auth: resolveBooleanCliArg(rawArgs, 'auth', (args as CliContextArgs).auth as string | boolean | undefined, true),
+        exposeDatabasesService: resolveBooleanCliArg(rawArgs, 'exposeDatabasesService', (args as CliContextArgs).exposeDatabasesService as string | boolean | undefined, true),
+        exposeCollectionsService: resolveBooleanCliArg(rawArgs, 'exposeCollectionsService', (args as CliContextArgs).exposeCollectionsService as string | boolean | undefined, true),
+        exposeUsersService: resolveBooleanCliArg(rawArgs, 'exposeUsersService', (args as CliContextArgs).exposeUsersService as string | boolean | undefined, false),
+        exposeCollectionCrud: resolveBooleanCliArg(rawArgs, 'exposeCollectionCrud', (args as CliContextArgs).exposeCollectionCrud as string | boolean | undefined, true),
+      })
+    },
+  })
+
+  const mongoCommand = defineCommand({
+    meta: {
+      name: 'mongo',
+      description: 'MongoDB helpers',
+    },
+    subCommands: {
+      management: mongoManagementCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const templatesListCommand = defineCommand({
+    meta: {
+      name: 'list',
+      description: 'List template override files',
+    },
+    run: async () => {
+      await handleTemplatesListCommand(process.cwd())
+    },
+  })
+
+  const templatesCommand = defineCommand({
+    meta: {
+      name: 'templates',
+      description: 'Template helpers',
+    },
+    subCommands: {
+      list: templatesListCommand,
+      init: initTemplatesCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const pluginsListCommand = defineCommand({
+    meta: {
+      name: 'list',
+      description: 'List Feathers server plugins',
+    },
+    run: async () => {
+      await handlePluginsListCommand(process.cwd())
+    },
+  })
+
+  const pluginsAddCommand = defineCommand({
+    meta: {
+      name: 'add',
+      description: 'Generate a Feathers server plugin',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Plugin name' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handlePluginsAddCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const pluginsCommand = defineCommand({
+    meta: {
+      name: 'plugins',
+      description: 'Feathers plugin helpers',
+    },
+    subCommands: {
+      list: pluginsListCommand,
+      add: pluginsAddCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const modulesListCommand = defineCommand({
+    meta: {
+      name: 'list',
+      description: 'List server modules',
+    },
+    run: async () => {
+      await handleModulesListCommand(process.cwd())
+    },
+  })
+
+  const modulesAddCommand = defineCommand({
+    meta: {
+      name: 'add',
+      description: 'Generate a server module',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Module name' },
+      preset: {
+        type: 'enum',
+        options: ['helmet', 'security-headers', 'request-logger', 'healthcheck', 'rate-limit', 'express-baseline'],
+        description: 'Server module preset',
+      },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleModulesAddCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const modulesCommand = defineCommand({
+    meta: {
+      name: 'modules',
+      description: 'Server module helpers',
+    },
+    subCommands: {
+      list: modulesListCommand,
+      add: modulesAddCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
+    },
+  })
+
+  const middlewaresListCommand = defineCommand({
+    meta: {
+      name: 'list',
+      description: 'List middleware-like artifacts',
+    },
+    args: {
+      target: { type: 'enum', options: ['all', 'nitro', 'feathers', 'hook', 'policy', 'client-module', 'server-module', 'module'], description: 'Filter target' },
+    },
+    run: async ({ args }) => {
+      await handleMiddlewaresListCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const middlewaresAddCommand = defineCommand({
+    meta: {
+      name: 'add',
+      description: 'Generate middleware or middleware-like artifacts',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Middleware name' },
+      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleMiddlewaresAddCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
+  const middlewaresCommand = defineCommand({
+    meta: {
+      name: 'middlewares',
+      description: 'Middleware helpers',
+    },
+    subCommands: {
+      list: middlewaresListCommand,
+      add: middlewaresAddCommand,
+    },
+    run: ({ rawArgs }) => {
+      if (!rawArgs.length)
+        printHelp()
     },
   })
 
@@ -909,6 +1256,11 @@ export function createCliCommand() {
       init: initCommand,
       remote: remoteCommand,
       add: addCommand,
+      mongo: mongoCommand,
+      templates: templatesCommand,
+      plugins: pluginsCommand,
+      modules: modulesCommand,
+      middlewares: middlewaresCommand,
       schema: schemaCommand,
       auth: authCommand,
     },

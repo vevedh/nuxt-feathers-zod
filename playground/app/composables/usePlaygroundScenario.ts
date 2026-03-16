@@ -12,13 +12,14 @@ export type PlaygroundScenarioId =
 export function usePlaygroundScenario() {
   const config = useRuntimeConfig()
   const publicClient = computed(() => ((config.public as any)?._feathers?.client) ?? {})
+  const clientMode = computed<'embedded' | 'remote'>(() => getPublicClientMode(config.public as any))
   const auth = useAuth()
   const embeddedMongoEnabled = computed(() => ((config.public as any)?.nfzPlayground?.embeddedMongoEnabled) !== false)
   const embeddedMongoMode = computed(() => String((config.public as any)?.nfzPlayground?.embeddedMongoMode || (embeddedMongoEnabled.value ? 'memory' : 'disabled')))
 
   const scenarioId = computed<PlaygroundScenarioId>(() => {
     const client = publicClient.value || {}
-    const mode = getPublicClientMode(config.public as any)
+    const mode = clientMode.value
     const remote = client?.remote || {}
     const transport = remote?.transport || 'auto'
     const payloadMode = getPublicRemoteAuthConfig(config.public as any)?.payloadMode || 'jwt'
@@ -50,6 +51,7 @@ export function usePlaygroundScenario() {
 
   return {
     publicClient,
+    clientMode,
     scenarioId,
     title,
     embeddedMongoEnabled,

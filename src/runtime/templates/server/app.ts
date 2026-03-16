@@ -40,8 +40,8 @@ ${puts([
   [sio, `import socketio from '@feathersjs/socketio'`],
 ])}
 ${put(rest, `import { ${framework}ErrorHandler } from '@gabortorma/feathers-nitro-adapter/handlers'`)}
-${put(auth, `import authentication from './authentication.js'`)}
-${put(mongo, `import mongodb from './mongodb.js'`)}
+${put(auth, `import authentication from './authentication'`)}
+${put(mongo, `import mongodb from './mongodb'`)}
 
 export async function createFeathersApp(nitroApp, config) {
   const app = ${puts([

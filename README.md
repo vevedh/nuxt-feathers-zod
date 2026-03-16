@@ -2,7 +2,9 @@
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
-`nuxt-feathers-zod` is an official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
+`nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
+
+Current OSS release target: **6.3.5**.
 
 It supports two main usage patterns:
 
@@ -18,7 +20,7 @@ The public OSS module includes:
 - REST and Socket.IO transports
 - embedded server with **Express** or **Koa**
 - CLI bootstrap for `init embedded`, `init remote`, `init templates`
-- CLI generation for services, remote services, middleware and server modules
+- CLI generation for services, remote services, plugins, modules, middleware and server modules
 - schema modes `none | zod | json`
 - local/JWT auth flows
 - Keycloak SSO bridge for remote mode
@@ -26,6 +28,7 @@ The public OSS module includes:
 - template overrides
 - optional MongoDB management surface via `database.mongo.management`
 - client-side helpers with Pinia / feathers-pinia support
+- `doctor` diagnostics for mode, remote config, local services and Mongo management
 
 ## Installation
 
@@ -81,20 +84,60 @@ bun dev
 
 ## Canonical CLI commands
 
+### Bootstrap and diagnostics
+
 ```bash
+bunx nuxt-feathers-zod init templates --dir feathers/templates
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
+bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp
+bunx nuxt-feathers-zod doctor
+```
+
+### Services and schema
+
+```bash
 bunx nuxt-feathers-zod add service users --adapter mongodb --schema zod --collection users --idField _id
 bunx nuxt-feathers-zod add service users --auth --authAware --schema zod --adapter mongodb --collection users --idField _id
 bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
+bunx nuxt-feathers-zod auth service users --enabled true
+bunx nuxt-feathers-zod schema users --show
+bunx nuxt-feathers-zod schema users --set-mode zod
+bunx nuxt-feathers-zod schema users --add-field title:string!
+```
+
+### Runtime helpers and scaffolding
+
+```bash
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
 bunx nuxt-feathers-zod add server-module helmet --preset helmet
 bunx nuxt-feathers-zod add mongodb-compose
-bunx nuxt-feathers-zod auth service users --enabled true
-bunx nuxt-feathers-zod schema users --show
-bunx nuxt-feathers-zod doctor
+bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
 ```
+
+### Open OSS asset commands
+
+```bash
+bunx nuxt-feathers-zod templates list
+bunx nuxt-feathers-zod plugins list
+bunx nuxt-feathers-zod plugins add audit-log
+bunx nuxt-feathers-zod modules list
+bunx nuxt-feathers-zod modules add security-headers --preset security-headers
+bunx nuxt-feathers-zod middlewares list --target nitro
+bunx nuxt-feathers-zod middlewares add request-id --target nitro
+```
+
+## CLI command surface in 6.3.5
+
+| Area | Commands |
+|---|---|
+| Init | `init templates`, `init embedded`, `init remote` |
+| Remote auth | `remote auth keycloak` |
+| Services | `add service`, `add remote-service`, `auth service`, `schema` |
+| Runtime scaffolding | `add middleware`, `add server-module`, `add mongodb-compose`, `mongo management` |
+| OSS assets | `templates list`, `plugins list/add`, `modules list/add`, `middlewares list/add` |
+| Diagnostics | `doctor` |
 
 ## Auth-aware generation for `users`
 
@@ -148,9 +191,16 @@ export default defineNuxtConfig({
 
 This adds a controlled, opt-in management layer for:
 
-- `/mongo/databases`
+- `/mongo/databases` (legacy alias accepted: `/mongo`)
 - `/mongo/<db>/collections`
-- `/mongo/<db>/<collection>`
+- `/mongo/<db>/stats`
+- `/mongo/<db>/<collection>/indexes`
+- `/mongo/<db>/<collection>/count`
+- `/mongo/<db>/<collection>/schema`
+- `/mongo/<db>/<collection>/documents`
+- `/mongo/<db>/<collection>/aggregate`
+
+`doctor` reports Mongo management settings with a normalized `basePath`, a computed route surface and a warning when management is enabled without `database.mongo.url`.
 
 ## Protecting an existing service after generation
 
@@ -170,6 +220,7 @@ bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --databa
 
 - Recommended convention: `servicesDirs: ['services']`
 - Recommended path: **CLI-first**
+- In remote mode, `transport: auto` resolves to **socketio** in the current OSS runtime
 - Historical aliases may remain supported for backward compatibility, but the public docs foreground canonical commands only
 - Maintainer-only publication and admin procedures are kept in `README_private.md` and intentionally excluded from the public repository surface
 

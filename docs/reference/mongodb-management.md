@@ -38,7 +38,19 @@ export default defineNuxtConfig({
 
 - `enabled`: active la couche de management
 - `auth`: protège ou non cette surface
-- `basePath`: préfixe REST, par défaut `/mongo`
+- `basePath`: préfixe REST, par défaut `/mongo` (normalisé automatiquement : trim, slash initial, slash final retiré)
+
+## Endpoints canoniques
+
+- `GET /mongo/databases` → liste des bases
+- `GET /mongo/<db>/collections` → liste des collections
+- `GET /mongo/<db>/stats` → statistiques DB
+- `GET /mongo/<db>/<collection>/indexes` → index
+- `GET /mongo/<db>/<collection>/count` → nombre de documents
+- `GET /mongo/<db>/<collection>/schema` → inférence simple de schéma
+- `GET /mongo/<db>/<collection>/documents` → documents
+
+Compatibilité : l’alias legacy `GET /mongo` est réécrit vers `GET /mongo/databases`.
 - `exposeDatabasesService`: expose la liste des bases
 - `exposeCollectionsService`: expose la liste des collections
 - `exposeUsersService`: expose la gestion des utilisateurs MongoDB
@@ -64,3 +76,16 @@ Pour lancer rapidement un MongoDB local compatible avec tes tests :
 ```bash
 bunx nuxt-feathers-zod add mongodb-compose
 ```
+
+## Aide CLI
+
+Tu peux patcher `nuxt.config.*` directement depuis la CLI :
+
+```bash
+bunx nuxt-feathers-zod mongo management \
+  --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin \
+  --auth false \
+  --basePath /mongo
+```
+
+Cette commande met à jour `feathers.database.mongo.management` et peut aussi renseigner l’URL MongoDB si elle manque.

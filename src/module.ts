@@ -14,6 +14,7 @@ import {
   addImports,
   addImportsDir,
   addPlugin,
+  addServerHandler,
   addServerPlugin,
   addTemplate,
   createResolver,
@@ -25,6 +26,7 @@ import defu from 'defu'
 
 import { resolveOptions, resolvePublicRuntimeConfig, resolveRuntimeConfig } from './runtime/options'
 import { detectResolvedMode, isResolvedRemoteAuthEnabled, isResolvedServerEnabled } from './runtime/options/mode'
+import { setupNfzDevtools } from './devtools'
 import { serverDefaults } from './runtime/options/server'
 import { addServicesImports, getServicesImports } from './runtime/services'
 import { getClientTemplates } from './runtime/templates/client'
@@ -48,7 +50,7 @@ declare module '@nuxt/schema' {
 function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
   const resolver = createResolver(import.meta.url)
   const aliases = {
-    'nuxt-feathers-zod/server': resolver.resolve(options.templateDir, 'server/server.js'),
+    'nuxt-feathers-zod/server': resolver.resolve(options.templateDir, 'server/server'),
     'nuxt-feathers-zod/validators': resolver.resolve('runtime/zod/validators'),
     'nuxt-feathers-zod/query': resolver.resolve('runtime/zod/query'),
     'nuxt-feathers-zod/zod': resolver.resolve('runtime/zod/index'),
@@ -138,6 +140,7 @@ export default defineNuxtModule<ModuleOptions>({
     loadFeathersConfig: false,
     auth: true,
     swagger: false,
+    devtools: true,
   },
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
@@ -185,24 +188,55 @@ export default defineNuxtModule<ModuleOptions>({
       await ensurePinia(resolvedOptions.client as ClientOptions, nuxt)
     }
 
+    const servicesImports = mode === 'embedded' && serverEnabled
+      ? await getServicesImports(resolvedOptions.servicesDirs)
+      : []
+
+    if (nuxt.options.dev && resolvedOptions.devtools) {
+      setupNfzDevtools(
+        nuxt,
+        resolvedOptions,
+        {
+          servicesDetected: servicesImports.map(item => ({
+            name: item.as || item.name,
+            from: item.from,
+          })),
+        },
+      )
+    }
+
     // Embedded-only: scan local services + add typed imports
     if (mode === 'embedded' && serverEnabled) {
-      const servicesImports = await getServicesImports(resolvedOptions.servicesDirs)
       await addServicesImports(servicesImports)
     }
 
     // Server templates/plugin only when server is enabled.
-    if (serverEnabled) {
+    if (mode === 'embedded' && serverEnabled) {
       let serverPluginDst: string | undefined
+      let restBridgeDst: string | undefined
       for (const serverTemplate of getServerTemplates(resolvedOptions)) {
         const ov = resolveTemplateOverrideForFilename(serverTemplate.filename, resolvedOptions)
         const tpl = addTemplate(ov
           ? { filename: serverTemplate.filename, src: ov.absPath, write: true, options: resolvedOptions }
           : { ...serverTemplate, options: resolvedOptions })
-        if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin.js') || serverTemplate.filename?.endsWith('server/plugin'))
+        if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin'))
           serverPluginDst = tpl.dst
+        if (serverTemplate.filename?.endsWith('server/rest-bridge.ts') || serverTemplate.filename?.endsWith('server/rest-bridge'))
+          restBridgeDst = tpl.dst
       }
       addServerPlugin(serverPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'server/plugin.ts'))
+
+      const restTransport = resolvedOptions.transports?.rest as any
+      const restPath = typeof restTransport?.path === 'string' ? restTransport.path : ''
+      const restFramework = typeof restTransport?.framework === 'string' ? restTransport.framework : ''
+      if (restBridgeDst && restFramework === 'express' && restPath && restPath !== '/') {
+        const normalizedRestPath = restPath.startsWith('/') ? restPath : `/${restPath}`
+        addServerHandler({
+          route: `${normalizedRestPath}/**`,
+          handler: restBridgeDst,
+          middleware: true,
+        })
+      }
     }
 
     // Client templates/plugin when client is enabled.
@@ -213,11 +247,11 @@ export default defineNuxtModule<ModuleOptions>({
       // If Pinia is enabled, enable auth/bootstrap plugins as needed.
       if (piniaEnabled) {
         nuxt.hook('vite:extendConfig', (config) => {
-          const mutableConfig = config as any
-          mutableConfig.optimizeDeps ||= {}
-          mutableConfig.optimizeDeps.include ||= []
-          if (!mutableConfig.optimizeDeps.include.includes('feathers-pinia'))
-            mutableConfig.optimizeDeps.include.push('feathers-pinia')
+          const viteConfig = config as any
+          viteConfig.optimizeDeps ||= {}
+          viteConfig.optimizeDeps.include ||= []
+          if (!viteConfig.optimizeDeps.include.includes('feathers-pinia'))
+            viteConfig.optimizeDeps.include.push('feathers-pinia')
         })
 
         // Auth bootstrap is needed in two situations:
@@ -250,9 +284,14 @@ export default defineNuxtModule<ModuleOptions>({
           clientPluginDst = tpl.dst
       }
 
-      // The Feathers client plugin must run on both server and client.
-      // Otherwise, SSR rendering of pages that call useService/useFeathers can crash with `$api` undefined.
-      addPlugin({ order: 0, src: clientPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'client/plugin.ts') })
+      // In remote mode, the Feathers transport plugin must be client-only.
+      // This avoids creating remote transports during SSR and aligns with the
+      // official Feathers/Feathers-Pinia Nuxt plugin pattern.
+      addPlugin({
+        order: 0,
+        src: clientPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'client/plugin.ts'),
+        ...(mode === 'remote' ? { mode: 'client' as const } : {}),
+      })
     }
 
     // Devtools: expose resolved config for diagnostics

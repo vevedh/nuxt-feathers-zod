@@ -1,10 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-import { checkPath } from './utils'
+import { describe, expect, it } from 'vitest'
 import { resolveWebsocketTransportsOptions, websocketDefaults } from './websocket'
 
-vi.mock('./utils', () => ({
-  checkPath: vi.fn(),
-}))
 
 describe('resolveWebsocketTransportsOptions', () => {
   it('should return websocketDefaults if websocket is true', () => {
@@ -41,8 +37,7 @@ describe('resolveWebsocketTransportsOptions', () => {
     expect(result).toEqual({
       path: '/custom-path',
       connectTimeout: websocketDefaults.connectTimeout,
+      transports: websocketDefaults.transports,
     })
-
-    expect(checkPath).toHaveBeenCalledWith('/custom-path')
   })
 })

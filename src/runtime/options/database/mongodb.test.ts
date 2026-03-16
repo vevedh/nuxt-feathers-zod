@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveMongoOptions } from './mongodb'
+import { getMongoManagementRoutes, normalizeMongoManagementBasePath, resolveMongoOptions } from './mongodb'
 
 describe('resolveMongoOptions', () => {
   it('should apply management defaults', () => {
@@ -48,5 +48,44 @@ describe('resolveMongoOptions', () => {
     })
 
     expect(result.management.exposeUsersService).toBe(true)
+  })
+
+  it('should harden and trim the management basePath', () => {
+    expect(normalizeMongoManagementBasePath(' mongo/admin/ ')).toBe('/mongo/admin')
+    expect(normalizeMongoManagementBasePath('///mongo///admin///')).toBe('/mongo/admin')
+    expect(normalizeMongoManagementBasePath('')).toBe('/mongo')
+  })
+
+  it('should derive the public route surface from resolved management options', () => {
+    const routes = getMongoManagementRoutes({
+      enabled: true,
+      basePath: '/mongo-admin',
+      exposeDatabasesService: true,
+      exposeCollectionsService: true,
+      exposeUsersService: false,
+      exposeCollectionCrud: true,
+    })
+
+    expect(routes.map(route => route.path)).toEqual([
+      '/mongo-admin/databases',
+      '/mongo-admin/:db/collections',
+      '/mongo-admin/:db/stats',
+      '/mongo-admin/:db/:collection/indexes',
+      '/mongo-admin/:db/:collection/count',
+      '/mongo-admin/:db/:collection/schema',
+      '/mongo-admin/:db/:collection/documents',
+      '/mongo-admin/:db/:collection/aggregate',
+    ])
+  })
+
+  it('should not expose routes when management is disabled', () => {
+    expect(getMongoManagementRoutes({
+      enabled: false,
+      basePath: '/mongo',
+      exposeDatabasesService: true,
+      exposeCollectionsService: true,
+      exposeUsersService: true,
+      exposeCollectionCrud: true,
+    })).toEqual([])
   })
 })

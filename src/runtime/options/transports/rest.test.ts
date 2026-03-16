@@ -1,11 +1,7 @@
 import type { RestOptions } from './rest'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveRestTransportsOptions, restDefaults } from './rest'
-import { checkPath } from './utils'
-
-vi.mock('./utils', () => ({
-  checkPath: vi.fn(),
-}))
+import * as utils from './utils'
 
 describe('resolveRestTransportsOptions', () => {
   it('should return restDefaults if rest is true', () => {
@@ -79,6 +75,7 @@ describe('resolveRestTransportsOptions', () => {
   })
 
   it('should return merged options if rest is an object', () => {
+    const spy = vi.spyOn(utils, 'checkPath')
     const rest: RestOptions = {
       path: '/custom-path',
     }
@@ -91,6 +88,7 @@ describe('resolveRestTransportsOptions', () => {
       path: '/custom-path',
       framework: restDefaults.framework,
     })
-    expect(checkPath).toHaveBeenCalledWith('/custom-path')
+    expect(spy).toHaveBeenCalledWith('/custom-path')
+    spy.mockRestore()
   })
 })

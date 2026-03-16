@@ -51,6 +51,7 @@ Vérifier :
 - `transport`
 - `restPath` / `websocketPath`
 - services déclarés dans `client.remote.services`
+- en mode remote, `transport: 'auto'` se résout actuellement vers Socket.IO ; utiliser `transport: 'rest'` pour un premier diagnostic réseau/CORS
 - auth remote si activée
 
 ## Commandes utiles
