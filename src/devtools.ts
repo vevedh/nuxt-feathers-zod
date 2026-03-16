@@ -43,8 +43,10 @@ export interface NfzDevtoolsPayload {
 
 function safeJson(value: unknown) {
   return JSON.stringify(value, null, 2)
-    .replace(/</g, '\u003c')
-    .replace(/>/g, '\u003e')
+
+    .replace(/</g, '\u003C')
+
+    .replace(/>/g, '\u003E')
 }
 
 function renderHtml(payload: NfzDevtoolsPayload) {

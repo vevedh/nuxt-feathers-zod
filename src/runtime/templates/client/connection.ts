@@ -78,7 +78,7 @@ ${puts([
       configured = ${put(sio, 'createSocketConnection()', put(rest, 'createRestConnection()', 'undefined as any'))}
     }
     else {
-      configured = ${put(rest && sio, "mode === 'remote' ? createSocketConnection() : (import.meta.server ? createRestConnection() : createSocketConnection())", puts([
+      configured = ${put(rest && sio, 'mode === \'remote\' ? createSocketConnection() : (import.meta.server ? createRestConnection() : createSocketConnection())', puts([
         [sio, 'createSocketConnection()'],
         [rest, 'createRestConnection()'],
       ]))}

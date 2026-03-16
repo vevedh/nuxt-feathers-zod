@@ -54,7 +54,7 @@ describe('resolveValidatorOptions', () => {
   })
 
   it('should remove duplicate formats', () => {
-    const validator: ValidatorOptions = { formats: [validatorFormatsDefaults[0]!], extendDefaults: true }
+    const validator: ValidatorOptions = { formats: [validatorFormatsDefaults[0]], extendDefaults: true }
 
     const result = resolveValidatorOptions(validator)
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveWebsocketTransportsOptions, websocketDefaults } from './websocket'
 
-
 describe('resolveWebsocketTransportsOptions', () => {
   it('should return websocketDefaults if websocket is true', () => {
     const websocket = true

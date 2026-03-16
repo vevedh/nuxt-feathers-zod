@@ -24,9 +24,9 @@ import {
 import { consola } from 'consola'
 import defu from 'defu'
 
+import { setupNfzDevtools } from './devtools'
 import { resolveOptions, resolvePublicRuntimeConfig, resolveRuntimeConfig } from './runtime/options'
 import { detectResolvedMode, isResolvedRemoteAuthEnabled, isResolvedServerEnabled } from './runtime/options/mode'
-import { setupNfzDevtools } from './devtools'
 import { serverDefaults } from './runtime/options/server'
 import { addServicesImports, getServicesImports } from './runtime/services'
 import { getClientTemplates } from './runtime/templates/client'

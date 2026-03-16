@@ -31,8 +31,8 @@ async function safeResolveUser(app, cfg, payload) {
 }
 
 export function keycloakAuthorizationHook(app, cfg) {
-  const issuer = \`${'${cfg.serverUrl}'}/realms/${'${cfg.realm}'}\`
-  const jwks = createRemoteJWKSet(new URL(\`${'${issuer}'}/protocol/openid-connect/certs\`))
+  const issuer = cfg.serverUrl + '/realms/' + cfg.realm
+  const jwks = createRemoteJWKSet(new URL(issuer + '/protocol/openid-connect/certs'))
 
   return async (context) => {
     if (!context.params?.provider) return context
@@ -59,7 +59,7 @@ export function keycloakBridgeService(app, cfg) {
     async create(data) {
       const fakeCtx = {
         app,
-        params: { headers: { Authorization: \`Bearer ${'${data.access_token}'}\` }, provider: 'rest' },
+        params: { headers: { Authorization: 'Bearer ' + data.access_token }, provider: 'rest' },
       }
 
       await keycloakAuthorizationHook(app, cfg)(fakeCtx)

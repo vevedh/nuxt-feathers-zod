@@ -5,14 +5,18 @@ const ts = require('typescript')
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) walk(full, out)
-    else out.push(full)
+    if (entry.isDirectory()) {
+      walk(full, out)
+    }
+    else {
+      out.push(full)
+    }
   }
   return out
 }
 
 const files = [
-  ...walk('src').filter(file => /\.(ts|mts|cts)$/.test(file)),
+  ...walk('src').filter(file => /\.(?:ts|mts|cts)$/.test(file)),
   'nuxt.config.ts',
   'playground/nuxt.config.ts',
 ]
