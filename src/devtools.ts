@@ -43,9 +43,9 @@ export interface NfzDevtoolsPayload {
 
 function safeJson(value: unknown) {
   return JSON.stringify(value, null, 2)
-    // eslint-disable-next-line unicorn/escape-case
+
     .replace(/</g, '\u003C')
-    // eslint-disable-next-line unicorn/escape-case
+
     .replace(/>/g, '\u003E')
 }
 

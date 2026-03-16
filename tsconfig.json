@@ -5,7 +5,6 @@
       "ES2022",
       "DOM"
     ],
-    "noEmit": true,
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -14,6 +13,7 @@
       "node"
     ],
     "strict": true,
+    "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true
