@@ -1,5 +1,15 @@
 # Changelog
 
+## v6.3.7 - 2026-03-16
+
+### Fixed
+- Fixed npm/Bun consumer CLI packaging so `bunx nuxt-feathers-zod --help` no longer executes `src/cli/index.ts` from the published package.
+- Published CLI now points to a built artifact under `dist/cli/index.mjs`.
+- Added CLI build step to `prepare` and `prepack`.
+
+### Tests
+- Added packaging assertions for the published CLI `bin` target.
+
 ## 6.3.6
 
 ### Changed

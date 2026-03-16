@@ -10,6 +10,18 @@ import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationAr
 const LONG_TIMEOUT = 20000
 
 describe('nuxt-feathers-zod CLI generators', () => {
+
+
+it('publishes the CLI bin from dist instead of src', async () => {
+  const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as {
+    bin?: Record<string, string>
+    files?: string[]
+  }
+
+  expect(pkg.bin?.['nuxt-feathers-zod']).toBe('./dist/cli/index.mjs')
+  expect(pkg.files).toContain('dist')
+  expect(pkg.files).not.toContain('src/cli')
+})
   it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')

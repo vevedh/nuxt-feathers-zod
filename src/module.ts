@@ -24,6 +24,7 @@ import {
 import { consola } from 'consola'
 import defu from 'defu'
 
+// eslint-disable-next-line perfectionist/sort-imports
 import { setupNfzDevtools } from './devtools'
 import { resolveOptions, resolvePublicRuntimeConfig, resolveRuntimeConfig } from './runtime/options'
 import { detectResolvedMode, isResolvedRemoteAuthEnabled, isResolvedServerEnabled } from './runtime/options/mode'
