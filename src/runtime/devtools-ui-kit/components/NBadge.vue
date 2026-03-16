@@ -1,5 +1,5 @@
 <template>
   <span class="n-badge">
-    <slot />
+    <slot></slot>
   </span>
 </template>

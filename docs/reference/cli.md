@@ -9,7 +9,7 @@ Commande d’entrée :
 bunx nuxt-feathers-zod
 ```
 
-Surface officielle OSS alignée sur la version **6.3.5**.
+Surface officielle OSS alignée sur la version **6.3.6**.
 
 ## Catalogue des commandes
 

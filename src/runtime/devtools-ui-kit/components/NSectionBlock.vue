@@ -47,13 +47,18 @@ function onToggle(e: any) {
             </slot>
           </div>
         </div>
-        <div class="flex-auto" />
-        <slot name="actions" />
+        <div class="flex-auto"></div>
+        <slot name="actions"></slot>
         <NIcon
           v-if="collapse"
           icon="carbon-chevron-down"
           class="chevron"
-          cursor-pointer place-self-start text-base op75 transition duration-500
+          cursor-pointer
+          place-self-start
+          text-base
+          op75
+          transition
+          duration-500
         />
       </NIconTitle>
     </summary>
@@ -62,14 +67,14 @@ function onToggle(e: any) {
       class="flex flex-col flex-gap2 pb6 pt2"
       :class="typeof padding === 'string' ? padding : padding ? 'px4' : ''"
     >
-      <slot name="details" />
+      <slot name="details"></slot>
       <div :class="containerClass" class="mt1">
-        <slot />
+        <slot></slot>
       </div>
-      <slot name="footer" />
+      <slot name="footer"></slot>
     </div>
   </details>
-  <div class="x-divider" />
+  <div class="x-divider"></div>
 </template>
 
 <style scoped>

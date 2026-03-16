@@ -9,15 +9,15 @@
   -->
   <div rounded border="~ base" bg="white dark:neutral-900/40" p-4>
     <div v-if="$slots.header" border="b base" pb-3 mb-3>
-      <slot name="header" />
+      <slot name="header"></slot>
     </div>
 
     <div>
-      <slot />
+      <slot></slot>
     </div>
 
     <div v-if="$slots.footer" border="t base" pt-3 mt-3>
-      <slot name="footer" />
+      <slot name="footer"></slot>
     </div>
   </div>
 </template>
