@@ -4,7 +4,7 @@
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.3.7**.
+Current OSS release target: **6.3.8**.
 
 It supports two main usage patterns:
 
@@ -92,6 +92,7 @@ bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
 bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp
 bunx nuxt-feathers-zod doctor
+bunx nfz --help
 ```
 
 ### Services and schema
@@ -128,7 +129,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.3.7
+## CLI command surface in 6.3.8
 
 | Area | Commands |
 |---|---|

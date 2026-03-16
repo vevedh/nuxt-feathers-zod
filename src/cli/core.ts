@@ -36,7 +36,7 @@ export type IdField = 'id' | '_id'
 export type CollectionName = string
 
 export interface RunCliOptions {
-  cwd: string
+  cwd?: string
   throwOnError?: boolean
 }
 

@@ -1273,15 +1273,17 @@ export function createCliCommand() {
 
 export const mainCommand = createCliCommand()
 
-export async function runCli(argv: string[], opts: RunCliOptions) {
+export async function runCli(argv: string[], opts: RunCliOptions = { cwd: process.cwd() }) {
   const previousCwd = process.cwd()
+  const cwd = opts.cwd || process.cwd()
+  const throwOnError = opts.throwOnError ?? false
 
   try {
-    process.chdir(resolve(opts.cwd))
+    process.chdir(resolve(cwd))
     await runMain(mainCommand, { rawArgs: argv })
   }
   catch (err) {
-    if (opts.throwOnError)
+    if (throwOnError)
       throw err
     handleCliError(err)
   }

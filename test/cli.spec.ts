@@ -19,9 +19,14 @@ it('publishes the CLI bin from dist instead of src', async () => {
   }
 
   expect(pkg.bin?.['nuxt-feathers-zod']).toBe('./dist/cli/index.mjs')
+  expect(pkg.bin?.nfz).toBe('./dist/cli/index.mjs')
   expect(pkg.files).toContain('dist')
   expect(pkg.files).not.toContain('src/cli')
 })
+
+  it('runs help without explicit cli options', async () => {
+    await runCli(['--help'])
+  })
   it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')

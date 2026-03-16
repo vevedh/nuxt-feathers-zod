@@ -1,3 +1,17 @@
+## v6.3.8 - 2026-03-16
+
+### Fixed
+- Fixed published CLI execution so `bunx nuxt-feathers-zod --help` works in consumer Nuxt 4 applications.
+- Fixed `runCli()` to support execution without explicit options and default safely to `process.cwd()`.
+- Fixed the built CLI entrypoint by removing the invalid `handleCliError` import from `src/cli/bin.ts`.
+
+### Added
+- Added npm binary alias `nfz` so the CLI can also be executed with `bunx nfz --help`.
+
+### Changed
+- Updated release metadata and README references from `6.3.7` to `6.3.8`.
+- Updated package publication settings to include the built CLI and top-level release documents.
+
 # Changelog
 
 ## v6.3.7 - 2026-03-16
