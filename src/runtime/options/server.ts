@@ -1,7 +1,9 @@
 import type { Import } from 'unimport'
 
 import type { ModuleOptions } from '.'
+
 import type { PluginOptions, ResolvedPluginOptions, ResolvedPlugins } from './plugins'
+import { existsSync } from 'node:fs'
 import { createResolver } from '@nuxt/kit'
 import { resolvePluginsOptions } from './plugins'
 
@@ -114,22 +116,27 @@ async function resolveServerModuleEntries(
   const { scanExports } = await import('unimport')
   const { setImportMeta } = await import('./utils')
   const rootResolver = createResolver(rootDir)
-  // IMPORTANT: builtin server modules are resolved from the package source tree,
-  // not from dist/. nuxt-module-build does not guarantee copying these dynamically
-  // scanned files into dist/runtime/server/modules, but the source tree can be
-  // safely shipped in the published package.
   const packageRootResolver = createResolver(new URL('../../../', import.meta.url).pathname)
 
-  const builtinBase = `src/runtime/server/modules/${framework}`
+  function resolveBuiltinModule(name: string) {
+    const candidates = [
+      packageRootResolver.resolve(`dist/runtime/server/modules/${framework}/${name}.js`),
+      packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.ts`),
+      packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.js`),
+    ]
+
+    return candidates.find(path => existsSync(path)) || candidates[0]
+  }
+
   const builtins: Record<string, string> = {
-    'secure-defaults': packageRootResolver.resolve(`${builtinBase}/secure-defaults.ts`),
-    'cors': packageRootResolver.resolve(`${builtinBase}/cors.ts`),
-    'helmet': packageRootResolver.resolve(`${builtinBase}/helmet.ts`),
-    'compression': packageRootResolver.resolve(`${builtinBase}/compression.ts`),
-    'body-parser': packageRootResolver.resolve(`${builtinBase}/body-parser.ts`),
-    'serve-static': packageRootResolver.resolve(`${builtinBase}/serve-static.ts`),
-    'healthcheck': packageRootResolver.resolve(`${builtinBase}/healthcheck.ts`),
-    'rate-limit': packageRootResolver.resolve(`${builtinBase}/rate-limit.ts`),
+    'secure-defaults': resolveBuiltinModule('secure-defaults'),
+    'cors': resolveBuiltinModule('cors'),
+    'helmet': resolveBuiltinModule('helmet'),
+    'compression': resolveBuiltinModule('compression'),
+    'body-parser': resolveBuiltinModule('body-parser'),
+    'serve-static': resolveBuiltinModule('serve-static'),
+    'healthcheck': resolveBuiltinModule('healthcheck'),
+    'rate-limit': resolveBuiltinModule('rate-limit'),
   }
 
   const toResolvedBuiltin = (from: string, options?: any, phase: 'pre' | 'post' = 'pre') => {

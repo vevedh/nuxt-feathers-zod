@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.3.8",
+  "version": "6.3.9",
   "packageManager": "bun@1.3.6",
   "description": "Feathers API integration for Nuxt",
   "author": "Herve de CHAVIGNY",
@@ -15,13 +15,58 @@
       "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs"
     },
-    "./options": "./dist/runtime/options/index.js",
-    "./ofetch-adapter": "./dist/runtime/adapters/ofetch.js",
-    "./validators": "./dist/runtime/zod/validators.js",
-    "./objectId": "./dist/runtime/zod/objectId.js",
-    "./query": "./dist/runtime/zod/query.js",
-    "./format": "./dist/runtime/zod/format.js",
-    "./zod": "./dist/runtime/zod/index.js"
+    "./server": {
+      "types": "./dist/runtime/templates/server/server.d.ts",
+      "import": "./dist/runtime/templates/server/server.js"
+    },
+    "./client": {
+      "types": "./dist/runtime/templates/client/client.d.ts",
+      "import": "./dist/runtime/templates/client/client.js"
+    },
+    "./auth-utils": {
+      "types": "./dist/runtime/utils/auth.d.ts",
+      "import": "./dist/runtime/utils/auth.js"
+    },
+    "./config-utils": {
+      "types": "./dist/runtime/utils/config.d.ts",
+      "import": "./dist/runtime/utils/config.js"
+    },
+    "./options": {
+      "types": "./dist/runtime/options/index.d.ts",
+      "import": "./dist/runtime/options/index.js"
+    },
+    "./ofetch-adapter": {
+      "types": "./dist/runtime/adapters/ofetch.d.ts",
+      "import": "./dist/runtime/adapters/ofetch.js"
+    },
+    "./validators": {
+      "types": "./dist/runtime/zod/validators.d.ts",
+      "import": "./dist/runtime/zod/validators.js"
+    },
+    "./objectId": {
+      "types": "./dist/runtime/zod/objectId.d.ts",
+      "import": "./dist/runtime/zod/objectId.js"
+    },
+    "./query": {
+      "types": "./dist/runtime/zod/query.d.ts",
+      "import": "./dist/runtime/zod/query.js"
+    },
+    "./format": {
+      "types": "./dist/runtime/zod/format.d.ts",
+      "import": "./dist/runtime/zod/format.js"
+    },
+    "./zod": {
+      "types": "./dist/runtime/zod/index.d.ts",
+      "import": "./dist/runtime/zod/index.js"
+    },
+    "./server/modules/express/*": {
+      "types": "./dist/runtime/server/modules/express/*.d.ts",
+      "import": "./dist/runtime/server/modules/express/*.js"
+    },
+    "./server/modules/koa/*": {
+      "types": "./dist/runtime/server/modules/koa/*.d.ts",
+      "import": "./dist/runtime/server/modules/koa/*.js"
+    }
   },
   "main": "./dist/module.mjs",
   "typesVersions": {
@@ -29,11 +74,44 @@
       ".": [
         "./dist/types.d.mts"
       ],
+      "server": [
+        "./dist/runtime/templates/server/server.d.ts"
+      ],
+      "client": [
+        "./dist/runtime/templates/client/client.d.ts"
+      ],
+      "auth-utils": [
+        "./dist/runtime/utils/auth.d.ts"
+      ],
+      "config-utils": [
+        "./dist/runtime/utils/config.d.ts"
+      ],
       "options": [
-        "./dist/runtime/options/index.d.mts"
+        "./dist/runtime/options/index.d.ts"
       ],
       "ofetch-adapter": [
-        "./dist/runtime/adapters/ofetch.d.mts"
+        "./dist/runtime/adapters/ofetch.d.ts"
+      ],
+      "validators": [
+        "./dist/runtime/zod/validators.d.ts"
+      ],
+      "objectId": [
+        "./dist/runtime/zod/objectId.d.ts"
+      ],
+      "query": [
+        "./dist/runtime/zod/query.d.ts"
+      ],
+      "format": [
+        "./dist/runtime/zod/format.d.ts"
+      ],
+      "zod": [
+        "./dist/runtime/zod/index.d.ts"
+      ],
+      "server/modules/express/*": [
+        "./dist/runtime/server/modules/express/*.d.ts"
+      ],
+      "server/modules/koa/*": [
+        "./dist/runtime/server/modules/koa/*.d.ts"
       ]
     }
   },

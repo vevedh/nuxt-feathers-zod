@@ -1,4 +1,18 @@
-## v6.3.8 - 2026-03-16
+# Changelog
+
+## v6.3.9 - 2026-03-16
+
+### Fixed
+- Fixed published package export maps so consumer Nuxt 4 applications resolve NFZ builtin helpers and server modules through `dist/` instead of `src/`.
+- Fixed builtin Express/Koa server module resolution to prefer packaged `dist/runtime/server/modules/...` entries with a local-source fallback only for repository development.
+
+### Changed
+- Updated release metadata, README, changelog, and public docs for the official `6.3.9` publication.
+- Kept the published CLI binaries `nuxt-feathers-zod` and `nfz` aligned with the built `dist/cli/index.mjs` entry.
+
+## v6.3.8
+- fix(exports): published package exports now point to dist/ for server, client, auth-utils, config-utils, options, zod helpers, and builtin Express/Koa server modules; builtin server module resolution now prefers dist/ with source fallback for local repo development.
+ - 2026-03-16
 
 ### Fixed
 - Fixed published CLI execution so `bunx nuxt-feathers-zod --help` works in consumer Nuxt 4 applications.

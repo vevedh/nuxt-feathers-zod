@@ -8,7 +8,7 @@ Cette page n’est plus publiée dans la documentation publique.
 Les procédures de publication npm/git et les notes d’administration du dépôt sont désormais maintenues dans `README_private.md` côté mainteneur.
 
 
-## Stabilisation 6.3.6
+## Stabilisation 6.3.9
 
 Avant publication officielle :
 
