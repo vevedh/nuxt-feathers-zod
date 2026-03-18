@@ -1,4 +1,90 @@
+## v6.4.12
+
+- fix(keycloak-sso): clean OIDC callback hashes like `#state=...&session_state=...&code=...` after Keycloak `check-sso` / callback to avoid Vue Router selector warnings in Nuxt 4 consumer apps
+- docs(remote,keycloak): document the automatic hash cleanup and the custom `scrollBehavior` caveat for apps overriding `app/router.options.ts`
+
+## v6.4.11
+
+- docs: added a complete Nuxt 4 remote + Keycloak example page with `auth-keycloak` route middleware and a remote `messages` service call
+- docs: linked the new guide from remote/keycloak pages and VitePress sidebar (FR/EN)
+- docs: updated README and project journals to reflect the new reference scenario
+
+## v6.4.10
+
+- Fixed CLI inline help for `add middleware <name>` so all supported targets are shown, including `route`, `client-module`, `hook`, and `policy`.
+- Synced README and AI context reference with the new route middleware generator example `auth-keycloak`.
+
 # Changelog
+
+## v6.4.9
+
+- added CLI target `route` for Nuxt route middleware generation (`app/middleware/*.ts`)
+- added built-in `auth-keycloak` route middleware preset for remote Keycloak SSO
+- auto-generates `public/silent-check-sso.html` with the Keycloak route middleware preset
+- aligned README/docs/tests with the new Keycloak route scaffolding flow
+
+## v6.4.8
+
+- hardening d'idempotence du module pendant `bun install` / `nuxt prepare`
+- déduplication des alias Vite NFZ avant réassignation
+- déduplication de `vite.optimizeDeps.include` pour éviter l'empilement sur les prepares successifs
+- déduplication de `prepare:types` et `nitro.typescript.tsConfig.include`
+- activation `@pinia/nuxt` gardée idempotente côté module
+- base CLI 6.4.7 conservée intacte
+
+## 6.4.7
+
+- patcher `nuxt.config.ts` des options `feathers` rendu structurel et idempotent pour toutes les commandes CLI.
+- correction des duplications/corruptions de blocs `client`, `keycloak`, `transports` et de la duplication du fichier de configuration.
+- fusion plus robuste des services remote et préservation des options `feathers` existantes.
+
+## v6.4.6
+
+- Hardened the `feathers` CLI patcher to avoid duplicate nested keys when patching an existing `feathers` block in consumer Nuxt 4 apps.
+- Made remote CLI chaining idempotent for `init remote`, `remote auth keycloak`, and `add remote-service`.
+- Prevented duplicate rewrites of `keycloak`, `transports`, and `client` after the remote rebuild step.
+- Added regression coverage for repeated remote/keycloak/service patch runs and repeated embedded/mongo patch runs.
+
+## v6.4.5
+
+- Fixed the consumer Keycloak/js-sha256 aliasing issue by applying an exact Vite alias only for the bare `js-sha256` specifier.
+- Stopped aliasing deep imports like `js-sha256/src/sha256.js`, which previously caused Vite/esbuild to rewrite the shim import into an invalid local path in consumer Nuxt 4 apps.
+- Kept the runtime shim approach for `keycloak-js`, while making the package safer for downstream apps.
+
+# Changelog
+
+## v6.4.4
+
+### Fixed
+- Fixed the Keycloak `js-sha256` compatibility shim for consumer Nuxt 4 apps by importing from `js-sha256/src/sha256.js` and exposing a safe default export without alias recursion.
+- Fixed consumer dev startup crashes caused by the previous shim implementation (`No matching export ... for import "sha256"`, followed by esbuild `EPIPE` during dependency optimization).
+
+## v6.4.2
+
+### Fixed
+- Fixed TypeScript narrowing regression in `src/cli/core.ts` for remote patch generation.
+- Fixed broken multiline string in `test/cli.spec.ts` so the CLI test suite parses correctly again.
+- Finalized 6.4.x release validation for keycloak shim and remote CLI patching.
+
+
+## v6.4.1
+
+### Fixed
+- Added an automatic Vite/Nuxt alias for `js-sha256` when Keycloak SSO is enabled so consumer Nuxt 4 apps no longer crash in the browser on `keycloak-js` default-import interop.
+- Added `keycloak-js` and `js-sha256` to Vite optimizeDeps when Keycloak is enabled.
+
+## v6.4.0 - 2026-03-17
+
+### Fixed
+- Fixed remote CLI patching for successive commands in consumer apps.
+- Fixed `init remote`, `remote auth keycloak`, and `add remote-service` merges so `nuxt.config.ts` stays valid TypeScript.
+- Fixed duplicate transport emission like `rest: rest:` / `websocket: websocket:`.
+- Fixed remote service method preservation for commands such as `--methods find,get`.
+- Fixed accidental insertion of top-level `auth: false` during remote config patching.
+
+### Changed
+- Hardened remote `feathers` config regeneration to rebuild nested `client.remote`, `keycloak`, and `transports` blocks safely.
+- Added CLI regression coverage for chained remote configuration commands.
 
 ## v6.3.9 - 2026-03-16
 
@@ -27,6 +113,13 @@
 - Updated package publication settings to include the built CLI and top-level release documents.
 
 # Changelog
+
+
+## v6.4.1
+
+### Fixed
+- Added an automatic Vite/Nuxt alias for `js-sha256` when Keycloak SSO is enabled so consumer Nuxt 4 apps no longer crash in the browser on `keycloak-js` default-import interop.
+- Added `keycloak-js` and `js-sha256` to Vite optimizeDeps when Keycloak is enabled.
 
 ## v6.3.7 - 2026-03-16
 

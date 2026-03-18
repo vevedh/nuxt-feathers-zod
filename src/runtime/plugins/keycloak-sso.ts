@@ -3,6 +3,19 @@ import Keycloak from 'keycloak-js'
 import { buildRemoteAuthPayload } from '../utils/auth'
 import { getPublicClientMode, getPublicRemoteAuthConfig } from '../utils/config'
 
+
+function cleanupOidcCallbackHash() {
+  if (typeof window === 'undefined')
+    return
+
+  const hash = window.location.hash || ''
+  if (!hash || !/(state=|session_state=|code=)/.test(hash))
+    return
+
+  const cleanUrl = `${window.location.pathname}${window.location.search}`
+  window.history.replaceState(window.history.state, '', cleanUrl)
+}
+
 interface KeycloakProvide {
   user?: any
   permissions?: any[]
@@ -60,6 +73,8 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     checkLoginIframe: false,
     silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
   }).catch(() => ({ authenticated: false } as const))
+
+  cleanupOidcCallbackHash()
 
   const authenticated = keycloak.authenticated === true && (initResult as { authenticated?: boolean })?.authenticated !== false
   const userid = keycloak?.tokenParsed?.preferred_username

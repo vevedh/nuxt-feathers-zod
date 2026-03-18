@@ -59,6 +59,13 @@ Et autoriser dans Keycloak :
 
 ## Middleware Nuxt (Option A)
 
+Tu peux le générer automatiquement :
+
+```bash
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
+```
+
+
 Protéger uniquement `/console/**` :
 
 ```ts
@@ -74,6 +81,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 })
 ```
+
+## Exemple complet Nuxt 4 remote
+
+Pour un exemple complet avec :
+
+- génération CLI du middleware `auth-keycloak`
+- route `/private` protégée
+- appel à un service Feathers distant avec `useService('messages')`
+
+voir :
+
+- [Exemple complet : app Nuxt 4 en mode remote + Keycloak + service distant](./remote-keycloak-app)
 
 ## Accès aux services Feathers protégés
 

@@ -278,15 +278,17 @@ Flags principaux :
 
 ## `add middleware <name>`
 
-Génère un artefact middleware.
+Génère un artefact middleware. Les cibles supportées incluent les middlewares Nitro, les middlewares de route Nuxt, les plugins Feathers, les hooks, les policies et les server modules embedded.
 
 ```bash
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 ```
 
 Targets supportées :
 
 - `nitro`
+- `route`
 - `feathers`
 - `server-module`
 - `module`

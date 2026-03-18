@@ -2,35 +2,26 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
-
 import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateMiddleware, generateService, runCli } from '../src/cli/index'
-
 const LONG_TIMEOUT = 20000
-
 describe('nuxt-feathers-zod CLI generators', () => {
-
-
 it('publishes the CLI bin from dist instead of src', async () => {
   const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as {
     bin?: Record<string, string>
     files?: string[]
   }
-
   expect(pkg.bin?.['nuxt-feathers-zod']).toBe('./dist/cli/index.mjs')
   expect(pkg.bin?.nfz).toBe('./dist/cli/index.mjs')
   expect(pkg.files).toContain('dist')
   expect(pkg.files).not.toContain('src/cli')
 })
-
   it('runs help without explicit cli options', async () => {
     await runCli(['--help'])
   })
   it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
-
     await generateService({
       projectRoot: root,
       servicesDir,
@@ -43,27 +34,22 @@ it('publishes the CLI bin from dist instead of src', async () => {
       dry: false,
       force: false,
     })
-
     const base = join(servicesDir, 'posts')
     const schemaFile = join(base, 'posts.schema.ts')
     const classFile = join(base, 'posts.class.ts')
     const sharedFile = join(base, 'posts.shared.ts')
     const svcFile = join(base, 'posts.ts')
-
     expect(existsSync(schemaFile)).toBe(true)
     expect(existsSync(classFile)).toBe(true)
     expect(existsSync(sharedFile)).toBe(true)
     expect(existsSync(svcFile)).toBe(true)
-
     const svc = await readFile(svcFile, 'utf8')
     expect(svc).toContain('authenticate(\'jwt\')')
     expect(svc).toContain('export function post')
   })
-
   it('supports --path, --idField, --docs and --collection', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
-
     await generateService({
       projectRoot: root,
       servicesDir,
@@ -78,31 +64,23 @@ it('publishes the CLI bin from dist instead of src', async () => {
       dry: false,
       force: false,
     })
-
     const base = join(servicesDir, 'users')
     const sharedFile = join(base, 'users.shared.ts')
     const schemaFile = join(base, 'users.schema.ts')
     const classFile = join(base, 'users.class.ts')
     const svcFile = join(base, 'users.ts')
-
     const shared = await readFile(sharedFile, 'utf8')
     expect(shared).toContain('export const userPath = \'accounts\'')
-
     const schema = await readFile(schemaFile, 'utf8')
     expect(schema).toContain('id: objectIdSchema()')
-
     const klass = await readFile(classFile, 'utf8')
     expect(klass).toContain('db.collection(\'users\')')
-
     const svc = await readFile(svcFile, 'utf8')
     expect(svc).toContain('docs:')
   })
-
-
   it('generates an adapter-less service via generateService --custom', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
-
     await generateService({
       projectRoot: root,
       servicesDir,
@@ -118,26 +96,21 @@ it('publishes the CLI bin from dist instead of src', async () => {
       methods: 'find',
       customMethods: 'run,preview',
     })
-
     const base = join(servicesDir, 'actions')
     const classFile = join(base, 'actions.class.ts')
     const sharedFile = join(base, 'actions.shared.ts')
     const svcFile = join(base, 'actions.ts')
     const hooksFile = join(base, 'actions.hooks.ts')
-
     expect(existsSync(classFile)).toBe(true)
     expect(existsSync(sharedFile)).toBe(true)
     expect(existsSync(svcFile)).toBe(true)
     expect(existsSync(hooksFile)).toBe(true)
-
     const klass = await readFile(classFile, 'utf8')
     expect(klass).toContain('async run')
     expect(klass).toContain('async preview')
-
     const shared = await readFile(sharedFile, 'utf8')
     expect(shared).toContain('actionMethods = ["find","run","preview"] as const')
   })
-
   const authAwareCombos = [
     { schema: 'none', adapter: 'memory', idField: 'id' },
     { schema: 'none', adapter: 'mongodb', idField: '_id' },
@@ -146,7 +119,6 @@ it('publishes the CLI bin from dist instead of src', async () => {
     { schema: 'json', adapter: 'memory', idField: 'id' },
     { schema: 'json', adapter: 'mongodb', idField: '_id' },
   ] as const
-
   it.each(authAwareCombos)(
     'generates auth-aware users service variant schema=$schema adapter=$adapter',
     { timeout: 15000 },
@@ -154,7 +126,6 @@ it('publishes the CLI bin from dist instead of src', async () => {
       const root = await mkdtemp(join(tmpdir(), 'nfz-'))
       const servicesDir = join(root, 'services')
       const name = `users-${combo.schema}-${combo.adapter}`
-
       await generateService({
         projectRoot: root,
         servicesDir,
@@ -168,10 +139,8 @@ it('publishes the CLI bin from dist instead of src', async () => {
         dry: false,
         force: false,
       })
-
       const base = join(servicesDir, name)
       const serviceFile = await readFile(join(base, `${name}.ts`), 'utf8')
-
       if (combo.schema === 'none') {
         const hooksFile = await readFile(join(base, `${name}.hooks.ts`), 'utf8')
         expect(hooksFile).toContain("authenticate('jwt')")
@@ -179,18 +148,15 @@ it('publishes the CLI bin from dist instead of src', async () => {
         expect(hooksFile).toContain('stripPassword')
         return
       }
-
       expect(serviceFile).toContain("authenticate('jwt')")
       const schemaFile = await readFile(join(base, `${name}.schema.ts`), 'utf8')
       expect(schemaFile).toContain("passwordHash({ strategy: 'local' })")
       expect(schemaFile).toContain('password: async () => undefined')
     },
   )
-
   it('can disable auth-aware generation explicitly for users service', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
-
     await generateService({
       projectRoot: root,
       servicesDir,
@@ -204,17 +170,13 @@ it('publishes the CLI bin from dist instead of src', async () => {
       dry: false,
       force: false,
     })
-
     const hooks = await readFile(join(servicesDir, 'users', 'users.hooks.ts'), 'utf8')
     expect(hooks).not.toContain("passwordHash({ strategy: 'local' })")
     expect(hooks).not.toContain('stripPassword')
   })
-
-
   it('dispatches mongo management through the citty CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
-
     await runCli([
       'mongo',
       'management',
@@ -223,7 +185,6 @@ it('publishes the CLI bin from dist instead of src', async () => {
       '--basePath', '///ops///mongo///',
       '--exposeUsersService', 'true',
     ], { cwd: root, throwOnError: true })
-
     const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(config).toContain("url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin'")
     expect(config).toContain('enabled: true')
@@ -231,38 +192,29 @@ it('publishes the CLI bin from dist instead of src', async () => {
     expect(config).toContain("basePath: '/ops/mongo'")
     expect(config).toContain('exposeUsersService: true')
   })
-
   it('supports dry-run for mongo management without mutating nuxt.config', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const initial = "export default defineNuxtConfig({})\n"
     await writeFile(join(root, 'nuxt.config.ts'), initial)
-
     await runCli([
       'mongo',
       'management',
       '--basePath', '/mongo-admin',
       '--dry',
     ], { cwd: root, throwOnError: true })
-
     const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(config).toBe(initial)
   })
-
-
   it('dispatches add middleware through the citty CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
-
     await runCli(['add', 'middleware', 'session', '--target', 'nitro'], { cwd: root })
-
     const file = join(root, 'server', 'middleware', 'session.ts')
     expect(existsSync(file)).toBe(true)
     const txt = await readFile(file, 'utf8')
     expect(txt).toContain('defineEventHandler')
   })
-
   it('generates a Nitro middleware', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
-
     await generateMiddleware({
       projectRoot: root,
       name: 'session',
@@ -270,14 +222,35 @@ it('publishes the CLI bin from dist instead of src', async () => {
       dry: false,
       force: false,
     })
-
     const file = join(root, 'server', 'middleware', 'session.ts')
     expect(existsSync(file)).toBe(true)
     const txt = await readFile(file, 'utf8')
     expect(txt).toContain('defineEventHandler')
   })
-
-
+  it('generates a Nuxt route middleware for Keycloak', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await generateMiddleware({
+      projectRoot: root,
+      name: 'auth-keycloak',
+      target: 'route',
+      dry: false,
+      force: false,
+    })
+    const file = join(root, 'app', 'middleware', 'auth-keycloak.ts')
+    const silent = join(root, 'public', 'silent-check-sso.html')
+    expect(existsSync(file)).toBe(true)
+    expect(existsSync(silent)).toBe(true)
+    const txt = await readFile(file, 'utf8')
+    expect(txt).toContain('defineNuxtRouteMiddleware')
+    expect(txt).toContain("auth.provider.value === 'keycloak'")
+    expect(txt).toContain('redirectUri: window.location.origin + to.fullPath')
+  })
+  it('dispatches add route middleware through the citty CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await runCli(['add', 'middleware', 'auth-keycloak', '--target', 'route'], { cwd: root })
+    expect(existsSync(join(root, 'app', 'middleware', 'auth-keycloak.ts'))).toBe(true)
+    expect(existsSync(join(root, 'public', 'silent-check-sso.html'))).toBe(true)
+  })
   it('hardens invalid service flag combinations', () => {
     expect(() => assertServiceGenerationArgs({ _: [], collection: 'users' }, false, 'memory')).toThrow(
       '--collection requires --adapter mongodb',
@@ -289,7 +262,6 @@ it('publishes the CLI bin from dist instead of src', async () => {
       '--methods and --customMethods are only supported with --custom',
     )
   })
-
   it('hardens invalid remote init flag combinations', () => {
     expect(() => assertInitRemoteArgs({ _: [], websocketPath: '/socket.io' }, 'rest', false)).toThrow(
       'websocket options are not supported when --transport rest is used',
@@ -298,7 +270,6 @@ it('publishes the CLI bin from dist instead of src', async () => {
       'auth options require --auth true',
     )
   })
-
   it('hardens invalid embedded init flag combinations', () => {
     expect(() => assertInitEmbeddedArgs({ _: [], serveStaticPath: '/public' }, 'express', false)).toThrow(
       '--serveStaticPath/--serveStaticDir require --serveStatic true',
@@ -307,26 +278,83 @@ it('publishes the CLI bin from dist instead of src', async () => {
       'express-baseline preset is only available with --framework express',
     )
   })
-
   it('dispatches init embedded through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     await writeFile(join(root, 'nuxt.config.ts'), 'export default defineNuxtConfig({})\n')
-
     await runCli(['init', 'embedded', '--servicesDir', 'services', '--auth', '--swagger'], { cwd: root, throwOnError: true })
-
     const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(nuxtConfig).toContain("mode: 'embedded'")
     expect(nuxtConfig).toContain("servicesDirs: ['services']")
     expect(nuxtConfig).toContain('auth: true')
     expect(nuxtConfig).toContain('swagger: true')
   })
+  
+  it('patches remote init + keycloak auth + remote-service without corrupting nuxt.config', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
+    await runCli([
+      'init',
+      'remote',
+      '--url', 'https://svrapi.agglo.local',
+      '--transport', 'auto',
+      '--auth', 'true',
+      '--payloadMode', 'keycloak',
+    ], { cwd: root, throwOnError: true })
+    await runCli([
+      'remote',
+      'auth',
+      'keycloak',
+      '--ssoUrl', 'https://svrkeycloak.agglo.local:8443',
+      '--realm', 'CACEM',
+      '--clientId', 'nuxt4app',
+    ], { cwd: root, throwOnError: true })
+    await runCli([
+      'add',
+      'remote-service',
+      'users',
+      '--path', 'users',
+      '--methods', 'find,get',
+    ], { cwd: root, throwOnError: true })
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(config).toContain("transport: 'auto'")
+    expect(config).toContain("rest: { path: '/feathers' }")
+    expect(config).toContain("websocket: { path: '/socket.io' }")
+    expect(config).toContain("serverUrl: 'https://svrkeycloak.agglo.local:8443'")
+    expect(config).toContain("realm: 'CACEM'")
+    expect(config).toContain("clientId: 'nuxt4app'")
+    expect(config).toContain(`services: [{ path: 'users', methods: ["find","get"] }]`)
+    expect(config).not.toContain('rest: rest:')
+    expect(config).not.toContain('websocket: websocket:')
+    expect(config).not.toContain('auth: false')
+  })
 
-  it('dispatches init remote through the citty CLI entrypoint', async () => {
+  it('patches a prefilled feathers block without duplicating config or nested properties', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), `export default defineNuxtConfig({
+  feathers: {
+    swagger: false,
+    servicesDirs: ['services']
+  }
+})
+`)
+
+    await runCli(['init', 'remote', '--url', 'https://svrapi.agglo.local', '--transport', 'auto', '--auth', 'true', '--payloadMode', 'keycloak'], { cwd: root, throwOnError: true })
+    await runCli(['remote', 'auth', 'keycloak', '--ssoUrl', 'https://svrkeycloak.agglo.local:8443', '--realm', 'CACEM', '--clientId', 'nuxt4app'], { cwd: root, throwOnError: true })
+    await runCli(['add', 'remote-service', 'users', '--path', 'users', '--methods', 'find,get'], { cwd: root, throwOnError: true })
+
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect((config.match(/export default defineNuxtConfig/g) ?? []).length).toBe(1)
+    expect(config).not.toContain('keycloak: keycloak:')
+    expect(config).not.toContain('rest: rest:')
+    expect(config).not.toContain('websocket: websocket:')
+    expect(config).not.toContain('client: client:')
+    expect(config).toContain(`services: [{ path: 'users', methods: ["find","get"] }]`)
+  })
+
+it('dispatches init remote through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     await writeFile(join(root, 'nuxt.config.ts'), 'export default defineNuxtConfig({})\n')
-
     await runCli(['init', 'remote', '--url', 'https://api.example.test', '--transport', 'rest', '--auth'], { cwd: root, throwOnError: true })
-
     const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(nuxtConfig).toContain("mode: 'remote'")
     expect(nuxtConfig).toContain("url: 'https://api.example.test'")
@@ -334,12 +362,10 @@ it('publishes the CLI bin from dist instead of src', async () => {
     expect(nuxtConfig).not.toContain("transports:")
     expect(nuxtConfig).toContain('enabled: true')
   })
-
   it('dispatches auth service through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
     await writeFile(join(root, 'package.json'), '{"name":"tmp"}\n')
-
     await generateService({
       projectRoot: root,
       servicesDir,
@@ -351,45 +377,99 @@ it('publishes the CLI bin from dist instead of src', async () => {
       dry: false,
       force: false,
     })
-
     await runCli(['auth', 'service', 'posts', '--enabled'], { cwd: root, throwOnError: true })
-
     const hooks = await readFile(join(servicesDir, 'posts', 'posts.hooks.ts'), 'utf8')
     expect(hooks).toContain("authenticate('jwt')")
   })
-
   it('dispatches plugins add through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
-
     await runCli(['plugins', 'add', 'audit-log'], { cwd: root, throwOnError: true })
-
     const pluginFile = await readFile(join(root, 'server', 'feathers', 'audit-log.ts'), 'utf8')
     const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(pluginFile).toContain('defineFeathersServerPlugin')
     expect(nuxtConfig).toContain("pluginDirs: ['server/feathers']")
   })
-
   it('dispatches modules add through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
-
     await runCli(['modules', 'add', 'security-headers', '--preset', 'security-headers'], { cwd: root, throwOnError: true })
-
     const moduleFile = await readFile(join(root, 'server', 'feathers', 'modules', 'security-headers.ts'), 'utf8')
     const nuxtConfig = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
     expect(moduleFile).toContain('defineFeathersServerModule')
     expect(nuxtConfig).toContain("moduleDirs: ['server/feathers/modules']")
   })
-
   it('dispatches middlewares add through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
-
     await runCli(['middlewares', 'add', 'request-id'], { cwd: root, throwOnError: true })
-
     const middlewareFile = await readFile(join(root, 'server', 'middleware', 'request-id.ts'), 'utf8')
     expect(middlewareFile).toContain('defineEventHandler')
   })
 
+  it('keeps remote/keycloak/service patching idempotent across repeated CLI runs', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), `export default defineNuxtConfig({
+  feathers: { templates: { dirs: ['custom/templates'] } }
+})
+`)
+
+    const remoteInit = [
+      'init', 'remote',
+      '--url', 'https://svrapi.agglo.local',
+      '--transport', 'auto',
+      '--auth', 'true',
+      '--payloadMode', 'keycloak',
+    ]
+    const keycloak = [
+      'remote', 'auth', 'keycloak',
+      '--ssoUrl', 'https://svrkeycloak.agglo.local:8443',
+      '--realm', 'CACEM',
+      '--clientId', 'nuxt4app',
+    ]
+    const remoteService = [
+      'add', 'remote-service', 'users',
+      '--path', 'users',
+      '--methods', 'find,get',
+    ]
+
+    await runCli(remoteInit, { cwd: root, throwOnError: true })
+    await runCli(keycloak, { cwd: root, throwOnError: true })
+    await runCli(remoteService, { cwd: root, throwOnError: true })
+    await runCli(remoteInit, { cwd: root, throwOnError: true })
+    await runCli(keycloak, { cwd: root, throwOnError: true })
+    await runCli(remoteService, { cwd: root, throwOnError: true })
+
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect(config).toContain("templates: { dirs: ['custom/templates'] }")
+    expect(config).toContain("serverUrl: 'https://svrkeycloak.agglo.local:8443'")
+    expect(config).toContain("realm: 'CACEM'")
+    expect(config).toContain("clientId: 'nuxt4app'")
+    expect(config).toContain("rest: { path: '/feathers' }")
+    expect(config).toContain("websocket: { path: '/socket.io' }")
+    expect(config).toContain(`services: [{ path: 'users', methods: ["find","get"] }]`)
+    expect(config).not.toContain('keycloak: keycloak:')
+    expect(config).not.toContain('rest: rest:')
+    expect(config).not.toContain('websocket: websocket:')
+    expect(config).not.toContain('client: client:')
+    expect((config.match(/path: 'users'/g) ?? []).length).toBe(1)
+    expect((config.match(/export default defineNuxtConfig/g) ?? []).length).toBe(1)
+  })
+
+  it('keeps config patching idempotent for embedded and mongo management commands', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), 'export default defineNuxtConfig({})\n')
+
+    await runCli(['init', 'embedded', '--servicesDir', 'services', '--auth', '--swagger'], { cwd: root, throwOnError: true })
+    await runCli(['init', 'embedded', '--servicesDir', 'services', '--auth', '--swagger'], { cwd: root, throwOnError: true })
+    await runCli(['mongo', 'management', '--url', 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin', '--auth', 'false'], { cwd: root, throwOnError: true })
+    await runCli(['mongo', 'management', '--url', 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin', '--auth', 'false'], { cwd: root, throwOnError: true })
+
+    const config = await readFile(join(root, 'nuxt.config.ts'), 'utf8')
+    expect((config.match(/servicesDirs:/g) ?? []).length).toBe(1)
+    expect((config.match(/swagger:/g) ?? []).length).toBe(1)
+    expect((config.match(/database:/g) ?? []).length).toBe(1)
+    expect(config).not.toContain('servicesDirs: servicesDirs:')
+    expect(config).not.toContain('database: database:')
+  })
 
 })

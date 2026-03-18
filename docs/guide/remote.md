@@ -107,6 +107,12 @@ const users = useService('users')
 const result = await users.find({ query: { $limit: 10 } })
 ```
 
+## Exemple complet Nuxt 4 + Keycloak
+
+Pour un exemple prêt à rejouer avec middleware de route `auth-keycloak` et appel à un service distant, voir :
+
+- [Exemple complet : app Nuxt 4 en mode remote + Keycloak + service distant](./remote-keycloak-app)
+
 ## Conseils de stabilisation
 
 - déclarer explicitement les services dans `client.remote.services`

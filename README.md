@@ -1,3 +1,5 @@
+[v6.4.3] CLI typecheck/test cleanup applied.
+
 # nuxt-feathers-zod
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
@@ -20,7 +22,7 @@ The public OSS module includes:
 - REST and Socket.IO transports
 - embedded server with **Express** or **Koa**
 - CLI bootstrap for `init embedded`, `init remote`, `init templates`
-- CLI generation for services, remote services, plugins, modules, middleware and server modules
+- CLI generation for services, remote services, plugins, modules, Nitro/route middleware and server modules
 - schema modes `none | zod | json`
 - local/JWT auth flows
 - Keycloak SSO bridge for remote mode
@@ -112,6 +114,7 @@ bunx nuxt-feathers-zod schema users --add-field title:string!
 
 ```bash
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 bunx nuxt-feathers-zod add server-module helmet --preset helmet
 bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
@@ -228,3 +231,21 @@ bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --databa
 ## License
 
 MIT
+
+
+### Consumer-safe server modules
+
+Built-in NFZ Express/Koa server modules are resolved via package subpath exports in consumer apps:
+
+- `nuxt-feathers-zod/server/modules/express/*`
+- `nuxt-feathers-zod/server/modules/koa/*`
+
+Local source fallbacks are only used while developing the NFZ repository itself.
+
+
+## Release 6.4.0
+
+This release hardens the CLI patcher for remote mode so chained commands keep `nuxt.config.ts` valid in consumer Nuxt 4 apps, especially for Keycloak remote auth and remote service registration on Windows.
+
+
+- 6.4.1: Added automatic Keycloak `js-sha256` default-export shim alias for consumer Nuxt 4 apps to avoid browser crash from `keycloak-js` importing `js-sha256` as a default export.

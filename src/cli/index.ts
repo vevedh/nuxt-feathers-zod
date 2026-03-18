@@ -635,6 +635,8 @@ async function handleMiddlewaresListCommand(cwd: string, args: CliContextArgs) {
 
   if (target === 'all' || target === 'nitro')
     await pushSection('nitro', resolve(projectRoot, 'server/middleware'))
+  if (target === 'all' || target === 'route')
+    await pushSection('route', resolve(projectRoot, 'app/middleware'))
   if (target === 'all' || target === 'feathers')
     await pushSection('feathers', resolve(projectRoot, 'server/feathers'))
   if (target === 'all' || target === 'hook')
@@ -921,7 +923,7 @@ export function createCliCommand() {
     },
     args: {
       name: { type: 'positional', required: true, description: 'Middleware name' },
-      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
+      target: { type: 'enum', options: ['nitro', 'route', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
       force: { type: 'boolean', description: 'Overwrite existing files' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },
@@ -1130,7 +1132,7 @@ export function createCliCommand() {
       description: 'List middleware-like artifacts',
     },
     args: {
-      target: { type: 'enum', options: ['all', 'nitro', 'feathers', 'hook', 'policy', 'client-module', 'server-module', 'module'], description: 'Filter target' },
+      target: { type: 'enum', options: ['all', 'nitro', 'route', 'feathers', 'hook', 'policy', 'client-module', 'server-module', 'module'], description: 'Filter target' },
     },
     run: async ({ args }) => {
       await handleMiddlewaresListCommand(process.cwd(), args as CliContextArgs)
@@ -1144,7 +1146,7 @@ export function createCliCommand() {
     },
     args: {
       name: { type: 'positional', required: true, description: 'Middleware name' },
-      target: { type: 'enum', options: ['nitro', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
+      target: { type: 'enum', options: ['nitro', 'route', 'feathers', 'server-module', 'module', 'client-module', 'hook', 'policy'], description: 'Generator target' },
       force: { type: 'boolean', description: 'Overwrite existing files' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },

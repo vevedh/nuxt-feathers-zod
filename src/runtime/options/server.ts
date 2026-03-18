@@ -119,13 +119,15 @@ async function resolveServerModuleEntries(
   const packageRootResolver = createResolver(new URL('../../../', import.meta.url).pathname)
 
   function resolveBuiltinModule(name: string) {
-    const candidates = [
-      packageRootResolver.resolve(`dist/runtime/server/modules/${framework}/${name}.js`),
-      packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.ts`),
-      packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.js`),
-    ]
+    const sourceTs = packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.ts`)
+    const sourceJs = packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.js`)
 
-    return candidates.find(path => existsSync(path)) || candidates[0]
+    if (existsSync(sourceTs))
+      return sourceTs
+    if (existsSync(sourceJs))
+      return sourceJs
+
+    return `nuxt-feathers-zod/server/modules/${framework}/${name}`
   }
 
   const builtins: Record<string, string> = {

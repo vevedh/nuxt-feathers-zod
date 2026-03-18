@@ -98,6 +98,7 @@ bunx nuxt-feathers-zod schema users --add-field title:string!
 
 ```bash
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 bunx nuxt-feathers-zod add server-module helmet --preset helmet
 bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false

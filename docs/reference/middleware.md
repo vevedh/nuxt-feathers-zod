@@ -17,6 +17,20 @@ Exemple :
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
 ```
 
+## Middleware de route Nuxt
+
+Cible : `--target route`
+
+Utilisé pour générer un middleware de navigation sous `app/middleware/*.ts`.
+
+Exemples :
+
+```bash
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
+```
+
+Le nom `auth-keycloak` génère un guard prêt à l’emploi pour les routes protégées et ajoute aussi `public/silent-check-sso.html` si nécessaire.
+
 ## Plugin serveur Feathers
 
 Cible : `--target feathers`
@@ -43,6 +57,7 @@ bunx nuxt-feathers-zod add server-module helmet --preset helmet
 ## Cibles supportées
 
 - `nitro`
+- `route`
 - `feathers`
 - `server-module`
 - `module`

@@ -47,6 +47,28 @@ declare module '@nuxt/schema' {
   }
 }
 
+function dedupeStrings(values: Array<string | undefined | null>) {
+  return Array.from(new Set(values.filter((value): value is string => typeof value === 'string' && value.length > 0)))
+}
+
+function aliasKey(find: any) {
+  return typeof find === 'string' ? `str:${find}` : `re:${find?.toString?.() ?? String(find)}`
+}
+
+function normalizeViteAliases(input: any) {
+  const list = Array.isArray(input)
+    ? input
+    : Object.entries(input || {}).map(([find, replacement]) => ({ find, replacement }))
+
+  const map = new Map<string, any>()
+  for (const entry of list) {
+    if (!entry)
+      continue
+    map.set(`${aliasKey(entry.find)}=>${String(entry.replacement)}`, entry)
+  }
+  return Array.from(map.values())
+}
+
 function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
   const resolver = createResolver(import.meta.url)
   const aliases = {
@@ -63,6 +85,27 @@ function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
   if (options.client)
     nuxt.options.alias['nuxt-feathers-zod/client'] = resolver.resolve(options.templateDir, 'client/client')
 
+  nuxt.options.vite = nuxt.options.vite || {}
+  nuxt.options.vite.resolve = nuxt.options.vite.resolve || {}
+  const viteAliases = normalizeViteAliases(nuxt.options.vite.resolve.alias)
+
+  for (const [find, replacement] of Object.entries(aliases))
+    viteAliases.push({ find, replacement })
+
+  if (options.keycloak) {
+    viteAliases.push({
+      find: /^js-sha256$/,
+      replacement: resolver.resolve('runtime/shims/js-sha256-default'),
+    })
+  }
+
+  nuxt.options.vite.resolve.alias = normalizeViteAliases(viteAliases)
+  nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {}
+  nuxt.options.vite.optimizeDeps.include = dedupeStrings([
+    ...(nuxt.options.vite.optimizeDeps.include || []),
+    ...(options.keycloak ? ['keycloak-js', 'js-sha256'] : []),
+  ])
+
   nuxt.hook('nitro:config' as any, async (nitroConfig: any) => {
     nitroConfig.alias = defu(nitroConfig.alias, aliases)
   })
@@ -78,15 +121,14 @@ function setTsIncludes(options: ResolvedOptions, nuxt: Nuxt) {
   const includeGlobs = [...servicesDirs, ...serverModulesGlobs]
 
   nuxt.hook('prepare:types', async ({ tsConfig }) => {
-    tsConfig.include?.push(...includeGlobs)
+    tsConfig.include = dedupeStrings([...(tsConfig.include || []), ...includeGlobs])
   })
 
   nuxt.hook('nitro:config' as any, (nitroConfig: any) => {
     // nitroConfig.typescript may be undefined depending on Nuxt/Nitro version
     nitroConfig.typescript = nitroConfig.typescript || {}
     nitroConfig.typescript.tsConfig = nitroConfig.typescript.tsConfig || {}
-    nitroConfig.typescript.tsConfig.include = nitroConfig.typescript.tsConfig.include || []
-    nitroConfig.typescript.tsConfig.include.push(...includeGlobs)
+    nitroConfig.typescript.tsConfig.include = dedupeStrings([...(nitroConfig.typescript.tsConfig.include || []), ...includeGlobs])
   })
 }
 
@@ -112,7 +154,7 @@ async function ensurePinia(client: ClientOptions, nuxt: Nuxt) {
     require.resolve('@pinia/nuxt', { paths: [nuxt.options.rootDir] })
     nuxt.options.modules = nuxt.options.modules || []
     if (!nuxt.options.modules.includes('@pinia/nuxt')) {
-      nuxt.options.modules.push('@pinia/nuxt')
+      nuxt.options.modules = Array.from(new Set([...(nuxt.options.modules || []), '@pinia/nuxt']))
       consola.info('[nuxt-feathers-zod] Added @pinia/nuxt to Nuxt modules because feathers.client.pinia is enabled.')
     }
   }
@@ -249,9 +291,7 @@ export default defineNuxtModule<ModuleOptions>({
         nuxt.hook('vite:extendConfig', (config) => {
           const viteConfig = config as any
           viteConfig.optimizeDeps ||= {}
-          viteConfig.optimizeDeps.include ||= []
-          if (!viteConfig.optimizeDeps.include.includes('feathers-pinia'))
-            viteConfig.optimizeDeps.include.push('feathers-pinia')
+          viteConfig.optimizeDeps.include = dedupeStrings([...(viteConfig.optimizeDeps.include || []), 'feathers-pinia'])
         })
 
         // Auth bootstrap is needed in two situations:

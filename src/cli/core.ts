@@ -31,7 +31,7 @@ export function handleCliError(err: unknown) {
 
 export type Adapter = 'mongodb' | 'memory'
 export type SchemaKind = 'none' | 'zod' | 'json'
-export type MiddlewareTarget = 'nitro' | 'feathers' | 'server-module' | 'module' | 'client-module' | 'hook' | 'policy'
+export type MiddlewareTarget = 'nitro' | 'route' | 'feathers' | 'server-module' | 'module' | 'client-module' | 'hook' | 'policy'
 export type IdField = 'id' | '_id'
 export type CollectionName = string
 
@@ -93,7 +93,7 @@ Commands:
   remote auth keycloak          Configure remote auth payload mode for Keycloak
   add service <name>            Generate an embedded service (or a service with custom methods via --custom)
   add remote-service <name>     Register a remote service (client-only)
-  add middleware <name>         Generate middleware (target nitro|feathers)
+  add middleware <name>         Generate middleware (target nitro|route|feathers)
   add mongodb-compose           Generate docker-compose-db.yaml for MongoDB
   mongo management             Enable/update embedded MongoDB management routes
   schema <service>              Inspect schema state or switch schema mode
@@ -236,7 +236,7 @@ Flags overview:
     --dry
 
   add middleware <name>:
-    --target nitro|feathers|server-module|module (default: nitro)
+    --target nitro|route|feathers|server-module|module|client-module|hook|policy (default: nitro)
     --force
     --dry
 
@@ -401,35 +401,232 @@ export async function tryPatchNuxtConfig(projectRoot: string, patch: NuxtConfigP
 }
 
 function applyNuxtConfigPatch(src: string, patch: NuxtConfigPatch): string {
-  // We keep this intentionally simple and robust for common Nuxt config shapes:
-  // export default defineNuxtConfig({ ... })
-  const m = src.match(/defineNuxtConfig\(\s*\{/)
-  if (!m || m.index == null) {
-    // unknown format; no-op
-    return src
-  }
-
-  // Ensure module is registered (modules: [..., 'nuxt-feathers-zod'])
   let out = ensureNuxtModuleInConfig(src, 'nuxt-feathers-zod')
 
-  // Ensure feathers block exists
-  if (!/\bfeathers\s*:\s*\{/.test(out)) {
-    const insertAt = (m.index + m[0].length)
-    const feathersBlock = buildFeathersBlock(patch)
-    out = out.slice(0, insertAt) + feathersBlock + out.slice(insertAt)
+  const configBlock = locateDefineNuxtConfigObject(out)
+  if (!configBlock)
     return out
+
+  const feathersBlock = locateObjectLiteral(out, /\bfeathers\s*:\s*\{/) 
+  if (!feathersBlock) {
+    const feathersObject = patchFeathersObjectLiteral(`{
+}`, patch)
+    const insertAt = configBlock.start + 1
+    return out.slice(0, insertAt) + `
+  feathers: ${feathersObject},` + out.slice(insertAt)
   }
 
-  // Patch inside existing feathers block
-  const block = locateObjectLiteral(out, /\bfeathers\s*:\s*\{/)
-  if (!block) return out
+  const patchedObj = patchFeathersObjectLiteral(out.slice(feathersBlock.start, feathersBlock.end), patch)
+  return out.slice(0, feathersBlock.start) + patchedObj + out.slice(feathersBlock.end)
+}
 
-  const before = out.slice(0, block.start)
-  const feathersObj = out.slice(block.start, block.end)
-  const after = out.slice(block.end)
+function locateDefineNuxtConfigObject(src: string): { start: number; end: number } | null {
+  const m = src.match(/defineNuxtConfig\s*\(/)
+  if (!m || m.index == null)
+    return null
 
-  const patchedObj = patchFeathersObjectLiteral(feathersObj, patch)
-  return before + patchedObj + after
+  const open = src.indexOf('{', m.index)
+  if (open < 0)
+    return null
+
+  let depth = 0
+  let quote: string | null = null
+  let escape = false
+  for (let i = open; i < src.length; i++) {
+    const ch = src[i]
+    if (quote) {
+      if (escape)
+        escape = false
+      else if (ch === '\\')
+        escape = true
+      else if (ch === quote)
+        quote = null
+      continue
+    }
+    if (ch === '"' || ch === '\'' || ch === '`') {
+      quote = ch
+      continue
+    }
+    if (ch === '{')
+      depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0)
+        return { start: open, end: i + 1 }
+    }
+  }
+  return null
+}
+
+interface ObjectPropEntry {
+  key?: string
+  text: string
+}
+
+function splitTopLevelSegments(src: string): string[] {
+  const segments: string[] = []
+  let depthBrace = 0
+  let depthBracket = 0
+  let depthParen = 0
+  let quote: string | null = null
+  let escape = false
+  let start = 0
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i]
+    if (quote) {
+      if (escape)
+        escape = false
+      else if (ch === '\\')
+        escape = true
+      else if (ch === quote)
+        quote = null
+      continue
+    }
+    if (ch === '"' || ch === '\'' || ch === '`') {
+      quote = ch
+      continue
+    }
+    if (ch === '{')
+      depthBrace++
+    else if (ch === '}')
+      depthBrace--
+    else if (ch === '[')
+      depthBracket++
+    else if (ch === ']')
+      depthBracket--
+    else if (ch === '(')
+      depthParen++
+    else if (ch === ')')
+      depthParen--
+    else if (ch === ',' && depthBrace === 0 && depthBracket === 0 && depthParen === 0) {
+      const seg = src.slice(start, i).trim()
+      if (seg)
+        segments.push(seg)
+      start = i + 1
+    }
+  }
+
+  const tail = src.slice(start).trim()
+  if (tail)
+    segments.push(tail)
+  return segments
+}
+
+function parseObjectPropEntries(objLiteral: string): ObjectPropEntry[] {
+  const trimmed = objLiteral.trim()
+  const inner = trimmed.replace(/^\{/, '').replace(/\}$/, '')
+  if (!inner.trim())
+    return []
+
+  return splitTopLevelSegments(inner).map((segment) => {
+    const match = segment.match(/^([A-Za-z_$][\w$]*)\s*:/)
+    return { key: match?.[1], text: segment.trim() }
+  })
+}
+
+function renderObjectPropEntries(entries: ObjectPropEntry[], indent = '    '): string {
+  if (!entries.length)
+    return `{
+}`
+  return `{
+${entries.map(entry => `${indent}${entry.text}`).join(',\n')}
+}`
+}
+
+function setObjectProp(entries: ObjectPropEntry[], key: string, value: string) {
+  const text = `${key}: ${value}`
+  const index = entries.findIndex(entry => entry.key === key)
+  if (index >= 0)
+    entries[index] = { key, text }
+  else
+    entries.push({ key, text })
+}
+
+function removeObjectProp(entries: ObjectPropEntry[], key: string) {
+  const index = entries.findIndex(entry => entry.key === key)
+  if (index >= 0)
+    entries.splice(index, 1)
+}
+
+function getPropValueRaw(entries: ObjectPropEntry[], key: string): string | undefined {
+  const entry = entries.find(item => item.key === key)?.text
+  if (!entry)
+    return undefined
+  const idx = entry.indexOf(':')
+  return idx >= 0 ? entry.slice(idx + 1).trim() : undefined
+}
+
+function parseStringArray(raw?: string): string[] | undefined {
+  if (!raw)
+    return undefined
+  const block = locateArrayLiteral(raw, /\[/)
+  const text = block ? raw.slice(block.start, block.end) : raw
+  const values = [...text.matchAll(/["']([^"']+)["']/g)].map(match => match[1]).filter(Boolean)
+  return values.length ? values : undefined
+}
+
+function parseBooleanValue(raw?: string): boolean | undefined {
+  if (!raw)
+    return undefined
+  const match = raw.match(/\b(true|false)\b/)
+  return match ? match[1] === 'true' : undefined
+}
+
+function renderStringArray(values?: string[]): string | undefined {
+  if (!values?.length)
+    return undefined
+  return `[${values.map(v => `'${v}'`).join(', ')}]`
+}
+
+function renderInlineObject(parts: string[]): string {
+  return `{ ${parts.filter(Boolean).join(', ')} }`
+}
+
+function parseTemplatesState(raw?: string) {
+  const dirsMatch = raw?.match(/\bdirs\s*:\s*\[[^\]]*\]/)
+  const allowMatch = raw?.match(/\ballow\s*:\s*\[[^\]]*\]/)
+  return {
+    dirs: dirsMatch ? parseStringArray(dirsMatch[0]) : undefined,
+    strict: parseBooleanValue(raw?.match(/\bstrict\s*:\s*(true|false)/)?.[0]),
+    allow: allowMatch ? parseStringArray(allowMatch[0]) : undefined,
+  }
+}
+
+function parseServerState(raw?: string) {
+  const secureBlock = raw ? locateObjectLiteral(raw, /\bsecure\s*:\s*\{/) : null
+  return {
+    pluginDirs: parseStringArray(raw?.match(/\bpluginDirs\s*:\s*\[[^\]]*\]/)?.[0]),
+    moduleDirs: parseStringArray(raw?.match(/\bmoduleDirs\s*:\s*\[[^\]]*\]/)?.[0]),
+    enabled: parseBooleanValue(raw?.match(/\benabled\s*:\s*(true|false)/)?.[0]),
+    secureDefaults: parseBooleanValue(raw?.match(/\bsecureDefaults\s*:\s*(true|false)/)?.[0]),
+    secureRaw: secureBlock ? raw!.slice(secureBlock.start, secureBlock.end) : undefined,
+  }
+}
+
+function parseTransportsState(raw?: string) {
+  const websocketBlock = raw ? locateObjectLiteral(raw, /\bwebsocket\s*:\s*\{/) : null
+  return {
+    restPath: raw?.match(/\brest\s*:\s*\{[\s\S]*?path\s*:\s*["']([^"']+)["']/)?.[1],
+    restFramework: raw?.match(/\brest\s*:\s*\{[\s\S]*?framework\s*:\s*["']([^"']+)["']/)?.[1],
+    websocketRaw: websocketBlock ? raw!.slice(websocketBlock.start, websocketBlock.end) : undefined,
+    websocketPath: raw?.match(/\bwebsocket\s*:\s*\{[\s\S]*?path\s*:\s*["']([^"']+)["']/)?.[1],
+  }
+}
+
+function parseDatabaseMongoState(raw?: string) {
+  const managementBlock = raw ? locateObjectLiteral(raw, /\bmanagement\s*:\s*\{/) : null
+  const managementRaw = managementBlock ? raw!.slice(managementBlock.start, managementBlock.end) : undefined
+  return {
+    url: raw?.match(/\burl\s*:\s*["']([^"']+)["']/)?.[1],
+    enabled: parseBooleanValue(managementRaw?.match(/\benabled\s*:\s*(true|false)/)?.[0]),
+    auth: parseBooleanValue(managementRaw?.match(/\bauth\s*:\s*(true|false)/)?.[0]),
+    basePath: managementRaw?.match(/\bbasePath\s*:\s*["']([^"']+)["']/)?.[1],
+    exposeDatabasesService: parseBooleanValue(managementRaw?.match(/\bexposeDatabasesService\s*:\s*(true|false)/)?.[0]),
+    exposeCollectionsService: parseBooleanValue(managementRaw?.match(/\bexposeCollectionsService\s*:\s*(true|false)/)?.[0]),
+    exposeUsersService: parseBooleanValue(managementRaw?.match(/\bexposeUsersService\s*:\s*(true|false)/)?.[0]),
+    exposeCollectionCrud: parseBooleanValue(managementRaw?.match(/\bexposeCollectionCrud\s*:\s*(true|false)/)?.[0]),
+  }
 }
 
 function ensureNuxtModuleInConfig(src: string, moduleName: string): string {
@@ -643,216 +840,145 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
 
 
 function patchFeathersObjectLiteral(feathersObj: string, patch: NuxtConfigPatch): string {
-  let out = feathersObj
+  const entries = parseObjectPropEntries(feathersObj)
+  const existingTemplates = parseTemplatesState(getPropValueRaw(entries, 'templates'))
+  const existingServer = parseServerState(getPropValueRaw(entries, 'server'))
+  const existingTransports = parseTransportsState(getPropValueRaw(entries, 'transports'))
+  const existingDatabase = parseDatabaseMongoState(getPropValueRaw(entries, 'database'))
+  const existingRemote = parseExistingRemoteClientConfig(feathersObj)
+  const existingKeycloak = parseExistingKeycloakConfig(feathersObj) ?? {}
 
-  // servicesDirs
   if (patch.servicesDir) {
-    if (/\bservicesDirs\s*:/.test(out)) {
-      out = replaceArrayContains(out, 'servicesDirs', patch.servicesDir)
-    } else {
-      out = insertProp(out, `servicesDirs: ['${patch.servicesDir}']`)
-    }
+    const values = Array.from(new Set([...(parseStringArray(getPropValueRaw(entries, 'servicesDirs')) ?? []), patch.servicesDir]))
+    const rendered = renderStringArray(values)
+    if (rendered)
+      setObjectProp(entries, 'servicesDirs', rendered)
   }
 
-  // templates
   if (patch.templatesDir) {
-    if (/\btemplates\s*:/.test(out)) {
-      // ensure dirs includes templatesDir
-      out = ensureNestedTemplatesDirs(out, patch.templatesDir)
-    } else {
-      out = insertProp(
-        out,
-        `templates: { dirs: ['${patch.templatesDir}'], strict: true, `
-        + `allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts'] }`,
-      )
-    }
+    const dirs = Array.from(new Set([...(existingTemplates.dirs ?? []), patch.templatesDir]))
+    const allow = existingTemplates.allow?.length ? existingTemplates.allow : ['server/*.ts', 'client/*.ts', 'types/*.d.ts']
+    setObjectProp(entries, 'templates', renderInlineObject([
+      `dirs: ${renderStringArray(dirs)}`,
+      `strict: ${existingTemplates.strict ?? true}`,
+      `allow: ${renderStringArray(allow)}`,
+    ]))
   }
 
-  // keycloak
-  if (patch.keycloak) {
+  if (patch.ensureServerFeathersPluginsDir || patch.ensureServerModuleDir || patch.embedded) {
+    const pluginDirs = [...(existingServer.pluginDirs ?? [])]
+    const moduleDirs = [...(existingServer.moduleDirs ?? [])]
+    if (patch.ensureServerFeathersPluginsDir && !pluginDirs.includes('server/feathers'))
+      pluginDirs.push('server/feathers')
+    if (patch.ensureServerModuleDir && !moduleDirs.includes(patch.ensureServerModuleDir))
+      moduleDirs.push(patch.ensureServerModuleDir)
+
     const parts: string[] = []
-    if (patch.keycloak.serverUrl) parts.push(`serverUrl: '${patch.keycloak.serverUrl}'`)
-    if (patch.keycloak.realm) parts.push(`realm: '${patch.keycloak.realm}'`)
-    if (patch.keycloak.clientId) parts.push(`clientId: '${patch.keycloak.clientId}'`)
-    if (patch.keycloak.onLoad) parts.push(`onLoad: '${patch.keycloak.onLoad}'`)
-    if (/\bkeycloak\s*:/.test(out)) {
-      const block = locateObjectLiteral(out, /\bkeycloak\s*:\s*\{/)
-      if (block) {
-        out = out.slice(0, block.start) + `keycloak: { ${parts.join(', ')} }` + out.slice(block.end)
-      }
-    } else {
-      out = insertProp(out, `keycloak: { ${parts.join(', ')} }`)
-    }
+    if (pluginDirs.length)
+      parts.push(`pluginDirs: ${renderStringArray(pluginDirs)}`)
+    if (moduleDirs.length)
+      parts.push(`moduleDirs: ${renderStringArray(moduleDirs)}`)
+
+    const enabled = patch.embedded ? true : existingServer.enabled
+    if (enabled !== undefined)
+      parts.push(`enabled: ${enabled}`)
+
+    const secureDefaults = patch.embedded ? (patch.embedded.secureDefaults !== false) : existingServer.secureDefaults
+    if (secureDefaults !== undefined)
+      parts.push(`secureDefaults: ${secureDefaults}`)
+
+    const secureRaw = patch.embedded?.secure ? renderSecureConfig(patch.embedded.secure) : existingServer.secureRaw
+    if (secureRaw)
+      parts.push(`secure: ${secureRaw}`)
+
+    if (parts.length)
+      setObjectProp(entries, 'server', renderInlineObject(parts))
   }
 
-  // server plugins dir
-  if (patch.ensureServerFeathersPluginsDir) {
-    if (!/\bloadFeathersConfig\s*:/.test(out)) {
-      out = insertProp(out, `loadFeathersConfig: true`)
-    }
-    // ensure server.pluginDirs
-    if (/\bserver\s*:/.test(out)) {
-      out = ensureNestedServerPluginDirs(out, 'server/feathers')
-    } else {
-      out = insertProp(out, `server: { pluginDirs: ['server/feathers'] }`)
-    }
+  if (patch.clientMode === 'embedded' || patch.embedded) {
+    const framework = patch.embedded?.framework ?? existingTransports.restFramework ?? 'express'
+    const restPath = patch.embedded?.restPath ?? existingTransports.restPath ?? '/feathers'
+    const websocketPath = patch.embedded?.websocketPath ?? existingTransports.websocketPath ?? '/socket.io'
+    const websocketRaw = patch.embedded?.websocket
+      ? renderWebsocketConfig(patch.embedded.websocket as any, websocketPath)
+      : (existingTransports.websocketRaw ?? `{ path: '${websocketPath}' }`)
+    setObjectProp(entries, 'transports', `{ rest: { path: '${restPath}', framework: '${framework}' }, websocket: ${websocketRaw} }`)
+    setObjectProp(entries, 'auth', String(patch.embedded?.auth !== false))
+    setObjectProp(entries, 'swagger', String(Boolean(patch.embedded?.swagger)))
+    removeObjectProp(entries, 'client')
   }
-
-  if (patch.ensureServerModuleDir) {
-    if (/\bserver\s*:/.test(out)) {
-      out = ensureNestedServerModuleDirs(out, patch.ensureServerModuleDir)
-    } else {
-      out = insertProp(out, `server: { moduleDirs: ['${patch.ensureServerModuleDir}'] }`)
-    }
-  }
-
-
-// client mode / remote
-if (patch.clientMode || patch.remote || patch.remoteService) {
-  // Ensure client block exists
-  if (/\bclient\s*:/.test(out)) {
-    out = ensureNestedClientRemote(out, patch)
-  } else {
-    // insert minimal client block
-    if (patch.clientMode === 'embedded') {
-      out = insertProp(out, `client: { mode: 'embedded' }`)
-    } else {
-      // remote by default when remote settings are requested
-      const url = patch.remote?.url ? `'${patch.remote.url}'` : `''`
-      const transport = patch.remote?.transport ? `'${patch.remote.transport}'` : `'auto'`
-      const parts: string[] = []
-      parts.push(`url: ${url}`)
-      parts.push(`transport: ${transport}`)
-      if (patch.remote?.restPath) parts.push(`restPath: '${patch.remote.restPath}'`)
-      if (patch.remote?.websocketPath) parts.push(`websocketPath: '${patch.remote.websocketPath}'`)
-      if (patch.remote?.websocket) {
-        parts.push(
-          `websocket: ${renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath)}`,
-        )
-      }
-      if (patch.remote?.auth) {
-        const a = patch.remote.auth
-        const ap: string[] = []
-        if (a.enabled !== undefined) ap.push(`enabled: ${a.enabled}`)
-        if (a.payloadMode) ap.push(`payloadMode: '${a.payloadMode}'`)
-        if (a.strategy) ap.push(`strategy: '${a.strategy}'`)
-        if (a.tokenField) ap.push(`tokenField: '${a.tokenField}'`)
-        if (a.servicePath) ap.push(`servicePath: '${a.servicePath}'`)
-        if (a.reauth !== undefined) ap.push(`reauth: ${a.reauth}`)
-        parts.push(`auth: { ${ap.join(', ')} }`)
-      }
-      if (patch.remoteService) {
-        const methodsPart = patch.remoteService.methods?.length
-          ? `, methods: ${JSON.stringify(patch.remoteService.methods)}`
-          : ''
-        const entry = `{ path: '${patch.remoteService.path}'${methodsPart} }`
-        parts.push(`services: [${entry}]`)
-      }
-      out = insertProp(out, `client: { mode: 'remote', remote: { ${parts.join(', ')} } }`)
-    }
-  }
-}
-
-  if (patch.remote) {
-    const remoteRestPath = patch.remote.restPath ?? '/feathers'
-    const remoteWebsocket = renderWebsocketConfig(patch.remote.websocket as any, patch.remote.websocketPath ?? '/socket.io')
-    if (!/\btransports\s*:/.test(out)) {
-      out = insertProp(out, `transports: { rest: { path: '${remoteRestPath}' }, websocket: ${remoteWebsocket} }`)
-    } else {
-      out = ensureNestedTransports(out, undefined, remoteRestPath, remoteWebsocket)
-    }
-  }
-  // In remote mode, embedded auth should be disabled to avoid requiring local services imports.
-  if (patch.clientMode === 'remote' || patch.remote) {
-    if (!/\bauth\s*:/.test(out)) {
-      out = insertProp(out, `auth: false`)
-    }
-  }
-
-
-
 
   if (patch.mongoManagement) {
-    const parts: string[] = []
-    if (patch.mongoManagement.url) parts.push(`url: '${patch.mongoManagement.url}'`)
-
+    const mongoState = { ...existingDatabase, ...patch.mongoManagement }
     const managementParts: string[] = []
-    if (patch.mongoManagement.enabled !== undefined) managementParts.push(`enabled: ${patch.mongoManagement.enabled}`)
-    if (patch.mongoManagement.auth !== undefined) managementParts.push(`auth: ${patch.mongoManagement.auth}`)
-    if (patch.mongoManagement.basePath) managementParts.push(`basePath: '${patch.mongoManagement.basePath}'`)
-    if (patch.mongoManagement.exposeDatabasesService !== undefined) managementParts.push(`exposeDatabasesService: ${patch.mongoManagement.exposeDatabasesService}`)
-    if (patch.mongoManagement.exposeCollectionsService !== undefined) managementParts.push(`exposeCollectionsService: ${patch.mongoManagement.exposeCollectionsService}`)
-    if (patch.mongoManagement.exposeUsersService !== undefined) managementParts.push(`exposeUsersService: ${patch.mongoManagement.exposeUsersService}`)
-    if (patch.mongoManagement.exposeCollectionCrud !== undefined) managementParts.push(`exposeCollectionCrud: ${patch.mongoManagement.exposeCollectionCrud}`)
-    parts.push(`management: { ${managementParts.join(', ')} }`)
-
-    const mongoValue = `mongo: { ${parts.join(', ')} }`
-    if (/database\s*:/.test(out)) {
-      out = ensureNestedDatabaseMongo(out, mongoValue)
-    } else {
-      out = insertProp(out, `database: { ${mongoValue} }`)
-    }
+    if (mongoState.enabled !== undefined) managementParts.push(`enabled: ${mongoState.enabled}`)
+    if (mongoState.auth !== undefined) managementParts.push(`auth: ${mongoState.auth}`)
+    if (mongoState.basePath) managementParts.push(`basePath: '${mongoState.basePath}'`)
+    if (mongoState.exposeDatabasesService !== undefined) managementParts.push(`exposeDatabasesService: ${mongoState.exposeDatabasesService}`)
+    if (mongoState.exposeCollectionsService !== undefined) managementParts.push(`exposeCollectionsService: ${mongoState.exposeCollectionsService}`)
+    if (mongoState.exposeUsersService !== undefined) managementParts.push(`exposeUsersService: ${mongoState.exposeUsersService}`)
+    if (mongoState.exposeCollectionCrud !== undefined) managementParts.push(`exposeCollectionCrud: ${mongoState.exposeCollectionCrud}`)
+    const mongoParts: string[] = []
+    if (mongoState.url) mongoParts.push(`url: '${mongoState.url}'`)
+    mongoParts.push(`management: { ${managementParts.join(', ')} }`)
+    setObjectProp(entries, 'database', `{ mongo: { ${mongoParts.join(', ')} } }`)
   }
 
-
-  // embedded extras (server secure defaults + transports + auth/swagger)
-  if (patch.embedded) {
-    // transports
-    const framework = patch.embedded.framework ?? 'express'
-    const restPath = patch.embedded.restPath ?? '/feathers'
-    const websocketPath = patch.embedded.websocketPath ?? '/socket.io'
-    const websocketConfig = renderWebsocketConfig(patch.embedded.websocket as any, websocketPath)
-    if (!/\btransports\s*:/.test(out)) {
-      out = insertProp(
-        out,
-        `transports: { rest: { path: '${restPath}', framework: '${framework}' }, websocket: ${websocketConfig} }`,
-      )
-    } else {
-      out = ensureNestedTransports(out, framework, restPath, websocketConfig)
-    }
-    // server.enabled + secureDefaults + secure preset options
-    const secureDefaults = patch.embedded.secureDefaults !== false
-    if (/\bserver\s*:/.test(out)) {
-      // ensure enabled + secureDefaults inside server block
-      out = ensureNestedServerProp(out, `enabled: true`)
-      out = ensureNestedServerProp(out, `secureDefaults: ${secureDefaults}`)
-      if (patch.embedded.secure) {
-        out = ensureNestedServerSecure(out, patch.embedded.secure)
-      }
-    } else {
-      const secureProp = patch.embedded.secure ? `, secure: ${renderSecureConfig(patch.embedded.secure)}` : ''
-      out = insertProp(out, `server: { enabled: true, secureDefaults: ${secureDefaults}${secureProp} }`)
+  const isRemote = Boolean(patch.clientMode === 'remote' || patch.remote || patch.remoteService || patch.keycloak)
+  if (isRemote) {
+    const keycloak = { ...existingKeycloak, ...(patch.keycloak ?? {}) }
+    if (Object.keys(keycloak).length) {
+      setObjectProp(entries, 'keycloak', `{ ${Object.entries(keycloak).map(([key, value]) => `${key}: '${value}'`).join(', ')} }`)
     }
 
-    // auth + swagger explicit (embedded)
-    const authEnabled = patch.embedded.auth !== false
-    if (/\bauth\s*:/.test(out)) {
-      out = replacePropValue(out, 'auth', authEnabled ? 'true' : 'false')
-    } else {
-      out = insertProp(out, `auth: ${authEnabled}`)
+    const remote: ParsedRemoteClientConfig = {
+      mode: 'remote',
+      url: patch.remote?.url && patch.remote.url.length ? patch.remote.url : existingRemote.url,
+      transport: patch.remote?.transport ?? existingRemote.transport ?? 'auto',
+      restPath: patch.remote?.restPath ?? existingRemote.restPath ?? existingTransports.restPath,
+      websocketPath: patch.remote?.websocketPath ?? existingRemote.websocketPath ?? existingTransports.websocketPath,
+      auth: patch.remote?.auth ? { ...(existingRemote.auth ?? {}), ...patch.remote.auth } : existingRemote.auth,
+      services: existingRemote.services,
     }
 
-    const swaggerEnabled = Boolean(patch.embedded.swagger)
-    if (/\bswagger\s*:/.test(out)) {
-      out = replacePropValue(out, 'swagger', swaggerEnabled ? 'true' : 'false')
-    } else {
-      out = insertProp(out, `swagger: ${swaggerEnabled}`)
+    if (patch.remoteService) {
+      remote.services = mergeRemoteServices(existingRemote.services, {
+        path: patch.remoteService.path,
+        methods: patch.remoteService.methods,
+      })
     }
+
+    const restPath = remote.restPath ?? '/feathers'
+    const websocketPath = remote.websocketPath ?? '/socket.io'
+    const websocketRaw = patch.remote?.websocket
+      ? renderWebsocketConfig(patch.remote.websocket as any, websocketPath)
+      : (existingTransports.websocketRaw ?? `{ path: '${websocketPath}' }`)
+    setObjectProp(entries, 'transports', `{ rest: { path: '${restPath}' }, websocket: ${websocketRaw} }`)
+
+    const remoteParts = [
+      remote.url ? `url: '${remote.url}'` : `url: ''`,
+      `transport: '${remote.transport ?? 'auto'}'`,
+      `restPath: '${restPath}'`,
+      `websocketPath: '${websocketPath}'`,
+      renderRemoteAuthConfig(remote.auth),
+      renderRemoteServicesConfig(remote.services),
+    ].filter(Boolean)
+    setObjectProp(entries, 'client', `{ mode: 'remote', remote: { ${remoteParts.join(', ')} } }`)
+    removeObjectProp(entries, 'auth')
   }
 
-  return out
+  return renderObjectPropEntries(entries)
 }
 
-
 function ensureNestedDatabaseMongo(objLiteral: string, mongoValue: string): string {
-  const block = locateObjectLiteral(objLiteral, /database\s*:\s*\{/)
+  const block = locateObjectLiteral(objLiteral, /\bdatabase\s*:\s*\{/)
   if (!block) return objLiteral
   const before = objLiteral.slice(0, block.start)
   let databaseObj = objLiteral.slice(block.start, block.end)
   const after = objLiteral.slice(block.end)
 
-  if (/mongo\s*:/.test(databaseObj)) {
-    const mongoBlock = locateObjectLiteral(databaseObj, /mongo\s*:\s*\{/)
+  if (/\bmongo\s*:/.test(databaseObj)) {
+    const mongoBlock = locateObjectLiteral(databaseObj, /\bmongo\s*:\s*\{/)
     if (mongoBlock) {
       databaseObj = databaseObj.slice(0, mongoBlock.start) + mongoValue + databaseObj.slice(mongoBlock.end)
     }
@@ -2406,6 +2532,38 @@ export async function generateMiddleware(opts: GenerateMiddlewareOptions) {
     return
   }
 
+  if (opts.target === 'route') {
+    const dir = join(opts.projectRoot, 'app', 'middleware')
+    const file = join(dir, `${fileBase}.ts`)
+    await ensureDir(dir, opts.dry)
+    await writeFileSafe(file, renderNuxtRouteMiddleware(fileBase), { dry: opts.dry, force: opts.force })
+
+    if (fileBase === 'auth-keycloak') {
+      const publicDir = join(opts.projectRoot, 'public')
+      const silentFile = join(publicDir, 'silent-check-sso.html')
+      const shouldWriteSilentFile = !existsSync(silentFile) || opts.force
+      await ensureDir(publicDir, opts.dry)
+
+      if (shouldWriteSilentFile) {
+        await writeFileSafe(silentFile, renderSilentCheckSsoHtml(), { dry: opts.dry, force: opts.force })
+      }
+      else if (!opts.dry) {
+        consola.info(`Keeping existing Keycloak silent SSO helper in ${relativeToCwd(silentFile)} (use --force to overwrite)`)
+      }
+
+      if (!opts.dry) {
+        consola.success(`Generated Nuxt route middleware '${fileBase}' in ${relativeToCwd(file)}`)
+        if (shouldWriteSilentFile)
+          consola.success(`Generated Keycloak silent SSO helper in ${relativeToCwd(silentFile)}`)
+      }
+      return
+    }
+
+    if (!opts.dry)
+      consola.success(`Generated Nuxt route middleware '${fileBase}' in ${relativeToCwd(file)}`)
+    return
+  }
+
   if (opts.target === 'server-module' || opts.target === 'module') {
     const dir = join(opts.projectRoot, 'server', 'feathers', 'modules')
     await ensureDir(dir, opts.dry)
@@ -3770,6 +3928,56 @@ export default defineEventHandler(async (event) => {
 `
 }
 
+function renderNuxtRouteMiddleware(name: string) {
+  if (name === 'auth-keycloak')
+    return renderAuthKeycloakRouteMiddleware()
+
+  const nice = name.replace(/-/g, ' ')
+  return `// Nuxt route middleware: ${nice}
+// Use with definePageMeta({ middleware: ['${name}'] }) on protected pages.
+
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (import.meta.server)
+    return
+
+  // Example: restrict access to part of the app
+  // if (!to.path.startsWith('/console'))
+  //   return
+})
+`
+}
+
+function renderAuthKeycloakRouteMiddleware() {
+  return `// Nuxt route middleware: auth-keycloak
+// Generated for remote Keycloak SSO flows.
+// Use with definePageMeta({ middleware: ['auth-keycloak'] }) on protected pages.
+
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (import.meta.server)
+    return
+
+  const auth = useAuth()
+  await auth.init()
+
+  if (auth.provider.value === 'keycloak' && !auth.isAuthenticated.value) {
+    await auth.login({ redirectUri: window.location.origin + to.fullPath })
+  }
+})
+`
+}
+
+function renderSilentCheckSsoHtml() {
+  return `<!doctype html>
+<html>
+  <body>
+    <script>
+      parent.postMessage(location.href, location.origin)
+    </script>
+  </body>
+</html>
+`
+}
+
 function renderClientFeathersModule(name: string) {
   const nice = name.replace(/-/g, ' ')
   return `// Feathers client module: ${nice}
@@ -4073,6 +4281,221 @@ function ensureNestedServerSecure(
   }
 
   return before + patched + after
+}
+
+
+
+interface ParsedRemoteAuthConfig {
+  enabled?: boolean
+  payloadMode?: string
+  strategy?: string
+  tokenField?: string
+  servicePath?: string
+  reauth?: boolean
+}
+
+interface ParsedRemoteServiceConfig {
+  path: string
+  methods?: string[]
+}
+
+interface ParsedRemoteClientConfig {
+  mode?: 'remote' | 'embedded'
+  url?: string
+  transport?: string
+  restPath?: string
+  websocketPath?: string
+  auth?: ParsedRemoteAuthConfig
+  services?: ParsedRemoteServiceConfig[]
+}
+
+function parseQuotedScalar(src: string, key: string): string | undefined {
+  const m = src.match(new RegExp(`\\b${escapeRegExp(key)}\\s*:\\s*['\"]([^'\"]+)['\"]`))
+  return m?.[1]
+}
+
+function parseBooleanScalar(src: string, key: string): boolean | undefined {
+  const m = src.match(new RegExp(`\\b${escapeRegExp(key)}\\s*:\\s*(true|false)`))
+  if (!m)
+    return undefined
+  return m[1] === 'true'
+}
+
+function parseRemoteServices(src: string): ParsedRemoteServiceConfig[] | undefined {
+  const block = locateArrayLiteral(src, /\bservices\s*:\s*\[/)
+  if (!block)
+    return undefined
+  const arr = src.slice(block.start, block.end)
+  const entries = [...arr.matchAll(/\{\s*path\s*:\s*['\"]([^'\"]+)['\"](?:\s*,\s*methods\s*:\s*\[([^\]]*)\])?\s*\}/g)]
+  if (!entries.length)
+    return []
+  return entries.map((m) => ({
+    path: m[1],
+    methods: m[2]
+      ? m[2].split(',').map(v => v.trim().replace(/^['\"]|['\"]$/g, '')).filter(Boolean)
+      : undefined,
+  }))
+}
+
+function parseRemoteAuth(src: string): ParsedRemoteAuthConfig | undefined {
+  const block = locateObjectLiteral(src, /\bauth\s*:\s*\{/)
+  if (!block)
+    return undefined
+  const authObj = src.slice(block.start, block.end)
+  return {
+    enabled: parseBooleanScalar(authObj, 'enabled'),
+    payloadMode: parseQuotedScalar(authObj, 'payloadMode'),
+    strategy: parseQuotedScalar(authObj, 'strategy'),
+    tokenField: parseQuotedScalar(authObj, 'tokenField'),
+    servicePath: parseQuotedScalar(authObj, 'servicePath'),
+    reauth: parseBooleanScalar(authObj, 'reauth'),
+  }
+}
+
+function parseExistingRemoteClientConfig(objLiteral: string): ParsedRemoteClientConfig {
+  const clientBlock = locateObjectLiteral(objLiteral, /\bclient\s*:\s*\{/)
+  if (!clientBlock)
+    return {}
+  const clientObj = objLiteral.slice(clientBlock.start, clientBlock.end)
+  const remoteBlock = locateObjectLiteral(clientObj, /\bremote\s*:\s*\{/)
+  const result: ParsedRemoteClientConfig = {
+    mode: parseQuotedScalar(clientObj, 'mode') as 'remote' | 'embedded' | undefined,
+  }
+  if (!remoteBlock)
+    return result
+  const remoteObj = clientObj.slice(remoteBlock.start, remoteBlock.end)
+  result.url = parseQuotedScalar(remoteObj, 'url')
+  result.transport = parseQuotedScalar(remoteObj, 'transport')
+  result.restPath = parseQuotedScalar(remoteObj, 'restPath')
+  result.websocketPath = parseQuotedScalar(remoteObj, 'websocketPath')
+  result.auth = parseRemoteAuth(remoteObj)
+  result.services = parseRemoteServices(remoteObj)
+  return result
+}
+
+function parseExistingKeycloakConfig(objLiteral: string): Record<string, string> | undefined {
+  const block = locateObjectLiteral(objLiteral, /\bkeycloak\s*:\s*\{/) 
+  if (!block)
+    return undefined
+  const keycloakObj = objLiteral.slice(block.start, block.end)
+  const result: Record<string, string> = {}
+  for (const key of ['serverUrl', 'realm', 'clientId', 'onLoad']) {
+    const value = parseQuotedScalar(keycloakObj, key)
+    if (value)
+      result[key] = value
+  }
+  return Object.keys(result).length ? result : undefined
+}
+
+function renderRemoteAuthConfig(auth?: ParsedRemoteAuthConfig): string | undefined {
+  if (!auth)
+    return undefined
+  const parts: string[] = []
+  if (auth.enabled !== undefined) parts.push(`enabled: ${auth.enabled}`)
+  if (auth.payloadMode) parts.push(`payloadMode: '${auth.payloadMode}'`)
+  if (auth.strategy) parts.push(`strategy: '${auth.strategy}'`)
+  if (auth.tokenField) parts.push(`tokenField: '${auth.tokenField}'`)
+  if (auth.servicePath) parts.push(`servicePath: '${auth.servicePath}'`)
+  if (auth.reauth !== undefined) parts.push(`reauth: ${auth.reauth}`)
+  return parts.length ? `auth: { ${parts.join(', ')} }` : undefined
+}
+
+function renderRemoteServicesConfig(services?: ParsedRemoteServiceConfig[]): string | undefined {
+  if (!services?.length)
+    return undefined
+  const rendered = services.map((service) => {
+    const parts = [`path: '${service.path}'`]
+    if (service.methods?.length)
+      parts.push(`methods: ${JSON.stringify(service.methods)}`)
+    return `{ ${parts.join(', ')} }`
+  })
+  return `services: [${rendered.join(', ')}]`
+}
+
+function mergeRemoteServices(existing: ParsedRemoteServiceConfig[] | undefined, incoming: ParsedRemoteServiceConfig): ParsedRemoteServiceConfig[] {
+  const services = [...(existing ?? [])]
+  const idx = services.findIndex(service => service.path === incoming.path)
+  const incomingMethods = incoming.methods ?? []
+  if (idx >= 0) {
+    const currentMethods = services[idx].methods ?? []
+    const methods = Array.from(new Set([...currentMethods, ...incomingMethods]))
+    services[idx] = { ...services[idx], ...incoming, methods: methods.length ? methods : undefined }
+  }
+  else {
+    services.push({ ...incoming, methods: incomingMethods.length ? Array.from(new Set(incomingMethods)) : undefined })
+  }
+  return services
+}
+
+function rebuildRemoteFeathersObject(feathersObj: string, patch: NuxtConfigPatch): string {
+  const existingRemote = parseExistingRemoteClientConfig(feathersObj)
+  const existingKeycloak = parseExistingKeycloakConfig(feathersObj)
+
+  const keycloak = {
+    ...(existingKeycloak ?? {}),
+    ...(patch.keycloak ?? {}),
+  }
+
+  const remote: ParsedRemoteClientConfig = {
+    mode: 'remote',
+    url: patch.remote?.url && patch.remote.url.length ? patch.remote.url : existingRemote.url,
+    transport: patch.remote?.transport ?? existingRemote.transport ?? 'auto',
+    restPath: patch.remote?.restPath ?? existingRemote.restPath ?? '/feathers',
+    websocketPath: patch.remote?.websocketPath ?? existingRemote.websocketPath ?? '/socket.io',
+    auth: patch.remote?.auth ? { ...(existingRemote.auth ?? {}), ...patch.remote.auth } : existingRemote.auth,
+    services: existingRemote.services,
+  }
+
+  if (patch.remoteService) {
+    remote.services = mergeRemoteServices(existingRemote.services, {
+      path: patch.remoteService.path,
+      methods: patch.remoteService.methods,
+    })
+  }
+
+  let out = feathersObj
+
+  const keycloakParts = Object.entries(keycloak).map(([key, value]) => `${key}: '${value}'`)
+  if (/\bkeycloak\s*:/.test(out)) {
+    const block = locateObjectLiteral(out, /\bkeycloak\s*:\s*\{/) 
+    if (block && keycloakParts.length)
+      out = out.slice(0, block.start) + `keycloak: { ${keycloakParts.join(', ')} }` + out.slice(block.end)
+  }
+  else if (keycloakParts.length) {
+    out = insertProp(out, `keycloak: { ${keycloakParts.join(', ')} }`)
+  }
+
+  const restPath = remote.restPath ?? '/feathers'
+  const websocketPath = remote.websocketPath ?? '/socket.io'
+  const websocketConfig = patch.remote?.websocket
+    ? renderWebsocketConfig(patch.remote.websocket as any, websocketPath)
+    : `{ path: '${websocketPath}' }`
+
+  if (!/\btransports\s*:/.test(out)) {
+    out = insertProp(out, `transports: { rest: { path: '${restPath}' }, websocket: ${websocketConfig} }`)
+  }
+  else {
+    out = ensureNestedTransports(out, undefined, restPath, websocketConfig)
+  }
+
+  const clientBlock = locateObjectLiteral(out, /\bclient\s*:\s*\{/)
+  const remoteParts = [
+    remote.url ? `url: '${remote.url}'` : `url: ''`,
+    `transport: '${remote.transport ?? 'auto'}'`,
+    remote.restPath ? `restPath: '${remote.restPath}'` : '',
+    remote.websocketPath ? `websocketPath: '${remote.websocketPath}'` : '',
+    renderRemoteAuthConfig(remote.auth),
+    renderRemoteServicesConfig(remote.services),
+  ].filter(Boolean)
+  const clientValue = `client: { mode: 'remote', remote: { ${remoteParts.join(', ')} } }`
+
+  if (clientBlock)
+    out = out.slice(0, clientBlock.start) + clientValue + out.slice(clientBlock.end)
+  else
+    out = insertProp(out, clientValue)
+
+  out = out.replace(/\n\s*auth\s*:\s*(true|false)\s*,?/g, '\n')
+  return out
 }
 
 function ensureNestedClientRemote(objLiteral: string, patch: NuxtConfigPatch): string {

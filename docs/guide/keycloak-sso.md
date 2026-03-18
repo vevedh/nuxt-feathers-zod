@@ -15,6 +15,7 @@ bun add nuxt-feathers-zod feathers-pinia keycloak-js
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --auth true --payloadMode keycloak --force
 bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
 bun dev
 ```
