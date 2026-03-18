@@ -6,48 +6,59 @@ editLink: false
 Commande d’entrée :
 
 ```bash
-bunx nuxt-feathers-zod
+bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Surface officielle OSS alignée sur la version **6.3.9**.
+Surface officielle OSS alignée sur la version **6.4.13**.
 
-## Catalogue des commandes
+## Noyau public recommandé
 
-### Initialisation
-
-- `init templates`
 - `init embedded`
 - `init remote`
 - `remote auth keycloak`
-
-### Services
-
 - `add service <name>`
-- `add service <name> --custom`
 - `add remote-service <name>`
-- `auth service <name>`
-- `schema <service>`
-
-### Runtime / Mongo
-
 - `add middleware <name>`
+- `schema <service>`
+- `auth service <name>`
+- `mongo management`
+- `doctor`
+
+## Commandes secondaires / compatibilité
+
+- `add custom-service <name>`
+- `init templates`
+- `templates list`
+- `plugins list|add`
+- `modules list|add`
+- `middlewares list|add`
 - `add server-module <name>`
 - `add mongodb-compose`
-- `mongo management`
 
-### Helpers OSS
 
-- `templates list`
-- `plugins list`
-- `plugins add <name>`
-- `modules list`
-- `modules add <name>`
-- `middlewares list`
-- `middlewares add <name>`
+## Cibles avancées : quand utiliser `plugin`, `server-module`, `module`, `client-module`, `hook`, `policy`
 
-### Diagnostic
+### Résumé rapide
 
-- `doctor`
+- `plugin` : plugin serveur Feathers global
+- `server-module` : module serveur/infrastructure
+- `module` : alias de `server-module`
+- `client-module` : plugin Nuxt chargé côté navigateur
+- `hook` : logique de hook Feathers réutilisable
+- `policy` : règle d'autorisation spécialisée
+
+### Commandes CLI associées
+
+```bash
+bunx nuxt-feathers-zod plugins add audit-bootstrap
+bunx nuxt-feathers-zod add server-module security-headers
+bunx nuxt-feathers-zod add middleware request-logger --target module
+bunx nuxt-feathers-zod add middleware api-debug --target client-module
+bunx nuxt-feathers-zod add middleware attach-tenant --target hook
+bunx nuxt-feathers-zod add middleware is-admin --target policy
+```
+
+Pour les exemples détaillés, voir le [Guide CLI](/guide/cli#differences-entre-plugin-server-module-module-client-module-hook-policy).
 
 ## Exemples de référence
 
@@ -84,14 +95,15 @@ bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
 bun dev
 ```
 
-### Services et schéma
+### Services et maintenance de schéma
 
 ```bash
 bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id
-bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
 bunx nuxt-feathers-zod auth service users --enabled true
-bunx nuxt-feathers-zod schema users --set-mode zod
-bunx nuxt-feathers-zod schema users --add-field title:string!
+bunx nuxt-feathers-zod schema users --show
+bunx nuxt-feathers-zod schema users --validate
+bunx nuxt-feathers-zod schema users --diff
+bunx nuxt-feathers-zod schema users --repair-auth
 ```
 
 ### Runtime / Mongo
@@ -99,28 +111,29 @@ bunx nuxt-feathers-zod schema users --add-field title:string!
 ```bash
 bunx nuxt-feathers-zod add middleware trace-headers --target nitro
 bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-bunx nuxt-feathers-zod add server-module helmet --preset helmet
 bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
 ```
 
-### Helpers OSS
-
-```bash
-bunx nuxt-feathers-zod templates list
-bunx nuxt-feathers-zod plugins add audit-log
-bunx nuxt-feathers-zod modules add security-headers --preset security-headers
-bunx nuxt-feathers-zod middlewares add request-id --target nitro
-```
-
 ## Notes de stabilité
 
-- `add custom-service <name>` reste accepté, mais la forme recommandée est :
+### `schema <service>` : options à retenir
+
+- `--validate` : vérifie la cohérence manifest ↔ fichiers générés
+- `--repair-auth` : restaure la baseline auth-compatible d’un service `users`
+- `--diff` : inspecte le drift avant écriture
+
+### `add middleware <name>` : lecture des cibles
+
+- cibles publiques recommandées : `nitro`, `route`
+- cibles avancées : `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+### Compatibilité historique
+
+`add custom-service <name>` reste accepté, mais la forme recommandée est :
 
 ```bash
 bunx nuxt-feathers-zod add service <name> --custom
 ```
 
-- `doctor` reporte désormais aussi l’état de Mongo management.
-- En remote, `transport: auto` résout vers `socketio` dans le runtime OSS actuel.
-- La documentation détaillée des flags reste dans [Guide CLI](/guide/cli).
+La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).

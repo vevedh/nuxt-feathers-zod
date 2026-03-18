@@ -1,3 +1,21 @@
+
+## v6.4.17
+- Fixed template-string escaping regressions in `src/cli/core.ts` and `src/runtime/templates/client/plugin.ts`.
+- Restored build/typecheck compatibility for generated Keycloak route middleware and Pinia warning fallback message.
+- Updated `package.json` version to `6.4.17`.
+
+- v6.4.16: docs add clear explanation/examples for plugin, server-module, module, client-module, hook, policy CLI targets.
+
+## v6.4.15
+- client remote/runtime: when `feathers.client.pinia` is enabled but `nuxtApp.$pinia` is missing, log a clear warning and fall back to the raw Feathers client for `$api` instead of crashing in `createPiniaClient`.
+
+## v6.4.13
+
+- docs(cli): resynchronized README, FR/EN CLI guides, and CLI reference pages around the public v6.4.13 command surface
+- docs(schema): documented `--validate`, `--repair-auth`, and `--diff` as first-class schema maintenance flags
+- docs(help): clarified `add middleware` target guidance (`nitro` and `route` as public targets, others as advanced)
+- cli(help): refreshed built-in help text and command descriptions for middleware and schema maintenance
+
 ## v6.4.12
 
 - fix(keycloak-sso): clean OIDC callback hashes like `#state=...&session_state=...&code=...` after Keycloak `check-sso` / callback to avoid Vue Router selector warnings in Nuxt 4 consumer apps
@@ -153,3 +171,12 @@
 - Fixed Bun/VitePress docs build flow.
 - Synced NFZ DevTools tab theme with the parent Nuxt DevTools theme by default.
 - Hardened CLI tests, doctor diagnostics, and Mongo management configuration handling.
+
+## v6.4.14
+
+- CLI: updated `renderAuthKeycloakRouteMiddleware()` so generated Nuxt route middleware now cleans OIDC Keycloak callback hash fragments (`#state=...&session_state=...&code=...`) via `history.replaceState(...)` before auth init.
+- Prevents Vue Router warnings caused by invalid CSS selector hashes after `check-sso` redirects.
+
+## v6.4.18
+- Fix CLI build regression in renderAuthKeycloakRouteMiddleware by replacing an invalid nested template literal with string concatenation (`window.location.pathname + window.location.search`).
+- Keep package.json version in sync.

@@ -6,23 +6,34 @@ editLink: false
 Entry command:
 
 ```bash
-bunx nuxt-feathers-zod
+bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-## Commands supported in the open source core
+Official OSS surface aligned with **v6.4.13**.
 
-- `init templates`
+## Recommended public core
+
 - `init embedded`
 - `init remote`
 - `remote auth keycloak`
 - `add service <name>`
-- `add service <name> --custom`
 - `add remote-service <name>`
 - `add middleware <name>`
+- `schema <service>`
+- `auth service <name>`
+- `mongo management`
+- `doctor`
+
+## Secondary commands / compatibility
+
+- `add custom-service <name>`
+- `init templates`
+- `templates list`
+- `plugins list|add`
+- `modules list|add`
+- `middlewares list|add`
 - `add server-module <name>`
 - `add mongodb-compose`
-- `auth service <name>`
-- `doctor`
 
 ## Reference examples
 
@@ -30,6 +41,7 @@ bunx nuxt-feathers-zod
 
 ```bash
 bunx nuxt-feathers-zod --help
+bunx nuxt-feathers-zod doctor
 ```
 
 ### New embedded app
@@ -58,19 +70,40 @@ bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
 bun dev
 ```
 
-### Local MongoDB bootstrap
+### Services and schema maintenance
 
 ```bash
-bunx nuxt-feathers-zod add mongodb-compose
-```
-
-### Toggle auth hooks on a service
-
-```bash
+bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id
 bunx nuxt-feathers-zod auth service users --enabled true
+bunx nuxt-feathers-zod schema users --show
+bunx nuxt-feathers-zod schema users --validate
+bunx nuxt-feathers-zod schema users --diff
+bunx nuxt-feathers-zod schema users --repair-auth
 ```
 
-## Historical compatibility
+### Runtime / Mongo
+
+```bash
+bunx nuxt-feathers-zod add middleware trace-headers --target nitro
+bunx nuxt-feathers-zod add middleware auth-keycloak --target route
+bunx nuxt-feathers-zod add mongodb-compose
+bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
+```
+
+## Stability notes
+
+### `schema <service>` flags worth knowing
+
+- `--validate`: checks manifest ↔ generated-files coherence
+- `--repair-auth`: restores the auth-compatible baseline for a `users` service
+- `--diff`: inspects drift before writes
+
+### `add middleware <name>` target reading
+
+- recommended public targets: `nitro`, `route`
+- advanced targets: `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+### Historical compatibility
 
 `add custom-service <name>` is still accepted, but the recommended form is:
 
@@ -78,20 +111,4 @@ bunx nuxt-feathers-zod auth service users --enabled true
 bunx nuxt-feathers-zod add service <name> --custom
 ```
 
-## `users` auth-aware generation
-
-`add service users --auth` now supports an explicit `--authAware true|false` flag.
-
-Expected behavior:
-
-- `--auth` = JWT protection on the service
-- `--authAware` = password hashing/masking semantics for local auth
-- default for `users --auth` = auth-aware enabled unless explicitly disabled
-
-Reference examples:
-
-```bash
-bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory --force
-bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
-bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
-```
+Detailed flag coverage stays in the [CLI guide](/en/guide/cli).

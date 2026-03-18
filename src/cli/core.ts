@@ -93,7 +93,7 @@ Commands:
   remote auth keycloak          Configure remote auth payload mode for Keycloak
   add service <name>            Generate an embedded service (or a service with custom methods via --custom)
   add remote-service <name>     Register a remote service (client-only)
-  add middleware <name>         Generate middleware (target nitro|route|feathers)
+  add middleware <name>         Generate middleware or middleware-like artifacts
   add mongodb-compose           Generate docker-compose-db.yaml for MongoDB
   mongo management             Enable/update embedded MongoDB management routes
   schema <service>              Inspect schema state or switch schema mode
@@ -250,6 +250,8 @@ Flags overview:
     --remove-field <name>       remove field from manifest/schema
     --set-field <spec>          create or replace field definition
     --rename-field <from:to>    rename field preserving definition
+    --validate                  validate manifest/schema coherence
+    --repair-auth               repair auth-compatible users schema baseline
     --servicesDir <dir>         (default: services)
     --force
     --dry
@@ -3955,6 +3957,16 @@ function renderAuthKeycloakRouteMiddleware() {
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server)
     return
+
+  const hash = to?.hash || ''
+
+  // After Keycloak redirects, the hash can contain state/session_state/code which
+  // is not a valid CSS selector. Clean it eagerly so Vue Router does not try to
+  // interpret it as an anchor selector during navigation.
+  if (hash && /(state=|session_state=|code=)/.test(hash)) {
+    const cleanUrl = window.location.pathname + window.location.search
+    window.history.replaceState(window.history.state, '', cleanUrl)
+  }
 
   const auth = useAuth()
   await auth.init()

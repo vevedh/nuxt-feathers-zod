@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.3.9**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.13**.
 
 ## Commande d’entrée
 
@@ -14,6 +14,31 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
 ## Surface CLI OSS officielle
+
+### Noyau public recommandé
+
+- `init embedded`
+- `init remote`
+- `remote auth keycloak`
+- `add service <name>`
+- `add remote-service <name>`
+- `add middleware <name>`
+- `schema <service>`
+- `auth service <name>`
+- `mongo management`
+- `doctor`
+
+### Commandes secondaires / alias de compatibilité
+
+- `add custom-service <name>`
+- `init templates`
+- `templates list`
+- `plugins list|add`
+- `modules list|add`
+- `middlewares list|add`
+- `add server-module <name>`
+- `add mongodb-compose`
+
 
 ### Initialisation
 
@@ -30,14 +55,17 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 - `auth service <name>`
 - `schema <service>`
 
-### Artefacts runtime
+### Runtime public core
 
 - `add middleware <name>`
-- `add server-module <name>`
-- `add mongodb-compose`
 - `mongo management`
 
-### Helpers OSS templates/modules/plugins/middlewares
+### Runtime advanced / secondary
+
+- `add server-module <name>`
+- `add mongodb-compose`
+
+### Helpers OSS secondaires : templates/modules/plugins/middlewares
 
 - `templates list`
 - `plugins list`
@@ -50,6 +78,212 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 ### Diagnostic
 
 - `doctor`
+
+
+## Différences entre `plugin`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+Ces cibles ne servent pas au même niveau du runtime NFZ. Le bon critère est : **où le fichier est généré, quand il s'exécute, et quel problème il résout**.
+
+### `plugin`
+
+Un `plugin` est un **plugin serveur Feathers global**.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod plugins add audit-bootstrap
+```
+
+Fichier généré :
+
+```txt
+server/feathers/audit-bootstrap.ts
+```
+
+Quand l'utiliser :
+- pour brancher une logique globale sur l'application Feathers
+- pour enregistrer des `app.hooks({ setup: [...] })`
+- pour un bootstrap transverse côté serveur
+
+Exemple d'utilisation :
+
+```ts
+import { auditBootstrap } from '~/server/feathers/audit-bootstrap'
+
+export default defineNitroPlugin(async () => {
+  // votre runtime NFZ charge le plugin côté serveur
+})
+```
+
+Cas typique : journalisation globale, métriques, bootstrap de hooks applicatifs.
+
+### `server-module`
+
+Un `server-module` est un **module d'infrastructure serveur** chargé autour du runtime Feathers/Nitro.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod add server-module security-headers
+```
+
+Fichier généré :
+
+```txt
+server/feathers/modules/security-headers.ts
+```
+
+Quand l'utiliser :
+- pour ajouter des headers HTTP
+- pour brancher `helmet`, rate-limit, healthcheck, request logger
+- pour toucher à la couche serveur plus qu'à la logique métier Feathers
+
+Exemple d'utilisation :
+
+```ts
+export default async function securityHeaders(app: any) {
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader('X-Frame-Options', 'DENY')
+    next()
+  })
+}
+```
+
+Cas typique : sécurité HTTP, endpoints de santé, middlewares Express/Koa.
+
+### `module`
+
+`module` est aujourd'hui **un alias pratique de `server-module`** dans la CLI.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod add middleware request-logger --target module
+```
+
+Fichier généré :
+
+```txt
+server/feathers/modules/request-logger.ts
+```
+
+Quand l'utiliser :
+- si tu préfères la forme courte `module`
+- sinon privilégie `server-module`, plus explicite dans la doc
+
+Exemple d'utilisation :
+
+```bash
+bunx nuxt-feathers-zod add middleware healthcheck --target module
+```
+
+Même famille d'usage que `server-module`.
+
+### `client-module`
+
+Un `client-module` est un **plugin Nuxt client** chargé uniquement dans le navigateur.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod add middleware api-debug --target client-module
+```
+
+Fichier généré :
+
+```txt
+app/plugins/api-debug.client.ts
+```
+
+Quand l'utiliser :
+- pour enrichir `$api`
+- pour brancher du diagnostic client
+- pour ajouter de la télémétrie côté navigateur
+
+Exemple d'utilisation :
+
+```ts
+export default defineNuxtPlugin((nuxtApp) => {
+  console.info('[nfz] client module ready', !!nuxtApp.$api)
+})
+```
+
+Cas typique : debug du client Feathers, instrumentation front, helpers browser-only.
+
+### `hook`
+
+Un `hook` est une **fonction réutilisable de hook Feathers**.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod add middleware attach-tenant --target hook
+```
+
+Fichier généré :
+
+```txt
+server/feathers/hooks/attach-tenant.ts
+```
+
+Quand l'utiliser :
+- pour enrichir `context.params`
+- pour transformer `context.data`
+- pour centraliser une logique before/after/around réutilisable
+
+Exemple d'utilisation :
+
+```ts
+import { attachTenant } from '../hooks/attach-tenant'
+
+export const before = {
+  all: [attachTenant()]
+}
+```
+
+Cas typique : multi-tenant, normalisation des données, enrichissement du contexte.
+
+### `policy`
+
+Une `policy` est un **guard d'autorisation** spécialisé.
+
+Commande CLI associée :
+
+```bash
+bunx nuxt-feathers-zod add middleware is-admin --target policy
+```
+
+Fichier généré :
+
+```txt
+server/feathers/policies/is-admin.ts
+```
+
+Quand l'utiliser :
+- pour autoriser/refuser explicitement
+- pour centraliser une règle RBAC
+- pour protéger un service ou une méthode
+
+Exemple d'utilisation :
+
+```ts
+import { isAdminPolicy } from '../policies/is-admin'
+
+export const before = {
+  all: [isAdminPolicy()]
+}
+```
+
+Cas typique : admin-only, same-user-or-admin, contrôles d'accès métier.
+
+### Résumé pratique
+
+- `plugin` : extension globale Feathers serveur
+- `server-module` : extension serveur/infrastructure
+- `module` : alias de `server-module`
+- `client-module` : plugin Nuxt client
+- `hook` : logique de hook Feathers réutilisable
+- `policy` : hook spécialisé en autorisation
 
 ## Vérification minimale de stabilité
 
@@ -287,14 +521,10 @@ bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 
 Targets supportées :
 
-- `nitro`
-- `route`
-- `feathers`
-- `server-module`
-- `module`
-- `client-module`
-- `hook`
-- `policy`
+- **publiques recommandées** : `nitro`, `route`
+- **avancées** : `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+La documentation publique recommande de commencer par `nitro` et `route`. Les autres targets restent supportées mais visent surtout des besoins experts ou internes de scaffolding.
 
 ## `add server-module <name>`
 

@@ -5,7 +5,7 @@ editLink: false
 
 The CLI `bunx nuxt-feathers-zod` is the **official method** to initialize a Nuxt 4 app, generate NFZ-compatible artifacts and diagnose an existing project.
 
-This page is aligned with the OSS command surface stabilized for release **6.3.9**.
+This page is aligned with the OSS command surface stabilized for release **6.4.13**.
 
 ## Entry command
 
@@ -14,6 +14,31 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
 ## Official OSS CLI surface
+
+### Recommended public core
+
+- `init embedded`
+- `init remote`
+- `remote auth keycloak`
+- `add service <name>`
+- `add remote-service <name>`
+- `add middleware <name>`
+- `schema <service>`
+- `auth service <name>`
+- `mongo management`
+- `doctor`
+
+### Secondary commands / compatibility aliases
+
+- `add custom-service <name>`
+- `init templates`
+- `templates list`
+- `plugins list|add`
+- `modules list|add`
+- `middlewares list|add`
+- `add server-module <name>`
+- `add mongodb-compose`
+
 
 ### Initialization
 
@@ -50,6 +75,212 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 ### Diagnostics
 
 - `doctor`
+
+
+## Differences between `plugin`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+These targets are not equivalent. The right way to choose is: **where the file is generated, when it runs, and which problem it solves**.
+
+### `plugin`
+
+A `plugin` is a **global server-side Feathers plugin**.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod plugins add audit-bootstrap
+```
+
+Generated file:
+
+```txt
+server/feathers/audit-bootstrap.ts
+```
+
+Use it when:
+- you need to attach global logic to the Feathers application
+- you want to register `app.hooks({ setup: [...] })`
+- you need cross-cutting server bootstrap code
+
+Example usage:
+
+```ts
+import { auditBootstrap } from '~/server/feathers/audit-bootstrap'
+
+export default defineNitroPlugin(async () => {
+  // the NFZ runtime loads the server plugin
+})
+```
+
+Typical cases: global logging, metrics, application-level bootstrap hooks.
+
+### `server-module`
+
+A `server-module` is a **server infrastructure module** loaded around the Feathers/Nitro runtime.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod add server-module security-headers
+```
+
+Generated file:
+
+```txt
+server/feathers/modules/security-headers.ts
+```
+
+Use it when:
+- you need to add HTTP headers
+- you want to wire `helmet`, rate-limit, healthcheck, request logger
+- you are modifying the server layer more than Feathers business logic
+
+Example usage:
+
+```ts
+export default async function securityHeaders(app: any) {
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader('X-Frame-Options', 'DENY')
+    next()
+  })
+}
+```
+
+Typical cases: HTTP hardening, health endpoints, Express/Koa middleware.
+
+### `module`
+
+`module` is currently **a practical alias for `server-module`** in the CLI.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod add middleware request-logger --target module
+```
+
+Generated file:
+
+```txt
+server/feathers/modules/request-logger.ts
+```
+
+Use it when:
+- you prefer the shorter `module` target
+- otherwise prefer `server-module`, which is clearer in the docs
+
+Example usage:
+
+```bash
+bunx nuxt-feathers-zod add middleware healthcheck --target module
+```
+
+Same usage family as `server-module`.
+
+### `client-module`
+
+A `client-module` is a **Nuxt client plugin** loaded only in the browser.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod add middleware api-debug --target client-module
+```
+
+Generated file:
+
+```txt
+app/plugins/api-debug.client.ts
+```
+
+Use it when:
+- you want to enrich `$api`
+- you need client-side diagnostics
+- you want browser-side telemetry
+
+Example usage:
+
+```ts
+export default defineNuxtPlugin((nuxtApp) => {
+  console.info('[nfz] client module ready', !!nuxtApp.$api)
+})
+```
+
+Typical cases: Feathers client debugging, frontend instrumentation, browser-only helpers.
+
+### `hook`
+
+A `hook` is a **reusable Feathers hook function**.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod add middleware attach-tenant --target hook
+```
+
+Generated file:
+
+```txt
+server/feathers/hooks/attach-tenant.ts
+```
+
+Use it when:
+- you need to enrich `context.params`
+- you want to transform `context.data`
+- you need reusable before/after/around logic
+
+Example usage:
+
+```ts
+import { attachTenant } from '../hooks/attach-tenant'
+
+export const before = {
+  all: [attachTenant()]
+}
+```
+
+Typical cases: multi-tenant context, data normalization, context enrichment.
+
+### `policy`
+
+A `policy` is a specialized **authorization guard**.
+
+Associated CLI command:
+
+```bash
+bunx nuxt-feathers-zod add middleware is-admin --target policy
+```
+
+Generated file:
+
+```txt
+server/feathers/policies/is-admin.ts
+```
+
+Use it when:
+- you need explicit allow/deny logic
+- you want a centralized RBAC rule
+- you want to protect a service or a method
+
+Example usage:
+
+```ts
+import { isAdminPolicy } from '../policies/is-admin'
+
+export const before = {
+  all: [isAdminPolicy()]
+}
+```
+
+Typical cases: admin-only, same-user-or-admin, business access control rules.
+
+### Practical summary
+
+- `plugin`: global server-side Feathers extension
+- `server-module`: server/infrastructure extension
+- `module`: alias of `server-module`
+- `client-module`: Nuxt client plugin
+- `hook`: reusable Feathers hook logic
+- `policy`: authorization-focused hook
 
 ## Minimum stability check
 
@@ -272,9 +503,14 @@ Main flags:
 - `--remove-field <name>`
 - `--set-field <spec>`
 - `--rename-field <from:to>`
+- `--validate`
+- `--repair-auth`
+- `--diff`
 - `--servicesDir <dir>`
 - `--force`
 - `--dry`
+
+`--validate` checks manifest ↔ generated-files coherence. `--repair-auth` restores the expected baseline for an auth-compatible `users` service. `--diff` helps inspect drift before writing changes.
 
 ## `add middleware <name>`
 
@@ -287,14 +523,10 @@ bunx nuxt-feathers-zod add middleware auth-keycloak --target route
 
 Supported targets:
 
-- `nitro`
-- `route`
-- `feathers`
-- `server-module`
-- `module`
-- `client-module`
-- `hook`
-- `policy`
+- **recommended public targets**: `nitro`, `route`
+- **advanced targets**: `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
+
+Public docs recommend starting with `nitro` and `route`. The other targets remain supported but mostly address expert or internal scaffolding needs.
 
 ## `add server-module <name>`
 

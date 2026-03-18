@@ -232,13 +232,23 @@ export default defineNuxtPlugin(async (nuxt) => {
   }
   ${put(pinia, `
   const piniaOptions = useRuntimeConfig().public._feathers.pinia
-  `)}
-  // wrap the feathers client (Pinia optional)
-  const piniaClient = ${put(pinia, `createPiniaClient(feathersClient, {
-    ssr: cm === 'remote' ? false : !!import.meta.server,
-    ...piniaOptions as CreatePiniaClientConfig,
-    pinia: nuxt.$pinia,
-  })`, `undefined`)}
+  let piniaClient: any
+  const wantsPiniaClient = piniaOptions !== false
+  const hasPinia = !!(nuxt as any).$pinia
+
+  if (wantsPiniaClient) {
+    if (!hasPinia) {
+      console.warn("[nuxt-feathers-zod] Feathers-Pinia is enabled but no Pinia instance was found (nuxtApp.$pinia is undefined). Install '@pinia/nuxt' in your Nuxt app modules, or set \`feathers.client.pinia = false\`. Falling back to the raw Feathers client for \`$api\`.")
+    }
+    else {
+      piniaClient = createPiniaClient(feathersClient, {
+        ssr: cm === 'remote' ? false : !!import.meta.server,
+        ...piniaOptions as CreatePiniaClientConfig,
+        pinia: (nuxt as any).$pinia,
+      })
+    }
+  }
+  `, `const piniaClient: any = undefined`)}
 
   // In remote mode with Pinia enabled, expose the Pinia client as $api and the raw Feathers client as $feathersClient.
   // This mirrors the usual Nuxt + feathers-pinia setup: transport/auth first, then createPiniaClient(feathersClient).

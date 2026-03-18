@@ -1,12 +1,12 @@
-[v6.4.3] CLI typecheck/test cleanup applied.
-
 # nuxt-feathers-zod
+
+> OSS reference snapshot: **v6.4.13** — CLI docs/help cleanup and command-surface alignment.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.3.9**.
+Current OSS release target: **6.4.13**.
 
 It supports two main usage patterns:
 
@@ -120,7 +120,7 @@ bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
 ```
 
-### Open OSS asset commands
+### Secondary OSS helper commands
 
 ```bash
 bunx nuxt-feathers-zod templates list
@@ -132,16 +132,73 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.3.9
+## CLI command surface in 6.4.13
 
 | Area | Commands |
 |---|---|
 | Init | `init templates`, `init embedded`, `init remote` |
 | Remote auth | `remote auth keycloak` |
 | Services | `add service`, `add remote-service`, `auth service`, `schema` |
-| Runtime scaffolding | `add middleware`, `add server-module`, `add mongodb-compose`, `mongo management` |
-| OSS assets | `templates list`, `plugins list/add`, `modules list/add`, `middlewares list/add` |
+| Runtime scaffolding | `add middleware`, `schema`, `add server-module`, `add mongodb-compose`, `mongo management` |
+| Secondary OSS helpers | `templates list`, `plugins list/add`, `modules list/add`, `middlewares list/add` |
 | Diagnostics | `doctor` |
+
+
+## Public CLI focus
+
+The public OSS docs now foreground these commands as the **stable core**:
+
+- `init embedded`
+- `init remote`
+- `remote auth keycloak`
+- `add service <name>`
+- `add remote-service <name>`
+- `add middleware <name>`
+- `schema <service>`
+- `auth service <name>`
+- `mongo management`
+- `doctor`
+
+The following commands remain supported, but are now treated as **secondary helpers or compatibility aliases** in the docs:
+
+- `add custom-service <name>`
+- `templates list` / `init templates`
+- `plugins list|add`
+- `modules list|add`
+- `middlewares list|add`
+- `add server-module <name>`
+- `add mongodb-compose`
+
+## Schema maintenance quick reference
+
+```bash
+bunx nuxt-feathers-zod schema users --show
+bunx nuxt-feathers-zod schema users --validate
+bunx nuxt-feathers-zod schema users --diff
+bunx nuxt-feathers-zod schema users --repair-auth
+```
+
+Key `schema` flags:
+
+- `--show` / `--json` / `--export`
+- `--set-mode none|zod|json`
+- `--add-field`, `--set-field`, `--remove-field`, `--rename-field`
+- `--validate`
+- `--repair-auth` for auth-enabled `users` baselines
+- `--dry` / `--force`
+
+## `add middleware` target matrix
+
+| Target | Purpose | Status in docs |
+|---|---|---|
+| `nitro` | Nitro/H3 middleware | public |
+| `route` | Nuxt route middleware in `app/middleware` | public |
+| `feathers` | Feathers server plugin/middleware artifact | advanced |
+| `server-module` | embedded Feathers server module | advanced |
+| `module` | generic module artifact | advanced |
+| `client-module` | client-side module artifact | advanced |
+| `hook` | Feathers hook scaffold | advanced |
+| `policy` | policy/guard scaffold | advanced |
 
 ## Auth-aware generation for `users`
 

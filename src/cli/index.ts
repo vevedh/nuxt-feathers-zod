@@ -919,7 +919,7 @@ export function createCliCommand() {
   const addMiddlewareCommand = defineCommand({
     meta: {
       name: 'middleware',
-      description: 'Generate middleware',
+      description: 'Generate middleware or middleware-like artifacts',
     },
     args: {
       name: { type: 'positional', required: true, description: 'Middleware name' },
@@ -935,7 +935,7 @@ export function createCliCommand() {
   const addServerModuleCommand = defineCommand({
     meta: {
       name: 'server-module',
-      description: 'Generate a reusable server module',
+      description: 'Generate an embedded server module (advanced)',
     },
     args: {
       name: { type: 'positional', required: true, description: 'Module name' },
