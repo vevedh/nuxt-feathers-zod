@@ -128,7 +128,10 @@ function setTsIncludes(options: ResolvedOptions, nuxt: Nuxt) {
     // nitroConfig.typescript may be undefined depending on Nuxt/Nitro version
     nitroConfig.typescript = nitroConfig.typescript || {}
     nitroConfig.typescript.tsConfig = nitroConfig.typescript.tsConfig || {}
-    nitroConfig.typescript.tsConfig.include = dedupeStrings([...(nitroConfig.typescript.tsConfig.include || []), ...includeGlobs])
+    nitroConfig.typescript.tsConfig.include = dedupeStrings([
+      ...(nitroConfig.typescript.tsConfig.include || []),
+      ...includeGlobs,
+    ])
   })
 }
 
@@ -303,12 +306,12 @@ export default defineNuxtModule<ModuleOptions>({
         )
         if (enableAuthBootstrap) {
           addImports({ from: resolver.resolve('./runtime/stores/auth'), name: 'useAuthStore' })
-          addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/feathers-auth') })
+          addPlugin({ order: 21, src: resolver.resolve('./runtime/plugins/feathers-auth') })
         }
 
         // Keycloak SSO can be used in both embedded and remote modes.
         if (resolvedOptions.keycloak) {
-          addPlugin({ order: 1, src: resolver.resolve('./runtime/plugins/keycloak-sso'), mode: 'client' })
+          addPlugin({ order: 22, src: resolver.resolve('./runtime/plugins/keycloak-sso'), mode: 'client' })
         }
       }
 
@@ -328,7 +331,7 @@ export default defineNuxtModule<ModuleOptions>({
       // This avoids creating remote transports during SSR and aligns with the
       // official Feathers/Feathers-Pinia Nuxt plugin pattern.
       addPlugin({
-        order: 0,
+        order: 20,
         src: clientPluginDst ?? resolver.resolve(resolvedOptions.templateDir, 'client/plugin.ts'),
         ...(mode === 'remote' ? { mode: 'client' as const } : {}),
       })

@@ -1,5 +1,6 @@
-import { defineNuxtPlugin } from '#app'
+import { defineNuxtPlugin, useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
+import { getPublicRemoteAuthConfig, hasPublicKeycloakConfig } from '../utils/config'
 
 /**
  * Client-side authentication bootstrap.
@@ -28,6 +29,12 @@ export default defineNuxtPlugin({
       return
 
     const auth = useAuthStore(nuxtApp.$pinia)
+    const pub = useRuntimeConfig().public
+    const remoteAuth = getPublicRemoteAuthConfig(pub)
+    const keycloakPayloadMode = hasPublicKeycloakConfig(pub) && remoteAuth?.enabled && remoteAuth?.payloadMode === 'keycloak'
+    if (keycloakPayloadMode)
+      return
+
     try {
       await auth.reAuthenticate()
     }

@@ -195,6 +195,31 @@ export default defineNuxtPlugin(async (nuxt) => {
     return jwt.value || null
   }
 
+  function getPiniaAuthStore() {
+    return (nuxt as any)?.$pinia?._s?.get?.('auth') || null
+  }
+
+  function syncPiniaAuthStore(result: any, fallbackToken: string | null, authenticated: boolean, error?: any) {
+    const store = getPiniaAuthStore()
+    if (!store)
+      return
+
+    const resolvedToken = result?.accessToken ?? result?.access_token ?? result?.authentication?.accessToken ?? result?.authentication?.access_token ?? fallbackToken ?? null
+    if (authenticated) {
+      store.accessToken = resolvedToken
+      if (result && typeof result === 'object' && 'user' in result)
+        store.user = result.user ?? store.user ?? null
+      store.authenticated = true
+      store.error = null
+      return
+    }
+
+    store.accessToken = null
+    store.authenticated = false
+    if (error !== undefined)
+      store.error = error
+  }
+
   async function remoteAuthenticate(reason: string) {
     if (import.meta.server || cm !== 'remote' || !ra?.enabled)
       return
@@ -205,15 +230,51 @@ export default defineNuxtPlugin(async (nuxt) => {
     try {
       if (token) {
         const payload = buildRemoteAuthPayload(token, ra)
-        await api.authenticate?.(payload)
+        const result = await api.authenticate?.(payload)
+        syncPiniaAuthStore(result, token, true)
         return
       }
 
-      if (ra?.reauth !== false)
-        await api.reAuthenticate?.()
+      if (ra?.reauth !== false) {
+        const result = await api.reAuthenticate?.()
+        syncPiniaAuthStore(result, null, true)
+      }
     }
     catch (e) {
+      syncPiniaAuthStore(null, null, false, e)
       // ignore startup/reconnect auth errors
+    }
+  }
+
+  async function waitForPinia() {
+    if (import.meta.server)
+      return (nuxt as any).$pinia
+
+    for (let i = 0; i < 40; i++) {
+      const pinia = (nuxt as any).$pinia
+      if (pinia)
+        return pinia
+      await new Promise(resolve => window.setTimeout(resolve, i < 5 ? 0 : 25))
+    }
+
+    return (nuxt as any).$pinia
+  }
+  ${put(pinia, `
+  const piniaOptions = useRuntimeConfig().public._feathers.pinia
+  let piniaClient: any
+  const wantsPiniaClient = piniaOptions !== false
+  const piniaInstance = wantsPiniaClient ? await waitForPinia() : null
+
+  if (wantsPiniaClient) {
+    if (!piniaInstance) {
+      console.warn("[nuxt-feathers-zod] Feathers-Pinia is enabled but no Pinia instance was found after waiting for Nuxt app initialization (nuxtApp.$pinia is undefined). Install '@pinia/nuxt' in your Nuxt app modules, or set \`feathers.client.pinia = false\`. Falling back to the raw Feathers client for \`$api\`.")
+    }
+    else {
+      piniaClient = createPiniaClient(feathersClient, {
+        ssr: cm === 'remote' ? false : !!import.meta.server,
+        ...piniaOptions as CreatePiniaClientConfig,
+        pinia: piniaInstance,
+      })
     }
   }
 
@@ -227,24 +288,6 @@ export default defineNuxtPlugin(async (nuxt) => {
       })
       socket.on('reconnect', () => {
         void remoteAuthenticate('socket-reconnect')
-      })
-    }
-  }
-  ${put(pinia, `
-  const piniaOptions = useRuntimeConfig().public._feathers.pinia
-  let piniaClient: any
-  const wantsPiniaClient = piniaOptions !== false
-  const hasPinia = !!(nuxt as any).$pinia
-
-  if (wantsPiniaClient) {
-    if (!hasPinia) {
-      console.warn("[nuxt-feathers-zod] Feathers-Pinia is enabled but no Pinia instance was found (nuxtApp.$pinia is undefined). Install '@pinia/nuxt' in your Nuxt app modules, or set \`feathers.client.pinia = false\`. Falling back to the raw Feathers client for \`$api\`.")
-    }
-    else {
-      piniaClient = createPiniaClient(feathersClient, {
-        ssr: cm === 'remote' ? false : !!import.meta.server,
-        ...piniaOptions as CreatePiniaClientConfig,
-        pinia: (nuxt as any).$pinia,
       })
     }
   }

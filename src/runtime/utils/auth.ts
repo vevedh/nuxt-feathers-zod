@@ -2,13 +2,25 @@ export function getAccessTokenFromResult(result: any): string | null {
   if (!result || typeof result !== 'object')
     return null
 
-  const direct = result.accessToken
-  if (typeof direct === 'string' && direct)
-    return direct
+  const directAliases = [
+    result.accessToken,
+    result.access_token,
+    result.token,
+  ]
+  for (const candidate of directAliases) {
+    if (typeof candidate === 'string' && candidate)
+      return candidate
+  }
 
-  const nested = result.authentication?.accessToken
-  if (typeof nested === 'string' && nested)
-    return nested
+  const nestedAliases = [
+    result.authentication?.accessToken,
+    result.authentication?.access_token,
+    result.authentication?.token,
+  ]
+  for (const candidate of nestedAliases) {
+    if (typeof candidate === 'string' && candidate)
+      return candidate
+  }
 
   return null
 }

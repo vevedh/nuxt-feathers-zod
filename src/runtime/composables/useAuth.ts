@@ -12,8 +12,6 @@ export function useAuth() {
   const pub = rc.public
 
   const provider = computed<AuthProvider>(() => {
-    // Allow an explicit override via env/runtimeConfig.
-    // Note: `NUXT_PUBLIC_FEATHERS_AUTH_PROVIDER=keycloak` becomes `public.FEATHERS_AUTH_PROVIDER`.
     const forced = getForcedAuthProvider(pub)
     if (forced === 'keycloak')
       return 'keycloak'
@@ -25,8 +23,6 @@ export function useAuth() {
     const cm = getPublicClientMode(pub)
     const remoteAuth = getPublicRemoteAuthConfig(pub)
 
-    // Hybrid mode: Keycloak SSO + remote Feathers auth.
-    // If Keycloak is configured, prefer it when remote auth payload is keycloak.
     if (hasPublicKeycloakConfig(pub) && cm === 'remote' && remoteAuth?.enabled && remoteAuth?.payloadMode === 'keycloak')
       return 'keycloak'
 
@@ -46,24 +42,48 @@ export function useAuth() {
     try {
       return useAuthStore()
     }
-    catch (e) {
+    catch {
       return null
     }
   })
 
-  const isAuthenticated = computed(() => {
+  const ssoUser = computed(() => {
+    const kc = keycloak.value
+    return kc?.user ?? (kc?.tokenParsed ? { ...kc.tokenParsed, userid: kc.userid ?? kc.tokenParsed?.preferred_username } : null)
+  })
+
+  const feathersUser = computed(() => authStore.value?.user ?? null)
+
+  const ssoToken = computed<string | null>(() => keycloak.value?.token?.() ?? null)
+  const feathersToken = computed<string | null>(() => authStore.value?.accessToken ?? null)
+
+  const isSsoAuthenticated = computed(() => {
+    if (provider.value !== 'keycloak')
+      return false
+    return Boolean(keycloak.value?.authenticated)
+  })
+
+  const isFeathersAuthenticated = computed(() => {
     if (provider.value === 'keycloak')
-      return Boolean(keycloak.value?.authenticated)
+      return Boolean(authStore.value?.authenticated || keycloak.value?.authenticated)
     if (provider.value === 'local' || provider.value === 'remote')
       return Boolean(authStore.value?.authenticated)
     return false
   })
 
+  const isAuthenticated = computed(() => {
+    if (provider.value === 'keycloak')
+      return Boolean(isSsoAuthenticated.value || isFeathersAuthenticated.value)
+    if (provider.value === 'local' || provider.value === 'remote')
+      return Boolean(isFeathersAuthenticated.value)
+    return false
+  })
+
   const user = computed(() => {
     if (provider.value === 'keycloak')
-      return keycloak.value?.user ?? null
+      return feathersUser.value ?? ssoUser.value ?? null
     if (provider.value === 'local' || provider.value === 'remote')
-      return authStore.value?.user ?? null
+      return feathersUser.value ?? null
     return null
   })
 
@@ -75,9 +95,9 @@ export function useAuth() {
 
   const token = computed<string | null>(() => {
     if (provider.value === 'keycloak')
-      return keycloak.value?.token?.() ?? null
+      return feathersToken.value ?? ssoToken.value ?? null
     if (provider.value === 'local' || provider.value === 'remote')
-      return authStore.value?.accessToken ?? null
+      return feathersToken.value ?? null
     return null
   })
 
@@ -85,7 +105,6 @@ export function useAuth() {
     if (import.meta.server)
       return
 
-    // Allow retry when Keycloak is authenticated but user not materialized yet
     if (ready.value) {
       if (provider.value !== 'keycloak')
         return
@@ -93,18 +112,16 @@ export function useAuth() {
         return
       if (user.value)
         return
-      // fallthrough: try to materialize user once we have a token and $api
     }
 
-    // Keycloak: if authenticated, materialize user via bridge service
     if (provider.value === 'keycloak') {
       const kc = keycloak.value
-      if (kc?.authenticated && typeof kc.whoami === 'function') {
+      if (kc?.authenticated && typeof kc.ensureFeathersAuth === 'function')
+        await kc.ensureFeathersAuth('useAuth.init').catch(() => false)
+      if (kc?.authenticated && typeof kc.whoami === 'function')
         await kc.whoami().catch(() => null)
-      }
     }
 
-    // Local/Remote auth: attempt restore if store supports it, otherwise try api.reAuthenticate
     if (provider.value === 'local' || provider.value === 'remote') {
       const s: any = authStore.value
       if (s?.restore) {
@@ -148,9 +165,15 @@ export function useAuth() {
     provider,
     ready,
     isAuthenticated,
+    isSsoAuthenticated,
+    isFeathersAuthenticated,
     user,
+    ssoUser,
+    feathersUser,
     permissions,
     token,
+    ssoToken,
+    feathersToken,
     init,
     login,
     logout,

@@ -9,7 +9,7 @@ Entry command:
 bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Official OSS surface aligned with **v6.4.13**.
+Official OSS surface aligned with **v6.4.37**.
 
 ## Recommended public core
 

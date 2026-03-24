@@ -296,7 +296,9 @@ export async function resolveServerOptions(
   return {
     ...resolvedPlugins,
     enabled: (server as any)?.enabled ?? serverDefaults.enabled,
-    loadOrder: forceArray((server as any)?.loadOrder).length ? forceArray((server as any)?.loadOrder) as any : serverDefaults.loadOrder,
+    loadOrder: forceArray((server as any)?.loadOrder).length
+      ? forceArray((server as any)?.loadOrder) as any
+      : serverDefaults.loadOrder,
     secureDefaults: (server as any)?.secureDefaults ?? serverDefaults.secureDefaults,
     secure: (server as any)?.secure ?? serverDefaults.secure,
     modules: [

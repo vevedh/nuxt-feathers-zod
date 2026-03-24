@@ -1,7 +1,7 @@
 import type { Nuxt } from '@nuxt/schema'
 import type { ResolvedOptions } from './runtime/options'
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { addCustomTab } from '@nuxt/devtools-kit'
 import { addDevServerHandler } from '@nuxt/kit'
@@ -10,11 +10,41 @@ import { eventHandler, setHeader } from 'h3'
 const DEVTOOLS_ROUTE = '/__nfz-devtools'
 const DEVTOOLS_ROUTE_JSON = '/__nfz-devtools.json'
 const DEVTOOLS_ROUTE_CSS = '/__nfz-devtools.css'
+const DEVTOOLS_ROUTE_ICON = '/__nfz-devtools-icon.png'
 
-const VENDORED_STYLES = readFileSync(
-  fileURLToPath(new URL('./runtime/devtools-ui-kit/assets/styles.css', import.meta.url)),
-  'utf8',
-)
+function tryReadTextAsset(relativePath: string, fallback = '') {
+  try {
+    const filePath = fileURLToPath(new URL(relativePath, import.meta.url))
+    if (!existsSync(filePath))
+      return fallback
+    return readFileSync(filePath, 'utf8')
+  }
+  catch {
+    return fallback
+  }
+}
+
+function tryReadBinaryAsset(relativePath: string, fallback: Uint8Array = new Uint8Array()) {
+  try {
+    const filePath = fileURLToPath(new URL(relativePath, import.meta.url))
+    if (!existsSync(filePath))
+      return fallback
+    return readFileSync(filePath)
+  }
+  catch {
+    return fallback
+  }
+}
+
+function getVendoredStyles() {
+  return tryReadTextAsset('./runtime/devtools-ui-kit/assets/styles.css')
+}
+
+function getDevtoolsIconBuffers() {
+  const light = tryReadBinaryAsset('./public/plume-light.png')
+  const dark = tryReadBinaryAsset('./public/plume-dark.png', light)
+  return { light, dark }
+}
 
 export interface NfzDevtoolsPayload {
   mode: 'embedded' | 'remote'
@@ -109,6 +139,52 @@ function renderHtml(payload: NfzDevtoolsPayload) {
       html.dark { --nfz-bg: #0b1020; --nfz-bg-elevated: rgba(10,15,29,.9); --nfz-card: rgba(17,24,39,.72); --nfz-border: rgba(127,127,127,.22); --nfz-text: #e5e7eb; --nfz-muted: #a1a1aa; }
       html.parent-theme-synced .nfz-sub::after { content: ' · synced with parent theme'; }
     </style>
+
+    <script>
+      (() => {
+        const docEl = document.documentElement
+        function applyTheme(theme) {
+          docEl.classList.remove('dark', 'light')
+          docEl.classList.add(theme)
+        }
+        function readThemeFromElement(el) {
+          if (!el)
+            return null
+          const className = String(el.className || '')
+          const dataTheme = String(el.getAttribute('data-theme') || '')
+          const dataColorMode = String(el.getAttribute('data-color-mode') || '')
+          const computed = window.parent.getComputedStyle(el)
+          const colorScheme = String(computed.colorScheme || '')
+          const isDark = /(^|\s)dark(\s|$)/.test(className)
+            || dataTheme === 'dark'
+            || dataColorMode === 'dark'
+            || colorScheme.includes('dark')
+          const isLight = /(^|\s)light(\s|$)/.test(className)
+            || dataTheme === 'light'
+            || dataColorMode === 'light'
+            || colorScheme.includes('light')
+          if (!isDark && !isLight)
+            return null
+          return { isDark }
+        }
+        function getParentThemeState() {
+          try {
+            if (window.parent === window)
+              return null
+            const parentDoc = window.parent?.document
+            return readThemeFromElement(parentDoc?.documentElement) || readThemeFromElement(parentDoc?.body)
+          }
+          catch {
+            return null
+          }
+        }
+        const parentTheme = getParentThemeState()
+        if (parentTheme)
+          applyTheme(parentTheme.isDark ? 'dark' : 'light')
+        else
+          applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      })()
+    </script>
   </head>
   <body>
     <div class="nfz-shell">
@@ -220,21 +296,35 @@ function renderHtml(payload: NfzDevtoolsPayload) {
       })
 
       const docEl = document.documentElement
-      const rootThemeAttrs = ['class', 'data-theme', 'style']
+      const rootThemeAttrs = ['class', 'data-theme', 'data-color-mode', 'style']
+
+      function readThemeFromElement(el) {
+        if (!el)
+          return null
+        const className = String(el.className || '')
+        const dataTheme = String(el.getAttribute('data-theme') || '')
+        const dataColorMode = String(el.getAttribute('data-color-mode') || '')
+        const computed = window.parent.getComputedStyle(el)
+        const colorScheme = String(computed.colorScheme || '')
+        const isDark = /(^|\s)dark(\s|$)/.test(className)
+          || dataTheme === 'dark'
+          || dataColorMode === 'dark'
+          || colorScheme.includes('dark')
+        const isLight = /(^|\s)light(\s|$)/.test(className)
+          || dataTheme === 'light'
+          || dataColorMode === 'light'
+          || colorScheme.includes('light')
+        if (!isDark && !isLight)
+          return null
+        return { isDark }
+      }
 
       function getParentThemeState() {
         try {
-          const parentEl = window.parent?.document?.documentElement
-          if (!parentEl)
+          if (window.parent === window)
             return null
-          const className = String(parentEl.className || '')
-          const dataTheme = String(parentEl.getAttribute('data-theme') || '')
-          const computed = window.parent.getComputedStyle(parentEl)
-          const colorScheme = String(computed.colorScheme || '')
-          const isDark = /(^|\s)dark(\s|$)/.test(className)
-            || dataTheme === 'dark'
-            || colorScheme.includes('dark')
-          return { isDark, className, dataTheme }
+          const parentDoc = window.parent?.document
+          return readThemeFromElement(parentDoc?.documentElement) || readThemeFromElement(parentDoc?.body)
         }
         catch {
           return null
@@ -259,24 +349,43 @@ function renderHtml(payload: NfzDevtoolsPayload) {
         return false
       }
 
-      syncThemeFromParent()
-
-      let parentObserver = null
-      try {
-        const parentEl = window.parent?.document?.documentElement
-        if (parentEl && window.parent !== window) {
-          parentObserver = new window.MutationObserver(() => syncThemeFromParent())
-          parentObserver.observe(parentEl, { attributes: true, attributeFilter: rootThemeAttrs })
+      let parentObservers = []
+      function attachParentObservers() {
+        try {
+          if (window.parent === window || parentObservers.length)
+            return
+          const parentDoc = window.parent?.document
+          const targets = [parentDoc?.documentElement, parentDoc?.body].filter(Boolean)
+          parentObservers = targets.map((target) => {
+            const observer = new window.MutationObserver(() => syncThemeFromParent())
+            observer.observe(target, { attributes: true, attributeFilter: rootThemeAttrs })
+            return observer
+          })
         }
+        catch {}
       }
-      catch {}
+
+      syncThemeFromParent()
+      attachParentObservers()
+      ;[32, 120, 260, 600, 1200].forEach((delay) => {
+        window.setTimeout(() => {
+          syncThemeFromParent()
+          attachParentObservers()
+        }, delay)
+      })
 
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
         syncThemeFromParent()
       })
 
+      window.addEventListener('load', () => {
+        syncThemeFromParent()
+        attachParentObservers()
+      })
+
       themeBtn.addEventListener('click', () => {
         syncThemeFromParent()
+        attachParentObservers()
       })
     </script>
   </body>
@@ -366,7 +475,7 @@ export function setupNfzDevtools(nuxt: Nuxt, options: ResolvedOptions, extras?: 
     route: DEVTOOLS_ROUTE_CSS,
     handler: eventHandler((event) => {
       setHeader(event, 'content-type', 'text/css; charset=utf-8')
-      return VENDORED_STYLES
+      return getVendoredStyles()
     }),
   })
 
@@ -375,6 +484,20 @@ export function setupNfzDevtools(nuxt: Nuxt, options: ResolvedOptions, extras?: 
     handler: eventHandler((event) => {
       setHeader(event, 'content-type', 'application/json; charset=utf-8')
       return payload
+    }),
+  })
+
+  // Register the icon route before the iframe route to avoid any prefix/fallback capture
+  // where `/__nfz-devtools-icon.png` could be matched by `/__nfz-devtools` first.
+  addDevServerHandler({
+    route: DEVTOOLS_ROUTE_ICON,
+    handler: eventHandler((event) => {
+      const prefersDark = String(event.node.req.headers['sec-ch-prefers-color-scheme'] || '').toLowerCase().includes('dark')
+      setHeader(event, 'content-type', 'image/png')
+      setHeader(event, 'cache-control', 'public, max-age=3600')
+      setHeader(event, 'vary', 'Sec-CH-Prefers-Color-Scheme')
+      const icons = getDevtoolsIconBuffers()
+      return prefersDark ? icons.dark : icons.light
     }),
   })
 
@@ -389,10 +512,10 @@ export function setupNfzDevtools(nuxt: Nuxt, options: ResolvedOptions, extras?: 
   addCustomTab({
     name: 'nfz-oss',
     title: 'NFZ',
-    icon: 'carbon:data-base',
+    icon: DEVTOOLS_ROUTE_ICON,
     view: {
       type: 'iframe',
       src: DEVTOOLS_ROUTE,
     },
-  }, nuxt)
+  })
 }

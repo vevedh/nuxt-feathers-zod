@@ -1,3 +1,40 @@
+# Changelog
+
+## 6.4.37
+
+- remote + Keycloak: SSO authentication now hydrates the local Feathers client auth store immediately
+- remote handshake can use the configured strategy (for example `sso`) while preserving a coherent local fallback state
+- `useAuth()` exposes separate SSO and Feathers state to avoid mixed `user/token` semantics
+- docs updated for the remote Keycloak contract and backend requirement
+
+## 6.4.34
+
+- Remote mode: hardened Feathers-Pinia bootstrap by waiting for `nuxtApp.$pinia` before creating the client, avoiding false fallback to raw `$api` during early client initialization.
+- Remote mode: delayed remote auth bootstrap until after Pinia readiness so auth store hydration and Feathers-Pinia stay coherent.
+- DevTools: restored NFZ plume branding from `public/plume-light.png` / `public/plume-dark.png` instead of the embedded fallback icon.
+- DevTools: icon route now varies on `Sec-CH-Prefers-Color-Scheme` and iframe theme sync with parent remains enabled by default.
+
+## 6.4.33
+- remote + Keycloak auth sync hardening: the Keycloak plugin no longer marks Pinia auth as authenticated when Feathers `authenticate()` actually failed.
+- remote client bootstrap now mirrors successful `authenticate()` / `reAuthenticate()` results into the Pinia auth store so Feathers session state is visible immediately in remote mode.
+- auth token extraction now accepts `accessToken`, `access_token`, and `token` (including nested `authentication.*` variants) for better IdP/backend interoperability.
+
+## 6.4.31
+- Fixed NFZ DevTools icon routing by registering `/__nfz-devtools-icon.png` before the iframe route `/__nfz-devtools` to avoid route capture in consumer apps.
+- Kept parent theme auto-sync logic for the NFZ DevTools iframe.
+
+## 6.4.31
+
+- DevTools tab icon now uses theme-aware NFZ plume assets via `public/plume-light.png` and `public/plume-dark.png`.
+- NFZ DevTools iframe now applies the parent DevTools theme before first paint to match the active DevTools theme by default.
+- Added a dedicated DevTools icon route `'/__nfz-devtools-icon.svg'` and switched the custom tab icon from Carbon to the NFZ plume.
+
+## 6.4.31
+
+- Fixed Windows CLI build wrapper by invoking Bun through cmd.exe /d /s /c on Windows and sh -lc elsewhere.
+- Removed fragile direct spawn of bun.cmd that was failing with spawnSync EINVAL on Node 22 / Windows.
+- Kept dist/cli/package.json generation after successful bundle.
+
 
 ## v6.4.17
 - Fixed template-string escaping regressions in `src/cli/core.ts` and `src/runtime/templates/client/plugin.ts`.
@@ -9,9 +46,9 @@
 ## v6.4.15
 - client remote/runtime: when `feathers.client.pinia` is enabled but `nuxtApp.$pinia` is missing, log a clear warning and fall back to the raw Feathers client for `$api` instead of crashing in `createPiniaClient`.
 
-## v6.4.13
+## v6.4.31
 
-- docs(cli): resynchronized README, FR/EN CLI guides, and CLI reference pages around the public v6.4.13 command surface
+- docs(cli): resynchronized README, FR/EN CLI guides, and CLI reference pages around the public v6.4.31 command surface
 - docs(schema): documented `--validate`, `--repair-auth`, and `--diff` as first-class schema maintenance flags
 - docs(help): clarified `add middleware` target guidance (`nitro` and `route` as public targets, others as advanced)
 - cli(help): refreshed built-in help text and command descriptions for middleware and schema maintenance
@@ -177,6 +214,29 @@
 - CLI: updated `renderAuthKeycloakRouteMiddleware()` so generated Nuxt route middleware now cleans OIDC Keycloak callback hash fragments (`#state=...&session_state=...&code=...`) via `history.replaceState(...)` before auth init.
 - Prevents Vue Router warnings caused by invalid CSS selector hashes after `check-sso` redirects.
 
-## v6.4.18
+## v6.4.31
 - Fix CLI build regression in renderAuthKeycloakRouteMiddleware by replacing an invalid nested template literal with string concatenation (`window.location.pathname + window.location.search`).
 - Keep package.json version in sync.
+
+## 6.4.31
+- DevTools registration switched from untyped `nuxt.hook('devtools:customTabs', ...)` to `addCustomTab(...)`.
+- NFZ tab icon is now served by the module on `/__nfz-devtools-icon.png` for consumer-app reliability.
+- Keeps parent-theme sync logic for the NFZ DevTools iframe.
+
+## 6.4.31
+- DevTools: local icon route now serves an embedded 64x64 plume PNG buffer instead of reading public/plume-light.png at runtime.
+- DevTools: parent theme auto-sync now retries after load and observes both html/body with data-theme and data-color-mode support.
+
+
+## 6.4.32
+- Remote mode + payloadMode=keycloak: Keycloak authenticated state now synchronizes the Feathers client auth session automatically.
+- The auth store is marked authenticated with a token fallback to keycloak.token, and protected services using authentication('jwt') are authorized on boot and token refresh.
+- feathers-auth bootstrap skips reAuthenticate() in remote Keycloak payload mode; keycloak-sso becomes the source of truth for auth session bootstrap.
+
+
+## 6.4.35
+- devtools asset loading made lazy and fault-tolerant to avoid module prepare failure masked as src/module.ts load error
+- public release metadata resynchronized to 6.4.35
+- devtools plume icon/theme-parent behavior preserved
+
+- 6.4.37: remote Keycloak Option B contract (`strategy: 'sso'`, `user: loginuser`, `authenticated: true`) is now first-class in the runtime and docs; generated route middleware no longer re-runs `auth.init()` or reuses callback hashes in redirect URIs.

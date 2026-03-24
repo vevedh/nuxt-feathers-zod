@@ -1,4 +1,5 @@
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
+import { useAuthStore } from '../stores/auth'
 import Keycloak from 'keycloak-js'
 import { buildRemoteAuthPayload } from '../utils/auth'
 import { getPublicClientMode, getPublicRemoteAuthConfig } from '../utils/config'
@@ -28,6 +29,7 @@ interface KeycloakProvide {
   logout(opts?: any): Promise<void>
   updateToken(minValidity?: number): Promise<boolean>
   whoami(): Promise<{ user?: any, permissions?: any[] } | null>
+  ensureFeathersAuth(reason?: string): Promise<boolean>
 }
 
 export default defineNuxtPlugin(async (nuxtApp: any) => {
@@ -52,6 +54,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
       logout: async () => {},
       updateToken: async () => false,
       whoami: async () => null,
+      ensureFeathersAuth: async () => false,
       user: undefined,
       permissions: [],
     } as any)
@@ -78,6 +81,21 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
 
   const authenticated = keycloak.authenticated === true && (initResult as { authenticated?: boolean })?.authenticated !== false
   const userid = keycloak?.tokenParsed?.preferred_username
+
+  function buildSsoUser() {
+    return keycloak.tokenParsed ? { ...keycloak.tokenParsed, userid } : (userid ? { userid } : null)
+  }
+
+  function getSsoLoginUser() {
+    const parsed = keycloak.tokenParsed as Record<string, any> | undefined
+    const candidate = parsed?.preferred_username
+      ?? parsed?.username
+      ?? parsed?.email
+      ?? userid
+      ?? parsed?.sub
+      ?? null
+    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null
+  }
 
   const clientMode = getPublicClientMode(pub)
   const remoteAuth = getPublicRemoteAuthConfig(pub)
@@ -114,8 +132,10 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     refreshTimer = window.setInterval(async () => {
       try {
         const refreshed = await keycloak.updateToken(minValidity)
-        if (refreshed)
+        if (refreshed) {
+          await ensureFeathersAuth('updateToken(refreshed)')
           await safeWhoami('updateToken(refreshed)')
+        }
       }
       catch (e) {
         // If refresh fails (session expired), we keep the app running and let callers decide.
@@ -129,6 +149,70 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     })
   }
 
+
+  function getAuthStore() {
+    return nuxtApp.$pinia ? useAuthStore(nuxtApp.$pinia) : null
+  }
+
+  async function ensureFeathersAuth(reason = 'keycloak-init') {
+    if (!authenticated)
+      return false
+    if (!('$api' in nuxtApp) || !nuxtApp.$api)
+      return false
+
+    const token = keycloak.token
+    if (!token)
+      return false
+
+    const store = getAuthStore()
+    const ssoUser = provided.user ?? buildSsoUser()
+    const loginuser = getSsoLoginUser()
+
+    // As soon as Keycloak SSO is authenticated, the local Feathers client state
+    // is also considered authenticated. Remote handshake comes second.
+    if (store) {
+      store.setSession({
+        accessToken: token,
+        user: ssoUser ?? null,
+        authenticated: true,
+        error: null,
+      })
+    }
+
+    try {
+      const payload = {
+        ...buildRemoteAuthPayload(token, remoteAuth),
+        user: loginuser ?? undefined,
+        authenticated: true,
+      }
+      const result = await nuxtApp.$api.authenticate(payload)
+      const accessToken = result?.accessToken ?? result?.access_token ?? result?.authentication?.accessToken ?? result?.authentication?.access_token ?? token
+      if (store) {
+        store.setSession({
+          accessToken,
+          user: result?.user ?? ssoUser ?? null,
+          authenticated: true,
+          error: null,
+        })
+      }
+      provided.user = result?.user ?? ssoUser ?? provided.user
+      return true
+    }
+    catch (e) {
+      console.warn('[nuxt-feathers-zod][keycloak-sso] ensureFeathersAuth failed:', reason, e)
+      if (store) {
+        store.setSession({
+          accessToken: token,
+          user: ssoUser ?? null,
+          authenticated: true,
+          error: e,
+        })
+      }
+      provided.user = ssoUser ?? provided.user
+      return false
+    }
+  }
+
   // will be filled below; used so whoami can update exposed state
   const provided: KeycloakProvide = {
     instance: keycloak,
@@ -140,14 +224,17 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     logout: async (opts?: any) => { await keycloak.logout(opts) },
     updateToken: async (minValidity = 30) => {
       const refreshed = await keycloak.updateToken(minValidity)
-      if (refreshed)
+      if (refreshed) {
+        await ensureFeathersAuth('provided.updateToken(refreshed)')
         await safeWhoami('provided.updateToken(refreshed)')
+      }
       return refreshed
     },
     // Fallback user (will be replaced by whoami() when $api is ready)
-    user: keycloak.tokenParsed ? { ...keycloak.tokenParsed, userid } : (userid ? { userid } : undefined),
+    user: buildSsoUser() ?? undefined,
     permissions: [],
     whoami: async () => null,
+    ensureFeathersAuth,
   }
 
   async function whoami() {
@@ -169,10 +256,17 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
         ? (remoteAuth?.servicePath || 'authentication')
         : 'authentication'
 
-      const res: { user?: any, permissions?: any[] } = await nuxtApp.$api.service(servicePath).create(payload)
+      const res: { user?: any, permissions?: any[], accessToken?: string, authentication?: { accessToken?: string } } = await nuxtApp.$api.service(servicePath).create(payload)
 
       provided.user = res?.user ?? provided.user
       provided.permissions = res?.permissions || provided.permissions || []
+      const store = getAuthStore()
+      if (store) {
+        store.accessToken = res?.accessToken ?? res?.authentication?.accessToken ?? token
+        store.user = res?.user ?? provided.user ?? keycloak.tokenParsed ?? null
+        store.authenticated = true
+        store.error = null
+      }
       return res
     }
     catch {
@@ -206,14 +300,18 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
 
   // Optionnel: matérialiser user dès le boot (si authenticated)
   if (provided.authenticated) {
-    // 1) Try to materialize immediately
+    // 1) Materialize a Feathers auth session immediately when Keycloak is already authenticated
+    await ensureFeathersAuth('post-init')
+    // 2) Materialize whoami/permissions immediately
     await safeWhoami('post-init')
     // 2) Keep user/permissions fresh on token rotation
     keycloak.onTokenExpired = async () => {
       try {
         const refreshed = await keycloak.updateToken(60)
-        if (refreshed)
+        if (refreshed) {
+          await ensureFeathersAuth('onTokenExpired(refreshed)')
           await safeWhoami('onTokenExpired(refreshed)')
+        }
       }
       catch (e) {
         console.warn('[nuxt-feathers-zod][keycloak-sso] token expired and refresh failed:', e)

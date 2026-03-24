@@ -1,12 +1,12 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.13** — CLI docs/help cleanup and command-surface alignment.
+> OSS reference snapshot: **v6.4.37** — CLI docs/help cleanup and command-surface alignment.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.13**.
+Current OSS release target: **6.4.37**.
 
 It supports two main usage patterns:
 
@@ -132,7 +132,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.13
+## CLI command surface in 6.4.37
 
 | Area | Commands |
 |---|---|
@@ -277,6 +277,99 @@ bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --database app --rootPassword secret --force
 ```
 
+## Remote + Keycloak runtime contract
+
+In **remote mode** with **Keycloak SSO**, NFZ applies a two-step client contract.
+
+### Step 1 — immediate local Feathers session hydration
+
+As soon as Keycloak is authenticated in the browser, the client auth store is hydrated immediately:
+
+```ts
+authStore.authenticated = true
+authStore.accessToken = keycloak.token
+authStore.user = ssoUser
+```
+
+This guarantees that:
+- Nuxt route middleware can consider the user authenticated
+- client service calls receive `Authorization: Bearer <keycloak token>`
+- the local runtime stays coherent even before the remote Feathers API confirms the token
+
+### Step 2 — remote authentication handshake
+
+NFZ then attempts a remote Feathers authentication call using the configured remote strategy:
+
+```ts
+await api.authenticate({
+  strategy: 'sso', // or another configured remote.auth.strategy
+  accessToken: keycloak.token,
+  access_token: keycloak.token,
+  token: keycloak.token,
+  user: ssoUser,
+  authenticated: true,
+})
+```
+
+The actual strategy name comes from `feathers.client.remote.auth.strategy`.
+
+Example:
+
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: {
+      mode: 'remote',
+      remote: {
+        url: 'https://api.example.com',
+        auth: {
+          enabled: true,
+          payloadMode: 'keycloak',
+          strategy: 'sso',
+          tokenField: 'access_token',
+          servicePath: 'authentication',
+        },
+      },
+    },
+    keycloak: {
+      serverUrl: 'https://sso.example.com',
+      realm: 'myrealm',
+      clientId: 'myapp',
+    },
+  },
+})
+```
+
+### Resulting semantics in `useAuth()`
+
+In provider `keycloak`, `useAuth()` now exposes distinct states:
+
+- `isSsoAuthenticated`
+- `isFeathersAuthenticated`
+- `isAuthenticated`
+- `ssoUser`
+- `feathersUser`
+- `user`
+- `ssoToken`
+- `feathersToken`
+- `token`
+
+Resolution rules:
+
+- `user = feathersUser ?? ssoUser`
+- `token = feathersToken ?? ssoToken`
+
+### Backend requirement
+
+For protected remote services to be truly accepted by Feathers hooks such as `authenticate('jwt')`, the remote backend must accept the token and strategy you configure.
+
+Typical options:
+- validate the Keycloak token directly through the Feathers authentication strategy
+- expose a dedicated remote strategy such as `strategy: 'sso'`
+
+If the backend refuses the handshake, NFZ keeps the local client state coherent and preserves the error in the auth store for diagnostics.
+
 ## Notes
 
 - Recommended convention: `servicesDirs: ['services']`
@@ -306,3 +399,7 @@ This release hardens the CLI patcher for remote mode so chained commands keep `n
 
 
 - 6.4.1: Added automatic Keycloak `js-sha256` default-export shim alias for consumer Nuxt 4 apps to avoid browser crash from `keycloak-js` importing `js-sha256` as a default export.
+
+### Remote Keycloak `strategy: 'sso'` with option B
+
+When the remote backend expects `api.authenticate({ strategy: 'sso', user: loginuser, authenticated: true })`, NFZ now keeps the local SSO object in the auth store (`authStore.user = ssoUser`) but sends only the derived login string as `user` in the remote authenticate payload.

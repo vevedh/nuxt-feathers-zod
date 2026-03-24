@@ -3958,7 +3958,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server)
     return
 
-  const hash = to?.hash || ''
+  const hash = window.location.hash || ''
 
   // After Keycloak redirects, the hash can contain state/session_state/code which
   // is not a valid CSS selector. Clean it eagerly so Vue Router does not try to
@@ -3971,9 +3971,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuth()
   await auth.init()
 
-  if (auth.provider.value === 'keycloak' && !auth.isAuthenticated.value) {
-    await auth.login({ redirectUri: window.location.origin + to.fullPath })
+  if (auth.provider.value === 'keycloak' && !auth.isSsoAuthenticated.value) {
+    await auth.login({ redirectUri: window.location.origin + window.location.pathname + window.location.search })
+    return
   }
+
+  // Remote + Keycloak contract:
+  // - isSsoAuthenticated means the local Feathers client store is hydrated immediately
+  //   with { authenticated:true, accessToken:keycloak.token, user:ssoUser }
+  // - NFZ then attempts api.authenticate(...) using the configured remote strategy
+  //   (for example strategy:'sso') and sends { user: loginuser, authenticated: true }
+  // - If the backend does not accept that strategy/token, the client store still remains
+  //   coherent for UI/middleware purposes and the error is preserved in the auth store.
 })
 `
 }

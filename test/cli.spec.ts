@@ -6,6 +6,22 @@ import { describe, expect, it } from 'vitest'
 import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateMiddleware, generateService, runCli } from '../src/cli/index'
 const LONG_TIMEOUT = 20000
 describe('nuxt-feathers-zod CLI generators', () => {
+it('keeps public release metadata aligned with package version', async () => {
+  const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as { version: string }
+  const targets = [
+    'README.md',
+    'docs/guide/cli.md',
+    'docs/en/guide/cli.md',
+    'docs/reference/cli.md',
+    'docs/en/reference/cli.md',
+    'AI_CONTEXT/CLI_REFERENCE.md',
+  ]
+  for (const file of targets) {
+    const text = await readFile(join(process.cwd(), file), 'utf8')
+    expect(text).toContain(pkg.version)
+  }
+})
+  
 it('publishes the CLI bin from dist instead of src', async () => {
   const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as {
     bin?: Record<string, string>

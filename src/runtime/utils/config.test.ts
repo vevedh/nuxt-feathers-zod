@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { getAccessTokenFromResult } from './auth'
 import { getForcedAuthProvider, getPublicClientMode, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from './config'
 
 describe('runtime public config helpers', () => {
@@ -31,5 +32,16 @@ describe('runtime public config helpers', () => {
     const pub = { FEATHERS_AUTH_PROVIDER: 'Keycloak', _feathers: { keycloak: { realm: 'demo' } } } as any
     expect(getForcedAuthProvider(pub)).toBe('keycloak')
     expect(hasPublicKeycloakConfig(pub)).toBe(true)
+  })
+})
+
+describe('auth utils', () => {
+  it('reads access token aliases from direct and nested results', () => {
+    expect(getAccessTokenFromResult({ accessToken: 'a' })).toBe('a')
+    expect(getAccessTokenFromResult({ access_token: 'b' })).toBe('b')
+    expect(getAccessTokenFromResult({ token: 'c' })).toBe('c')
+    expect(getAccessTokenFromResult({ authentication: { accessToken: 'd' } })).toBe('d')
+    expect(getAccessTokenFromResult({ authentication: { access_token: 'e' } })).toBe('e')
+    expect(getAccessTokenFromResult({ authentication: { token: 'f' } })).toBe('f')
   })
 })

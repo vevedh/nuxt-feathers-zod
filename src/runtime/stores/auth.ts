@@ -17,30 +17,34 @@ export const useAuthStore = defineStore('auth', () => {
     ?? null,
   )
 
+  function setSession(payload: { user?: any, accessToken?: string | null, authenticated?: boolean, error?: any } = {}) {
+    state.user = payload.user ?? null
+    state.accessToken = payload.accessToken ?? null
+    state.authenticated = payload.authenticated ?? Boolean(payload.accessToken || payload.user)
+    state.error = payload.error ?? null
+  }
+
   async function authenticate(payload: any) {
     const api = useNuxtApp().$api
     const result = await api.authenticate(payload)
-    state.accessToken = getAccessTokenFromResult(result)
-    state.user = result.user
-    state.authenticated = true
+    setSession({
+      accessToken: getAccessTokenFromResult(result),
+      user: result.user,
+      authenticated: true,
+      error: null,
+    })
   }
 
   async function reAuthenticate() {
     const api = useNuxtApp().$api
     try {
       const result = await api.reAuthenticate()
-      state.accessToken = getAccessTokenFromResult(result)
-      state.user = result.user
-      state.authenticated = true
-      state.error = null
+      setSession({ accessToken: getAccessTokenFromResult(result), user: result.user, authenticated: true, error: null })
     }
     catch (e) {
       // Token invalid/expired (or auth not configured). Do not call api.logout()
       // here because some clients may throw non-standard errors during cleanup.
-      state.error = e
-      state.user = null
-      state.accessToken = null
-      state.authenticated = false
+      setSession({ accessToken: null, user: null, authenticated: false, error: e })
     }
   }
 
@@ -54,15 +58,14 @@ export const useAuthStore = defineStore('auth', () => {
       state.error = e
     }
     finally {
-      state.user = null
-      state.accessToken = null
-      state.authenticated = false
+      setSession({ accessToken: null, user: null, authenticated: false, error: state.error })
     }
   }
 
   return {
     ...toRefs(state),
     userId,
+    setSession,
     authenticate,
     reAuthenticate,
     logout,
