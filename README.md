@@ -1,12 +1,12 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.37** — CLI docs/help cleanup and command-surface alignment.
+> OSS reference snapshot: **v6.4.45** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.37**.
+Current OSS release target: **6.4.45**.
 
 It supports two main usage patterns:
 
@@ -132,7 +132,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.37
+## CLI command surface in 6.4.45
 
 | Area | Commands |
 |---|---|

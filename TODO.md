@@ -68,3 +68,5 @@ Quand tu voudras reprendre, on pourra attaquer par exemple :
 - publication npm + versioning
 
 On est sur une **base saine et propre**.
+
+- Mongo management follow-up: official Compass-like `/mongo` starter UI, better local embedded auth + seed-user docs, and a helper/composable for Mongo management paths and CRUD calls.

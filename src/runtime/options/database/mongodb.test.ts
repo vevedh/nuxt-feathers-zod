@@ -10,12 +10,37 @@ describe('resolveMongoOptions', () => {
 
     expect(result.management).toEqual({
       enabled: false,
-      auth: true,
+      auth: {
+        enabled: true,
+        authenticate: true,
+        userProperty: 'user',
+        adminField: 'isAdmin',
+        adminRoleNames: ['admin'],
+        rolesField: 'roles',
+        permissionsField: 'permissions',
+        requiredPermissions: [],
+        requiredScopes: [],
+        scopeField: 'scope',
+      },
+      audit: { enabled: true },
       exposeDatabasesService: true,
       exposeCollectionsService: true,
       exposeUsersService: false,
       exposeCollectionCrud: true,
       basePath: '/mongo',
+      whitelistDatabases: [],
+      blacklistDatabases: [],
+      showSystemDatabases: false,
+      whitelistCollections: [],
+      blacklistCollections: [],
+      allowCreateDatabase: false,
+      allowDropDatabase: false,
+      allowCreateCollection: false,
+      allowDropCollection: false,
+      allowInsertDocuments: false,
+      allowPatchDocuments: false,
+      allowReplaceDocuments: false,
+      allowRemoveDocuments: false,
     })
   })
 
@@ -25,6 +50,7 @@ describe('resolveMongoOptions', () => {
       management: {
         enabled: true,
         auth: false,
+        audit: false,
         basePath: 'admin-mongo',
         exposeUsersService: true,
         exposeCollectionCrud: false,
@@ -32,10 +58,52 @@ describe('resolveMongoOptions', () => {
     })
 
     expect(result.management.enabled).toBe(true)
-    expect(result.management.auth).toBe(false)
+    expect(result.management.auth.enabled).toBe(false)
+    expect(result.management.auth.authenticate).toBe(false)
+    expect(result.management.audit.enabled).toBe(false)
     expect(result.management.basePath).toBe('/admin-mongo')
     expect(result.management.exposeUsersService).toBe(true)
     expect(result.management.exposeCollectionCrud).toBe(false)
+  })
+
+  it('should resolve advanced security and write options', () => {
+    const result = resolveMongoOptions({
+      url: 'mongodb://localhost:27017/nfz',
+      management: {
+        enabled: true,
+        auth: {
+          adminRoleNames: ['admin', 'superadmin'],
+          requiredPermissions: ['mongo:admin'],
+        },
+        whitelistDatabases: ['app'],
+        blacklistDatabases: ['admin'],
+        whitelistCollections: ['users'],
+        blacklistCollections: ['sessions'],
+        allowCreateCollection: true,
+        allowInsertDocuments: true,
+      },
+    })
+
+    expect(result.management.auth.adminRoleNames).toEqual(['admin', 'superadmin'])
+    expect(result.management.auth.requiredPermissions).toEqual(['mongo:admin'])
+    expect(result.management.whitelistDatabases).toEqual(['app'])
+    expect(result.management.blacklistDatabases).toEqual(['admin'])
+    expect(result.management.whitelistCollections).toEqual(['users'])
+    expect(result.management.blacklistCollections).toEqual(['sessions'])
+    expect(result.management.allowCreateCollection).toBe(true)
+    expect(result.management.allowInsertDocuments).toBe(true)
+  })
+
+  it('should allow showing MongoDB system databases explicitly', () => {
+    const result = resolveMongoOptions({
+      url: 'mongodb://localhost:27017/nfz',
+      management: {
+        enabled: true,
+        showSystemDatabases: true,
+      },
+    })
+
+    expect(result.management.showSystemDatabases).toBe(true)
   })
 
   it('should keep users service opt-in', () => {

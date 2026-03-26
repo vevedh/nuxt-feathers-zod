@@ -191,10 +191,17 @@ export default defineNuxtConfig({
             management: {
               enabled: true,
               auth: false,
+              audit: true,
               basePath: '/mongo',
               exposeDatabasesService: true,
               exposeCollectionsService: true,
               exposeCollectionCrud: true,
+              blacklistDatabases: ['admin', 'config', 'local'],
+              allowCreateCollection: true,
+              allowInsertDocuments: true,
+              allowPatchDocuments: true,
+              allowReplaceDocuments: true,
+              allowRemoveDocuments: true,
             },
           },
         }

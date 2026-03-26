@@ -27,6 +27,11 @@ export default defineNuxtConfig({
           exposeCollectionsService: true,
           exposeUsersService: false,
           exposeCollectionCrud: true,
+          showSystemDatabases: true,
+          allowCreateCollection: true,
+          allowDropCollection: true,
+          allowInsertDocuments: true,
+          allowPatchDocuments: true,
         },
       },
     },
@@ -44,6 +49,8 @@ export default defineNuxtConfig({
 
 - `GET /mongo/databases` → liste des bases
 - `GET /mongo/<db>/collections` → liste des collections
+- `POST /mongo/<db>/collections` → crée une collection si `allowCreateCollection: true`
+- `DELETE /mongo/<db>/collections/<name>` → supprime une collection si `allowDropCollection: true`
 - `GET /mongo/<db>/stats` → statistiques DB
 - `GET /mongo/<db>/<collection>/indexes` → index
 - `GET /mongo/<db>/<collection>/count` → nombre de documents
@@ -54,7 +61,13 @@ Compatibilité : l’alias legacy `GET /mongo` est réécrit vers `GET /mongo/da
 - `exposeDatabasesService`: expose la liste des bases
 - `exposeCollectionsService`: expose la liste des collections
 - `exposeUsersService`: expose la gestion des utilisateurs MongoDB
-- `exposeCollectionCrud`: expose des opérations CRUD sur les collections
+- `exposeCollectionCrud`
+- `whitelistDatabases` / `blacklistDatabases`
+- `showSystemDatabases`: affiche aussi `admin`, `config`, `local` quand activé
+- `whitelistCollections` / `blacklistCollections`
+- `allowCreateDatabase` / `allowDropDatabase`
+- `allowCreateCollection` / `allowDropCollection`
+- `allowInsertDocuments` / `allowPatchDocuments` / `allowReplaceDocuments` / `allowRemoveDocuments`: expose des opérations CRUD sur les collections
 
 ## Positionnement recommandé
 

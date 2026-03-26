@@ -76,6 +76,12 @@ servicesDirs: ['services']
 - `exposeCollectionsService`
 - `exposeUsersService`
 - `exposeCollectionCrud`
+- `whitelistDatabases` / `blacklistDatabases`
+- `showSystemDatabases`
+- `whitelistCollections` / `blacklistCollections`
+- `allowCreateDatabase` / `allowDropDatabase`
+- `allowCreateCollection` / `allowDropCollection`
+- `allowInsertDocuments` / `allowPatchDocuments` / `allowReplaceDocuments` / `allowRemoveDocuments`
 
 Cette couche est **optionnelle** et destinée à exposer une surface de gestion MongoDB via le template embedded `feathers/server/mongodb.ts`.
 

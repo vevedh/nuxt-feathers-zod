@@ -1,6 +1,6 @@
 # Changelog
 
-## 6.4.37
+## 6.4.45
 
 - remote + Keycloak: SSO authentication now hydrates the local Feathers client auth store immediately
 - remote handshake can use the configured strategy (for example `sso`) while preserving a coherent local fallback state
@@ -239,4 +239,4 @@
 - public release metadata resynchronized to 6.4.35
 - devtools plume icon/theme-parent behavior preserved
 
-- 6.4.37: remote Keycloak Option B contract (`strategy: 'sso'`, `user: loginuser`, `authenticated: true`) is now first-class in the runtime and docs; generated route middleware no longer re-runs `auth.init()` or reuses callback hashes in redirect URIs.
+- 6.4.45: remote Keycloak Option B contract (`strategy: 'sso'`, `user: loginuser`, `authenticated: true`) is now first-class in the runtime and docs; generated route middleware no longer re-runs `auth.init()` or reuses callback hashes in redirect URIs.

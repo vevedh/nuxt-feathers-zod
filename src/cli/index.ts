@@ -664,6 +664,20 @@ async function handleMongoManagementCommand(cwd: string, args: CliContextArgs) {
   const exposeCollectionsService = parseBooleanFlag(args.exposeCollectionsService as string | boolean | undefined, true)
   const exposeUsersService = parseBooleanFlag(args.exposeUsersService as string | boolean | undefined, false)
   const exposeCollectionCrud = parseBooleanFlag(args.exposeCollectionCrud as string | boolean | undefined, true)
+  const showSystemDatabases = parseBooleanFlag(args.showSystemDatabases as string | boolean | undefined, false)
+  const allowCreateDatabase = parseBooleanFlag(args.allowCreateDatabase as string | boolean | undefined, false)
+  const allowDropDatabase = parseBooleanFlag(args.allowDropDatabase as string | boolean | undefined, false)
+  const allowCreateCollection = parseBooleanFlag(args.allowCreateCollection as string | boolean | undefined, false)
+  const allowDropCollection = parseBooleanFlag(args.allowDropCollection as string | boolean | undefined, false)
+  const allowInsertDocuments = parseBooleanFlag(args.allowInsertDocuments as string | boolean | undefined, false)
+  const allowPatchDocuments = parseBooleanFlag(args.allowPatchDocuments as string | boolean | undefined, false)
+  const allowReplaceDocuments = parseBooleanFlag(args.allowReplaceDocuments as string | boolean | undefined, false)
+  const allowRemoveDocuments = parseBooleanFlag(args.allowRemoveDocuments as string | boolean | undefined, false)
+  const parseCsv = (value: string | boolean | undefined) => typeof value === 'string' ? value.split(',').map(part => part.trim()).filter(Boolean) : undefined
+  const whitelistDatabases = parseCsv(args.whitelistDatabases as string | boolean | undefined)
+  const blacklistDatabases = parseCsv(args.blacklistDatabases as string | boolean | undefined)
+  const whitelistCollections = parseCsv(args.whitelistCollections as string | boolean | undefined)
+  const blacklistCollections = parseCsv(args.blacklistCollections as string | boolean | undefined)
   const basePath = normalizeMongoManagementBasePath(typeof args.basePath === 'string' ? String(args.basePath) : '/mongo')
   const url = typeof args.url === 'string' ? String(args.url).trim() : undefined
 
@@ -677,6 +691,19 @@ async function handleMongoManagementCommand(cwd: string, args: CliContextArgs) {
       exposeCollectionsService,
       exposeUsersService,
       exposeCollectionCrud,
+      whitelistDatabases,
+      blacklistDatabases,
+      whitelistCollections,
+      blacklistCollections,
+      showSystemDatabases,
+      allowCreateDatabase,
+      allowDropDatabase,
+      allowCreateCollection,
+      allowDropCollection,
+      allowInsertDocuments,
+      allowPatchDocuments,
+      allowReplaceDocuments,
+      allowRemoveDocuments,
     },
   }, { dry })
 
@@ -694,6 +721,10 @@ async function handleMongoManagementCommand(cwd: string, args: CliContextArgs) {
   consola.box(`Mongo management ${enabled ? 'enabled' : 'disabled'}
 basePath: ${basePath}
 auth: ${auth}
+showSystemDatabases: ${showSystemDatabases}
+allowCreateCollection: ${allowCreateCollection}
+allowDropCollection: ${allowDropCollection}
+allowInsertDocuments: ${allowInsertDocuments}
 routes:
 ${routeList}`)
 }
@@ -983,10 +1014,23 @@ export function createCliCommand() {
       enabled: { type: 'boolean', description: 'Enable Mongo management surface' },
       auth: { type: 'boolean', description: 'Protect management routes with JWT auth' },
       basePath: { type: 'string', description: 'Mongo management base path' },
-      exposeDatabasesService: { type: 'boolean', description: 'Expose /databases route' },
-      exposeCollectionsService: { type: 'boolean', description: 'Expose /:db/collections route' },
-      exposeUsersService: { type: 'boolean', description: 'Expose /users route' },
-      exposeCollectionCrud: { type: 'boolean', description: 'Expose stats/indexes/count/schema/documents/aggregate routes' },
+      exposeDatabasesService: { type: 'boolean', description: 'Set feathers.database.mongo.management.exposeDatabasesService' },
+      exposeCollectionsService: { type: 'boolean', description: 'Set feathers.database.mongo.management.exposeCollectionsService' },
+      exposeUsersService: { type: 'boolean', description: 'Set feathers.database.mongo.management.exposeUsersService' },
+      exposeCollectionCrud: { type: 'boolean', description: 'Set feathers.database.mongo.management.exposeCollectionCrud' },
+      whitelistDatabases: { type: 'string', description: 'Comma-separated feathers.database.mongo.management.whitelistDatabases' },
+      blacklistDatabases: { type: 'string', description: 'Comma-separated feathers.database.mongo.management.blacklistDatabases' },
+      whitelistCollections: { type: 'string', description: 'Comma-separated feathers.database.mongo.management.whitelistCollections' },
+      blacklistCollections: { type: 'string', description: 'Comma-separated feathers.database.mongo.management.blacklistCollections' },
+      showSystemDatabases: { type: 'boolean', description: 'Set feathers.database.mongo.management.showSystemDatabases' },
+      allowCreateDatabase: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowCreateDatabase' },
+      allowDropDatabase: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowDropDatabase' },
+      allowCreateCollection: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowCreateCollection' },
+      allowDropCollection: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowDropCollection' },
+      allowInsertDocuments: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowInsertDocuments' },
+      allowPatchDocuments: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowPatchDocuments' },
+      allowReplaceDocuments: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowReplaceDocuments' },
+      allowRemoveDocuments: { type: 'boolean', description: 'Set feathers.database.mongo.management.allowRemoveDocuments' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },
     run: async ({ args, rawArgs }) => {
@@ -998,6 +1042,15 @@ export function createCliCommand() {
         exposeCollectionsService: resolveBooleanCliArg(rawArgs, 'exposeCollectionsService', (args as CliContextArgs).exposeCollectionsService as string | boolean | undefined, true),
         exposeUsersService: resolveBooleanCliArg(rawArgs, 'exposeUsersService', (args as CliContextArgs).exposeUsersService as string | boolean | undefined, false),
         exposeCollectionCrud: resolveBooleanCliArg(rawArgs, 'exposeCollectionCrud', (args as CliContextArgs).exposeCollectionCrud as string | boolean | undefined, true),
+        showSystemDatabases: resolveBooleanCliArg(rawArgs, 'showSystemDatabases', (args as CliContextArgs).showSystemDatabases as string | boolean | undefined, false),
+        allowCreateDatabase: resolveBooleanCliArg(rawArgs, 'allowCreateDatabase', (args as CliContextArgs).allowCreateDatabase as string | boolean | undefined, false),
+        allowDropDatabase: resolveBooleanCliArg(rawArgs, 'allowDropDatabase', (args as CliContextArgs).allowDropDatabase as string | boolean | undefined, false),
+        allowCreateCollection: resolveBooleanCliArg(rawArgs, 'allowCreateCollection', (args as CliContextArgs).allowCreateCollection as string | boolean | undefined, false),
+        allowDropCollection: resolveBooleanCliArg(rawArgs, 'allowDropCollection', (args as CliContextArgs).allowDropCollection as string | boolean | undefined, false),
+        allowInsertDocuments: resolveBooleanCliArg(rawArgs, 'allowInsertDocuments', (args as CliContextArgs).allowInsertDocuments as string | boolean | undefined, false),
+        allowPatchDocuments: resolveBooleanCliArg(rawArgs, 'allowPatchDocuments', (args as CliContextArgs).allowPatchDocuments as string | boolean | undefined, false),
+        allowReplaceDocuments: resolveBooleanCliArg(rawArgs, 'allowReplaceDocuments', (args as CliContextArgs).allowReplaceDocuments as string | boolean | undefined, false),
+        allowRemoveDocuments: resolveBooleanCliArg(rawArgs, 'allowRemoveDocuments', (args as CliContextArgs).allowRemoveDocuments as string | boolean | undefined, false),
       })
     },
   })

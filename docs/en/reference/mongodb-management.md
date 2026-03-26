@@ -27,6 +27,11 @@ export default defineNuxtConfig({
           exposeCollectionsService: true,
           exposeUsersService: false,
           exposeCollectionCrud: true,
+          showSystemDatabases: true,
+          allowCreateCollection: true,
+          allowDropCollection: true,
+          allowInsertDocuments: true,
+          allowPatchDocuments: true,
         },
       },
     },
@@ -42,7 +47,20 @@ export default defineNuxtConfig({
 - `exposeDatabasesService`: exposes the database list
 - `exposeCollectionsService`: exposes the collection list
 - `exposeUsersService`: exposes MongoDB users management
-- `exposeCollectionCrud`: exposes CRUD operations on collections
+- `exposeCollectionCrud`
+- `whitelistDatabases` / `blacklistDatabases`
+- `whitelistCollections` / `blacklistCollections`
+- `allowCreateDatabase` / `allowDropDatabase`
+- `showSystemDatabases`: also shows `admin`, `config`, `local` when enabled
+- `allowCreateCollection` / `allowDropCollection`
+- `allowInsertDocuments` / `allowPatchDocuments` / `allowReplaceDocuments` / `allowRemoveDocuments`: exposes CRUD operations on collections
+
+## Canonical endpoints
+
+- `GET /mongo/databases` → lists databases
+- `GET /mongo/<db>/collections` → lists collections
+- `POST /mongo/<db>/collections` → creates a collection when `allowCreateCollection: true`
+- `DELETE /mongo/<db>/collections/<name>` → drops a collection when `allowDropCollection: true`
 
 ## Recommended positioning
 

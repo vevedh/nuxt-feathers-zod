@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.37**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.45**.
 
 ## Commande d’entrée
 
@@ -563,6 +563,23 @@ Flags utiles :
 - `--exposeUsersService true|false`
 - `--exposeCollectionCrud true|false`
 - `--dry`
+
+
+Options supplémentaires de `mongo management` alignées sur `feathers.database.mongo.*` :
+
+- `--whitelistDatabases <csv>` → `feathers.database.mongo.management.whitelistDatabases`
+- `--blacklistDatabases <csv>` → `feathers.database.mongo.management.blacklistDatabases`
+- `--whitelistCollections <csv>` → `feathers.database.mongo.management.whitelistCollections`
+- `--blacklistCollections <csv>` → `feathers.database.mongo.management.blacklistCollections`
+- `--showSystemDatabases true|false` → `feathers.database.mongo.management.showSystemDatabases`
+- `--allowCreateDatabase true|false` → `feathers.database.mongo.management.allowCreateDatabase`
+- `--allowDropDatabase true|false` → `feathers.database.mongo.management.allowDropDatabase`
+- `--allowCreateCollection true|false` → `feathers.database.mongo.management.allowCreateCollection`
+- `--allowDropCollection true|false` → `feathers.database.mongo.management.allowDropCollection`
+- `--allowInsertDocuments true|false` → `feathers.database.mongo.management.allowInsertDocuments`
+- `--allowPatchDocuments true|false` → `feathers.database.mongo.management.allowPatchDocuments`
+- `--allowReplaceDocuments true|false` → `feathers.database.mongo.management.allowReplaceDocuments`
+- `--allowRemoveDocuments true|false` → `feathers.database.mongo.management.allowRemoveDocuments`
 
 Routes canoniques exposées :
 

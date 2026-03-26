@@ -225,14 +225,27 @@ Flags overview:
     --dry
 
   mongo management:
-    --url <mongodb-url>         set/update MongoDB connection URL
-    --enabled true|false        (default: true)
-    --auth true|false           (default: true)
-    --basePath <path>           (default: /mongo)
-    --exposeDatabasesService true|false   (default: true)
-    --exposeCollectionsService true|false (default: true)
-    --exposeUsersService true|false       (default: false)
-    --exposeCollectionCrud true|false     (default: true)
+    --url <mongodb-url>         set/update feathers.database.mongo.url
+    --enabled true|false        management.enabled (default: true)
+    --auth true|false           management.auth (default: true)
+    --basePath <path>           management.basePath (default: /mongo)
+    --exposeDatabasesService true|false   management.exposeDatabasesService (default: true)
+    --exposeCollectionsService true|false management.exposeCollectionsService (default: true)
+    --exposeUsersService true|false       management.exposeUsersService (default: false)
+    --exposeCollectionCrud true|false     management.exposeCollectionCrud (default: true)
+    --whitelistDatabases <csv>  management.whitelistDatabases
+    --blacklistDatabases <csv>  management.blacklistDatabases
+    --whitelistCollections <csv> management.whitelistCollections
+    --blacklistCollections <csv> management.blacklistCollections
+    --showSystemDatabases true|false      management.showSystemDatabases (default: false)
+    --allowCreateDatabase true|false      management.allowCreateDatabase (default: false)
+    --allowDropDatabase true|false        management.allowDropDatabase (default: false)
+    --allowCreateCollection true|false    management.allowCreateCollection (default: false)
+    --allowDropCollection true|false      management.allowDropCollection (default: false)
+    --allowInsertDocuments true|false     management.allowInsertDocuments (default: false)
+    --allowPatchDocuments true|false      management.allowPatchDocuments (default: false)
+    --allowReplaceDocuments true|false    management.allowReplaceDocuments (default: false)
+    --allowRemoveDocuments true|false     management.allowRemoveDocuments (default: false)
     --dry
 
   add middleware <name>:
@@ -368,6 +381,19 @@ export type NuxtConfigPatch = {
     exposeCollectionsService?: boolean
     exposeUsersService?: boolean
     exposeCollectionCrud?: boolean
+    whitelistDatabases?: string[]
+    blacklistDatabases?: string[]
+    whitelistCollections?: string[]
+    blacklistCollections?: string[]
+    showSystemDatabases?: boolean
+    allowCreateDatabase?: boolean
+    allowDropDatabase?: boolean
+    allowCreateCollection?: boolean
+    allowDropCollection?: boolean
+    allowInsertDocuments?: boolean
+    allowPatchDocuments?: boolean
+    allowReplaceDocuments?: boolean
+    allowRemoveDocuments?: boolean
   }
 }
 
@@ -581,6 +607,14 @@ function renderStringArray(values?: string[]): string | undefined {
   return `[${values.map(v => `'${v}'`).join(', ')}]`
 }
 
+
+function parseCsvList(raw?: string): string[] | undefined {
+  if (!raw)
+    return undefined
+  const values = raw.split(',').map(value => value.trim()).filter(Boolean)
+  return values.length ? values : undefined
+}
+
 function renderInlineObject(parts: string[]): string {
   return `{ ${parts.filter(Boolean).join(', ')} }`
 }
@@ -628,6 +662,19 @@ function parseDatabaseMongoState(raw?: string) {
     exposeCollectionsService: parseBooleanValue(managementRaw?.match(/\bexposeCollectionsService\s*:\s*(true|false)/)?.[0]),
     exposeUsersService: parseBooleanValue(managementRaw?.match(/\bexposeUsersService\s*:\s*(true|false)/)?.[0]),
     exposeCollectionCrud: parseBooleanValue(managementRaw?.match(/\bexposeCollectionCrud\s*:\s*(true|false)/)?.[0]),
+    whitelistDatabases: parseStringArray(managementRaw?.match(/\bwhitelistDatabases\s*:\s*\[[^\]]*\]/)?.[0]),
+    blacklistDatabases: parseStringArray(managementRaw?.match(/\bblacklistDatabases\s*:\s*\[[^\]]*\]/)?.[0]),
+    whitelistCollections: parseStringArray(managementRaw?.match(/\bwhitelistCollections\s*:\s*\[[^\]]*\]/)?.[0]),
+    blacklistCollections: parseStringArray(managementRaw?.match(/\bblacklistCollections\s*:\s*\[[^\]]*\]/)?.[0]),
+    showSystemDatabases: parseBooleanValue(managementRaw?.match(/\bshowSystemDatabases\s*:\s*(true|false)/)?.[0]),
+    allowCreateDatabase: parseBooleanValue(managementRaw?.match(/\ballowCreateDatabase\s*:\s*(true|false)/)?.[0]),
+    allowDropDatabase: parseBooleanValue(managementRaw?.match(/\ballowDropDatabase\s*:\s*(true|false)/)?.[0]),
+    allowCreateCollection: parseBooleanValue(managementRaw?.match(/\ballowCreateCollection\s*:\s*(true|false)/)?.[0]),
+    allowDropCollection: parseBooleanValue(managementRaw?.match(/\ballowDropCollection\s*:\s*(true|false)/)?.[0]),
+    allowInsertDocuments: parseBooleanValue(managementRaw?.match(/\ballowInsertDocuments\s*:\s*(true|false)/)?.[0]),
+    allowPatchDocuments: parseBooleanValue(managementRaw?.match(/\ballowPatchDocuments\s*:\s*(true|false)/)?.[0]),
+    allowReplaceDocuments: parseBooleanValue(managementRaw?.match(/\ballowReplaceDocuments\s*:\s*(true|false)/)?.[0]),
+    allowRemoveDocuments: parseBooleanValue(managementRaw?.match(/\ballowRemoveDocuments\s*:\s*(true|false)/)?.[0]),
   }
 }
 
@@ -763,6 +810,19 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
       patch.mongoManagement.exposeCollectionsService !== undefined ? `exposeCollectionsService: ${patch.mongoManagement.exposeCollectionsService}` : '',
       patch.mongoManagement.exposeUsersService !== undefined ? `exposeUsersService: ${patch.mongoManagement.exposeUsersService}` : '',
       patch.mongoManagement.exposeCollectionCrud !== undefined ? `exposeCollectionCrud: ${patch.mongoManagement.exposeCollectionCrud}` : '',
+      patch.mongoManagement.whitelistDatabases?.length ? `whitelistDatabases: ${renderStringArray(patch.mongoManagement.whitelistDatabases)}` : '',
+      patch.mongoManagement.blacklistDatabases?.length ? `blacklistDatabases: ${renderStringArray(patch.mongoManagement.blacklistDatabases)}` : '',
+      patch.mongoManagement.whitelistCollections?.length ? `whitelistCollections: ${renderStringArray(patch.mongoManagement.whitelistCollections)}` : '',
+      patch.mongoManagement.blacklistCollections?.length ? `blacklistCollections: ${renderStringArray(patch.mongoManagement.blacklistCollections)}` : '',
+      patch.mongoManagement.showSystemDatabases !== undefined ? `showSystemDatabases: ${patch.mongoManagement.showSystemDatabases}` : '',
+      patch.mongoManagement.allowCreateDatabase !== undefined ? `allowCreateDatabase: ${patch.mongoManagement.allowCreateDatabase}` : '',
+      patch.mongoManagement.allowDropDatabase !== undefined ? `allowDropDatabase: ${patch.mongoManagement.allowDropDatabase}` : '',
+      patch.mongoManagement.allowCreateCollection !== undefined ? `allowCreateCollection: ${patch.mongoManagement.allowCreateCollection}` : '',
+      patch.mongoManagement.allowDropCollection !== undefined ? `allowDropCollection: ${patch.mongoManagement.allowDropCollection}` : '',
+      patch.mongoManagement.allowInsertDocuments !== undefined ? `allowInsertDocuments: ${patch.mongoManagement.allowInsertDocuments}` : '',
+      patch.mongoManagement.allowPatchDocuments !== undefined ? `allowPatchDocuments: ${patch.mongoManagement.allowPatchDocuments}` : '',
+      patch.mongoManagement.allowReplaceDocuments !== undefined ? `allowReplaceDocuments: ${patch.mongoManagement.allowReplaceDocuments}` : '',
+      patch.mongoManagement.allowRemoveDocuments !== undefined ? `allowRemoveDocuments: ${patch.mongoManagement.allowRemoveDocuments}` : '',
     ].filter(Boolean)
     parts.push(`management: { ${managementParts.join(', ')} }`)
     return `
@@ -920,6 +980,19 @@ function patchFeathersObjectLiteral(feathersObj: string, patch: NuxtConfigPatch)
     if (mongoState.exposeCollectionsService !== undefined) managementParts.push(`exposeCollectionsService: ${mongoState.exposeCollectionsService}`)
     if (mongoState.exposeUsersService !== undefined) managementParts.push(`exposeUsersService: ${mongoState.exposeUsersService}`)
     if (mongoState.exposeCollectionCrud !== undefined) managementParts.push(`exposeCollectionCrud: ${mongoState.exposeCollectionCrud}`)
+    if (mongoState.whitelistDatabases?.length) managementParts.push(`whitelistDatabases: ${renderStringArray(mongoState.whitelistDatabases)}`)
+    if (mongoState.blacklistDatabases?.length) managementParts.push(`blacklistDatabases: ${renderStringArray(mongoState.blacklistDatabases)}`)
+    if (mongoState.whitelistCollections?.length) managementParts.push(`whitelistCollections: ${renderStringArray(mongoState.whitelistCollections)}`)
+    if (mongoState.blacklistCollections?.length) managementParts.push(`blacklistCollections: ${renderStringArray(mongoState.blacklistCollections)}`)
+    if (mongoState.showSystemDatabases !== undefined) managementParts.push(`showSystemDatabases: ${mongoState.showSystemDatabases}`)
+    if (mongoState.allowCreateDatabase !== undefined) managementParts.push(`allowCreateDatabase: ${mongoState.allowCreateDatabase}`)
+    if (mongoState.allowDropDatabase !== undefined) managementParts.push(`allowDropDatabase: ${mongoState.allowDropDatabase}`)
+    if (mongoState.allowCreateCollection !== undefined) managementParts.push(`allowCreateCollection: ${mongoState.allowCreateCollection}`)
+    if (mongoState.allowDropCollection !== undefined) managementParts.push(`allowDropCollection: ${mongoState.allowDropCollection}`)
+    if (mongoState.allowInsertDocuments !== undefined) managementParts.push(`allowInsertDocuments: ${mongoState.allowInsertDocuments}`)
+    if (mongoState.allowPatchDocuments !== undefined) managementParts.push(`allowPatchDocuments: ${mongoState.allowPatchDocuments}`)
+    if (mongoState.allowReplaceDocuments !== undefined) managementParts.push(`allowReplaceDocuments: ${mongoState.allowReplaceDocuments}`)
+    if (mongoState.allowRemoveDocuments !== undefined) managementParts.push(`allowRemoveDocuments: ${mongoState.allowRemoveDocuments}`)
     const mongoParts: string[] = []
     if (mongoState.url) mongoParts.push(`url: '${mongoState.url}'`)
     mongoParts.push(`management: { ${managementParts.join(', ')} }`)
