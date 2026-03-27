@@ -43,14 +43,23 @@ const replacements = [
 
 for (const file of targets) {
   const abs = resolve(rootDir, file)
-  let text = readFileSync(abs, 'utf8')
-  for (const { pattern, replacement } of replacements) {
-    text = text.replace(pattern, replacement)
+  try {
+    let text = readFileSync(abs, 'utf8')
+    for (const { pattern, replacement } of replacements) {
+      text = text.replace(pattern, replacement)
+    }
+    if (!text.includes(version)) {
+      text += `\n\n<!-- release-version: ${version} -->\n`
+    }
+    writeFileSync(abs, text)
+    console.log(`[nuxt-feathers-zod] Synced release metadata in ${file} -> ${version}`)
   }
-  // fallback: ensure raw version is present somewhere for metadata tests
-  if (!text.includes(version)) {
-    text += `\n\n<!-- release-version: ${version} -->\n`
+  catch (err) {
+    if (err.code === 'ENOENT') {
+      console.warn(`[nuxt-feathers-zod] Skipping missing file: ${file}`)
+    }
+    else {
+      throw err
+    }
   }
-  writeFileSync(abs, text)
-  console.log(`[nuxt-feathers-zod] Synced release metadata in ${file} -> ${version}`)
 }
