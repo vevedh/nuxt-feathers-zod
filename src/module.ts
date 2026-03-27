@@ -72,18 +72,18 @@ function normalizeViteAliases(input: any) {
 function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
   const resolver = createResolver(import.meta.url)
   const aliases = {
-    'nuxt-feathers-zod/server': resolver.resolve(options.templateDir, 'server/server'),
-    'nuxt-feathers-zod/validators': resolver.resolve('runtime/zod/validators'),
-    'nuxt-feathers-zod/query': resolver.resolve('runtime/zod/query'),
-    'nuxt-feathers-zod/zod': resolver.resolve('runtime/zod/index'),
-    'nuxt-feathers-zod/options': resolver.resolve('runtime/options'),
-    'nuxt-feathers-zod/auth-utils': resolver.resolve('runtime/utils/auth'),
-    'nuxt-feathers-zod/config-utils': resolver.resolve('runtime/utils/config'),
+    'nuxt-feathers-zod/server$': resolver.resolve(options.templateDir, 'server/server'),
+    'nuxt-feathers-zod/validators$': resolver.resolve('runtime/zod/validators'),
+    'nuxt-feathers-zod/query$': resolver.resolve('runtime/zod/query'),
+    'nuxt-feathers-zod/zod$': resolver.resolve('runtime/zod/index'),
+    'nuxt-feathers-zod/options$': resolver.resolve('runtime/options'),
+    'nuxt-feathers-zod/auth-utils$': resolver.resolve('runtime/utils/auth'),
+    'nuxt-feathers-zod/config-utils$': resolver.resolve('runtime/utils/config'),
   }
 
   nuxt.options.alias = defu(nuxt.options.alias, aliases)
   if (options.client)
-    nuxt.options.alias['nuxt-feathers-zod/client'] = resolver.resolve(options.templateDir, 'client/client')
+    nuxt.options.alias['nuxt-feathers-zod/client$'] = resolver.resolve(options.templateDir, 'client/client')
 
   nuxt.options.vite = nuxt.options.vite || {}
   nuxt.options.vite.resolve = nuxt.options.vite.resolve || {}

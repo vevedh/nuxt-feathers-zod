@@ -116,9 +116,16 @@ async function resolveServerModuleEntries(
   const { scanExports } = await import('unimport')
   const { setImportMeta } = await import('./utils')
   const rootResolver = createResolver(rootDir)
-  const packageRootResolver = createResolver(new URL('../../../', import.meta.url).pathname)
+  const packageRootDir = new URL('../../../', import.meta.url).pathname
+  const packageRootResolver = createResolver(packageRootDir)
+  const normalizedRootDir = rootDir.replace(/\\/g, '/').replace(/\/$/, '')
+  const normalizedPackageRootDir = packageRootDir.replace(/\\/g, '/').replace(/\/$/, '')
+  const isInternalRepoDevelopment = normalizedRootDir === normalizedPackageRootDir || normalizedRootDir.startsWith(`${normalizedPackageRootDir}/`)
 
   function resolveBuiltinModule(name: string) {
+    if (!isInternalRepoDevelopment)
+      return `nuxt-feathers-zod/server/modules/${framework}/${name}`
+
     const sourceTs = packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.ts`)
     const sourceJs = packageRootResolver.resolve(`src/runtime/server/modules/${framework}/${name}.js`)
 

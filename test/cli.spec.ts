@@ -1,9 +1,11 @@
 import { existsSync } from 'node:fs'
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateMiddleware, generateService, runCli } from '../src/cli/index'
+import { resolveServerOptions } from '../src/runtime/options/server'
+import { getServerPluginContents } from '../src/runtime/templates/server/plugin'
 const LONG_TIMEOUT = 20000
 describe('nuxt-feathers-zod CLI generators', () => {
 it('keeps public release metadata aligned with package version', async () => {
@@ -32,6 +34,48 @@ it('publishes the CLI bin from dist instead of src', async () => {
   expect(pkg.files).toContain('dist')
   expect(pkg.files).not.toContain('src/cli')
 })
+  it('resolves built-in server modules to package subpath exports in consumer apps', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-consumer-'))
+    const resolved = await resolveServerOptions({
+      secureDefaults: true,
+      secure: { compression: true, cors: true, helmet: true, bodyParser: { json: true, urlencoded: true } },
+    } as any, root, root, 'express')
+
+    const compressionModule = resolved.modules.find(m => (m.from || '').includes('compression'))
+    expect(compressionModule).toBeTruthy()
+    expect(compressionModule?.from).toBe('nuxt-feathers-zod/server/modules/express/compression')
+    expect(compressionModule?.meta.import).toContain('nuxt-feathers-zod/server/modules/express/compression')
+    expect(compressionModule?.from).not.toContain('server/server/modules')
+    expect(compressionModule?.from).not.toContain('src/runtime/server/modules')
+  })
+
+
+  it('renders consumer-safe built-in server module imports in the generated server plugin', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-consumer-plugin-'))
+    const servicesDir = join(root, 'services')
+    await mkdir(servicesDir, { recursive: true })
+
+    const server = await resolveServerOptions({
+      secureDefaults: true,
+      secure: { compression: true, cors: true, helmet: true, bodyParser: { json: true, urlencoded: true } },
+    } as any, root, root, 'express')
+
+    const code = await getServerPluginContents({
+      servicesDirs: [servicesDir],
+      server,
+      transports: { rest: { framework: 'express', path: '/feathers' }, websocket: false },
+      database: {},
+      auth: false,
+      keycloak: false,
+      loadFeathersConfig: false,
+      swagger: false,
+    } as any)()
+
+    expect(code).toContain('nuxt-feathers-zod/server/modules/express/compression')
+    expect(code).not.toContain('server/server/modules')
+    expect(code).not.toContain('src/runtime/server/modules')
+  })
+
   it('runs help without explicit cli options', async () => {
     await runCli(['--help'])
   })
@@ -488,4 +532,11 @@ it('dispatches init remote through the citty CLI entrypoint', async () => {
     expect(config).not.toContain('database: database:')
   })
 
+})
+
+
+it('uses exact-match aliases so server subpath exports are not rewritten to .nuxt local paths', async () => {
+  const source = await readFile(join(process.cwd(), 'src/module.ts'), 'utf8')
+  expect(source).toContain("'nuxt-feathers-zod/server$'")
+  expect(source).toContain("'nuxt-feathers-zod/client$'")
 })

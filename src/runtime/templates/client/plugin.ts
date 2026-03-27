@@ -53,6 +53,28 @@ ${put(auth, `import { authentication } from './authentication'`)}
 
 ${modules.map(module => module.meta.import).join('\n')}
 
+function normalizeClientError(err: any) {
+  const toPlain = (src: any, fallbackMessage = 'Unknown error') => ({
+    name: src?.name || 'Error',
+    message: src?.message || fallbackMessage,
+    code: src?.code ?? src?.statusCode ?? src?.status ?? src?.name ?? 'NFZ_ERROR',
+    className: src?.className,
+    data: src?.data,
+    errors: src?.errors,
+    cause: src?.cause,
+    stack: src?.stack ? String(src.stack) : undefined,
+    raw: src,
+  })
+
+  if (err == null)
+    return toPlain({ name: 'Error', message: 'Unknown error', code: 'NFZ_UNKNOWN' }, 'Unknown error')
+  if (typeof err !== 'object')
+    return toPlain({ name: 'Error', message: String(err), code: 'NFZ_ERROR', raw: err }, String(err))
+  if (err instanceof Error)
+    return toPlain(err, err.message || 'Error')
+  return toPlain(err)
+}
+
 /**
  * Returns a typed client for the feathers-api app.
  *
@@ -85,29 +107,6 @@ function createFeathersClient(): ClientApplication {
 
   // Official-ish remote pattern: create Feathers, then configure exactly one transport.
   feathersClient.configure(connection(baseUrl, overrides))
-
-  // DX/runtime safety: normalize weird rejections into a stable plain object.
-  const normalizeError = (err: any) => {
-    const toPlain = (src: any, fallbackMessage = 'Unknown error') => ({
-      name: src?.name || 'Error',
-      message: src?.message || fallbackMessage,
-      code: src?.code ?? src?.statusCode ?? src?.status ?? src?.name ?? 'NFZ_ERROR',
-      className: src?.className,
-      data: src?.data,
-      errors: src?.errors,
-      cause: src?.cause,
-      stack: src?.stack ? String(src.stack) : undefined,
-      raw: src,
-    })
-
-    if (err == null)
-      return toPlain({ name: 'Error', message: 'Unknown error', code: 'NFZ_UNKNOWN' }, 'Unknown error')
-    if (typeof err !== 'object')
-      return toPlain({ name: 'Error', message: String(err), code: 'NFZ_ERROR', raw: err }, String(err))
-    if (err instanceof Error)
-      return toPlain(err, err.message || 'Error')
-    return toPlain(err)
-  }
 
   // Init authentication
   ${put(auth, `feathersClient.configure(authentication)`)}
@@ -313,7 +312,7 @@ export default defineNuxtPlugin(async (nuxt) => {
             return await fn.apply(svc, args)
           }
           catch (e: any) {
-            throw normalizeError(e)
+            throw normalizeClientError(e)
           }
         }
       }

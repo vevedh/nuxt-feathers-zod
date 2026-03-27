@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import ts from 'typescript'
+import { describe, expect, it } from 'vitest'
 
 import { getServerMongodbContents } from './mongodb'
 
@@ -57,12 +57,11 @@ describe('server mongodb template', () => {
     })
 
     const messages = (transpiled.diagnostics ?? []).map((diagnostic: ts.Diagnostic) =>
-      ts.flattenDiagnosticMessageText(diagnostic.messageText, '
-'),
+      ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     )
 
     expect(messages).toEqual([])
-    expect(code).toContain("replace(/^\//, '')")
+    expect(code).toContain('replace(/^\//, \'\')')
   })
 
   it('should allow system databases when showSystemDatabases is enabled', () => {
@@ -100,5 +99,84 @@ describe('server mongodb template', () => {
     expect(code).toContain('management.showSystemDatabases === true')
     expect(code).toContain('allowCreateCollection: management.allowCreateCollection === true')
     expect(code).toContain('allowDropCollection: management.allowDropCollection === true')
+  })
+
+  it('should forward the full Mongo management write surface for databases, collections and documents', () => {
+    const code = getServerMongodbContents({
+      database: {
+        mongo: {
+          url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+          management: {
+            enabled: true,
+            auth: { enabled: false, authenticate: false },
+            audit: { enabled: false },
+            exposeDatabasesService: true,
+            exposeCollectionsService: true,
+            exposeUsersService: false,
+            exposeCollectionCrud: true,
+            basePath: '/mongo',
+            whitelistDatabases: [],
+            blacklistDatabases: [],
+            showSystemDatabases: true,
+            whitelistCollections: [],
+            blacklistCollections: [],
+            allowCreateDatabase: true,
+            allowDropDatabase: true,
+            allowCreateCollection: true,
+            allowDropCollection: true,
+            allowInsertDocuments: true,
+            allowPatchDocuments: true,
+            allowReplaceDocuments: true,
+            allowRemoveDocuments: true,
+          },
+        },
+      },
+    } as any)()
+
+    expect(code).toContain('allowCreateDatabase: management.allowCreateDatabase === true')
+    expect(code).toContain('allowDropDatabase: management.allowDropDatabase === true')
+    expect(code).toContain('allowCreateCollection: management.allowCreateCollection === true')
+    expect(code).toContain('allowDropCollection: management.allowDropCollection === true')
+    expect(code).toContain('allowInsertDocuments: management.allowInsertDocuments === true')
+    expect(code).toContain('allowPatchDocuments: management.allowPatchDocuments === true')
+    expect(code).toContain('allowReplaceDocuments: management.allowReplaceDocuments === true')
+    expect(code).toContain('allowRemoveDocuments: management.allowRemoveDocuments === true')
+  })
+
+  it('should mount databases, collections and documents management routes together when enabled', () => {
+    const code = getServerMongodbContents({
+      database: {
+        mongo: {
+          url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+          management: {
+            enabled: true,
+            auth: { enabled: false, authenticate: false },
+            audit: { enabled: false },
+            exposeDatabasesService: true,
+            exposeCollectionsService: true,
+            exposeUsersService: false,
+            exposeCollectionCrud: true,
+            basePath: '/mongo-admin',
+            whitelistDatabases: [],
+            blacklistDatabases: [],
+            showSystemDatabases: false,
+            whitelistCollections: [],
+            blacklistCollections: [],
+            allowCreateDatabase: false,
+            allowDropDatabase: false,
+            allowCreateCollection: false,
+            allowDropCollection: false,
+            allowInsertDocuments: false,
+            allowPatchDocuments: false,
+            allowReplaceDocuments: false,
+            allowRemoveDocuments: false,
+          },
+        },
+      },
+    } as any)()
+
+    expect(code).toContain('mount(normalizePath(mongoPath, \'databases\'), database)')
+    expect(code).toContain('mount(normalizePath(mongoPath, \':db\', \'collections\'), collections)')
+    expect(code).toContain('mount(normalizePath(mongoPath, \':db\', \':collection\', \'documents\'), documents)')
   })
 })

@@ -3,6 +3,16 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
 const rootDir = resolve(process.cwd())
+const syncScript = resolve(rootDir, 'scripts/sync-release-metadata.mjs')
+const syncResult = spawnSync(process.execPath, [syncScript], { cwd: rootDir, stdio: 'inherit', shell: false })
+if (syncResult.error) {
+  console.error('[nuxt-feathers-zod] Release metadata sync spawn error:', syncResult.error)
+  process.exit(typeof syncResult.status === 'number' ? syncResult.status : 1)
+}
+if (typeof syncResult.status === 'number' && syncResult.status !== 0) {
+  console.error(`[nuxt-feathers-zod] Release metadata sync failed with exit code ${syncResult.status}`)
+  process.exit(syncResult.status)
+}
 const outFile = resolve(rootDir, 'dist/cli/index.mjs')
 const outDir = dirname(outFile)
 mkdirSync(outDir, { recursive: true })

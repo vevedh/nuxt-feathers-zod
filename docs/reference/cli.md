@@ -137,3 +137,12 @@ bunx nuxt-feathers-zod add service <name> --custom
 ```
 
 La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
+
+
+<!-- release-version: 6.4.48 -->
+
+
+<!-- release-version: 6.4.49 -->
+
+
+<!-- release-version: 6.4.56 -->

@@ -23,7 +23,7 @@ for (const [file, needles] of checks) {
   const text = readFileSync(resolve(rootDir, file), 'utf8')
   for (const needle of needles) {
     if (!text.includes(needle)) {
-      console.error(`[nuxt-feathers-zod] Release metadata mismatch: ${file} does not mention ${needle}`)
+      console.error(`[nuxt-feathers-zod] Release metadata mismatch: ${file} does not mention ${needle}. Run: bun run sync:release-meta`)
       failed = true
     }
   }
