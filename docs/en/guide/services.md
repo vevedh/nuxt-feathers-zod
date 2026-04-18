@@ -22,6 +22,9 @@ bunx nuxt-feathers-zod add service articles --adapter mongodb --collection artic
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Expected structure
 
 ```txt
@@ -61,6 +64,9 @@ Use it when an embedded `mongodbClient` is configured.
 bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Schemas
 
 By default, the generator currently aims for a simple start.
@@ -81,6 +87,9 @@ bunx nuxt-feathers-zod add service messages --schema json
 ```bash
 bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
 ```
+
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 In practice, `users` remains the reference service for embedded auth.
 

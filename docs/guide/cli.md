@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.120**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.121**.
 
 ## Commande d’entrée
 
@@ -322,6 +322,9 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod -
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ### Remote
 
 ```bash
@@ -438,6 +441,9 @@ Génère un service embedded.
 bunx nuxt-feathers-zod add service users --adapter mongodb --schema zod --collection users --idField _id
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 Options utiles :
 
 - `--custom`
@@ -467,6 +473,9 @@ bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory -
 bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
 bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
 ```
+
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ## `add remote-service <name>`
 
@@ -545,6 +554,9 @@ Génère un fichier `docker-compose-db.yaml` pour démarrer MongoDB localement.
 bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --service mongodb --database app --rootUser root --rootPassword change-me
 ```
+
+<!-- mongodb-compose-purpose-note -->
+> Cette commande crée un `docker-compose.yaml` prêt à lancer une base MongoDB en écoute pour les services générés avec `--adapter mongodb`.
 
 ## `mongo management`
 
@@ -658,3 +670,7 @@ Commande dédiée :
 ```bash
 bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
 ```
+
+## 6.4.121
+
+- Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.

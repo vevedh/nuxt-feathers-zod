@@ -26,6 +26,9 @@ bunx nuxt-feathers-zod init embedded --force --auth
 bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Remote
 
 In remote mode, the config lives under `feathers.client.remote.auth`.

@@ -76,6 +76,9 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod -
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Démarrage rapide — mode remote
 
 ```bash
@@ -114,6 +117,9 @@ bunx nuxt-feathers-zod schema users --show
 bunx nuxt-feathers-zod doctor
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Génération auth-aware pour `users`
 
 Pour le service `users`, `--auth` et `--authAware` couvrent deux besoins distincts :
@@ -136,6 +142,9 @@ bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory -
 bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
 bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
 ```
+
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ## Surface optionnelle de gestion MongoDB
 
@@ -339,3 +348,7 @@ Dans le dépôt du module lui-même, préfère `bun run clean:repo` avant `bun i
 
 
 - 6.4.117: fixed invalid YAML front matter in `docs/en/guide/auth-keycloak.md`; added GitHub Pages/VitePress deployment note (`docs/guide/github-pages.md`).
+
+## 6.4.121
+
+- Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.

@@ -30,6 +30,9 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection u
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 Expected: local auth is active and Swagger docs are available.
 
 ## 3. Remote REST

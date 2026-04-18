@@ -22,6 +22,9 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection u
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Créer un utilisateur
 
 ```bash

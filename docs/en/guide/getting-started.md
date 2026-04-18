@@ -138,6 +138,9 @@ You can also generate a MongoDB-backed service directly:
 bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ### 5) Start the app
 
 ```bash
@@ -174,6 +177,9 @@ For MongoDB:
 ```bash
 bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --idField _id --auth --docs
 ```
+
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ### 3) Start Nuxt
 

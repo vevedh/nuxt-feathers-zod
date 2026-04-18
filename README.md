@@ -1,12 +1,12 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.120** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.121** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.120**.
+Current OSS release target: **6.4.121**.
 
 It supports two main usage patterns:
 
@@ -106,6 +106,9 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod -
 bun dev
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ## Remote mode quick start
 
 ```bash
@@ -165,6 +168,9 @@ bunx nuxt-feathers-zod schema users --set-mode zod
 bunx nuxt-feathers-zod schema users --add-field title:string!
 ```
 
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ### Runtime helpers and scaffolding
 
 ```bash
@@ -187,7 +193,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.120
+## CLI command surface in 6.4.121
 
 | Area | Commands |
 |---|---|
@@ -277,6 +283,9 @@ bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory -
 bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
 bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
 ```
+
+<!-- mongodb-adapter-note -->
+> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ## Optional MongoDB management surface
 
@@ -590,3 +599,7 @@ In the module repository itself, prefer `bun run clean:repo` before `bun install
 
 
 - 6.4.117: fixed invalid YAML front matter in `docs/en/guide/auth-keycloak.md`; added GitHub Pages/VitePress deployment note (`docs/guide/github-pages.md`).
+
+## 6.4.121
+
+- Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.

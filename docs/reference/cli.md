@@ -107,6 +107,9 @@ bunx nuxt-feathers-zod schema users --diff
 bunx nuxt-feathers-zod schema users --repair-auth
 ```
 
+<!-- mongodb-adapter-note -->
+> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
+
 ### Runtime / Mongo
 
 ```bash
@@ -149,4 +152,4 @@ La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
 <!-- release-version: 6.4.56 -->
 
 
-<!-- release-version: 6.4.120 -->
+<!-- release-version: 6.4.121 -->
