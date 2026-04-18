@@ -12,21 +12,26 @@ function getBearer(headers) {
   return auth.slice(7)
 }
 
-async function safeResolveUser(app, cfg, payload) {
+async function safeResolveUser(app, cfg, payload, hintedUser) {
   const sub = payload?.sub
-  if (!sub) return payload
+  if (!sub) return hintedUser || payload
 
   try {
     const users = app.service(cfg.userService)
     const found = await users.find({ query: { [cfg.serviceIdField]: sub }, paginate: false })
     const first = Array.isArray(found) ? found[0] : (found?.data?.[0] ?? null)
-    if (first) return first
+    if (first) return { ...hintedUser, ...payload, ...first }
 
-    const created = await users.create({ [cfg.serviceIdField]: sub })
+    const created = await users.create({
+      [cfg.serviceIdField]: sub,
+      ...(hintedUser && typeof hintedUser === 'object' ? hintedUser : {}),
+      preferred_username: hintedUser?.preferred_username || payload?.preferred_username || hintedUser?.email || payload?.email,
+      email: hintedUser?.email || payload?.email,
+    })
     return created
   }
   catch (_e) {
-    return { [cfg.serviceIdField]: sub, ...payload }
+    return { [cfg.serviceIdField]: sub, ...(hintedUser && typeof hintedUser === 'object' ? hintedUser : {}), ...payload }
   }
 }
 
@@ -57,16 +62,31 @@ export function keycloakAuthorizationHook(app, cfg) {
 export function keycloakBridgeService(app, cfg) {
   return {
     async create(data) {
+      const token = data?.access_token || data?.accessToken || data?.jwt || data?.token
+      const hintedUser = data?.keycloakUser || data?.user || data?.tokenParsed || null
       const fakeCtx = {
         app,
-        params: { headers: { Authorization: 'Bearer ' + data.access_token }, provider: 'rest' },
+        params: { headers: { Authorization: token ? 'Bearer ' + token : '' }, provider: 'rest' },
       }
 
       await keycloakAuthorizationHook(app, cfg)(fakeCtx)
 
+      if (!fakeCtx.params.user && hintedUser)
+        fakeCtx.params.user = hintedUser
+
       return {
         user: fakeCtx.params.user,
         permissions: fakeCtx.params.permissions,
+        accessToken: token || null,
+        authentication: token ? { strategy: 'keycloak', accessToken: token } : undefined,
+        keycloakUser: hintedUser || fakeCtx.params.client || null,
+        bridge: {
+          strategy: token ? 'keycloak' : null,
+          validated: Boolean(fakeCtx.params.user || hintedUser),
+          userService: cfg.userService,
+          serviceIdField: cfg.serviceIdField,
+          authServicePath: cfg.authServicePath,
+        },
       }
     },
 
@@ -100,8 +120,8 @@ export interface KeycloakConfig {
 
 export declare function keycloakAuthorizationHook(app: Application, cfg: KeycloakConfig): (context: HookContext) => Promise<HookContext>
 export declare function keycloakBridgeService(app: Application, cfg: KeycloakConfig): {
-  create(data: { access_token: string }): Promise<{ user: any, permissions: any[] }>
-  patch(id: any, data: { access_token: string }): Promise<{ user: any, permissions: any[] }>
+  create(data: { access_token?: string, accessToken?: string, jwt?: string, token?: string, user?: any, keycloakUser?: any, tokenParsed?: any }): Promise<{ user: any, permissions: any[], accessToken?: string, authentication?: { strategy: string, accessToken: string }, bridge?: { strategy: string | null, validated: boolean, userService: string, serviceIdField: string, authServicePath: string } }>
+  patch(id: any, data: { access_token?: string, accessToken?: string, jwt?: string, token?: string, user?: any, keycloakUser?: any, tokenParsed?: any }): Promise<{ user: any, permissions: any[], accessToken?: string, authentication?: { strategy: string, accessToken: string }, bridge?: { strategy: string | null, validated: boolean, userService: string, serviceIdField: string, authServicePath: string } }>
   remove(): Promise<{ ok: boolean }>
 }
 `

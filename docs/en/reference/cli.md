@@ -18,6 +18,7 @@ Official OSS surface aligned with **v6.4.45**.
 - `remote auth keycloak`
 - `add service <name>`
 - `add remote-service <name>`
+- `add file-service <name>`
 - `add middleware <name>`
 - `schema <service>`
 - `auth service <name>`
@@ -121,3 +122,6 @@ Detailed flag coverage stays in the [CLI guide](/en/guide/cli).
 
 
 <!-- release-version: 6.4.56 -->
+
+
+<!-- release-version: 6.4.116 -->

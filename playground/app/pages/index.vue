@@ -70,6 +70,24 @@ async function goProtected() {
     </p>
 
     <p style="margin-top: 8px">
+      <NuxtLink to="/auth-runtime">
+        Auth runtime diagnostics: /auth-runtime
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
+      <NuxtLink to="/mongo">
+        Mongo management demo: /mongo
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
+      <NuxtLink to="/builder">
+        Builder validation demo: /builder
+      </NuxtLink>
+    </p>
+
+    <p style="margin-top: 8px">
       <NuxtLink to="/remote/socketio">
         Remote Socket.IO validation
       </NuxtLink>

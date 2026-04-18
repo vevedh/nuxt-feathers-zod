@@ -1,3 +1,55 @@
+## 6.4.102
+
+## 6.4.103
+- Fixed embedded Mongo management public base path resolution. In embedded mode, client tooling now prefixes the Mongo management base path with the embedded REST path, so `/feathers` + `/mongo` becomes `/feathers/mongo` and avoids broken requests/warnings to `/mongo/...`.
+- playground: ajout de `/auth-runtime` pour diagnostiquer le runtime auth unifié et lire la trace récente des événements auth
+- playground: page `/mongo` alignée sur `useProtectedPage()` et `useMongoManagementClient()`
+- docs FR/EN: mise à jour des guides Playground et Auth runtime
+
+## 6.4.101
+
+- auth runtime refactor phase 6
+- official protected page helper: `useProtectedPage()`
+- official auth trace helper: `useAuthTrace()`
+- bounded runtime auth event history plus `clearEvents()` / `resetDiagnostics()`
+
+## 6.4.100
+
+- Fix `sanity:internal-imports` on Windows by normalizing path separators in `scripts/check-internal-self-imports.mjs`, so `src/runtime/templates/**` imports remain allowed.
+
+## 6.4.99
+
+### Stabilization
+- replace internal runtime self-imports (`nuxt-feathers-zod/client`) with relative imports inside `src/runtime/composables/*`
+- add `scripts/check-internal-self-imports.mjs` to prevent forbidden package self-imports from reappearing outside template/runtime entrypoint boundaries
+- wire `sanity:internal-imports` into `prepack`, `prepare`, and `release:check`
+- keep the playground self-link only for real consumer-style bare imports while making the runtime source itself less dependent on package self-resolution
+
+## 6.4.98
+
+- fix(dev/playground): create a self-link `playground/node_modules/nuxt-feathers-zod` so local `nuxi dev playground` resolves `nuxt-feathers-zod/*` bare imports correctly under the nested playground package scope.
+- chore(scripts): run `playground:ensure-link` during `prepare`, `playground:dev`, and `playground:build`.
+
+## 6.4.95
+
+- add phase 4 auth runtime refactor helpers: `useProtectedTool()` and `useMongoManagementClient()`
+- expose safe public runtime metadata for Mongo management basePath and routes
+- align docs FR/EN for protected runtime tools and embedded Mongo management
+
+
+## 6.4.93
+
+- auth runtime phase 2: add `useAuthenticatedRequest()` and `useProtectedService()`
+- auth diagnostics: add `useAuthDiagnostics()` and `getStateSnapshot()`
+- generated client plugin now synchronizes remote auth results with the unified auth runtime
+- documentation FR/EN aligned with unified auth runtime and Keycloak bridge behavior
+
+## v6.4.57
+
+- positionnement produit clarifié face à `@nuxtjs/supabase` (README + docs)
+- ajout d’une roadmap publique NFZ vNext orientée DX/auth/builder/diagnostics
+- ajout des fichiers de contexte de patch (`JOURNAL.md`, `PATCHLOG.md`, `PROMPT_CONTEXT.md`, `AI_CONTEXT/PROJECT_CONTEXT.md`) pour les prochaines itérations
+
 # Changelog
 
 ## 6.4.45
@@ -240,3 +292,16 @@
 - devtools plume icon/theme-parent behavior preserved
 
 - 6.4.45: remote Keycloak Option B contract (`strategy: 'sso'`, `user: loginuser`, `authenticated: true`) is now first-class in the runtime and docs; generated route middleware no longer re-runs `auth.init()` or reuses callback hashes in redirect URIs.
+
+## 6.4.94
+
+- auth runtime refactor phase 3: add `useAuthBoundFetch()` and auth-aware REST fetch implementation
+- generated REST clients now use the auth-bound fetch implementation by default
+- `useProtectedService()` retries once after `reAuthenticate()` on 401
+- docs FR/EN updated for phase 3 runtime auth usage
+
+
+## 6.4.96
+- auth runtime phase 5: official Keycloak bridge helper and richer diagnostics
+- protected helpers now validate Keycloak bearer before protected calls
+- docs FR/EN aligned on auth runtime phases 3/4/5

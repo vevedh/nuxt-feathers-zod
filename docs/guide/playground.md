@@ -57,3 +57,5 @@ Le mode utilise `mongodb-memory-server` pour fournir un `mongodbClient` valide a
 
 Si vous voulez valider uniquement le mode remote sans démarrer `mongodb-memory-server`, définissez `NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`.
 La valeur par défaut reste `true` pour conserver le scénario embedded + MongoDB prêt à l'emploi.
+
+> Embedded Mongo management calls use the embedded REST prefix. With REST path `/feathers` and Mongo base path `/mongo`, the effective client path is `/feathers/mongo/...`.

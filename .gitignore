@@ -82,3 +82,11 @@ PROMPT*.md
 JOURNAL.md
 SCENARIOS.md
 README_private.md
+
+# Local release / scratch artifacts
+*.tgz
+out.js
+tmpfile
+
+NFZ_BACKLOG_*.md
+memo_ai.md

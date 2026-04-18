@@ -5,7 +5,7 @@ editLink: false
 
 The CLI `bunx nuxt-feathers-zod` is the **official method** to initialize a Nuxt 4 app, generate NFZ-compatible artifacts and diagnose an existing project.
 
-This page is aligned with the OSS command surface stabilized for release **6.4.56**.
+This page is aligned with the OSS command surface stabilized for release **6.4.116**.
 
 ## Entry command
 
@@ -22,6 +22,7 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 - `remote auth keycloak`
 - `add service <name>`
 - `add remote-service <name>`
+- `add file-service <name>`
 - `add middleware <name>`
 - `schema <service>`
 - `auth service <name>`
@@ -52,6 +53,7 @@ bunx nuxt-feathers-zod <command> [args] [--flags]
 - `add service <name>`
 - `add service <name> --custom`
 - `add remote-service <name>`
+- `add file-service <name>`
 - `auth service <name>`
 - `schema <service>`
 
@@ -649,3 +651,12 @@ The report covers:
   - normalized `basePath`
   - computed route surface
   - warning when `management.enabled = true` but `database.mongo.url` is missing
+
+
+## File upload/download starter
+
+Dedicated command:
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```

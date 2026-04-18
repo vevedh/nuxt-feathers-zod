@@ -93,3 +93,16 @@ await client.service('authentication').create({
 - keep `tokenField` explicit
 - document Redirect URIs and Web Origins in Keycloak
 - test with remote REST first to isolate SSO issues
+
+
+## Runtime helper recommended pattern
+
+```ts
+const auth = useAuthRuntime()
+await auth.ensureReady()
+
+const request = useAuthenticatedRequest()
+const data = await request('/api/private')
+```
+
+This avoids rebuilding a Bearer header manually and keeps Keycloak + Feathers aligned through the unified auth runtime.

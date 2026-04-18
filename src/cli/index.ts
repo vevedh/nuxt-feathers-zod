@@ -15,6 +15,7 @@ import {
   generateMiddleware,
   generateMongoCompose,
   generateService,
+  generateFileService,
   toggleServiceAuth,
   handleCliError,
   initTemplates,
@@ -28,7 +29,7 @@ import {
 } from './core'
 
 export type { RunCliOptions } from './core'
-export { generateCustomService, generateMiddleware, generateService } from './core'
+export { generateCustomService, generateMiddleware, generateService, generateFileService } from './core'
 
 function parseBooleanFlag(value: string | boolean | undefined, fallback: boolean): boolean {
   if (value === undefined)
@@ -462,6 +463,35 @@ async function handleAddServerModuleCommand(cwd: string, args: CliContextArgs) {
   })
 
   await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
+}
+
+async function handleAddFileServiceCommand(cwd: string, args: CliContextArgs) {
+  const name = typeof args.name === 'string' ? String(args.name) : ''
+  if (!name)
+    throw new Error('Missing <name>.')
+
+  const auth = parseBooleanFlag(args.auth as string | boolean | undefined, false)
+  const docs = parseBooleanFlag(args.docs as string | boolean | undefined, true)
+  const dry = parseBooleanFlag(args.dry as string | boolean | undefined, false)
+  const force = parseBooleanFlag(args.force as string | boolean | undefined, false)
+  const servicePath = typeof args.path === 'string' ? String(args.path) : undefined
+  const storageDir = typeof args.storageDir === 'string' ? String(args.storageDir) : undefined
+  const projectRoot = await withProjectRoot(cwd)
+  const servicesDirName = typeof args.servicesDir === 'string' ? String(args.servicesDir) : 'services'
+  const servicesDir = resolve(projectRoot, servicesDirName)
+
+  await generateFileService({
+    projectRoot,
+    servicesDir,
+    name,
+    auth,
+    servicePath,
+    storageDir,
+    docs,
+    dry,
+    force,
+  })
+  await tryPatchNuxtConfig(projectRoot, { servicesDir: servicesDirName }, { dry })
 }
 
 async function handleAddRemoteServiceCommand(cwd: string, args: CliContextArgs) {
@@ -908,6 +938,26 @@ export function createCliCommand() {
     },
   })
 
+  const addFileServiceCommand = defineCommand({
+    meta: {
+      name: 'file-service',
+      description: 'Generate a local upload/download file service scaffold',
+    },
+    args: {
+      name: { type: 'positional', required: true, description: 'Service name' },
+      path: { type: 'string', description: 'Service path' },
+      storageDir: { type: 'string', description: 'Storage directory relative to project root' },
+      auth: { type: 'boolean', description: 'Protect service with JWT auth' },
+      docs: { type: 'boolean', description: 'Enable swagger legacy docs metadata' },
+      servicesDir: { type: 'string', description: 'Services directory' },
+      force: { type: 'boolean', description: 'Overwrite existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleAddFileServiceCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
+
   const addCustomServiceCommand = defineCommand({
     meta: {
       name: 'custom-service',
@@ -1230,6 +1280,7 @@ export function createCliCommand() {
     },
     subCommands: {
       service: addServiceCommand,
+      'file-service': addFileServiceCommand,
       'custom-service': addCustomServiceCommand,
       'remote-service': addRemoteServiceCommand,
       middleware: addMiddlewareCommand,

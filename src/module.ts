@@ -79,6 +79,14 @@ function setAliases(options: ResolvedOptions, nuxt: Nuxt) {
     'nuxt-feathers-zod/options$': resolver.resolve('runtime/options'),
     'nuxt-feathers-zod/auth-utils$': resolver.resolve('runtime/utils/auth'),
     'nuxt-feathers-zod/config-utils$': resolver.resolve('runtime/utils/config'),
+    'nuxt-feathers-zod/auth-runtime$': resolver.resolve('runtime/composables/useAuthRuntime'),
+    'nuxt-feathers-zod/auth-bound-fetch$': resolver.resolve('runtime/composables/useAuthBoundFetch'),
+    'nuxt-feathers-zod/protected-tool$': resolver.resolve('runtime/composables/useProtectedTool'),
+    'nuxt-feathers-zod/mongo-management-client$': resolver.resolve('runtime/composables/useMongoManagementClient'),
+    'nuxt-feathers-zod/admin-client$': resolver.resolve('runtime/composables/useNfzAdminClient'),
+    'nuxt-feathers-zod/builder-client$': resolver.resolve('runtime/composables/useBuilderClient'),
+    'nuxt-feathers-zod/protected-page$': resolver.resolve('runtime/composables/useProtectedPage'),
+    'nuxt-feathers-zod/auth-trace$': resolver.resolve('runtime/composables/useAuthTrace'),
   }
 
   nuxt.options.alias = defu(nuxt.options.alias, aliases)

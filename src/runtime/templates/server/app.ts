@@ -36,7 +36,7 @@ ${put(options.loadFeathersConfig, `import configuration from '@feathersjs/config
 import { feathers } from '@feathersjs/feathers'
 ${puts([
   [koa, `import { koa as feathersKoa, rest } from '@feathersjs/koa'`],
-  [exp, `import feathersExpress, { rest } from '@feathersjs/express'`],
+  [exp, `import feathersExpress, { rest, json, urlencoded } from '@feathersjs/express'`],
   [sio, `import socketio from '@feathersjs/socketio'`],
 ])}
 ${put(rest, `import { ${framework}ErrorHandler } from '@gabortorma/feathers-nitro-adapter/handlers'`)}
@@ -58,7 +58,13 @@ ${put(options.loadFeathersConfig, `  app.configure(configuration())
 ${put(rest, `  // REST framework setup
   ${put(koa, `app.configure(koaErrorHandler)
 `)}
-  ${put(exp, `// Express error handler is configured later (after services)
+  ${put(exp, `// Parse JSON/urlencoded request bodies before Feathers REST routes.
+  // This is required for embedded REST auth and all POST/PATCH/PUT requests.
+  app.use(json())
+  app.use(urlencoded({ extended: true }))
+  console.info('[NFZ server] body parser pre-rest=true')
+
+  // Express error handler is configured later (after services)
 `)}
   app.set('framework', '${framework}')
   app.configure(rest(${put(auth, `{

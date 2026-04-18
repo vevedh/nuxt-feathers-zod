@@ -84,3 +84,131 @@ describe('resolveOptions', () => {
     expect(resolved.client && resolved.client.remote && resolved.client.remote.services).toHaveLength(2)
   })
 })
+
+
+describe('resolvePublicRuntimeConfig', () => {
+  it('exposes mongo management public runtime metadata', async () => {
+    const resolved = await resolveOptions({
+      transports: { rest: { path: '/feathers', framework: 'express' }, websocket: false },
+      database: {
+        mongo: {
+          url: 'mongodb://localhost:27017/test',
+          management: {
+            enabled: true,
+            basePath: '/mongo-admin',
+            auth: { enabled: true, authenticate: true },
+            exposeDatabasesService: true,
+            exposeCollectionsService: true,
+            exposeCollectionCrud: true,
+          },
+        },
+      },
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: false,
+      keycloak: false,
+      client: { mode: 'embedded', pinia: false },
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: false,
+    } as any, nuxtMock)
+
+    const pub = resolvePublicRuntimeConfig(resolved)
+    expect(pub.database?.mongo?.management?.enabled).toBe(true)
+    expect(pub.database?.mongo?.management?.basePath).toBe('/mongo-admin')
+    expect(pub.database?.mongo?.management?.routes?.some(route => route.path === '/mongo-admin/databases')).toBe(true)
+  })
+
+  it('prefixes the embedded mongo management path with the rest path in public runtime helpers', async () => {
+    const { getPublicMongoManagementBasePath } = await import('../utils/config')
+
+    const pub = resolvePublicRuntimeConfig(await resolveOptions({
+      transports: {
+        rest: { framework: 'express', path: '/feathers' },
+      },
+      database: {
+        mongo: {
+          url: 'mongodb://localhost:27017/test',
+          management: {
+            enabled: true,
+            basePath: '/mongo',
+          },
+        },
+      },
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: false,
+      keycloak: false,
+      client: {
+        mode: 'embedded',
+        pinia: false,
+      },
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: false,
+    } as any, nuxtMock))
+
+    expect(getPublicMongoManagementBasePath({ _feathers: pub } as any)).toBe('/feathers/mongo')
+  })
+
+
+  it('exposes public admin diagnostics/devtools metadata', async () => {
+    const { getPublicDiagnosticsPath, getPublicDevtoolsCssPath, getPublicDevtoolsPath } = await import('../utils/config')
+
+    const pub = resolvePublicRuntimeConfig(await resolveOptions({
+      transports: { rest: { framework: 'express', path: '/feathers' }, websocket: false },
+      database: {},
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: false,
+      keycloak: false,
+      client: { mode: 'embedded', pinia: false },
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: true,
+    } as any, nuxtMock))
+
+    expect(pub.admin?.diagnostics?.enabled).toBe(true)
+    expect(pub.admin?.devtools?.enabled).toBe(true)
+    expect(getPublicDiagnosticsPath({ _feathers: pub } as any)).toBe('/__nfz-devtools.json')
+    expect(getPublicDevtoolsPath({ _feathers: pub } as any)).toBe('/__nfz-devtools')
+    expect(getPublicDevtoolsCssPath({ _feathers: pub } as any)).toBe('/__nfz-devtools.css')
+  })
+
+  it('exposes public builder metadata and helper paths', async () => {
+    const {
+      getPublicBuilderApplyPath,
+      getPublicBuilderManifestPath,
+      getPublicBuilderPreviewPath,
+      getPublicBuilderServicesPath,
+    } = await import('../utils/config')
+
+    const pub = resolvePublicRuntimeConfig(await resolveOptions({
+      transports: { rest: { framework: 'express', path: '/feathers' }, websocket: false },
+      database: {},
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: false,
+      keycloak: false,
+      client: { mode: 'embedded', pinia: false },
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: true,
+    } as any, nuxtMock))
+
+    expect(pub.builder?.enabled).toBe(true)
+    expect(getPublicBuilderServicesPath({ _feathers: pub } as any)).toBe('/api/nfz/services')
+    expect(getPublicBuilderManifestPath({ _feathers: pub } as any)).toBe('/api/nfz/manifest')
+    expect(getPublicBuilderPreviewPath({ _feathers: pub } as any)).toBe('/api/nfz/preview')
+    expect(getPublicBuilderApplyPath({ _feathers: pub } as any)).toBe('/api/nfz/apply')
+  })
+
+})

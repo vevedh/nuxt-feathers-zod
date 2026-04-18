@@ -18,6 +18,8 @@ editLink: false
 - `/tests`: connection + auth diagnostics
 - `/messages`: simple CRUD example
 - `/ldapusers`: example of an explicitly declared remote service
+ - `/auth-runtime`: auth runtime diagnostics + recent auth trace
+- `/mongo`: Mongo management demo using `useMongoManagementClient()` and `useProtectedPage()`, with workspace refresh and REST endpoint diagnostics
 
 ## Recommended validation routine
 
@@ -51,3 +53,5 @@ To freeze the open source core, it should remain a simple and stable validation 
 
 If you only want to validate remote mode without starting `mongodb-memory-server`, set `NFZ_PLAYGROUND_EMBEDDED_MONGODB=false`.
 The default remains `true` so the embedded MongoDB scenario stays available out of the box.
+
+> Embedded Mongo management calls use the embedded REST prefix. With REST path `/feathers` and Mongo base path `/mongo`, the effective client path is `/feathers/mongo/...`.

@@ -81,3 +81,16 @@ await client.service('authentication').create({
 - garder `tokenField` explicite
 - documenter les Redirect URIs et Web Origins côté Keycloak
 - tester d’abord en remote REST pour isoler les problèmes SSO
+
+
+## Pattern recommandé avec runtime helper
+
+```ts
+const auth = useAuthRuntime()
+await auth.ensureReady()
+
+const request = useAuthenticatedRequest()
+const data = await request('/api/private')
+```
+
+Ce pattern évite de reconstruire l’en-tête Bearer à la main et garde Keycloak + Feathers alignés via le runtime auth unifié.

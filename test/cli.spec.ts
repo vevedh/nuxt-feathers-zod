@@ -2,11 +2,26 @@ import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
-import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateMiddleware, generateService, runCli } from '../src/cli/index'
+import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, generateFileService, generateMiddleware, generateService, runCli } from '../src/cli/index'
 import { resolveServerOptions } from '../src/runtime/options/server'
 import { getServerPluginContents } from '../src/runtime/templates/server/plugin'
 const LONG_TIMEOUT = 20000
+
+function getTsParseMessages(file: string, source: string) {
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  return sourceFile.parseDiagnostics.map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))
+}
+
+async function expectGeneratedTsSyntaxOk(files: string[]) {
+  for (const file of files) {
+    const source = await readFile(file, 'utf8')
+    const messages = getTsParseMessages(file, source)
+    expect(messages).toEqual([])
+  }
+}
+
 describe('nuxt-feathers-zod CLI generators', () => {
 it('keeps public release metadata aligned with package version', async () => {
   const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as { version: string }
@@ -171,6 +186,118 @@ it('publishes the CLI bin from dist instead of src', async () => {
     const shared = await readFile(sharedFile, 'utf8')
     expect(shared).toContain('actionMethods = ["find","run","preview"] as const')
   })
+  it('generates a file-service scaffold with manifest and service files', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    const servicesDir = join(root, 'services')
+
+    await generateFileService({
+      projectRoot: root,
+      servicesDir,
+      name: 'assets',
+      auth: true,
+      servicePath: 'api/v1/assets',
+      storageDir: 'storage/assets',
+      docs: true,
+      dry: false,
+      force: false,
+    })
+
+    const base = join(servicesDir, 'assets')
+    const schemaFile = join(base, 'assets.schema.ts')
+    const classFile = join(base, 'assets.class.ts')
+    const sharedFile = join(base, 'assets.shared.ts')
+    const svcFile = join(base, 'assets.ts')
+    const manifestFile = join(servicesDir, '.nfz', 'manifest.json')
+
+    expect(existsSync(schemaFile)).toBe(true)
+    expect(existsSync(classFile)).toBe(true)
+    expect(existsSync(sharedFile)).toBe(true)
+    expect(existsSync(svcFile)).toBe(true)
+    expect(existsSync(manifestFile)).toBe(true)
+
+    const klass = await readFile(classFile, 'utf8')
+    expect(klass).toContain("return join(root, `\${id}.bin`)")
+    expect(klass).toContain("return join(root, `\${id}.json`)")
+    expect(klass).toContain("const configured = this.app.get('assetStorageDir') || this.app.get('nfzFileStorageDir') || 'storage/assets'")
+
+    const shared = await readFile(sharedFile, 'utf8')
+    expect(shared).toContain("export const assetPath = 'api/v1/assets'")
+    expect(shared).toContain("upload(data: AssetUploadData")
+    expect(shared).toContain("download(data: AssetDownloadData")
+
+    const svc = await readFile(svcFile, 'utf8')
+    expect(svc).toContain("authenticate('jwt')")
+    expect(svc).toContain("methods: assetMethods as unknown as string[]")
+
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { services?: Array<any> }
+    const entry = manifest.services?.find(service => service.name === 'assets')
+    expect(entry).toMatchObject({
+      name: 'assets',
+      path: 'api/v1/assets',
+      adapter: 'memory',
+      auth: true,
+      custom: true,
+      customMethods: ['upload', 'download'],
+    })
+  })
+
+  it('emits TypeScript-syntax-valid files for the generated file-service scaffold', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    const servicesDir = join(root, 'services')
+
+    await generateFileService({
+      projectRoot: root,
+      servicesDir,
+      name: 'attachments',
+      auth: false,
+      servicePath: 'attachments',
+      storageDir: 'storage/attachments',
+      docs: false,
+      dry: false,
+      force: false,
+    })
+
+    const base = join(servicesDir, 'attachments')
+    await expectGeneratedTsSyntaxOk([
+      join(base, 'attachments.schema.ts'),
+      join(base, 'attachments.class.ts'),
+      join(base, 'attachments.shared.ts'),
+      join(base, 'attachments.ts'),
+    ])
+  })
+
+  it('dispatches add file-service through the CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-'))
+    await writeFile(join(root, 'nuxt.config.ts'), "export default defineNuxtConfig({})\n")
+
+    await runCli([
+      'add',
+      'file-service',
+      'media',
+      '--path', 'api/v1/media',
+      '--storageDir', 'storage/media',
+      '--auth', 'true',
+      '--docs', 'true',
+    ], { cwd: root, throwOnError: true })
+
+    const base = join(root, 'services', 'media')
+    expect(existsSync(join(base, 'media.schema.ts'))).toBe(true)
+    expect(existsSync(join(base, 'media.class.ts'))).toBe(true)
+    expect(existsSync(join(base, 'media.shared.ts'))).toBe(true)
+    expect(existsSync(join(base, 'media.ts'))).toBe(true)
+
+    const service = await readFile(join(base, 'media.ts'), 'utf8')
+    expect(service).toContain("authenticate('jwt')")
+    expect(service).toContain("description: 'media local file upload/download service'")
+
+    await expectGeneratedTsSyntaxOk([
+      join(base, 'media.schema.ts'),
+      join(base, 'media.class.ts'),
+      join(base, 'media.shared.ts'),
+      join(base, 'media.ts'),
+    ])
+  })
+
   const authAwareCombos = [
     { schema: 'none', adapter: 'memory', idField: 'id' },
     { schema: 'none', adapter: 'mongodb', idField: '_id' },

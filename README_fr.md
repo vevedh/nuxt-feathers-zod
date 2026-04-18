@@ -27,6 +27,16 @@ Le module OSS public inclut :
 - surface optionnelle de gestion MongoDB via `database.mongo.management`
 - helpers côté client avec support Pinia / feathers-pinia
 
+## Créer d'abord l'application Nuxt 4
+
+```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+```
+
+> Pour travailler dans le dépôt du module lui-même, préfère `bun run clean:repo && bun install` à `bunx nuxi cleanup` avant l’installation des dépendances.
+
 ## Installation
 
 ```bash
@@ -78,6 +88,14 @@ bunx nuxt-feathers-zod init remote --url https://api.example.com --transport soc
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 bun dev
 ```
+
+## Starter upload/download de fichiers
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```
+
+Ce scaffold génère un service local lisible avec `find`, `get`, `remove`, `upload` et `download`.
 
 ## Commandes CLI canoniques
 
@@ -166,6 +184,18 @@ bunx nuxt-feathers-zod add mongodb-compose
 bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --database app --rootPassword secret --force
 ```
 
+
+## Flux recommandé dans le repo du module
+
+Quand tu travailles directement dans le **repo du module**, préfère :
+
+```bash
+bun run clean:repo
+bun install
+```
+
+et évite `bunx nuxi cleanup` avant installation des dépendances.
+
 ## Notes
 
 - Convention recommandée : `servicesDirs: ['services']`
@@ -176,3 +206,133 @@ bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --databa
 ## Licence
 
 MIT
+
+
+## Démos produit
+
+Pour rendre NFZ plus lisible à adopter, la trajectoire recommandée est de montrer quatre démos courtes :
+
+- **auth demo** : login / logout / reAuthenticate / inspection user
+- **CRUD demo** : create / list / patch / remove sur un vrai service
+- **diagnostics demo** : timeline, filtres, export JSON, résumé runtime
+- **services manager demo** : manifest, preview, dry-run, apply
+
+
+## Builder Studio et presets (6.4.62)
+
+NFZ documente désormais un parcours builder plus démontrable :
+
+- presets officiels (`mongoCrud`, `mongoSecureCrud`, `memoryCrud`, `action`)
+- page de démonstration dédiée dans l’app de test
+- routage direct vers `/services-manager?preset=...`
+- aperçu plus clair du layout NFZ avant apply
+
+
+## Builder Studio 6.4.63
+
+- barrels optionnels : `index.ts` dans le dossier service, et en option `services/index.ts`
+- starter `users` rapproché des conventions NFZ local auth (`passwordHash`, masquage du mot de passe côté external resolver)
+- apply builder plus proche d’un layout de démonstration CLI-first
+
+
+## 6.4.64
+
+- Builder Studio: `services/index.ts` peut maintenant être agrégé à partir de plusieurs services marqués `service+root`.
+- Le preview et l'apply utilisent la liste complète du manifest pour produire un root barrel cohérent avec plusieurs services.
+
+
+## 6.4.65
+Le parcours **Services Manager** distingue désormais plus clairement les services **Démo builder**, les **Services scannés** et les **Brouillons libres**, afin de rendre les tests simples plus compréhensibles dans l'app de démonstration.
+
+## 6.4.66
+
+- Builder Studio : les **presets officiels** sortent du flux long du formulaire et passent dans un **onglet dédié `Presets`** pour rester visibles et accessibles sans scroll important.
+- Les **starters métier** sont présentés dans ce même espace pour des tests simples et compréhensibles.
+
+
+## 6.4.67
+
+- Builder Studio : filtre rapide **Tous / Démo / Scannés / Brouillons** dans le sidebar pour isoler les familles de services.
+- Onglet `Presets` : zone presets/starters désormais scrollable localement avec `max-h-[56vh] overflow-auto`.
+
+## 6.4.68
+
+- Builder Studio : nouveaux **modes de vue** pédagogiques pour rendre l'écran plus lisible dès la première utilisation :
+  - `Tests rapides`
+  - `Services réels`
+  - `Builder avancé`
+- Ces modes pilotent le focus du builder (démos builder vs services scannés vs workflow complet).
+
+## 6.4.69
+
+- Services Manager ajoute trois cartes d’entrée guidées : tests rapides, services réels et builder avancé.
+- Le parcours devient plus lisible avant même d’ouvrir les onglets Workflow / Presets / Workspace.
+
+
+## NFZ Studio Docker Edition
+
+Le dashboard de démonstration associé au module peut désormais être packagé comme **produit Docker** avec :
+- `NFZ_DATA_DIR` pour la persistance du manifest builder et des diagnostics
+- `NFZ_WORKSPACE_DIR` pour le scan et l'apply du builder sur un workspace monté
+- `NFZ_BUILDER_APPLY_MODE` (`workspace`, `export-only`, `readonly`)
+- un scaffold licence exposé via `/api/license/status` et une page dashboard `/license`
+- `Dockerfile`, `docker-compose.yaml` et `.env.example` prêts à l'emploi dans l'app de test
+
+> Note : la couche licence incluse à ce stade est un **scaffold UX/runtime**. Elle prépare l'édition Docker licenciée, mais ne remplace pas encore une signature cryptographique serveur/public key.
+
+
+## License Center
+
+La Docker Edition peut exposer une page réutilisable `License Center` et des composants de feature gating pour piloter les futures options sous licence de la surface produit `nuxt-feathers-zod`.
+
+
+## 6.4.87 — License Center layout clarity
+- La page /license-center côté dashboard de démonstration a été refondue pour une lecture plus claire et sans écrasement responsive.
+- Nouveau découpage : status + quick actions + runtime summary en haut, puis onglets Overview / Features / Plans.
+- Le breakpoint de colonnes latérales a été repoussé à 2xl pour éviter les défauts de mise en page sur desktop intermédiaire.
+
+
+## PATCH 6.4.93 refonte auth runtime (phase 2)
+
+- Ajout des helpers officiels pour les surfaces protégées : `useAuthenticatedRequest()` et `useProtectedService()`.
+- Ajout de `useAuthDiagnostics()` et `getStateSnapshot()` pour faciliter le diagnostic auth.
+- Le plugin client généré synchronise désormais les résultats `authenticate` / `reAuthenticate` remote avec le runtime auth unifié, au lieu de ne mettre à jour qu’un store Pinia.
+- Documentation FR/EN alignée sur le runtime auth unifié, les requêtes protégées, les services protégés et le bridge Keycloak.
+- Règle recommandée : les outils NFZ protégés ne doivent plus reconstruire les headers Bearer à la main et doivent consommer les helpers runtime.
+
+
+## Helpers runtime auth unifiés
+
+La version `6.4.94` ajoute une phase 3 plus robuste pour les flux REST/services protégés :
+
+- `useAuthRuntime()` reste la source de vérité unique
+- `useAuthBoundFetch()` fournit un fetch authifié avec injection automatique du bearer et une relance unique après `reAuthenticate()` en cas de 401
+- `useAuthenticatedRequest()` délègue maintenant à ce helper
+- `useProtectedService()` retente une fois après `reAuthenticate()` sur 401
+- les clients Feathers REST générés utilisent désormais ce fetch authifié par défaut
+
+Ceci est particulièrement utile pour le mode embedded REST, le mode remote JWT et le bridge Keycloak SSO où un même token doit être propagé de façon cohérente entre services Feathers et routes HTTP protégées.
+
+
+## 6.4.95
+
+- auth runtime refactor phase 4
+- official protected tool helpers: `useProtectedTool()` and `useMongoManagementClient()`
+- public runtime metadata for embedded Mongo management routes
+- better alignment between protected Feathers services and protected runtime tool HTTP routes
+
+## 6.4.96
+
+- phase 5 de la refonte auth runtime : bridge Keycloak officiel `useKeycloakBridge()`
+- diagnostics runtime enrichis (`lastBridgeAt`, `lastEnsureReason`, `bridgePath`, `clientSync`)
+- `useAuthBoundFetch()` et `useProtectedService()` déclenchent désormais une validation explicite du bearer Keycloak avant appel protégé
+
+> En mode embedded, les routes Mongo management passent derrière le préfixe REST embarqué. Exemple : path REST `/feathers` + base path Mongo `/mongo` donne des appels client vers `/feathers/mongo/...`.
+
+
+## Nettoyage du dépôt du module
+
+Dans le dépôt du module lui-même, préfère `bun run clean:repo` avant `bun install`. Exécuter `bunx nuxi cleanup` avant l'installation des dépendances peut échouer car `@nuxt/kit` n'est pas encore disponible.
+## 6.4.109 — Helper admin diagnostics/devtools
+
+`useNfzAdminClient()` est maintenant disponible pour consommer les surfaces diagnostics et DevTools NFZ via le même chemin runtime auth-aware que Mongo management.

@@ -5,17 +5,19 @@ editLink: false
 
 Le core open source couvre trois scénarios principaux :
 
-- auth locale/JWT embedded,
-- auth JWT remote,
-- Keycloak SSO bridge.
+- auth locale/JWT embedded
+- auth JWT remote
+- bridge Keycloak SSO
+
+Depuis `6.4.92+`, le runtime client utilise aussi une source de vérité auth unifiée via `useAuthRuntime()`.
 
 ## Embedded
 
 Quand `feathers.auth = true` en mode embedded :
 
-- le serveur Feathers local expose `authentication`,
-- un service `users` local est généralement nécessaire,
-- la CLI est la voie recommandée pour générer ce service.
+- le serveur Feathers local expose `authentication`
+- un service `users` local est généralement nécessaire
+- la CLI est la voie recommandée pour générer ce service
 
 Exemple :
 
@@ -45,7 +47,7 @@ remote: {
 
 ## Keycloak
 
-Le module supporte un bridge Keycloak → Feathers :
+Le module supporte un bridge Keycloak -> Feathers :
 
 ```ts
 await client.service('authentication').create({
@@ -53,3 +55,20 @@ await client.service('authentication').create({
   access_token: keycloak.token
 })
 ```
+
+Le bridge normalise aussi plusieurs alias utiles :
+
+- `access_token`
+- `accessToken`
+- `jwt`
+- `token`
+- `bearer`
+- `user` / `keycloakUser` / `tokenParsed`
+
+## Recommandation runtime
+
+Pour les pages ou outils protégés :
+
+- attendre `auth.ensureReady()`
+- utiliser `useAuthenticatedRequest()` pour les routes HTTP protégées
+- utiliser `useProtectedService()` pour les services Feathers protégés

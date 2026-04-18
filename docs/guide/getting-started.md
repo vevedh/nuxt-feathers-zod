@@ -11,6 +11,35 @@ editLink: false
 
 Le module est pensé **CLI-first** : la manière supportée de démarrer et de générer les artefacts est d’utiliser `bunx nuxt-feathers-zod ...`.
 
+## Quickstart en 5 commandes
+
+Si tu veux le chemin supporté le plus court, fais d'abord ceci :
+
+```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add service users
+bun dev
+```
+
+
+## Quickstart upload/download local
+
+```bash
+bunx nuxi@latest init my-nfz-files
+cd my-nfz-files
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+bun dev
+```
+
 ## Ce que le module sait déjà faire
 
 Aujourd’hui, le socle stable couvre déjà les fonctions suivantes :
@@ -193,6 +222,16 @@ bun run dev
 Le runtime client lit ensuite la configuration remote exposée dans `runtimeConfig.public._feathers`.
 
 ---
+
+## Starter upload/download de fichiers
+
+NFZ fournit aussi un scaffold CLI dédié pour un service local d'upload/download de fichiers :
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```
+
+Ce starter génère un service sans adapter avec `find`, `get`, `remove`, `upload` et `download`. Tous les détails sont dans [Service d'upload/download de fichiers](/guide/file-upload-download).
 
 ## Générer un service sans adapter avec méthodes custom
 

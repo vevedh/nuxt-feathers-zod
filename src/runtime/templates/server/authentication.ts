@@ -41,6 +41,16 @@ ${put(oauth, `  app.configure(oauth())\n\n`)}  // Compatibility: allow Keycloak 
             // jwt -> accessToken (some clients send jwt)
             if (d.jwt && !d.accessToken)
               d.accessToken = d.jwt
+            // token/bearer -> accessToken
+            if (d.token && !d.accessToken)
+              d.accessToken = d.token
+            if (d.bearer && !d.accessToken)
+              d.accessToken = d.bearer
+            // normalize keycloak user hints for downstream hooks/strategies
+            if (d.keycloakUser && !d.user)
+              d.user = d.keycloakUser
+            if (d.user && !d.keycloakUser)
+              d.keycloakUser = d.user
           }
           return context
         },

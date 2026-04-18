@@ -3,6 +3,7 @@ import type { AuthOptions, PublicAuthOptions, ResolvedAuthOptions, ResolvedAuthO
 import type { ClientOptions, ResolvedClientOptions, ResolvedClientOptionsOrDisabled } from './client'
 import type { PiniaOptions } from './client/pinia'
 import type { DataBaseOptions, ResolvedDataBaseOptions } from './database'
+import type { MongoManagementRouteSpec } from './database/mongodb'
 import type { KeycloakOptions, ResolvedKeycloakOptions, ResolvedKeycloakOptionsOrDisabled } from './keycloak'
 import type { ResolvedServerOptions, ServerOptions } from './server'
 import type { ServicesDir, ServicesDirs } from './services'
@@ -17,6 +18,7 @@ import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
 import { resolveClientOptions } from './client'
 import { resolveDataBaseOptions } from './database'
+import { getMongoManagementRoutes } from './database/mongodb'
 import { resolveKeycloakOptions } from './keycloak'
 import { getResolvedClientMode, isRemoteClientMode } from './mode'
 import { resolveServerOptions } from './server'
@@ -94,6 +96,48 @@ export interface FeathersPublicRuntimeConfig {
     clientId: string
     authServicePath: string
     onLoad: 'check-sso' | 'login-required'
+  }
+  database?: {
+    mongo?: {
+      enabled?: boolean
+      management?: {
+        enabled?: boolean
+        basePath?: string
+        auth?: {
+          enabled?: boolean
+          authenticate?: boolean
+        }
+        routes?: MongoManagementRouteSpec[]
+      }
+    }
+  }
+  builder?: {
+    enabled?: boolean
+    basePath?: string
+    auth?: {
+      enabled?: boolean
+      authenticate?: boolean
+    }
+    routes?: Array<{
+      key: string
+      path: string
+      method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+    }>
+  }
+  admin?: {
+    diagnostics?: {
+      enabled?: boolean
+      path?: string
+      jsonPath?: string
+      format?: 'nfz-devtools-payload'
+    }
+    devtools?: {
+      enabled?: boolean
+      path?: string
+      jsonPath?: string
+      cssPath?: string
+      iconPath?: string
+    }
   }
   authProvider?: string
 }
@@ -187,6 +231,19 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
 }
 
 export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPublicRuntimeConfig {
+  const mongoManagement = options.database?.mongo?.management
+  const mongoManagementPublic = mongoManagement
+    ? {
+        enabled: mongoManagement.enabled,
+        basePath: mongoManagement.basePath,
+        auth: {
+          enabled: mongoManagement.auth?.enabled,
+          authenticate: mongoManagement.auth?.authenticate,
+        },
+        routes: getMongoManagementRoutes(mongoManagement),
+      }
+    : undefined
+
   return {
     transports: getResolvedClientMode(options.client) === 'embedded' ? options.transports : undefined,
     client: options.client
@@ -212,6 +269,48 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
           clientId: options.keycloak.clientId,
           authServicePath: options.keycloak.authServicePath,
           onLoad: options.keycloak.onLoad,
+        }
+      : undefined,
+    database: options.database?.mongo
+      ? {
+          mongo: {
+            enabled: true,
+            management: mongoManagementPublic,
+          },
+        }
+      : undefined,
+    builder: {
+      enabled: true,
+      basePath: '/api/nfz',
+      auth: {
+        enabled: true,
+        authenticate: true,
+      },
+      routes: [
+        { key: 'services', path: '/api/nfz/services', method: 'GET' },
+        { key: 'manifest', path: '/api/nfz/manifest', method: 'GET' },
+        { key: 'manifestSave', path: '/api/nfz/manifest', method: 'POST' },
+        { key: 'schemaGet', path: '/api/nfz/schema', method: 'GET' },
+        { key: 'schemaSave', path: '/api/nfz/schema', method: 'POST' },
+        { key: 'preview', path: '/api/nfz/preview', method: 'POST' },
+        { key: 'apply', path: '/api/nfz/apply', method: 'POST' },
+      ],
+    },
+    admin: options.devtools !== false
+      ? {
+          diagnostics: {
+            enabled: true,
+            path: '/__nfz-devtools',
+            jsonPath: '/__nfz-devtools.json',
+            format: 'nfz-devtools-payload',
+          },
+          devtools: {
+            enabled: true,
+            path: '/__nfz-devtools',
+            jsonPath: '/__nfz-devtools.json',
+            cssPath: '/__nfz-devtools.css',
+            iconPath: '/__nfz-devtools-icon.png',
+          },
         }
       : undefined,
     authProvider: options.keycloak ? 'keycloak' : undefined,

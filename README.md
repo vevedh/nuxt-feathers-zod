@@ -1,17 +1,42 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.56** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.116** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.56**.
+Current OSS release target: **6.4.116**.
 
 It supports two main usage patterns:
 
 - **embedded mode**: a Feathers server runs inside Nuxt/Nitro
 - **remote mode**: a Nuxt app uses a Feathers client against an external API
+
+## Positioning vs `@nuxtjs/supabase`
+
+`@nuxtjs/supabase` is an excellent Nuxt integration module for the Supabase platform: auth/session helpers, SSR-friendly composables and a very clear product story around Database/Auth/Storage/Realtime.
+
+`nuxt-feathers-zod` aims at a different layer: it is a **backend-first Nuxt framework** for teams that want to run or connect to a Feathers v5 backend with a CLI-first workflow, typed services, custom hooks, enterprise auth compatibility and a path toward diagnostics/builder tooling.
+
+The practical takeaway is simple:
+
+- choose **Supabase** when your primary need is a managed BaaS already centered on Postgres, storage and realtime;
+- choose **NFZ** when your primary need is a Nuxt-native full-stack architecture with Feathers services, custom business logic, embedded or remote runtime modes, and progressively richer operational tooling.
+
+## Product demos and adoption path
+
+The next DX milestone is not adding more low-level switches first. It is making NFZ easier to **understand in 5 minutes**.
+
+The recommended public demo path is:
+
+1. **auth demo** — login, logout, `reAuthenticate()`, current session and user state
+2. **CRUD demo** — one concrete service with create/list/update/remove
+3. **diagnostics demo** — lifecycle tracing, runtime summary and exported traces
+4. **services manager demo** — manifest, preview, dry-run and apply
+5. **builder studio demo** — preset-aware builder, CLI parity hint and NFZ-native apply checklist
+
+This is the main difference in product strategy versus `@nuxtjs/supabase`: Supabase optimizes the perception of a managed platform, whereas NFZ should optimize the perception of a Nuxt-native backend framework with operational tooling.
 
 ## Open source scope
 
@@ -31,6 +56,16 @@ The public OSS module includes:
 - optional MongoDB management surface via `database.mongo.management`
 - client-side helpers with Pinia / feathers-pinia support
 - `doctor` diagnostics for mode, remote config, local services and Mongo management
+
+## Create the Nuxt 4 app first
+
+```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+```
+
+> For work inside the module repository itself, prefer `bun run clean:repo && bun install` over `bunx nuxi cleanup` before dependencies are installed.
 
 ## Installation
 
@@ -84,6 +119,26 @@ bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,
 bun dev
 ```
 
+## File upload/download starter
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```
+
+This generates a readable local file service scaffold with `find`, `get`, `remove`, `upload` and `download`.
+
+
+## Recommended repo-dev flow for the module itself
+
+When you work inside the **module repository**, prefer:
+
+```bash
+bun run clean:repo
+bun install
+```
+
+and avoid running `bunx nuxi cleanup` before dependencies are installed.
+
 ## Canonical CLI commands
 
 ### Bootstrap and diagnostics
@@ -132,7 +187,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.56
+## CLI command surface in 6.4.116
 
 | Area | Commands |
 |---|---|
@@ -403,3 +458,132 @@ This release hardens the CLI patcher for remote mode so chained commands keep `n
 ### Remote Keycloak `strategy: 'sso'` with option B
 
 When the remote backend expects `api.authenticate({ strategy: 'sso', user: loginuser, authenticated: true })`, NFZ now keeps the local SSO object in the auth store (`authStore.user = ssoUser`) but sends only the derived login string as `user` in the remote authenticate payload.
+
+
+## Builder Studio and presets (6.4.62)
+
+NFZ now documents a more demonstrable builder flow:
+
+- official builder presets (`mongoCrud`, `mongoSecureCrud`, `memoryCrud`, `action`)
+- a dedicated builder demo page in the app/test workspace
+- direct routing into `/services-manager?preset=...`
+- clearer NFZ-native file layout preview before apply
+
+
+## Builder Studio 6.4.63
+
+- barrels optionnels : `index.ts` dans le dossier service, et en option `services/index.ts`
+- starter `users` rapproché des conventions NFZ local auth (`passwordHash`, masquage du mot de passe côté external resolver)
+- apply builder plus proche d’un layout de démonstration CLI-first
+
+
+## 6.4.64
+
+- Builder Studio: `services/index.ts` peut maintenant être agrégé à partir de plusieurs services marqués `service+root`.
+- Le preview et l'apply utilisent la liste complète du manifest pour produire un root barrel cohérent avec plusieurs services.
+
+
+## 6.4.65
+Le parcours **Services Manager** distingue désormais plus clairement les services **Démo builder**, les **Services scannés** et les **Brouillons libres**, afin de rendre les tests simples plus compréhensibles dans l'app de démonstration.
+
+## 6.4.66
+
+- Builder Studio : les **presets officiels** sortent du flux long du formulaire et passent dans un **onglet dédié `Presets`** pour rester visibles et accessibles sans scroll important.
+- Les **starters métier** sont présentés dans ce même espace pour des tests simples et compréhensibles.
+
+
+## 6.4.67
+
+- Builder Studio : filtre rapide **Tous / Démo / Scannés / Brouillons** dans le sidebar pour isoler les familles de services.
+- Onglet `Presets` : zone presets/starters désormais scrollable localement avec `max-h-[56vh] overflow-auto`.
+
+## 6.4.68
+
+- Builder Studio: new pedagogical **view modes** make the screen easier to understand on first use:
+  - `Quick tests`
+  - `Real services`
+  - `Advanced builder`
+- These modes drive the builder focus (demo presets vs scanned services vs full workspace flow).
+
+## 6.4.69
+
+- Services Manager ajoute trois cartes d’entrée guidées : tests rapides, services réels et builder avancé.
+- Le parcours devient plus lisible avant même d’ouvrir les onglets Workflow / Presets / Workspace.
+
+
+## NFZ Studio Docker Edition
+
+Le dashboard de démonstration associé au module peut désormais être packagé comme **produit Docker** avec :
+- `NFZ_DATA_DIR` pour la persistance du manifest builder et des diagnostics
+- `NFZ_WORKSPACE_DIR` pour le scan et l'apply du builder sur un workspace monté
+- `NFZ_BUILDER_APPLY_MODE` (`workspace`, `export-only`, `readonly`)
+- un scaffold licence exposé via `/api/license/status` et une page dashboard `/license`
+- `Dockerfile`, `docker-compose.yaml` et `.env.example` prêts à l'emploi dans l'app de test
+
+> Note : la couche licence incluse à ce stade est un **scaffold UX/runtime**. Elle prépare l'édition Docker licenciée, mais ne remplace pas encore une signature cryptographique serveur/public key.
+
+
+## License Center
+
+The Docker Edition can expose a reusable `License Center` page and feature-gating components to manage future licensed options for the `nuxt-feathers-zod` product surface.
+
+
+## 6.4.87 — License Center layout clarity
+- La page /license-center côté dashboard de démonstration a été refondue pour une lecture plus claire et sans écrasement responsive.
+- Nouveau découpage : status + quick actions + runtime summary en haut, puis onglets Overview / Features / Plans.
+- Le breakpoint de colonnes latérales a été repoussé à 2xl pour éviter les défauts de mise en page sur desktop intermédiaire.
+
+
+## PATCH 6.4.93 auth runtime refactor (phase 2)
+
+- Added official protected runtime helpers: `useAuthenticatedRequest()` and `useProtectedService()`.
+- Added `useAuthDiagnostics()` and `getStateSnapshot()` for easier auth diagnostics.
+- Generated remote client plugin now synchronizes remote authenticate / reAuthenticate results with the unified auth runtime instead of only syncing a Pinia store.
+- Documentation FR/EN updated around the unified auth runtime, protected requests, protected services and Keycloak bridge behavior.
+- Recommended rule: protected NFZ tools must stop rebuilding Bearer headers manually and should consume the runtime helpers.
+
+## PATCH 6.4.92 auth runtime refactor (phase 1)
+
+- Unified client auth runtime added via `useAuthRuntime()`.
+- Single source of truth for token/user/authenticated/ready/status.
+- Keycloak SSO now syncs token and Keycloak user through a dedicated bridge flow before protected Feathers calls.
+- Generated Keycloak bridge service now accepts token aliases and keycloak user hints, and returns `accessToken`/`authentication` in its result.
+- Goal: eliminate auth drift between `$api`, raw Feathers client, Pinia auth store, storage, and runtime tools.
+
+
+
+## Unified auth runtime helpers
+
+`6.4.94` adds a stronger phase-3 runtime auth layer for protected REST/service flows:
+
+- `useAuthRuntime()` remains the single auth source of truth
+- `useAuthBoundFetch()` provides an auth-aware fetch helper with automatic bearer injection and one-shot `reAuthenticate()` retry on 401
+- `useAuthenticatedRequest()` now delegates to this helper
+- `useProtectedService()` retries once after `reAuthenticate()` on 401
+- generated REST Feathers clients now use the auth-bound fetch implementation by default
+
+This is especially useful for embedded REST mode, remote JWT mode, and Keycloak SSO bridging where a single runtime token must be reused consistently across Feathers services and protected HTTP routes.
+
+
+## 6.4.95
+
+- auth runtime refactor phase 4
+- official protected tool helpers: `useProtectedTool()` and `useMongoManagementClient()`
+- public runtime metadata for embedded Mongo management routes
+- better alignment between protected Feathers services and protected runtime tool HTTP routes
+
+## 6.4.96
+
+- auth runtime refactor phase 5: official Keycloak bridge helper `useKeycloakBridge()`
+- richer runtime diagnostics (`lastBridgeAt`, `lastEnsureReason`, `bridgePath`, `clientSync`)
+- `useAuthBoundFetch()` and `useProtectedService()` now explicitly validate the Keycloak bearer before protected calls
+
+> Embedded Mongo management routes are resolved behind the embedded REST prefix. Example: REST path `/feathers` + Mongo base path `/mongo` results in client calls to `/feathers/mongo/...`.
+
+
+## Module repo cleanup
+
+In the module repository itself, prefer `bun run clean:repo` before `bun install`. Running `bunx nuxi cleanup` before dependencies are installed can fail because `@nuxt/kit` is not available yet.
+## 6.4.110 — Admin diagnostics/devtools helper
+
+`useNfzAdminClient()` is now available to consume NFZ diagnostics and DevTools surfaces through the same auth-aware runtime path used by Mongo management.

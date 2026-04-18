@@ -44,7 +44,8 @@ import { useCookie } from "#imports"
 import type { ClientApplication } from './client'
 import { feathers } from '@feathersjs/feathers'
 import { defineNuxtPlugin, useRequestURL, useRuntimeConfig } from '#app'
-import { buildRemoteAuthPayload } from 'nuxt-feathers-zod/auth-utils'
+import { useAuthRuntime } from '#imports'
+import { buildRemoteAuthPayload, getAccessTokenFromResult } from 'nuxt-feathers-zod/auth-utils'
 import { getPublicClientMode, getPublicRemoteAuthConfig, getPublicRemoteConfig } from 'nuxt-feathers-zod/config-utils'
 ${put(pinia, `import { createPiniaClient, type CreatePiniaClientConfig } from 'feathers-pinia'`)}
 
@@ -194,29 +195,17 @@ export default defineNuxtPlugin(async (nuxt) => {
     return jwt.value || null
   }
 
-  function getPiniaAuthStore() {
-    return (nuxt as any)?.$pinia?._s?.get?.('auth') || null
-  }
+  const authRuntime = useAuthRuntime()
 
-  function syncPiniaAuthStore(result: any, fallbackToken: string | null, authenticated: boolean, error?: any) {
-    const store = getPiniaAuthStore()
-    if (!store)
-      return
-
-    const resolvedToken = result?.accessToken ?? result?.access_token ?? result?.authentication?.accessToken ?? result?.authentication?.access_token ?? fallbackToken ?? null
-    if (authenticated) {
-      store.accessToken = resolvedToken
-      if (result && typeof result === 'object' && 'user' in result)
-        store.user = result.user ?? store.user ?? null
-      store.authenticated = true
-      store.error = null
-      return
-    }
-
-    store.accessToken = null
-    store.authenticated = false
-    if (error !== undefined)
-      store.error = error
+  async function syncUnifiedAuthState(result: any, fallbackToken: string | null, authenticated: boolean, source: 'authenticate' | 'reauth' | 'runtime', error?: any) {
+    const resolvedToken = getAccessTokenFromResult(result) || fallbackToken || null
+    await authRuntime.setSession({
+      accessToken: authenticated ? resolvedToken : null,
+      user: authenticated ? (result?.user ?? authRuntime.user.value ?? null) : null,
+      authenticated,
+      permissions: authenticated ? (result?.permissions ?? authRuntime.permissions.value ?? []) : [],
+      error: error ?? null,
+    }, source)
   }
 
   async function remoteAuthenticate(reason: string) {
@@ -230,17 +219,17 @@ export default defineNuxtPlugin(async (nuxt) => {
       if (token) {
         const payload = buildRemoteAuthPayload(token, ra)
         const result = await api.authenticate?.(payload)
-        syncPiniaAuthStore(result, token, true)
+        await syncUnifiedAuthState(result, token, true, 'authenticate')
         return
       }
 
       if (ra?.reauth !== false) {
         const result = await api.reAuthenticate?.()
-        syncPiniaAuthStore(result, null, true)
+        await syncUnifiedAuthState(result, null, true, 'reauth')
       }
     }
     catch (e) {
-      syncPiniaAuthStore(null, null, false, e)
+      await syncUnifiedAuthState(null, null, false, 'runtime', e)
       // ignore startup/reconnect auth errors
     }
   }

@@ -1,16 +1,16 @@
-# Configurations validées (OSS)
+# Known good configurations (OSS)
 
-Cette page résume les configurations considérées comme **connues et valides** après la stabilisation OSS.
+This page summarizes the configurations considered **known-good and validated** after the OSS stabilization pass.
 
 ## Embedded
 
-### Embedded + Express + auth locale
+### Embedded + Express + local auth
 
 ```ts
 feathers: {
-  client: { mode: 'embedded' },
+  client: { mode: "embedded" },
   transports: {
-    rest: { path: '/feathers', framework: 'express' },
+    rest: { path: "/feathers", framework: "express" },
     websocket: true,
   },
   auth: true,
@@ -21,25 +21,25 @@ feathers: {
 
 ```ts
 feathers: {
-  client: { mode: 'embedded' },
+  client: { mode: "embedded" },
   transports: {
-    rest: { path: '/feathers', framework: 'express' },
+    rest: { path: "/feathers", framework: "express" },
     websocket: true,
   },
   database: {
-    mongo: { url: 'mongodb://localhost:27017/app' },
+    mongo: { url: "mongodb://localhost:27017/app" },
   },
   auth: true,
 }
 ```
 
-### Embedded + Koa + sans auth
+### Embedded + Koa + no auth
 
 ```ts
 feathers: {
-  client: { mode: 'embedded', pinia: false },
+  client: { mode: "embedded", pinia: false },
   transports: {
-    rest: { path: '/feathers', framework: 'koa' },
+    rest: { path: "/feathers", framework: "koa" },
     websocket: false,
   },
   auth: false,
@@ -53,11 +53,11 @@ feathers: {
 ```ts
 feathers: {
   client: {
-    mode: 'remote',
+    mode: "remote",
     remote: {
-      url: 'https://api.example.com',
-      transport: 'rest',
-      services: [{ path: 'messages' }],
+      url: "https://api.example.com",
+      transport: "rest",
+      services: [{ path: "messages" }],
     },
   },
   auth: false,
@@ -69,20 +69,20 @@ feathers: {
 ```ts
 feathers: {
   client: {
-    mode: 'remote',
+    mode: "remote",
     remote: {
-      url: 'https://api.example.com',
-      transport: 'socketio',
-      auth: { enabled: true, payloadMode: 'jwt' },
-      services: [{ path: 'messages' }, { path: 'users' }],
+      url: "https://api.example.com",
+      transport: "socketio",
+      auth: { enabled: true, payloadMode: "jwt" },
+      services: [{ path: "messages" }, { path: "users" }],
     },
   },
 }
 ```
 
-## Validation rapide
+## Quick validation
 
-Depuis la racine du dépôt :
+From the repository root:
 
 ```bash
 bun install
@@ -91,4 +91,4 @@ bunx nuxi@latest build
 bun test
 ```
 
-Pour les scénarios playground, utiliser les fichiers `playground/.env.*.example` puis valider aussi l’onglet **NFZ** dans DevTools.
+For playground scenarios, use the `playground/.env.*.example` files and also validate the **NFZ** tab in DevTools.

@@ -11,6 +11,35 @@ editLink: false
 
 The module is designed to be **CLI-first**: the supported way to bootstrap and generate artifacts is `bunx nuxt-feathers-zod ...`.
 
+## 5-command quickstart
+
+If you only want the shortest supported path, do this first:
+
+```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add service users
+bun dev
+```
+
+
+## Quickstart upload/download local
+
+```bash
+bunx nuxi@latest init my-nfz-files
+cd my-nfz-files
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+bun dev
+```
+
 ## What the module already supports
 
 The current stable base already covers:
@@ -194,6 +223,16 @@ The client runtime then reads the remote configuration exposed through `runtimeC
 
 ---
 
+## File upload/download starter
+
+NFZ also provides a dedicated CLI scaffold for a local file upload/download service:
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```
+
+This starter generates an adapter-less service with `find`, `get`, `remove`, `upload` and `download`. Full details are in [File upload/download service](/en/guide/file-upload-download).
+
 ## Generate an adapter-less service with custom methods
 
 The module can also generate an **adapter-less service**, useful for:
@@ -201,7 +240,7 @@ The module can also generate an **adapter-less service**, useful for:
 - business actions,
 - job execution,
 - controlled endpoints,
-- SSR-safe / transport-agnostic façades.
+- SSR-safe / transport-agnostic facades.
 
 Recommended command:
 

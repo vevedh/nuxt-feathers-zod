@@ -3,19 +3,21 @@ editLink: false
 ---
 # Authentication
 
-The open source core covers three main scenarios:
+The OSS core covers three main scenarios:
 
-- embedded local/JWT auth,
-- remote JWT auth,
-- Keycloak SSO bridge.
+- embedded local/JWT auth
+- remote JWT auth
+- Keycloak SSO bridge
+
+Since `6.4.92+`, the client runtime also uses a unified auth source of truth through `useAuthRuntime()`.
 
 ## Embedded
 
 When `feathers.auth = true` in embedded mode:
 
-- the local Feathers server exposes `authentication`,
-- a local `users` service is usually required,
-- the CLI is the recommended way to generate that service.
+- the local Feathers server exposes `authentication`
+- a local `users` service is usually required
+- the CLI is the recommended way to scaffold it
 
 Example:
 
@@ -26,7 +28,7 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection u
 
 ## Remote
 
-In remote mode, config lives under `feathers.client.remote.auth`.
+In remote mode, the config lives under `feathers.client.remote.auth`.
 
 Example:
 
@@ -45,7 +47,7 @@ remote: {
 
 ## Keycloak
 
-The module supports a Keycloak → Feathers bridge:
+The module supports a Keycloak -> Feathers bridge:
 
 ```ts
 await client.service('authentication').create({
@@ -53,3 +55,20 @@ await client.service('authentication').create({
   access_token: keycloak.token
 })
 ```
+
+The bridge also normalizes several useful aliases:
+
+- `access_token`
+- `accessToken`
+- `jwt`
+- `token`
+- `bearer`
+- `user` / `keycloakUser` / `tokenParsed`
+
+## Runtime recommendation
+
+For protected pages or tools:
+
+- wait for `auth.ensureReady()`
+- use `useAuthenticatedRequest()` for protected HTTP routes
+- use `useProtectedService()` for protected Feathers services

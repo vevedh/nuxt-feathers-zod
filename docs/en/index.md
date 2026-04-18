@@ -33,25 +33,41 @@ features:
     details: "Keycloak-only SSO pattern with SSR-safe initialization and whoami hydration."
 ---
 
+## First create the Nuxt 4 app
+
+```bash
+bunx nuxi@latest init my-nfz-app
+cd my-nfz-app
+bun install
+bun add nuxt-feathers-zod feathers-pinia
+bun add -D @pinia/nuxt
+```
+
 ## Quickstart
 
-### Embedded (local Feathers server)
+### Embedded
 
 ```bash
 bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod add service users
 bun dev
 ```
 
-### Remote (Socket.IO first)
+### Remote
 
 ```bash
 bunx nuxt-feathers-zod init remote --url https://api.example --force
 bun dev
 ```
 
-::: tip Remote mode
-In **remote mode**, NFZ behaves as a **Feathers client** (REST or Socket.IO). It does not scan local services and does not require an embedded `users`/`authentication` service.
-:::
+### File upload/download
+
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+```
+
+- Dedicated guide: [File upload/download service](/en/guide/file-upload-download)
+- Main guide: [Getting started](/en/guide/getting-started)
 
 ## Notes
 
@@ -96,3 +112,54 @@ export default defineNuxtConfig({
   }
 })
 ```
+
+
+## Product demos
+
+- [NFZ vs Supabase](/en/guide/nfz-vs-supabase)
+- [vNext roadmap](/en/guide/roadmap-vnext)
+- [Product demos](/en/guide/product-demos)
+
+- [Builder Studio](/en/guide/builder-studio) — business presets, CLI parity, business starters and apply checklist
+
+
+## Builder Studio 6.4.63
+
+- optional barrels: `index.ts` inside the service directory, and optionally `services/index.ts`
+- the `users` starter was aligned more closely with NFZ local-auth conventions (`passwordHash`, password masking in the external resolver)
+- builder apply was aligned more closely with a CLI-first demonstration layout
+
+
+## 6.4.64
+
+- Builder Studio: `services/index.ts` can now be aggregated from multiple services marked `service+root`.
+- Preview and apply use the full manifest list to produce a coherent root barrel across multiple services.
+
+
+## 6.4.65
+The **Services Manager** flow now separates **Builder demo** services, **scanned services** and **free drafts** more clearly so that quick tests are easier to understand inside the demo app.
+
+
+## 6.4.66
+
+- Builder Studio: dedicated **Presets** tab for official presets and business starters, improving visibility and quick access.
+
+
+## 6.4.67
+
+- Builder Studio: quick origin filter in the sidebar (`All`, `Demo`, `Scanned`, `Draft`).
+- Builder Studio: local scrolling fixed for the `Presets` / `Starters` area.
+
+## 6.4.69
+
+- Services Manager now exposes three guided entry cards: quick tests, real services, and the advanced builder.
+- The flow becomes easier to read before you even open Workflow / Presets / Workspace.
+
+## 6.4.71 — License Center
+- documentation for the License Center and reusable licensing / feature-gating components for future premium NFZ options
+
+- [License Center](./guide/license-center)
+
+- Builder client: `/en/guide/builder-client`
+
+- [Repository development flow](./guide/repo-dev.md)

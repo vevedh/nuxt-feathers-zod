@@ -57,9 +57,19 @@ if (typeof result.status === 'number' && result.status !== 0) {
   process.exit(result.status)
 }
 
+const cliPackageJson = {
+  name: 'nuxt-feathers-zod-cli-dist',
+  private: true,
+  type: 'module',
+  bin: {
+    'nuxt-feathers-zod': './index.mjs',
+    nfz: './index.mjs',
+  },
+}
+
 writeFileSync(
   resolve(outDir, 'package.json'),
-  `${JSON.stringify({ type: 'module' }, null, 2)}
-`,
+  `${JSON.stringify(cliPackageJson, null, 2)}\n`,
 )
 console.log(`[nuxt-feathers-zod] CLI built: ${outFile}`)
+console.log(`[nuxt-feathers-zod] CLI metadata written: ${resolve(outDir, 'package.json')}`)
