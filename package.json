@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.4.116",
+  "version": "6.4.118",
   "packageManager": "bun@1.3.6",
   "description": "Feathers API integration for Nuxt",
   "author": "Herve de CHAVIGNY",
@@ -207,8 +207,8 @@
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
     "release:major": "bunx release-it major",
-    "docs:dev": "cd docs && bun install && bunx vitepress dev . --host",
-    "docs:build": "cd docs && bun install && bunx vitepress build .",
+    "docs:dev": "bun run docs:check-frontmatter && cd docs && bun install && bunx vitepress dev . --host",
+    "docs:build": "bun run docs:check-frontmatter && cd docs && bun install && bunx vitepress build .",
     "docs:preview": "cd docs && bun install && bunx vitepress preview .",
     "sync:actions": "bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run --auth --docs --force",
     "sync:golden": "bun run sync:actions",
@@ -223,7 +223,8 @@
     "sanity:file-service-template": "node scripts/check-file-service-template.mjs",
     "repo:doctor": "bun run clean:repo && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:file-service-template",
     "sanity:cli-dist-meta": "node scripts/check-cli-dist-meta.mjs",
-    "repo:bootstrap": "bun install && bun run repo:doctor"
+    "repo:bootstrap": "bun install && bun run repo:doctor",
+    "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"

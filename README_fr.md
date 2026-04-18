@@ -336,3 +336,6 @@ Dans le dépôt du module lui-même, préfère `bun run clean:repo` avant `bun i
 ## 6.4.109 — Helper admin diagnostics/devtools
 
 `useNfzAdminClient()` est maintenant disponible pour consommer les surfaces diagnostics et DevTools NFZ via le même chemin runtime auth-aware que Mongo management.
+
+
+- 6.4.117: fixed invalid YAML front matter in `docs/en/guide/auth-keycloak.md`; added GitHub Pages/VitePress deployment note (`docs/guide/github-pages.md`).

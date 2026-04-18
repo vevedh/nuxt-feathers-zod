@@ -1,5 +1,5 @@
 ---
-editLink:false
+editLink: false
 ---
 # Keycloak authentication
 

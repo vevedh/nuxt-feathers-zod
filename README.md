@@ -1,12 +1,12 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.116** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.118** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.116**.
+Current OSS release target: **6.4.118**.
 
 It supports two main usage patterns:
 
@@ -187,7 +187,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.116
+## CLI command surface in 6.4.118
 
 | Area | Commands |
 |---|---|
@@ -587,3 +587,6 @@ In the module repository itself, prefer `bun run clean:repo` before `bun install
 ## 6.4.110 — Admin diagnostics/devtools helper
 
 `useNfzAdminClient()` is now available to consume NFZ diagnostics and DevTools surfaces through the same auth-aware runtime path used by Mongo management.
+
+
+- 6.4.117: fixed invalid YAML front matter in `docs/en/guide/auth-keycloak.md`; added GitHub Pages/VitePress deployment note (`docs/guide/github-pages.md`).
