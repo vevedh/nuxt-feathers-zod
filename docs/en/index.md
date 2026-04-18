@@ -116,8 +116,6 @@ export default defineNuxtConfig({
 
 ## Product demos
 
-- [NFZ vs Supabase](/en/guide/nfz-vs-supabase)
-- [vNext roadmap](/en/guide/roadmap-vnext)
 - [Product demos](/en/guide/product-demos)
 
 - [Builder Studio](/en/guide/builder-studio) — business presets, CLI parity, business starters and apply checklist
