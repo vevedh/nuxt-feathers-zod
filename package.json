@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.4.118",
+  "version": "6.4.119",
   "packageManager": "bun@1.3.6",
   "description": "Feathers API integration for Nuxt",
   "author": "Herve de CHAVIGNY",
@@ -196,7 +196,7 @@
     "playground:build": "bun run playground:ensure-link && nuxi build playground",
     "module:prepare": "nuxt-module-build prepare",
     "module:build": "nuxt-module-build build",
-    "prepare": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run playground:ensure-link",
+    "prepare": "bun run sync:release-meta && bun run sanity:internal-imports && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run playground:ensure-link",
     "typecheck": "bunx tsc -p tsconfig.typecheck.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
