@@ -1,3 +1,5 @@
+
+> Note 6.4.130 : `ensureReady()` reste le propriétaire de l'état de bootstrap (`ready`), tandis que `reAuthenticate()` ne le force plus directement.
 ---
 editLink: false
 ---

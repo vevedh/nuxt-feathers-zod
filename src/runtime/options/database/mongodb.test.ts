@@ -11,8 +11,9 @@ describe('resolveMongoOptions', () => {
     expect(result.management).toEqual({
       enabled: false,
       auth: {
-        enabled: true,
-        authenticate: true,
+        enabled: false,
+        authenticate: false,
+        authStrategies: ['jwt'],
         userProperty: 'user',
         adminField: 'isAdmin',
         adminRoleNames: ['admin'],
@@ -42,6 +43,31 @@ describe('resolveMongoOptions', () => {
       allowReplaceDocuments: false,
       allowRemoveDocuments: false,
     })
+  })
+
+
+  it('should keep auth defaults inactive when management is disabled implicitly', () => {
+    const result = resolveMongoOptions({
+      url: 'mongodb://localhost:27017/nfz',
+    })
+
+    expect(result.management.enabled).toBe(false)
+    expect(result.management.auth.enabled).toBe(false)
+    expect(result.management.auth.authenticate).toBe(false)
+    expect(result.management.auth.authStrategies).toEqual(['jwt'])
+  })
+
+  it('should enable auth defaults automatically when management is enabled without explicit auth config', () => {
+    const result = resolveMongoOptions({
+      url: 'mongodb://localhost:27017/nfz',
+      management: {
+        enabled: true,
+      },
+    })
+
+    expect(result.management.auth.enabled).toBe(true)
+    expect(result.management.auth.authenticate).toBe(true)
+    expect(result.management.auth.authStrategies).toEqual(['jwt'])
   })
 
   it('should normalize custom management options', () => {
@@ -155,5 +181,18 @@ describe('resolveMongoOptions', () => {
       exposeUsersService: true,
       exposeCollectionCrud: true,
     })).toEqual([])
+  })
+
+
+  it('should default Mongo admin auth strategies to jwt and preserve explicit strategies', () => {
+    const defaults = resolveMongoOptions({ url: 'mongodb://localhost:27017/app', management: { enabled: true } as any } as any)
+    expect(defaults.management.auth.authStrategies).toEqual(['jwt'])
+
+    const custom = resolveMongoOptions({
+      url: 'mongodb://localhost:27017/app',
+      management: { enabled: true, auth: { enabled: true, authenticate: true, authStrategies: ['jwt', 'api-key'] } },
+    } as any)
+
+    expect(custom.management.auth.authStrategies).toEqual(['jwt', 'api-key'])
   })
 })

@@ -1,3 +1,13 @@
+
+## 6.4.135
+- Fix generated server app template syntax in `src/runtime/templates/server/app.ts` so playground/dev build no longer fails with `Unexpected "const"` in `.nuxt/feathers/server/app.ts`.
+
+> Note de correctif la plus récente : v6.4.132 fait de `app.get('mongoPath')` la source de vérité unique du routage Mongo admin embedded.
+
+> Depuis la 6.4.133, les valeurs par défaut de l'auth locale repassent à `userId/password` afin de rester alignées avec la base actuelle CLI/playground NFZ et les services auth-ready générés dans ce dépôt.
+
+> Depuis la 6.4.127, `useAuthRuntime()` récupère aussi le jeton depuis le stockage du client d’authentification Feathers après `authenticate()`/`reAuthenticate()` si la réponse ne renvoie pas `accessToken` directement, afin que les helpers REST protégés envoient bien `Authorization`.
+
 # nuxt-feathers-zod
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
@@ -152,6 +162,13 @@ bunx nuxt-feathers-zod add service users --auth --authAware false --schema json 
 ## Surface optionnelle de gestion MongoDB
 
 Le cœur OSS peut exposer une couche optionnelle de gestion MongoDB à partir du template généré `feathers/server/mongodb.ts`, basé sur `feathers-mongodb-management-ts`.
+
+Le runtime MongoDB embedded expose :
+- `app.get('mongodbClient')` → `Promise<Db>` pour les services Feathers Mongo générés
+- `app.get('mongodbDb')` → instance `Db` courante
+- `app.get('mongodbConnection')` → connexion brute `MongoClient`
+
+Quand `database.mongo.management.auth.userProperty` est personnalisé, le logger d’audit généré résout désormais cette même propriété pour rester cohérent avec la protection des routes.
 
 Exemple :
 
@@ -358,3 +375,10 @@ Dans le dépôt du module lui-même, préfère `bun run clean:repo` avant `bun i
 ## 6.4.121
 
 - Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
+
+> Note transport (6.4.129) : dans les clients générés, `transport: 'auto'` est maintenant résolu de façon déterministe. En mode embedded navigateur, REST est préféré ; en mode remote, Socket.IO est préféré quand il est disponible, sinon REST.
+
+
+### Mongo admin authentication bridge
+
+Mongo management routes now use the standard Feathers `authenticate(...)` hook before `requireMongoAdmin(...)`. This keeps Mongo admin aligned with the authentication pipeline used by regular protected Feathers services while preserving the dedicated Mongo admin authorization layer. Mongo management auth also exposes `authStrategies` (default `['jwt']`).

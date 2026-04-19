@@ -12,6 +12,7 @@ interface MongoUrlOption {
 export interface MongoManagementAuthOptions {
   enabled?: boolean
   authenticate?: boolean
+  authStrategies?: string[]
   userProperty?: string
   adminField?: string
   adminRoleNames?: string[]
@@ -53,6 +54,7 @@ export interface MongoManagementOptions {
 export interface ResolvedMongoManagementAuthOptions {
   enabled: boolean
   authenticate: boolean
+  authStrategies: string[]
   userProperty: string
   adminField: string
   adminRoleNames: string[]
@@ -126,11 +128,15 @@ function normalizeStringArray(input: unknown): string[] {
     .filter(Boolean)
 }
 
-function resolveMongoManagementAuthOptions(auth: MongoManagementOptions['auth']): ResolvedMongoManagementAuthOptions {
+function resolveMongoManagementAuthOptions(
+  auth: MongoManagementOptions['auth'],
+  managementEnabled = false,
+): ResolvedMongoManagementAuthOptions {
   if (auth === false) {
     return {
       enabled: false,
       authenticate: false,
+      authStrategies: ['jwt'],
       userProperty: 'user',
       adminField: 'isAdmin',
       adminRoleNames: ['admin'],
@@ -142,10 +148,27 @@ function resolveMongoManagementAuthOptions(auth: MongoManagementOptions['auth'])
     }
   }
 
-  if (auth === true || auth == null) {
+  if (auth === true) {
     return {
       enabled: true,
       authenticate: true,
+      authStrategies: ['jwt'],
+      userProperty: 'user',
+      adminField: 'isAdmin',
+      adminRoleNames: ['admin'],
+      rolesField: 'roles',
+      permissionsField: 'permissions',
+      requiredPermissions: [],
+      requiredScopes: [],
+      scopeField: 'scope',
+    }
+  }
+
+  if (auth == null) {
+    return {
+      enabled: managementEnabled,
+      authenticate: managementEnabled,
+      authStrategies: ['jwt'],
       userProperty: 'user',
       adminField: 'isAdmin',
       adminRoleNames: ['admin'],
@@ -160,6 +183,7 @@ function resolveMongoManagementAuthOptions(auth: MongoManagementOptions['auth'])
   return {
     enabled: auth.enabled !== false,
     authenticate: auth.authenticate !== false,
+    authStrategies: normalizeStringArray(auth.authStrategies).length ? normalizeStringArray(auth.authStrategies) : ['jwt'],
     userProperty: auth.userProperty || 'user',
     adminField: auth.adminField || 'isAdmin',
     adminRoleNames: normalizeStringArray(auth.adminRoleNames).length ? normalizeStringArray(auth.adminRoleNames) : ['admin'],
@@ -215,7 +239,7 @@ export function resolveMongoOptions(mongodb: MongoOptions): ResolvedMongoOptions
     ...mongodb,
     management: {
       enabled: mongodb.management?.enabled === true,
-      auth: resolveMongoManagementAuthOptions(mongodb.management?.auth),
+      auth: resolveMongoManagementAuthOptions(mongodb.management?.auth, mongodb.management?.enabled === true),
       audit: resolveMongoManagementAuditOptions(mongodb.management?.audit),
       exposeDatabasesService: mongodb.management?.exposeDatabasesService !== false,
       exposeCollectionsService: mongodb.management?.exposeCollectionsService !== false,

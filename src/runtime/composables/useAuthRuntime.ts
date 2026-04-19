@@ -243,6 +243,9 @@ export function useAuthRuntime() {
     permissions?: any[]
     error?: any
   } = {}, source: TokenSource = 'runtime') {
+    if (import.meta.server)
+      return
+
     const storageKey = getStorageKey(pub)
     const token = payload.accessToken ?? null
     state.user = payload.user ?? null
@@ -282,16 +285,17 @@ export function useAuthRuntime() {
   async function authenticate(payload: any) {
     const api: any = nuxtApp.$api
     const result = await api.authenticate(payload)
+    const accessToken = getAccessTokenFromResult(result) || await resolveAvailableAccessToken(api, pub)
     state.lastAuthenticateAt = Date.now()
     await setSession({
-      accessToken: getAccessTokenFromResult(result),
+      accessToken,
       user: result?.user ?? null,
       authenticated: true,
       permissions: result?.permissions ?? [],
       error: null,
     }, 'authenticate')
     state.ready = true
-    pushEvent({ type: 'authenticate', reason: payload?.strategy || provider.value, details: { strategy: payload?.strategy || null } })
+    pushEvent({ type: 'authenticate', reason: payload?.strategy || provider.value, details: { strategy: payload?.strategy || null, hasAccessToken: Boolean(accessToken) } })
     return result
   }
 
@@ -302,35 +306,32 @@ export function useAuthRuntime() {
     if (!availableToken) {
       state.lastReAuthenticateAt = Date.now()
       await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
-      state.ready = true
       pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
       return null
     }
 
     try {
       const result = await api.reAuthenticate()
+      const accessToken = getAccessTokenFromResult(result) || await resolveAvailableAccessToken(api, pub)
       state.lastReAuthenticateAt = Date.now()
       await setSession({
-        accessToken: getAccessTokenFromResult(result),
+        accessToken,
         user: result?.user ?? null,
         authenticated: true,
         permissions: result?.permissions ?? [],
         error: null,
       }, 'reauth')
-      state.ready = true
-      pushEvent({ type: 'reauth-success', reason: 'reauth' })
+      pushEvent({ type: 'reauth-success', reason: 'reauth', details: { hasAccessToken: Boolean(accessToken) } })
       return result
     }
     catch (error: any) {
       if (shouldTreatReauthAsAnonymous(error, availableToken)) {
         await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
-        state.ready = true
         pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
         return null
       }
 
       await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error }, 'reauth')
-      state.ready = true
       pushEvent({ type: 'reauth-failure', level: 'warn', reason: 'reauth', message: error?.message || 'reAuthenticate failed' })
       return null
     }
@@ -358,6 +359,9 @@ export function useAuthRuntime() {
     permissions?: any[]
     loginuser?: string | null
   } = {}) {
+    if (import.meta.server)
+      return false
+
     const api: any = nuxtApp.$api
     if (!api)
       return false
@@ -535,6 +539,20 @@ export function useAuthRuntime() {
 
   async function getAuthorizationHeader() {
     await ensureReady('get-authorization-header')
+
+    if (!state.accessToken) {
+      const token = await resolveAvailableAccessToken(nuxtApp.$api, pub)
+      if (token) {
+        await setSession({
+          accessToken: token,
+          user: state.user,
+          authenticated: state.authenticated || Boolean(state.user),
+          permissions: state.permissions,
+          error: null,
+        }, state.tokenSource === 'none' ? 'storage' : state.tokenSource)
+      }
+    }
+
     return state.accessToken ? `Bearer ${state.accessToken}` : null
   }
 

@@ -101,7 +101,7 @@ function createFeathersClient(): ClientApplication {
   const requestOrigin = import.meta.server ? useRequestURL().origin : ''
   const embeddedBaseUrl = browserOrigin || requestOrigin
   const baseUrl = clientMode === 'remote' ? (remoteUrl || embeddedBaseUrl) : embeddedBaseUrl
-  const resolvedRemoteTransport = clientMode === 'remote' ? (remoteTransport || 'socketio') : remoteTransport
+  const resolvedRemoteTransport = clientMode === 'remote' ? (remoteTransport || 'auto') : remoteTransport
   const overrides = clientMode === 'remote'
     ? { mode: 'remote' as const, restPath: remoteRestPath, websocketPath: remoteWebsocketPath, transport: resolvedRemoteTransport }
     : { mode: clientMode, transport: resolvedRemoteTransport }
@@ -135,24 +135,6 @@ function createFeathersClient(): ClientApplication {
       }
     }
   }
-
-  if (import.meta.dev && clientMode === 'remote') {
-    try {
-      console.info('[NFZ CLIENT OFFICIAL]', {
-        mode: clientMode,
-        transport: resolvedRemoteTransport,
-        apiType: piniaClient ? 'pinia-client' : 'feathers-client',
-        socketCreated: Boolean((feathersClient as any).get?.('socket')),
-        socketConnected: Boolean((feathersClient as any).get?.('socket')?.connected),
-        remoteUrl,
-        remoteRestPath,
-        remoteWebsocketPath,
-        remoteServices,
-      })
-    }
-    catch {}
-  }
-
   // Init services
   ${services.map(service => `feathersClient.configure(${service.meta.importId})`).join('\n  ')}
 
@@ -288,6 +270,24 @@ export default defineNuxtPlugin(async (nuxt) => {
   // In remote mode with Pinia enabled, expose the Pinia client as $api and the raw Feathers client as $feathersClient.
   // This mirrors the usual Nuxt + feathers-pinia setup: transport/auth first, then createPiniaClient(feathersClient).
   const api = piniaClient || feathersClient
+
+
+  if (import.meta.dev && cm === 'remote') {
+    try {
+      console.info('[NFZ CLIENT OFFICIAL]', {
+        mode: cm,
+        transport: ra?.enabled ? (rc.public?._feathers?.client?.remote?.transport || 'auto') : (rc.public?._feathers?.client?.remote?.transport || 'auto'),
+        apiType: piniaClient ? 'pinia-client' : 'feathers-client',
+        socketCreated: Boolean((feathersClient as any).get?.('socket')),
+        socketConnected: Boolean((feathersClient as any).get?.('socket')?.connected),
+        remoteUrl: getPublicRemoteConfig(rc.public as any)?.url,
+        remoteRestPath: getPublicRemoteConfig(rc.public as any)?.restPath,
+        remoteWebsocketPath: getPublicRemoteConfig(rc.public as any)?.websocketPath,
+        remoteServices: getPublicRemoteConfig(rc.public as any)?.services,
+      })
+    }
+    catch {}
+  }
 
   // If we're using feathers-pinia, wrap api.service() lightly so transport errors stay readable.
   if (api && typeof (api as any).service === 'function') {

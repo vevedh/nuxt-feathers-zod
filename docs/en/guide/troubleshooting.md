@@ -54,7 +54,8 @@ Check:
 - `transport`
 - `restPath` / `websocketPath`
 - services declared in `client.remote.services`
-- in remote mode, `transport: 'auto'` currently resolves to Socket.IO; use `transport: 'rest'` for a first-pass network/CORS diagnostic
+- in embedded browser mode, `transport: 'auto'` now prefers REST
+- in remote mode, `transport: 'auto'` prefers Socket.IO when available, otherwise REST; use `transport: 'rest'` for a first-pass network/CORS diagnostic
 - remote auth if enabled
 
 ## Useful commands
@@ -64,3 +65,5 @@ bunx nuxt-feathers-zod doctor
 bun run build
 bun run docs:dev
 ```
+
+> Transport note (6.4.129): in generated clients, `transport: 'auto'` now resolves deterministically. Embedded browser mode prefers REST first; remote mode prefers Socket.IO when available, then falls back to REST.

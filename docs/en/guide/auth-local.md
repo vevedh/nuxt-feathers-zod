@@ -1,3 +1,5 @@
+
+> 6.4.133 note: the default local auth mapping is restored to `userId/password`, matching the current NFZ CLI/playground auth-ready baseline in this repository.
 ---
 editLink: false
 ---

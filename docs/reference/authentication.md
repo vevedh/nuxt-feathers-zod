@@ -1,3 +1,9 @@
+
+## Patch 6.4.131
+
+Le résolveur d'authentification préserve désormais les `authStrategies` fournies explicitement dans `nuxt.config.ts` au lieu de réinjecter silencieusement les valeurs par défaut.
+
+> Référence 6.4.133 : pour l'auth locale, les champs par défaut reviennent à `userId/password` et `entityUsernameField/entityPasswordField` suivent le même mapping tant qu'ils ne sont pas surchargés.
 ---
 editLink: false
 ---

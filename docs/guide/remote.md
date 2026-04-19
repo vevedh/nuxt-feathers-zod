@@ -62,6 +62,9 @@ bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport socke
 
 ## Comportement de `transport: 'auto'`
 
+- **embedded navigateur** : `auto` privilégie `rest`
+- **remote** : `auto` privilégie `socketio` si disponible, sinon `rest`
+
 En mode remote, `auto` (ou une valeur omise) se résout actuellement vers **Socket.IO**.
 
 ```bash
@@ -119,3 +122,5 @@ Pour un exemple prêt à rejouer avec middleware de route `auth-keycloak` et app
 - commencer par REST pour les diagnostics réseau
 - utiliser Socket.IO quand le backend distant est déjà validé
 - garder `remote.auth` minimal et explicite
+
+> Note transport (6.4.129) : dans les clients générés, `transport: 'auto'` est maintenant résolu de façon déterministe. En mode embedded navigateur, REST est préféré ; en mode remote, Socket.IO est préféré quand il est disponible, sinon REST.

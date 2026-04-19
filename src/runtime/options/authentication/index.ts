@@ -146,7 +146,10 @@ export function resolveAuthOptions(
   }
   else {
     authOptions = defu(auth, authDefaults) as ResolvedAuthOptionsWithOutEntityImport
-    authOptions.authStrategies = authDefaults.authStrategies
+    if ((auth as AuthOptions)?.authStrategies?.length)
+      authOptions.authStrategies = [...(auth as AuthOptions).authStrategies!]
+    else
+      authOptions.authStrategies = authDefaults.authStrategies
     if (!authOptions.authStrategies?.includes('jwt'))
       delete authOptions.jwtOptions
     if (!authOptions.authStrategies?.includes('local'))

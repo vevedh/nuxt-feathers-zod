@@ -1,3 +1,5 @@
+
+> Note 6.4.133 : le mapping local par défaut revient à `userId/password`, cohérent avec la base auth-ready actuelle CLI/playground dans ce dépôt.
 ---
 editLink: false
 ---

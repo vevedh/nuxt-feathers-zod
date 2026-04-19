@@ -1,12 +1,22 @@
+
+## 6.4.135
+- Fix generated server app template syntax in `src/runtime/templates/server/app.ts` so playground/dev build no longer fails with `Unexpected "const"` in `.nuxt/feathers/server/app.ts`.
+
+> Latest patch note: v6.4.132 makes `app.get('mongoPath')` the single runtime source of truth for embedded Mongo admin routing.
+
+> Since 6.4.133, local auth defaults are restored to `userId/password` to stay aligned with the current NFZ CLI/playground users baseline and generated auth-ready services in this repository.
+
+> Since 6.4.127, `useAuthRuntime()` recovers the access token from the Feathers authentication client storage after `authenticate()`/`reAuthenticate()` if the returned auth payload does not expose `accessToken` directly, ensuring protected REST helpers still send `Authorization`.
+
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.125** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.136** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.125**.
+Current OSS release target: **6.4.136**.
 
 It supports two main usage patterns:
 
@@ -196,7 +206,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.125
+## CLI command surface in 6.4.136
 
 | Area | Commands |
 |---|---|
@@ -293,6 +303,13 @@ bunx nuxt-feathers-zod add service users --auth --authAware false --schema json 
 ## Optional MongoDB management surface
 
 The OSS core can expose an optional MongoDB management layer from the generated `feathers/server/mongodb.ts` template, backed by `feathers-mongodb-management-ts`.
+
+MongoDB embedded runtime stores:
+- `app.get('mongodbClient')` → `Promise<Db>` for generated Feathers Mongo services
+- `app.get('mongodbDb')` → current `Db` instance
+- `app.get('mongodbConnection')` → raw `MongoClient` connection
+
+When `database.mongo.management.auth.userProperty` is customized, the generated audit logger now resolves the same property so audit output stays aligned with route protection.
 
 Example:
 
@@ -441,7 +458,7 @@ If the backend refuses the handshake, NFZ keeps the local client state coherent 
 
 - Recommended convention: `servicesDirs: ['services']`
 - Recommended path: **CLI-first**
-- In remote mode, `transport: auto` resolves to **socketio** in the current OSS runtime
+- In embedded browser mode, `transport: auto` now prefers **REST**. In remote mode, `transport: auto` prefers **socketio** when that transport is available and falls back to **REST** otherwise.
 - Historical aliases may remain supported for backward compatibility, but the public docs foreground canonical commands only
 - Maintainer-only publication and admin procedures are kept in `README_private.md` and intentionally excluded from the public repository surface
 
@@ -609,3 +626,10 @@ In the module repository itself, prefer `bun run clean:repo` before `bun install
 ## 6.4.121
 
 - Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
+
+> Transport note (6.4.129): in generated clients, `transport: 'auto'` now resolves deterministically. Embedded browser mode prefers REST first; remote mode prefers Socket.IO when available, then falls back to REST.
+
+
+### Mongo admin authentication bridge
+
+Mongo management routes now use the standard Feathers `authenticate(...)` hook before `requireMongoAdmin(...)`. This keeps Mongo admin aligned with the authentication pipeline used by regular protected Feathers services while preserving the dedicated Mongo admin authorization layer. Mongo management auth also exposes `authStrategies` (default `['jwt']`).

@@ -111,4 +111,48 @@ describe('resolveAuthOptions', () => {
         process.env.npm_lifecycle_event = previous
     }
   })
+
+
+  it('preserves explicit authStrategies without reintroducing local defaults', () => {
+    const auth = {
+      authStrategies: ['jwt'] as AuthStrategies,
+      local: {
+        usernameField: 'userId',
+      },
+    }
+
+    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
+
+    expect(result).toMatchObject({
+      authStrategies: ['jwt'],
+    })
+    expect((result as any)?.local).toBeUndefined()
+  })
+
+
+  it('preserves explicit authStrategies without reintroducing jwt defaults', () => {
+    const auth = {
+      authStrategies: ['local'] as AuthStrategies,
+      jwtOptions: {
+        secret,
+      },
+    }
+
+    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
+
+    expect(result).toMatchObject({
+      authStrategies: ['local'],
+    })
+    expect((result as any)?.jwtOptions).toBeUndefined()
+  })
+
+  it('defaults local auth fields to userId/password for the current generated auth baseline', () => {
+    expect(authLocalDefaults).toMatchObject({
+      usernameField: 'userId',
+      passwordField: 'password',
+      entityUsernameField: 'userId',
+      entityPasswordField: 'password',
+    })
+  })
+
 })

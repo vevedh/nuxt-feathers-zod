@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.125**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.136**.
 
 ## Commande d’entrée
 
@@ -344,7 +344,8 @@ bun dev
 - **schema par défaut = `none`**
 - **servicesDirs recommandé = `['services']`**
 - en embedded, **générer les services via la CLI**
-- en remote, `transport: auto` résout actuellement vers **socketio**
+- en embedded navigateur, `transport: auto` privilégie désormais **REST**
+- en remote, `transport: auto` privilégie **socketio** si disponible, sinon retombe sur **REST**
 - `add custom-service` reste compatible, mais la forme publique recommandée est `add service <name> --custom`
 
 ## `init templates`

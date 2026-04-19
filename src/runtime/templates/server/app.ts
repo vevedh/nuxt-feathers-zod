@@ -84,13 +84,24 @@ ${websocketConnectTimeout}${websocketTransports}${websocketCors}  }))
   return app
 }
 
+function normalizeMongoPath(value) {
+  const raw = String(value || '').trim()
+  if (!raw)
+    return '/mongo'
+
+  const collapsed = raw.replace(/\\/+/g, '/').replace(/\\/{2,}/g, '/')
+  const withLeadingSlash = collapsed.startsWith('/') ? collapsed : '/' + collapsed
+  const normalized = withLeadingSlash.length > 1 ? withLeadingSlash.replace(/\\/$/, '') : withLeadingSlash
+  return normalized || '/mongo'
+}
+
 export async function configureFeathersInfrastructure(app, config) {
   const mongoConfig = config?.database?.mongo
   const mongoEnabled = !!(mongoConfig && mongoConfig.enabled && mongoConfig.url)
 
   if (mongoEnabled) {
     app.set('mongodb', mongoConfig.url)
-    app.set('mongoPath', mongoConfig.management?.basePath || '/mongo')
+    app.set('mongoPath', normalizeMongoPath(mongoConfig.management?.basePath || '/mongo'))
   }
 
 ${put(auth, `  if (config?.auth?.enabled !== false)
@@ -98,7 +109,8 @@ ${put(auth, `  if (config?.auth?.enabled !== false)
 
 `)}${put(mongo, `  if (mongoEnabled)
     await mongodb(app)
-`)} }
+`)}
+}
 `
   }
 }

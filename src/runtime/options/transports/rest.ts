@@ -17,12 +17,16 @@ export const restDefaults: ResolvedRestOptions = {
   framework: 'koa',
 }
 
+// Keep REST available by default unless the app explicitly disables it with `rest: false`.
+// This makes embedded browser clients safer: `transport: 'auto'` can always fall back to REST
+// instead of attempting Socket.IO first when the consumer app does not actually expose it.
 // eslint-disable-next-line style/max-len
 function getRestDefaults(rest: RestOptions | boolean | undefined, websocket: boolean, ssr: boolean): ResolvedRestOptionsOrDisabled {
-  if (rest === true || !websocket || ssr)
+  if (rest === true || rest === undefined)
     return restDefaults
-  else
-    return false
+  if (!websocket || ssr)
+    return restDefaults
+  return false
 }
 
 export function resolveRestTransportsOptions(rest: RestOptions | boolean | undefined, websocket: boolean, ssr: boolean): ResolvedRestOptionsOrDisabled {

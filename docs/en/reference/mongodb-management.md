@@ -1,3 +1,11 @@
+
+## 6.4.132 patch
+
+NFZ now uses `app.get('mongoPath')` as the single source of truth for the embedded Mongo admin base path. The `mongodb.ts` template no longer re-reads `management.basePath` when mounting services; it seeds `app.get('mongoPath')` once when missing, then aligns every generated route with that runtime value.
+
+## 6.4.131 patch
+
+When `management.auth.enabled = true` and `management.auth.authenticate = false`, NFZ now keeps Mongo admin security metadata and lets `requireMongoAdmin()` apply the corresponding policy without forcing a prior authentication step. Mongo database name inference also strips a trailing slash.
 ---
 editLink: false
 ---
@@ -95,3 +103,21 @@ bunx nuxt-feathers-zod mongo management \
 ```
 
 This command updates `feathers.database.mongo.management` and can also set the MongoDB URL when missing.
+
+## Runtime contract
+
+The generated embedded Mongo runtime exposes three values on the Feathers app:
+
+- `app.get('mongodbClient')` → `Promise<Db>` used by generated MongoDB services
+- `app.get('mongodbDb')` → current `Db`
+- `app.get('mongodbConnection')` → raw `MongoClient`
+- `app.get('mongoPath')` → single runtime source of truth for the Mongo admin base path (seeded once from `management.basePath` when missing)
+
+## Audit and auth alignment
+
+When `feathers.database.mongo.management.auth.userProperty` is customized, the generated `feathers/server/mongodb.ts` audit logger resolves the same property before deriving the audit user identifier. This keeps audit output aligned with `requireMongoAdmin(...)`.
+
+
+### Mongo admin authentication bridge
+
+Mongo management routes now use the standard Feathers `authenticate(...)` hook before `requireMongoAdmin(...)`. This keeps Mongo admin aligned with the authentication pipeline used by regular protected Feathers services while preserving the dedicated Mongo admin authorization layer. Mongo management auth also exposes `authStrategies` (default `['jwt']`).

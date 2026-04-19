@@ -54,7 +54,8 @@ Vérifier :
 - `transport`
 - `restPath` / `websocketPath`
 - services déclarés dans `client.remote.services`
-- en mode remote, `transport: 'auto'` se résout actuellement vers Socket.IO ; utiliser `transport: 'rest'` pour un premier diagnostic réseau/CORS
+- en mode embedded navigateur, `transport: 'auto'` privilégie maintenant REST
+- en mode remote, `transport: 'auto'` privilégie Socket.IO si disponible, sinon REST ; utiliser `transport: 'rest'` pour un premier diagnostic réseau/CORS
 - auth remote si activée
 
 ## Commandes utiles
@@ -64,3 +65,5 @@ bunx nuxt-feathers-zod doctor
 bun run build
 bun run docs:dev
 ```
+
+> Note transport (6.4.129) : dans les clients générés, `transport: 'auto'` est maintenant résolu de façon déterministe. En mode embedded navigateur, REST est préféré ; en mode remote, Socket.IO est préféré quand il est disponible, sinon REST.

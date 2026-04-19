@@ -143,6 +143,145 @@ describe('server mongodb template', () => {
     expect(code).toContain('allowRemoveDocuments: management.allowRemoveDocuments === true')
   })
 
+  it('should align audit user resolution with auth.userProperty and preserve mongodbClient as Promise<Db>', () => {
+    const code = getServerMongodbContents({
+      database: {
+        mongo: {
+          url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+          management: {
+            enabled: true,
+            auth: {
+              enabled: true,
+              authenticate: true,
+              userProperty: 'account',
+              adminField: 'isAdmin',
+              adminRoleNames: ['admin'],
+              rolesField: 'roles',
+              permissionsField: 'permissions',
+              requiredPermissions: [],
+              requiredScopes: [],
+              scopeField: 'scope',
+            },
+            audit: { enabled: true },
+            exposeDatabasesService: true,
+            exposeCollectionsService: true,
+            exposeUsersService: false,
+            exposeCollectionCrud: false,
+            basePath: '/mongo-admin',
+            whitelistDatabases: [],
+            blacklistDatabases: [],
+            showSystemDatabases: false,
+            whitelistCollections: [],
+            blacklistCollections: [],
+            allowCreateDatabase: false,
+            allowDropDatabase: false,
+            allowCreateCollection: false,
+            allowDropCollection: false,
+            allowInsertDocuments: false,
+            allowPatchDocuments: false,
+            allowReplaceDocuments: false,
+            allowRemoveDocuments: false,
+          },
+        },
+      },
+    } as any)()
+
+    expect(code).toContain("const userProperty = management.auth?.userProperty || 'user'")
+    expect(code).toContain("const user = resolveMongoAdminUser(params)")
+    expect(code).toContain("return user?.email || user?.userId || user?._id || user?.id || undefined")
+    expect(code).toContain("app.set('mongodbClient', Promise.resolve(db))")
+    expect(code).toContain("app.set('mongodbDb', db)")
+    expect(code).toContain("app.set('mongodbConnection', client)")
+  })
+
+  it('should treat app.get(\'mongoPath\') as the single runtime source of truth and seed it once from management.basePath', () => {
+    const code = getServerMongodbContents({
+      database: {
+        mongo: {
+          url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+          management: {
+            enabled: true,
+            auth: { enabled: false, authenticate: false },
+            audit: { enabled: false },
+            exposeDatabasesService: true,
+            exposeCollectionsService: false,
+            exposeUsersService: false,
+            exposeCollectionCrud: false,
+            basePath: '/mongo-admin/',
+            whitelistDatabases: [],
+            blacklistDatabases: [],
+            showSystemDatabases: false,
+            whitelistCollections: [],
+            blacklistCollections: [],
+            allowCreateDatabase: false,
+            allowDropDatabase: false,
+            allowCreateCollection: false,
+            allowDropCollection: false,
+            allowInsertDocuments: false,
+            allowPatchDocuments: false,
+            allowReplaceDocuments: false,
+            allowRemoveDocuments: false,
+          },
+        },
+      },
+    } as any)()
+
+    expect(code).toContain("const defaultMongoPath = ensureLeadingSlash(management.basePath || '/mongo')")
+    expect(code).toContain("const configuredMongoPath = app.get('mongoPath')")
+    expect(code).toContain("const mongoPath = ensureLeadingSlash(configuredMongoPath || defaultMongoPath)")
+    expect(code).toContain("if (!configuredMongoPath)")
+    expect(code).toContain("app.set('mongoPath', mongoPath)")
+  })
+
+  it('should keep Mongo admin auth metadata when authenticate is disabled explicitly', () => {
+    const code = getServerMongodbContents({
+      database: {
+        mongo: {
+          url: 'mongodb://root:change-me@127.0.0.1:27017/app/?authSource=admin',
+          management: {
+            enabled: true,
+            auth: {
+              enabled: true,
+              authenticate: false,
+              userProperty: 'account',
+              adminField: 'isAdmin',
+              adminRoleNames: ['admin'],
+              rolesField: 'roles',
+              permissionsField: 'permissions',
+              requiredPermissions: [],
+              requiredScopes: [],
+              scopeField: 'scope',
+            },
+            audit: { enabled: false },
+            exposeDatabasesService: true,
+            exposeCollectionsService: false,
+            exposeUsersService: false,
+            exposeCollectionCrud: false,
+            basePath: '/mongo-admin',
+            whitelistDatabases: [],
+            blacklistDatabases: [],
+            showSystemDatabases: false,
+            whitelistCollections: [],
+            blacklistCollections: [],
+            allowCreateDatabase: false,
+            allowDropDatabase: false,
+            allowCreateCollection: false,
+            allowDropCollection: false,
+            allowInsertDocuments: false,
+            allowPatchDocuments: false,
+            allowReplaceDocuments: false,
+            allowRemoveDocuments: false,
+          },
+        },
+      },
+    } as any)()
+
+    expect(code).toContain("if (!management.auth?.enabled)")
+    expect(code).toContain("authenticate: management.auth.authenticate !== false")
+    expect(code).toContain("app.service(path).hooks({ before: { all: [requireMongoAdmin(baseOptions.auth)] } })")
+  })
+
+
   it('should mount databases, collections and documents management routes together when enabled', () => {
     const code = getServerMongodbContents({
       database: {

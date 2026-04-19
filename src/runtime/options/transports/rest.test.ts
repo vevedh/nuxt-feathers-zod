@@ -54,14 +54,14 @@ describe('resolveRestTransportsOptions', () => {
     expect(result).toEqual(restDefaults)
   })
 
-  it('should return false if rest is undefined and websocket is enabled and ssr is disabled', () => {
+  it('should keep REST enabled by default if rest is undefined and websocket is enabled and ssr is disabled', () => {
     const rest = undefined
     const websocket = true
     const ssr = false
 
     const result = resolveRestTransportsOptions(rest, websocket, ssr)
 
-    expect(result).toEqual(false)
+    expect(result).toEqual(restDefaults)
   })
 
   it('should return false if rest is false and websocket is enabled and SSR is disabled', () => {

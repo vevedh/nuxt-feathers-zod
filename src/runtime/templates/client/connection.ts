@@ -37,7 +37,7 @@ export function connection(baseUrl: string, overrides?: { mode?: 'embedded' | 'r
       throw new Error('[nuxt-feathers-zod] connection(): base url is required')
 
     const mode = overrides?.mode ?? 'embedded'
-    const transport = overrides?.transport ?? (mode === 'remote' ? 'socketio' : 'auto')
+    const requestedTransport = overrides?.transport ?? 'auto'
 
     const base = new URL(baseUrl)
     const originOnly = base.origin
@@ -50,6 +50,8 @@ export function connection(baseUrl: string, overrides?: { mode?: 'embedded' | 'r
 
     const restPathResolved = normalizePath(overrides?.restPath ?? (prefix || DEFAULT_REST_PATH))
     const websocketPathResolved = normalizePath(overrides?.websocketPath ?? (prefix ? joinPath(prefix, DEFAULT_SOCKET_PATH) : DEFAULT_SOCKET_PATH))
+    const HAS_REST = ${rest ? 'true' : 'false'}
+    const HAS_SOCKET = ${sio ? 'true' : 'false'}
 
 ${puts([
   [rest, `    const createRestConnection = () => {
@@ -71,6 +73,21 @@ ${puts([
     }`],
 ])}
 
+    function resolveTransport() {
+      if (requestedTransport === 'rest')
+        return HAS_REST ? 'rest' : (HAS_SOCKET ? 'socketio' : 'rest')
+
+      if (requestedTransport === 'socketio')
+        return HAS_SOCKET ? 'socketio' : (HAS_REST ? 'rest' : 'socketio')
+
+      if (mode === 'remote')
+        return HAS_SOCKET ? 'socketio' : 'rest'
+
+      return HAS_REST ? 'rest' : 'socketio'
+    }
+
+    const transport = resolveTransport()
+
     let configured: any
     if (transport === 'rest') {
       configured = ${put(rest, 'createRestConnection()', 'undefined as any')}
@@ -79,10 +96,7 @@ ${puts([
       configured = ${put(sio, 'createSocketConnection()', put(rest, 'createRestConnection()', 'undefined as any'))}
     }
     else {
-      configured = ${put(rest && sio, 'mode === \'remote\' ? createSocketConnection() : (import.meta.server ? createRestConnection() : createSocketConnection())', puts([
-        [sio, 'createSocketConnection()'],
-        [rest, 'createRestConnection()'],
-      ]))}
+      configured = ${put(rest, 'createRestConnection()', put(sio, 'createSocketConnection()', 'undefined as any'))}
     }
 
     client.configure(configured)

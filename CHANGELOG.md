@@ -1,3 +1,53 @@
+## 6.4.136
+
+- Mongo admin routes now bridge through standard Feathers `authenticate(...)` hooks before `requireMongoAdmin(...)`, so they follow the same authentication pipeline as regular protected Feathers services.
+- Mongo management auth options now expose `authStrategies` (default `['jwt']`) to control that bridge explicitly.
+- Generated Mongo admin hooks now reuse the resolved auth options consistently per mounted service.
+
+
+## 6.4.135
+- Fix generated server app template syntax in `src/runtime/templates/server/app.ts` so playground/dev build no longer fails with `Unexpected "const"` in `.nuxt/feathers/server/app.ts`.
+## 6.4.132
+- Mongo admin embedded runtime now uses `app.get('mongoPath')` as the single source of truth for service mounting.
+- `configureFeathersInfrastructure()` normalizes and seeds `mongoPath`; `mongodb.ts` only falls back to `management.basePath` once when no runtime value exists.
+- Added regression coverage for the single-source `mongoPath` contract.
+
+## 6.4.131
+
+- fix(auth): preserve explicit `authStrategies` instead of forcing defaults back in `resolveAuthOptions()`
+- fix(mongodb): keep Mongo admin auth metadata when `authenticate: false` but `enabled: true`
+- fix(mongodb): strip trailing slash when inferring Mongo database names from connection strings
+- fix(mongodb): align default resolved Mongo admin auth flags with `management.enabled` when auth config is omitted
+
+## 6.4.130
+- fix(client/plugin): avoid referencing `piniaClient` outside `defineNuxtPlugin()` scope in remote dev logging.
+- fix(auth-runtime): stop mutating `state.ready` inside `reAuthenticate()` and guard server-side `setSession()` / `synchronizeKeycloakSession()` against shared SSR state pollution.
+- fix(auth-local): align default local auth fields with generated auth services by using `email/password` instead of `userId/password`.
+- test: add regressions for explicit `authStrategies` preservation and local email defaults.
+
+## 6.4.129
+
+- Fix generated client connection template regression where the emitted code referenced `transport` before declaration.
+- Restore deterministic `transport: 'auto'` semantics: embedded browser prefers REST first; remote prefers Socket.IO when available, then falls back to REST.
+- Add regression coverage for the client connection template.
+
+
+## 6.4.128
+- Mongo admin template: audit logger now resolves `management.auth.userProperty` instead of hardcoding `params.user`.
+- Mongo admin docs clarify `mongodbClient` (`Promise<Db>`), `mongodbDb`, and `mongodbConnection`.
+- Added template regression coverage for audit/auth alignment.
+
+## 6.4.127
+
+- auth runtime: recover bearer token from the Feathers authentication client/storage after `authenticate()` and `reAuthenticate()` when the auth response does not expose `accessToken` directly
+- auth runtime: `getAuthorizationHeader()` now performs a last-mile token recovery before protected REST calls
+
+## 6.4.126
+- safer client transport resolution: embedded browser auto mode now prefers REST; remote auto keeps Socket.IO preference when available and falls back to REST
+- remote client plugin no longer forces `socketio` when remote transport is omitted; it preserves `auto`
+- REST transport now stays enabled by default unless the app explicitly sets `rest: false`, which avoids accidental Socket.IO-only browser clients
+- added regression coverage for client connection template and updated transport docs
+
 ## 6.4.125
 - Auth runtime now treats startup `reAuthenticate()` with no stored token as an anonymous state instead of an error state.
 - Added `reauth-skipped` auth trace events and removed the stale-token startup fallback that could previously mark a session as authenticated after failed reauth.

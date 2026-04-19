@@ -99,7 +99,7 @@ export default defineNuxtConfig({
       service: 'users',
       entity: 'user',
       local: {
-        usernameField: 'email',
+        usernameField: 'userId',
         passwordField: 'password',
         entityUsernameField: 'userId',
         entityPasswordField: 'passwordHash',
