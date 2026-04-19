@@ -18,7 +18,15 @@ ${put(oauth, `import { oauth } from '@feathersjs/authentication-oauth'`)}
 
 export default defineFeathersServerPlugin((app) => {
   const authOptions = useRuntimeConfig()._feathers.auth
-  const authentication = new AuthenticationService(app, 'authentication', authOptions)
+
+  // Feathers AuthenticationService reads its configuration from app.get(configKey).
+  // The documented dynamic setup is app.set('authentication', config) followed by
+  // new AuthenticationService(app, 'authentication'). Passing the config object as a
+  // third constructor argument is not part of the Feathers API.
+  if (authOptions && typeof authOptions === 'object')
+    app.set('authentication', authOptions)
+
+  const authentication = new AuthenticationService(app, 'authentication')
 
 ${puts([
   [jwt, `  authentication.register('jwt', new JWTStrategy())`],

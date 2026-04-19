@@ -18,6 +18,11 @@ const busy = ref(false)
 const actionError = ref<string | null>(null)
 
 const latestEvents = computed(() => trace.value.items.slice(0, 12))
+const anonymousHint = computed(() => {
+  if (diagnostics.value.status === 'anonymous' && !diagnostics.value.authenticated && !diagnostics.value.hasAccessToken)
+    return 'Aucun token stocké : état anonyme normal tant qu’aucune session locale/SSO n’a encore été créée.'
+  return null
+})
 
 async function runAction(label: string, task: () => Promise<any>) {
   busy.value = true
@@ -66,6 +71,7 @@ onMounted(async () => {
     </div>
 
     <p v-if="actionError" style="color:#991b1b;"><strong>Erreur:</strong> {{ actionError }}</p>
+    <p v-else-if="anonymousHint" style="color:#334155;"><strong>Info:</strong> {{ anonymousHint }}</p>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
       <div style="border:1px solid #ddd;border-radius:12px;padding:12px;">

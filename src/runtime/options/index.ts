@@ -259,6 +259,15 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
           entityKey: options.auth.entity,
           entityClass: options.auth.entityClass,
           client: options.auth.client || {},
+          local: options.auth.local
+            ? {
+                usernameField: options.auth.local.usernameField,
+                passwordField: options.auth.local.passwordField,
+                entityUsernameField: options.auth.local.entityUsernameField,
+                entityPasswordField: options.auth.local.entityPasswordField,
+                errorMessage: options.auth.local.errorMessage,
+              }
+            : undefined,
         }
       : undefined,
     pinia: options.client && options.client.pinia !== false ? options.client.pinia : undefined,

@@ -19,7 +19,22 @@ export interface PublicFeathersRuntimeLike {
         services?: Array<{ path: string, methods?: string[] }>
       }
     }
-    auth?: any
+    auth?: {
+      authStrategies?: string[]
+      servicePath?: string
+      entityKey?: string
+      entityClass?: string
+      client?: {
+        storageKey?: string
+      }
+      local?: {
+        usernameField?: string
+        passwordField?: string
+        entityUsernameField?: string
+        entityPasswordField?: string
+        errorMessage?: string
+      }
+    }
     keycloak?: any
     database?: {
       mongo?: {
@@ -87,6 +102,22 @@ export function getPublicRemoteConfig(publicConfig?: PublicFeathersRuntimeLike |
 
 export function getPublicRemoteAuthConfig(publicConfig?: PublicFeathersRuntimeLike | null) {
   return getPublicRemoteConfig(publicConfig)?.auth ?? {}
+}
+
+export function getPublicAuthConfig(publicConfig?: PublicFeathersRuntimeLike | null) {
+  return getPublicFeathersRuntimeConfig(publicConfig)?.auth ?? {}
+}
+
+export function getPublicLocalAuthConfig(publicConfig?: PublicFeathersRuntimeLike | null) {
+  return getPublicAuthConfig(publicConfig)?.local ?? {}
+}
+
+export function getPublicLocalAuthUsernameField(publicConfig?: PublicFeathersRuntimeLike | null): string {
+  return String(getPublicLocalAuthConfig(publicConfig)?.usernameField || 'userId')
+}
+
+export function getPublicLocalAuthPasswordField(publicConfig?: PublicFeathersRuntimeLike | null): string {
+  return String(getPublicLocalAuthConfig(publicConfig)?.passwordField || 'password')
 }
 
 export function isPublicRemoteMode(publicConfig?: PublicFeathersRuntimeLike | null): boolean {

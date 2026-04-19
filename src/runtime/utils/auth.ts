@@ -58,3 +58,28 @@ export function buildRemoteAuthPayload(token: string, options?: RemoteAuthLikeOp
 
   return payload
 }
+
+
+export interface LocalAuthLikeOptions {
+  usernameField?: string
+  passwordField?: string
+}
+
+export function buildLocalAuthPayload(
+  username: string,
+  password: string,
+  options?: LocalAuthLikeOptions | null,
+): Record<string, any> {
+  const usernameField = typeof options?.usernameField === 'string' && options.usernameField.trim()
+    ? options.usernameField.trim()
+    : 'userId'
+  const passwordField = typeof options?.passwordField === 'string' && options.passwordField.trim()
+    ? options.passwordField.trim()
+    : 'password'
+
+  return {
+    strategy: 'local',
+    [usernameField]: username,
+    [passwordField]: password,
+  }
+}

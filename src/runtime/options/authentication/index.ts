@@ -51,6 +51,13 @@ export interface PublicAuthOptions {
   entityKey: string
   entityClass: string
   client: AuthClientOptions
+  local?: {
+    usernameField?: string
+    passwordField?: string
+    entityUsernameField?: string
+    entityPasswordField?: string
+    errorMessage?: string
+  }
 }
 
 export const authStaticDefaults: StaticAuthOptions = {

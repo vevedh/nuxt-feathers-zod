@@ -65,6 +65,9 @@ bun dev
 
 ## Mode embedded avec authentification locale
 
+NFZ standardise désormais l’auth locale embedded autour de `userId/password` par défaut. Depuis `6.4.123`, le module expose aussi la cartographie des champs d’auth locale côté runtime public dans `runtimeConfig.public._feathers.auth.local`, ce qui évite aux formulaires consommateurs de devoir deviner s’il faut envoyer `userId`, `email` ou un autre champ. Cette cartographie est maintenant aussi injectée correctement côté serveur Feathers avant la création de `AuthenticationService`, via le pattern documenté `app.set('authentication', config)`.
+
+
 ```bash
 bunx nuxi@latest init my-nfz-auth
 cd my-nfz-auth
@@ -315,6 +318,9 @@ La Docker Edition peut exposer une page réutilisable `License Center` et des co
 La version `6.4.94` ajoute une phase 3 plus robuste pour les flux REST/services protégés :
 
 - `useAuthRuntime()` reste la source de vérité unique
+- la métadonnée des champs d’auth locale embedded est exposée publiquement sous `_feathers.auth.local`
+- `buildLocalAuthPayload()` permet de construire un payload `strategy: 'local'` à partir de ces champs
+- l’auth embedded côté serveur applique désormais bien la config résolue `authentication.local` via `app.set('authentication', config)` avant l’instanciation de `AuthenticationService`, donc `usernameField` / `entityUsernameField` sont réellement honorés au runtime
 - `useAuthBoundFetch()` fournit un fetch authifié avec injection automatique du bearer et une relance unique après `reAuthenticate()` en cas de 401
 - `useAuthenticatedRequest()` délègue maintenant à ce helper
 - `useProtectedService()` retente une fois après `reAuthenticate()` sur 401

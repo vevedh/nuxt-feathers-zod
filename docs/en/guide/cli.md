@@ -5,7 +5,7 @@ editLink: false
 
 The CLI `bunx nuxt-feathers-zod` is the **official method** to initialize a Nuxt 4 app, generate NFZ-compatible artifacts and diagnose an existing project.
 
-This page is aligned with the OSS command surface stabilized for release **6.4.121**.
+This page is aligned with the OSS command surface stabilized for release **6.4.125**.
 
 ## Entry command
 
@@ -657,6 +657,13 @@ The report covers:
 - remote transport and target URL
 - detected `servicesDirs`
 - scanned local services
+- embedded local auth with:
+  - `auth.enabled`
+  - `auth.authStrategies`
+  - `auth.local.usernameField`
+  - `auth.local.entityUsernameField`
+  - a Feathers-compatible local payload example
+  - a warning when request ↔ entity field mapping diverges (in that case, use `buildLocalAuthPayload()` or `runtimeConfig.public._feathers.auth.local`)
 - remote Keycloak config
 - Mongo management config with:
   - redacted URL
@@ -673,6 +680,12 @@ Dedicated command:
 bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
 ```
 
+
+## 6.4.124
+
+- `doctor` now covers embedded local-auth mapping (`usernameField`, `entityUsernameField`, etc.) and prints a Feathers-compatible local payload example.
+- an explicit warning is emitted when request fields and entity fields diverge, guiding consumer UIs toward `buildLocalAuthPayload()` or `runtimeConfig.public._feathers.auth.local`.
+
 ## 6.4.121
 
-- Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
+- Documentation clarified: every example using `--adapter mongodb` now reminds users that an active MongoDB database is required, and that `bunx nuxt-feathers-zod add mongodb-compose` can generate a quick `docker-compose.yaml`.

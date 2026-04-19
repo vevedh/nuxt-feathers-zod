@@ -87,6 +87,37 @@ describe('resolveOptions', () => {
 
 
 describe('resolvePublicRuntimeConfig', () => {
+  it('exposes local auth field metadata in public runtime config', async () => {
+    const resolved = await resolveOptions({
+      transports: { rest: { path: '/feathers', framework: 'express' }, websocket: false },
+      database: {},
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: {
+        authStrategies: ['local', 'jwt'],
+        local: {
+          usernameField: 'userId',
+          passwordField: 'password',
+          entityUsernameField: 'userId',
+          entityPasswordField: 'password',
+        },
+      },
+      keycloak: false,
+      client: { mode: 'embedded', pinia: false },
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: false,
+    } as any, nuxtMock)
+
+    const pub = resolvePublicRuntimeConfig(resolved)
+    expect(pub.auth?.local?.usernameField).toBe('userId')
+    expect(pub.auth?.local?.passwordField).toBe('password')
+    expect(pub.auth?.local?.entityUsernameField).toBe('userId')
+    expect(pub.auth?.local?.entityPasswordField).toBe('password')
+  })
+
   it('exposes mongo management public runtime metadata', async () => {
     const resolved = await resolveOptions({
       transports: { rest: { path: '/feathers', framework: 'express' }, websocket: false },

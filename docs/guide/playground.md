@@ -18,6 +18,8 @@ Le `playground/` sert à valider rapidement le socle open source du module.
 - `/tests` : diagnostics connexion + auth
 - `/messages` : exemple CRUD simple
 - `/ldapusers` : exemple de service remote déclaré explicitement
+- `/auth-runtime` : diagnostics du runtime auth unifié + trace récente
+- `/mongo` : démo Mongo protégée basée sur `useMongoManagementClient()` et `useProtectedPage()`
 
 ## Routine de validation recommandée
 
@@ -59,3 +61,5 @@ Si vous voulez valider uniquement le mode remote sans démarrer `mongodb-memory-
 La valeur par défaut reste `true` pour conserver le scénario embedded + MongoDB prêt à l'emploi.
 
 > Embedded Mongo management calls use the embedded REST prefix. With REST path `/feathers` and Mongo base path `/mongo`, the effective client path is `/feathers/mongo/...`.
+
+> Sur `/auth-runtime`, `status = anonymous` avec `tokenSource = none` signifie simplement qu'aucun token n'est encore stocké. Ce n'est plus traité comme une erreur depuis `6.4.125`.

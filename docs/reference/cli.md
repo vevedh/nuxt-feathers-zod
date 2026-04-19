@@ -9,7 +9,7 @@ Commande d’entrée :
 bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Surface officielle OSS alignée sur la version **6.4.45**.
+Surface officielle OSS alignée sur la version **6.4.124**.
 
 ## Noyau public recommandé
 
@@ -60,6 +60,18 @@ bunx nuxt-feathers-zod add middleware is-admin --target policy
 ```
 
 Pour les exemples détaillés, voir le [Guide CLI](/guide/cli#differences-entre-plugin-server-module-module-client-module-hook-policy).
+
+
+## Doctor en 6.4.124
+
+Le doctor met maintenant en évidence la configuration d’auth locale embedded :
+
+- `auth.enabled`
+- `auth.authStrategies`
+- `auth.local.usernameField` / `auth.local.passwordField`
+- `auth.local.entityUsernameField` / `auth.local.entityPasswordField`
+- un exemple de payload local Feathers
+- un warning explicite si la cartographie requête ↔ entité diverge
 
 ## Exemples de référence
 
@@ -149,7 +161,10 @@ La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
 <!-- release-version: 6.4.49 -->
 
 
-<!-- release-version: 6.4.56 -->
+<!-- release-version: 6.4.124 -->
 
 
-<!-- release-version: 6.4.121 -->
+<!-- release-version: 6.4.124 -->
+
+
+<!-- release-version: 6.4.125 -->

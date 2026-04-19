@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.121**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.125**.
 
 ## Commande d’entrée
 
@@ -655,6 +655,13 @@ Le rapport couvre notamment :
 - le transport remote et l’URL cible
 - les `servicesDirs` détectés
 - les services locaux scannés
+- l’auth locale embedded avec :
+  - `auth.enabled`
+  - `auth.authStrategies`
+  - `auth.local.usernameField`
+  - `auth.local.entityUsernameField`
+  - un exemple de payload local compatible Feathers
+  - un warning si la cartographie requête ↔ entité diverge (dans ce cas, utiliser `buildLocalAuthPayload()` ou `runtimeConfig.public._feathers.auth.local`)
 - la configuration Keycloak remote
 - la configuration Mongo management avec :
   - URL masquée
@@ -670,6 +677,12 @@ Commande dédiée :
 ```bash
 bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
 ```
+
+
+## 6.4.124
+
+- `doctor` couvre maintenant la cartographie locale embedded (`usernameField`, `entityUsernameField`, etc.) et imprime un exemple de payload local compatible Feathers.
+- un warning explicite apparaît si les champs de requête et d’entité divergent, afin d’orienter l’UI vers `buildLocalAuthPayload()` ou `runtimeConfig.public._feathers.auth.local`.
 
 ## 6.4.121
 

@@ -1,12 +1,12 @@
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.121** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.125** — optional Mongo management options aligned and release metadata synchronized.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
 `nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.121**.
+Current OSS release target: **6.4.125**.
 
 It supports two main usage patterns:
 
@@ -94,6 +94,9 @@ bun dev
 ```
 
 ## Embedded mode with local auth
+
+NFZ standardizes embedded local auth around `userId/password` by default. Since `6.4.123`, the module also exposes the local auth field mapping to the client runtime under `runtimeConfig.public._feathers.auth.local`, so consumer login UIs no longer have to guess whether the backend expects `userId`, `email`, or another field. This mapping is now also injected into Feathers correctly on the server side before `AuthenticationService` is created, using the documented `app.set('authentication', config)` pattern.
+
 
 ```bash
 bunx nuxi@latest init my-nfz-auth
@@ -193,7 +196,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.121
+## CLI command surface in 6.4.125
 
 | Area | Commands |
 |---|---|
@@ -566,6 +569,9 @@ The Docker Edition can expose a reusable `License Center` page and feature-gatin
 `6.4.94` adds a stronger phase-3 runtime auth layer for protected REST/service flows:
 
 - `useAuthRuntime()` remains the single auth source of truth
+- embedded local auth field metadata is exposed publicly under `_feathers.auth.local`
+- `buildLocalAuthPayload()` can build a `strategy: 'local'` payload from the exposed field names
+- server-side embedded auth now applies the resolved `authentication.local` config through `app.set('authentication', config)` before `AuthenticationService` is instantiated, so `usernameField` / `entityUsernameField` are actually honored at runtime
 - `useAuthBoundFetch()` provides an auth-aware fetch helper with automatic bearer injection and one-shot `reAuthenticate()` retry on 401
 - `useAuthenticatedRequest()` now delegates to this helper
 - `useProtectedService()` retries once after `reAuthenticate()` on 401

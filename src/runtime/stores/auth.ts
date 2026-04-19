@@ -6,7 +6,9 @@ export const useAuthStore = defineStore('auth', () => {
   const runtime = useAuthRuntime()
 
   const userId = computed(() =>
-    (runtime.user.value)?.id
+    (runtime.user.value)?.userId
+    ?? (runtime.user.value)?.email
+    ?? (runtime.user.value)?.id
     ?? (runtime.user.value)?._id
     ?? null,
   )

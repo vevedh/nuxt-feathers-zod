@@ -214,6 +214,7 @@ export default defineNuxtPlugin(async (nuxt) => {
 
     const api: any = feathersClient as any
     const token = await resolveRemoteToken()
+    const authClientToken = await api.authentication?.getAccessToken?.().catch?.(() => null) || null
 
     try {
       if (token) {
@@ -223,10 +224,13 @@ export default defineNuxtPlugin(async (nuxt) => {
         return
       }
 
-      if (ra?.reauth !== false) {
+      if (ra?.reauth !== false && authClientToken) {
         const result = await api.reAuthenticate?.()
         await syncUnifiedAuthState(result, null, true, 'reauth')
+        return
       }
+
+      await syncUnifiedAuthState(null, null, false, 'runtime', null)
     }
     catch (e) {
       await syncUnifiedAuthState(null, null, false, 'runtime', e)

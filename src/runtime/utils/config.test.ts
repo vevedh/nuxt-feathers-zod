@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { getAccessTokenFromResult } from './auth'
-import { getForcedAuthProvider, getPublicClientMode, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from './config'
+import { buildLocalAuthPayload, getAccessTokenFromResult } from './auth'
+import { getForcedAuthProvider, getPublicClientMode, getPublicLocalAuthPasswordField, getPublicLocalAuthUsernameField, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from './config'
 
 describe('runtime public config helpers', () => {
   it('defaults client mode to embedded', () => {
@@ -33,6 +33,24 @@ describe('runtime public config helpers', () => {
     expect(getForcedAuthProvider(pub)).toBe('keycloak')
     expect(hasPublicKeycloakConfig(pub)).toBe(true)
   })
+
+  it('exposes embedded local auth field helpers safely', () => {
+    const pub = {
+      _feathers: {
+        auth: {
+          local: {
+            usernameField: 'userId',
+            passwordField: 'password',
+          },
+        },
+      },
+    } as any
+
+    expect(getPublicLocalAuthUsernameField(pub)).toBe('userId')
+    expect(getPublicLocalAuthPasswordField(pub)).toBe('password')
+    expect(getPublicLocalAuthUsernameField(undefined as any)).toBe('userId')
+    expect(getPublicLocalAuthPasswordField(undefined as any)).toBe('password')
+  })
 })
 
 describe('auth utils', () => {
@@ -43,5 +61,18 @@ describe('auth utils', () => {
     expect(getAccessTokenFromResult({ authentication: { accessToken: 'd' } })).toBe('d')
     expect(getAccessTokenFromResult({ authentication: { access_token: 'e' } })).toBe('e')
     expect(getAccessTokenFromResult({ authentication: { token: 'f' } })).toBe('f')
+  })
+
+  it('builds local auth payloads from runtime field metadata', () => {
+    expect(buildLocalAuthPayload('demo', 'secret', { usernameField: 'userId', passwordField: 'password' })).toEqual({
+      strategy: 'local',
+      userId: 'demo',
+      password: 'secret',
+    })
+    expect(buildLocalAuthPayload('demo@example.local', 'secret', { usernameField: 'email', passwordField: 'password' })).toEqual({
+      strategy: 'local',
+      email: 'demo@example.local',
+      password: 'secret',
+    })
   })
 })

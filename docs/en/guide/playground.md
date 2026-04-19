@@ -55,3 +55,5 @@ If you only want to validate remote mode without starting `mongodb-memory-server
 The default remains `true` so the embedded MongoDB scenario stays available out of the box.
 
 > Embedded Mongo management calls use the embedded REST prefix. With REST path `/feathers` and Mongo base path `/mongo`, the effective client path is `/feathers/mongo/...`.
+
+> On `/auth-runtime`, `status = anonymous` with `tokenSource = none` simply means no token has been stored yet. Since `6.4.125`, this is no longer treated as an error.

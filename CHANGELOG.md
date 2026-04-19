@@ -1,3 +1,26 @@
+## 6.4.125
+- Auth runtime now treats startup `reAuthenticate()` with no stored token as an anonymous state instead of an error state.
+- Added `reauth-skipped` auth trace events and removed the stale-token startup fallback that could previously mark a session as authenticated after failed reauth.
+- Remote client bootstrap now avoids classifying missing-token startup as an auth error, keeping the unified runtime state coherent across embedded and remote modes.
+- Updated FR/EN auth runtime + playground docs to explain `anonymous` / `tokenSource = none` on first load, and added regression coverage for missing-token detection.
+
+## 6.4.124
+- CLI/docs sync pass: release metadata now aligns on 6.4.124 across README and CLI docs.
+- `doctor` now reports embedded local auth defaults, resolved field mapping, and a Feathers-compatible local payload example.
+- `doctor` warns when request fields and entity fields diverge for local auth, pointing consumer UIs to `buildLocalAuthPayload()` / `runtimeConfig.public._feathers.auth.local`.
+- `scripts/cli-smoke.ts` now includes a doctor/auth smoke scenario.
+
+## 6.4.123
+- Fixed the embedded server authentication template to inject the resolved Feathers auth config with `app.set('authentication', authOptions)` before creating `new AuthenticationService(app, 'authentication')`.
+- Added a regression test covering the generated authentication server template so the invalid third-argument constructor usage does not reappear.
+- Updated README + FR/EN auth docs to clarify that the public local auth field metadata is now honored end-to-end by the Feathers server runtime.
+
+## 6.4.122
+- Exposed embedded local auth field metadata in `runtimeConfig.public._feathers.auth.local` (`usernameField`, `passwordField`, `entityUsernameField`, `entityPasswordField`).
+- Added `buildLocalAuthPayload()` to `nuxt-feathers-zod/auth-utils` so consumer login UIs can build the correct embedded local auth payload from runtime metadata.
+- `useAuthStore().userId` now falls back to `user.userId` / `user.email` before `id` / `_id`.
+- Added regression tests and updated FR/EN auth documentation.
+
 ## 6.4.102
 
 ## 6.4.103

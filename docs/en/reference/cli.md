@@ -9,7 +9,7 @@ Entry command:
 bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Official OSS surface aligned with **v6.4.45**.
+Official OSS surface aligned with **v6.4.124**.
 
 ## Recommended public core
 
@@ -35,6 +35,18 @@ Official OSS surface aligned with **v6.4.45**.
 - `middlewares list|add`
 - `add server-module <name>`
 - `add mongodb-compose`
+
+
+## Doctor in 6.4.124
+
+Doctor now highlights embedded local-auth configuration, including:
+
+- `auth.enabled`
+- `auth.authStrategies`
+- `auth.local.usernameField` / `auth.local.passwordField`
+- `auth.local.entityUsernameField` / `auth.local.entityPasswordField`
+- a Feathers local payload example
+- an explicit warning when request ↔ entity mapping diverges
 
 ## Reference examples
 
@@ -124,7 +136,10 @@ Detailed flag coverage stays in the [CLI guide](/en/guide/cli).
 <!-- release-version: 6.4.49 -->
 
 
-<!-- release-version: 6.4.56 -->
+<!-- release-version: 6.4.124 -->
 
 
-<!-- release-version: 6.4.121 -->
+<!-- release-version: 6.4.124 -->
+
+
+<!-- release-version: 6.4.125 -->

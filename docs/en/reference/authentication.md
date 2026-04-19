@@ -29,6 +29,20 @@ bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection u
 <!-- mongodb-adapter-note -->
 > **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
+
+## Local fields exposed on the public runtime side
+
+In embedded auth, the public config now also exposes the resolved local fields:
+
+- `runtimeConfig.public._feathers.auth.local.usernameField`
+- `runtimeConfig.public._feathers.auth.local.passwordField`
+- `runtimeConfig.public._feathers.auth.local.entityUsernameField`
+- `runtimeConfig.public._feathers.auth.local.entityPasswordField`
+
+The NFZ default remains `userId/password`.
+
+Since `6.4.123`, this configuration is not only exposed on the public runtime side: it is also injected into the Feathers server through `app.set('authentication', config)` before `new AuthenticationService(app, 'authentication')`, matching the official Feathers API.
+
 ## Remote
 
 In remote mode, the config lives under `feathers.client.remote.auth`.

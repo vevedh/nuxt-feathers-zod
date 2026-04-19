@@ -31,6 +31,30 @@ console.log(auth.accessToken.value)
 console.log(auth.user.value)
 ```
 
+
+## Auth locale embedded : ne plus deviner les champs
+
+Pour une UI de login custom en mode embedded, ne suppose plus que le backend attend forcément `email/password`.
+
+Le runtime public expose maintenant la config locale résolue :
+
+```ts
+const pub = useRuntimeConfig().public
+console.log(pub._feathers.auth.local)
+```
+
+Et le helper `buildLocalAuthPayload()` permet de construire le payload correct :
+
+```ts
+import { buildLocalAuthPayload } from 'nuxt-feathers-zod/auth-utils'
+
+const auth = useRuntimeConfig().public._feathers.auth
+const payload = buildLocalAuthPayload(login.value, password.value, auth?.local)
+await useAuthRuntime().authenticate(payload)
+```
+
+Cela fonctionne de façon fiable parce que NFZ applique désormais aussi cette même configuration d’auth résolue côté serveur via `app.set('authentication', config)` avant de créer `AuthenticationService`.
+
 ## Routes HTTP protégées
 
 ```ts
@@ -135,6 +159,18 @@ console.log(trace.value.items)
 ```
 
 Le runtime conserve maintenant un journal borné des événements auth (bootstrap, sync session, bridge Keycloak, reauth, garde de page).
+
+### Cas normal : aucun token stocké
+
+Quand une app démarre sans session existante, Feathers tente classiquement `reAuthenticate()` puis laisse l'UI afficher la page de login si aucun token n'est disponible. Depuis `6.4.125`, NFZ ne classe plus ce cas en `error` : le runtime reste en `anonymous` avec `tokenSource = 'none'`.
+
+Autrement dit, sur `/auth-runtime` :
+
+- `status = anonymous`
+- `authenticated = false`
+- `tokenSource = none`
+
+signifient simplement « aucune session stockée », pas « authentification cassée ».
 
 ## Playground officiel
 

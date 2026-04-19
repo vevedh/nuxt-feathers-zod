@@ -41,6 +41,34 @@ curl -X POST http://localhost:3000/feathers/authentication \
   -d '{"strategy":"local","userId":"demo","password":"demo123"}'
 ```
 
+
+## Métadonnées runtime des champs locaux
+
+Le module expose maintenant la config locale résolue côté runtime public :
+
+```ts
+const pub = useRuntimeConfig().public
+console.log(pub._feathers.auth.local)
+// {
+//   usernameField: 'userId',
+//   passwordField: 'password',
+//   entityUsernameField: 'userId',
+//   entityPasswordField: 'password'
+// }
+```
+
+Pour un formulaire consommateur, tu peux donc construire le payload local sans hypothèse cachée :
+
+```ts
+import { buildLocalAuthPayload } from 'nuxt-feathers-zod/auth-utils'
+
+const auth = useRuntimeConfig().public._feathers.auth
+const payload = buildLocalAuthPayload(login.value, password.value, auth?.local)
+await useAuthRuntime().authenticate(payload)
+```
+
+> Important — Depuis `6.4.123`, NFZ injecte aussi la configuration d’auth embedded résolue dans Feathers côté serveur via `app.set('authentication', config)` avant l’instanciation de `AuthenticationService`. C’est ce qui rend la cartographie de champs locaux exposée au runtime réellement effective de bout en bout pour `LocalStrategy`.
+
 ## Appeler un service protégé
 
 ```bash

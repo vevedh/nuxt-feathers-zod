@@ -1,6 +1,7 @@
 import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import { computed, reactive, toRefs } from 'vue'
 import { buildRemoteAuthPayload, getAccessTokenFromResult } from '../utils/auth'
+import { shouldTreatReauthAsAnonymous } from '../utils/auth-runtime'
 import { getForcedAuthProvider, getPublicClientMode, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from '../utils/config'
 
 export type AuthProvider = 'keycloak' | 'local' | 'remote' | 'none'
@@ -13,6 +14,7 @@ export type AuthEventType =
   | 'ensure-finish'
   | 'session-sync'
   | 'authenticate'
+  | 'reauth-skipped'
   | 'reauth-success'
   | 'reauth-failure'
   | 'logout'
@@ -154,6 +156,17 @@ function getPersistedToken(pub: any): string | null {
   return jwt.value || readWindowStorage(storageKey)
 }
 
+async function resolveAvailableAccessToken(api: any, pub: any): Promise<string | null> {
+  try {
+    const candidate = await api?.authentication?.getAccessToken?.()
+    if (typeof candidate === 'string' && candidate)
+      return candidate
+  }
+  catch {}
+
+  return getPersistedToken(pub)
+}
+
 function syncRuntimeClients(nuxtApp: any, token: string | null) {
   const candidates = [
     ['api', nuxtApp?.$api],
@@ -284,6 +297,16 @@ export function useAuthRuntime() {
 
   async function reAuthenticate() {
     const api: any = nuxtApp.$api
+    const availableToken = await resolveAvailableAccessToken(api, pub)
+
+    if (!availableToken) {
+      state.lastReAuthenticateAt = Date.now()
+      await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+      state.ready = true
+      pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
+      return null
+    }
+
     try {
       const result = await api.reAuthenticate()
       state.lastReAuthenticateAt = Date.now()
@@ -299,6 +322,13 @@ export function useAuthRuntime() {
       return result
     }
     catch (error: any) {
+      if (shouldTreatReauthAsAnonymous(error, availableToken)) {
+        await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+        state.ready = true
+        pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
+        return null
+      }
+
       await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error }, 'reauth')
       state.ready = true
       pushEvent({ type: 'reauth-failure', level: 'warn', reason: 'reauth', message: error?.message || 'reAuthenticate failed' })
@@ -478,12 +508,16 @@ export function useAuthRuntime() {
       }
 
       if (state.provider === 'local' || state.provider === 'remote') {
-        const result = await reAuthenticate()
-        if (!result) {
-          const persisted = getPersistedToken(pub)
-          if (persisted)
-            await setSession({ accessToken: persisted, user: state.user, authenticated: true, permissions: state.permissions, error: null }, 'storage')
+        const candidateToken = await resolveAvailableAccessToken(nuxtApp.$api, pub)
+
+        if (!candidateToken) {
+          await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+          state.ready = true
+          pushEvent({ type: 'reauth-skipped', reason: reason, message: 'No access token available at startup; staying anonymous' })
+          return
         }
+
+        await reAuthenticate()
         state.ready = true
         return
       }
