@@ -208,7 +208,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.125
+## CLI command surface in 6.4.137
 
 | Area | Commands |
 |---|---|
