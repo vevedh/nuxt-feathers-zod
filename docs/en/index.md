@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: "nuxt-feathers-zod"
-  text: "FeathersJS v5 + Zod + Nuxt 4 (Nitro)"
+  text: "FeathersJS v5 + Zod for Nuxt (Nitro)"
   tagline: "Two modes: embedded Feathers backend inside Nuxt (Nitro) OR a remote Feathers client. Zod-first generation, Pinia client, Swagger (legacy), and optional Keycloak SSO."
   image:
     src: https://vevedh.github.io/nuxt-feathers-zod/images/plume-dark.png

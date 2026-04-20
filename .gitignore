@@ -87,3 +87,10 @@ README_private.md
 *.tgz
 out.js
 tmpfile
+/NFZ_BACKLOG_6.4.109-6.4.114.md
+/NFZ_BACKLOG_6.4.115-6.4.118.md
+/nfz_npm_metadata_final.md
+/nfz_nuxt_modules_issue_final.md
+/nfz_package_metadata_patch.json
+/NPM_PACKAGE_METADATA.md
+/NUXT_MODULES_ISSUE_DRAFT.md

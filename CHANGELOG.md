@@ -1,3 +1,8 @@
+## 6.4.137
+- npm metadata aligned for Nuxt community-module submission (`repository`, `homepage`, `bugs`, `keywords`, `engines`, `publishConfig`).
+- README / README_fr wording softened to position NFZ as a Nuxt module for FeathersJS rather than an “official Nuxt 4 module”.
+- added repository-local draft files for the future `nuxt/modules` listing issue and npm metadata notes.
+
 ## 6.4.136
 
 - Mongo admin routes now bridge through standard Feathers `authenticate(...)` hooks before `requireMongoAdmin(...)`, so they follow the same authentication pipeline as regular protected Feathers services.

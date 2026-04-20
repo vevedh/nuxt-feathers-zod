@@ -8,15 +8,17 @@
 
 > Since 6.4.127, `useAuthRuntime()` recovers the access token from the Feathers authentication client storage after `authenticate()`/`reAuthenticate()` if the returned auth payload does not expose `accessToken` directly, ensuring protected REST helpers still send `Authorization`.
 
+> Submission-readiness note: npm metadata, README wording and Nuxt listing draft were aligned in `6.4.137` for community-module submission.
+
 # nuxt-feathers-zod
 
-> OSS reference snapshot: **v6.4.136** — optional Mongo management options aligned and release metadata synchronized.
+> OSS reference snapshot: **v6.4.137** — npm metadata, README wording and Nuxt listing submission draft aligned.
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
-`nuxt-feathers-zod` is the official **Nuxt 4** module that embeds or connects to **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
+`nuxt-feathers-zod` is a Nuxt module for **FeathersJS v5 (Dove)** with a **CLI-first** workflow and optional **Zod-first** service generation.
 
-Current OSS release target: **6.4.136**.
+Current OSS release target: **6.4.137**.
 
 It supports two main usage patterns:
 
@@ -206,7 +208,7 @@ bunx nuxt-feathers-zod middlewares list --target nitro
 bunx nuxt-feathers-zod middlewares add request-id --target nitro
 ```
 
-## CLI command surface in 6.4.136
+## CLI command surface in 6.4.125
 
 | Area | Commands |
 |---|---|

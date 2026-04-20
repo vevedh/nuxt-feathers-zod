@@ -1,14 +1,14 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.4.136",
+  "version": "6.4.137",
   "packageManager": "bun@1.3.6",
-  "description": "Feathers API integration for Nuxt",
+  "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
   "author": "Herve de CHAVIGNY",
   "license": "MIT",
   "repository": {
-    "type": "github",
-    "url": "git+ssh://git@github.com/vevedh/nuxt-feathers-zod.git"
+    "type": "git",
+    "url": "https://github.com/vevedh/nuxt-feathers-zod.git"
   },
   "exports": {
     ".": {
@@ -296,5 +296,31 @@
     "vitest-mongodb": "1.0.3",
     "vue": "3.5.30",
     "vue-router": "4.5.1"
+  },
+  "homepage": "https://vevedh.github.io/nuxt-feathers-zod/",
+  "bugs": {
+    "url": "https://github.com/vevedh/nuxt-feathers-zod/issues"
+  },
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "feathers",
+    "feathersjs",
+    "zod",
+    "nitro",
+    "socket.io",
+    "auth",
+    "keycloak",
+    "mongodb",
+    "swagger",
+    "pinia",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "bun": ">=1.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -8,11 +8,13 @@
 
 > Depuis la 6.4.127, `useAuthRuntime()` récupère aussi le jeton depuis le stockage du client d’authentification Feathers après `authenticate()`/`reAuthenticate()` si la réponse ne renvoie pas `accessToken` directement, afin que les helpers REST protégés envoient bien `Authorization`.
 
+> Note préparation soumission Nuxt : les métadonnées npm, le wording README et le brouillon de listing communautaire ont été alignés en `6.4.137`.
+
 # nuxt-feathers-zod
 
 [Documentation](https://vevedh.github.io/nuxt-feathers-zod/)
 
-`nuxt-feathers-zod` est un module officiel **Nuxt 4** qui embarque ou connecte **FeathersJS v5 (Dove)** avec une approche **CLI-first** et une génération de services **Zod-first** en option.
+`nuxt-feathers-zod` est un module Nuxt pour **FeathersJS v5 (Dove)** avec une approche **CLI-first** et une génération de services **Zod-first** en option.
 
 Il prend en charge deux modes principaux :
 
