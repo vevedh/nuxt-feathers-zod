@@ -1,5 +1,5 @@
+## 6.4.137
 
-## 6.4.135
 - Fix generated server app template syntax in `src/runtime/templates/server/app.ts` so playground/dev build no longer fails with `Unexpected "const"` in `.nuxt/feathers/server/app.ts`.
 
 > Latest patch note: v6.4.132 makes `app.get('mongoPath')` the single runtime source of truth for embedded Mongo admin routing.
@@ -109,7 +109,6 @@ bun dev
 
 NFZ standardizes embedded local auth around `userId/password` by default. Since `6.4.123`, the module also exposes the local auth field mapping to the client runtime under `runtimeConfig.public._feathers.auth.local`, so consumer login UIs no longer have to guess whether the backend expects `userId`, `email`, or another field. This mapping is now also injected into Feathers correctly on the server side before `AuthenticationService` is created, using the documented `app.set('authentication', config)` pattern.
 
-
 ```bash
 bunx nuxi@latest init my-nfz-auth
 cd my-nfz-auth
@@ -122,6 +121,7 @@ bun dev
 ```
 
 <!-- mongodb-adapter-note -->
+
 > **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ## Remote mode quick start
@@ -144,7 +144,6 @@ bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir
 ```
 
 This generates a readable local file service scaffold with `find`, `get`, `remove`, `upload` and `download`.
-
 
 ## Recommended repo-dev flow for the module itself
 
@@ -184,6 +183,7 @@ bunx nuxt-feathers-zod schema users --add-field title:string!
 ```
 
 <!-- mongodb-adapter-note -->
+
 > **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ### Runtime helpers and scaffolding
@@ -210,15 +210,14 @@ bunx nuxt-feathers-zod middlewares add request-id --target nitro
 
 ## CLI command surface in 6.4.137
 
-| Area | Commands |
-|---|---|
-| Init | `init templates`, `init embedded`, `init remote` |
-| Remote auth | `remote auth keycloak` |
-| Services | `add service`, `add remote-service`, `auth service`, `schema` |
-| Runtime scaffolding | `add middleware`, `schema`, `add server-module`, `add mongodb-compose`, `mongo management` |
-| Secondary OSS helpers | `templates list`, `plugins list/add`, `modules list/add`, `middlewares list/add` |
-| Diagnostics | `doctor` |
-
+| Area                  | Commands                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Init                  | `init templates`, `init embedded`, `init remote`                                               |
+| Remote auth           | `remote auth keycloak`                                                                             |
+| Services              | `add service`, `add remote-service`, `auth service`, `schema`                                |
+| Runtime scaffolding   | `add middleware`, `schema`, `add server-module`, `add mongodb-compose`, `mongo management` |
+| Secondary OSS helpers | `templates list`, `plugins list/add`, `modules list/add`, `middlewares list/add`             |
+| Diagnostics           | `doctor`                                                                                           |
 
 ## Public CLI focus
 
@@ -265,16 +264,16 @@ Key `schema` flags:
 
 ## `add middleware` target matrix
 
-| Target | Purpose | Status in docs |
-|---|---|---|
-| `nitro` | Nitro/H3 middleware | public |
-| `route` | Nuxt route middleware in `app/middleware` | public |
-| `feathers` | Feathers server plugin/middleware artifact | advanced |
-| `server-module` | embedded Feathers server module | advanced |
-| `module` | generic module artifact | advanced |
-| `client-module` | client-side module artifact | advanced |
-| `hook` | Feathers hook scaffold | advanced |
-| `policy` | policy/guard scaffold | advanced |
+| Target            | Purpose                                     | Status in docs |
+| ----------------- | ------------------------------------------- | -------------- |
+| `nitro`         | Nitro/H3 middleware                         | public         |
+| `route`         | Nuxt route middleware in `app/middleware` | public         |
+| `feathers`      | Feathers server plugin/middleware artifact  | advanced       |
+| `server-module` | embedded Feathers server module             | advanced       |
+| `module`        | generic module artifact                     | advanced       |
+| `client-module` | client-side module artifact                 | advanced       |
+| `hook`          | Feathers hook scaffold                      | advanced       |
+| `policy`        | policy/guard scaffold                       | advanced       |
 
 ## Auth-aware generation for `users`
 
@@ -300,6 +299,7 @@ bunx nuxt-feathers-zod add service users --auth --authAware false --schema json 
 ```
 
 <!-- mongodb-adapter-note -->
+
 > **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
 
 ## Optional MongoDB management surface
@@ -307,6 +307,7 @@ bunx nuxt-feathers-zod add service users --auth --authAware false --schema json 
 The OSS core can expose an optional MongoDB management layer from the generated `feathers/server/mongodb.ts` template, backed by `feathers-mongodb-management-ts`.
 
 MongoDB embedded runtime stores:
+
 - `app.get('mongodbClient')` → `Promise<Db>` for generated Feathers Mongo services
 - `app.get('mongodbDb')` → current `Db` instance
 - `app.get('mongodbConnection')` → raw `MongoClient` connection
@@ -378,6 +379,7 @@ authStore.user = ssoUser
 ```
 
 This guarantees that:
+
 - Nuxt route middleware can consider the user authenticated
 - client service calls receive `Authorization: Bearer <keycloak token>`
 - the local runtime stays coherent even before the remote Feathers API confirms the token
@@ -451,6 +453,7 @@ Resolution rules:
 For protected remote services to be truly accepted by Feathers hooks such as `authenticate('jwt')`, the remote backend must accept the token and strategy you configure.
 
 Typical options:
+
 - validate the Keycloak token directly through the Feathers authentication strategy
 - expose a dedicated remote strategy such as `strategy: 'sso'`
 
@@ -468,7 +471,6 @@ If the backend refuses the handshake, NFZ keeps the local client state coherent 
 
 MIT
 
-
 ### Consumer-safe server modules
 
 Built-in NFZ Express/Koa server modules are resolved via package subpath exports in consumer apps:
@@ -478,18 +480,15 @@ Built-in NFZ Express/Koa server modules are resolved via package subpath exports
 
 Local source fallbacks are only used while developing the NFZ repository itself.
 
-
 ## Release 6.4.0
 
 This release hardens the CLI patcher for remote mode so chained commands keep `nuxt.config.ts` valid in consumer Nuxt 4 apps, especially for Keycloak remote auth and remote service registration on Windows.
-
 
 - 6.4.1: Added automatic Keycloak `js-sha256` default-export shim alias for consumer Nuxt 4 apps to avoid browser crash from `keycloak-js` importing `js-sha256` as a default export.
 
 ### Remote Keycloak `strategy: 'sso'` with option B
 
 When the remote backend expects `api.authenticate({ strategy: 'sso', user: loginuser, authenticated: true })`, NFZ now keeps the local SSO object in the auth store (`authStore.user = ssoUser`) but sends only the derived login string as `user` in the remote authenticate payload.
-
 
 ## Builder Studio and presets (6.4.62)
 
@@ -500,28 +499,25 @@ NFZ now documents a more demonstrable builder flow:
 - direct routing into `/services-manager?preset=...`
 - clearer NFZ-native file layout preview before apply
 
-
 ## Builder Studio 6.4.63
 
 - barrels optionnels : `index.ts` dans le dossier service, et en option `services/index.ts`
 - starter `users` rapproché des conventions NFZ local auth (`passwordHash`, masquage du mot de passe côté external resolver)
 - apply builder plus proche d’un layout de démonstration CLI-first
 
-
 ## 6.4.64
 
 - Builder Studio: `services/index.ts` peut maintenant être agrégé à partir de plusieurs services marqués `service+root`.
 - Le preview et l'apply utilisent la liste complète du manifest pour produire un root barrel cohérent avec plusieurs services.
 
-
 ## 6.4.65
+
 Le parcours **Services Manager** distingue désormais plus clairement les services **Démo builder**, les **Services scannés** et les **Brouillons libres**, afin de rendre les tests simples plus compréhensibles dans l'app de démonstration.
 
 ## 6.4.66
 
 - Builder Studio : les **presets officiels** sortent du flux long du formulaire et passent dans un **onglet dédié `Presets`** pour rester visibles et accessibles sans scroll important.
 - Les **starters métier** sont présentés dans ce même espace pour des tests simples et compréhensibles.
-
 
 ## 6.4.67
 
@@ -541,10 +537,10 @@ Le parcours **Services Manager** distingue désormais plus clairement les servic
 - Services Manager ajoute trois cartes d’entrée guidées : tests rapides, services réels et builder avancé.
 - Le parcours devient plus lisible avant même d’ouvrir les onglets Workflow / Presets / Workspace.
 
-
 ## NFZ Studio Docker Edition
 
 Le dashboard de démonstration associé au module peut désormais être packagé comme **produit Docker** avec :
+
 - `NFZ_DATA_DIR` pour la persistance du manifest builder et des diagnostics
 - `NFZ_WORKSPACE_DIR` pour le scan et l'apply du builder sur un workspace monté
 - `NFZ_BUILDER_APPLY_MODE` (`workspace`, `export-only`, `readonly`)
@@ -553,17 +549,15 @@ Le dashboard de démonstration associé au module peut désormais être packagé
 
 > Note : la couche licence incluse à ce stade est un **scaffold UX/runtime**. Elle prépare l'édition Docker licenciée, mais ne remplace pas encore une signature cryptographique serveur/public key.
 
-
 ## License Center
 
 The Docker Edition can expose a reusable `License Center` page and feature-gating components to manage future licensed options for the `nuxt-feathers-zod` product surface.
 
-
 ## 6.4.87 — License Center layout clarity
+
 - La page /license-center côté dashboard de démonstration a été refondue pour une lecture plus claire et sans écrasement responsive.
 - Nouveau découpage : status + quick actions + runtime summary en haut, puis onglets Overview / Features / Plans.
 - Le breakpoint de colonnes latérales a été repoussé à 2xl pour éviter les défauts de mise en page sur desktop intermédiaire.
-
 
 ## PATCH 6.4.93 auth runtime refactor (phase 2)
 
@@ -581,8 +575,6 @@ The Docker Edition can expose a reusable `License Center` page and feature-gatin
 - Generated Keycloak bridge service now accepts token aliases and keycloak user hints, and returns `accessToken`/`authentication` in its result.
 - Goal: eliminate auth drift between `$api`, raw Feathers client, Pinia auth store, storage, and runtime tools.
 
-
-
 ## Unified auth runtime helpers
 
 `6.4.94` adds a stronger phase-3 runtime auth layer for protected REST/service flows:
@@ -597,7 +589,6 @@ The Docker Edition can expose a reusable `License Center` page and feature-gatin
 - generated REST Feathers clients now use the auth-bound fetch implementation by default
 
 This is especially useful for embedded REST mode, remote JWT mode, and Keycloak SSO bridging where a single runtime token must be reused consistently across Feathers services and protected HTTP routes.
-
 
 ## 6.4.95
 
@@ -614,14 +605,13 @@ This is especially useful for embedded REST mode, remote JWT mode, and Keycloak 
 
 > Embedded Mongo management routes are resolved behind the embedded REST prefix. Example: REST path `/feathers` + Mongo base path `/mongo` results in client calls to `/feathers/mongo/...`.
 
-
 ## Module repo cleanup
 
 In the module repository itself, prefer `bun run clean:repo` before `bun install`. Running `bunx nuxi cleanup` before dependencies are installed can fail because `@nuxt/kit` is not available yet.
+
 ## 6.4.110 — Admin diagnostics/devtools helper
 
 `useNfzAdminClient()` is now available to consume NFZ diagnostics and DevTools surfaces through the same auth-aware runtime path used by Mongo management.
-
 
 - 6.4.117: fixed invalid YAML front matter in `docs/en/guide/auth-keycloak.md`; added GitHub Pages/VitePress deployment note (`docs/guide/github-pages.md`).
 
@@ -630,7 +620,6 @@ In the module repository itself, prefer `bun run clean:repo` before `bun install
 - Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
 
 > Transport note (6.4.129): in generated clients, `transport: 'auto'` now resolves deterministically. Embedded browser mode prefers REST first; remote mode prefers Socket.IO when available, then falls back to REST.
-
 
 ### Mongo admin authentication bridge
 
