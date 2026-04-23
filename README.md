@@ -2,7 +2,7 @@
 
 > Nuxt 4 module for FeathersJS v5 (Dove) with a CLI-first workflow and optional Zod-first service generation.
 
-**Current release candidate base:** `6.4.138`
+**Current stable release:** `6.4.138`
 
 - Documentation: `https://vevedh.github.io/nuxt-feathers-zod/`
 - Quick start: `docs/guide/getting-started.md`
@@ -114,5 +114,3 @@ bun run smoke:tarball
 ## License
 
 MIT
-
-<!-- release-version: 6.4.138 -->
