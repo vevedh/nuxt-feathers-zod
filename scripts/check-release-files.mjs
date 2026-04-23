@@ -6,10 +6,10 @@ const targetDir = resolve(process.argv[2] || process.cwd())
 const requiredFiles = [
   'README.md',
   'README_fr.md',
-  'PATCHLOG.md',
-  'PROMPT_CONTEXT.md',
-  'JOURNAL.md',
-  'AI_CONTEXT/PROJECT_CONTEXT.md',
+  'CHANGELOG.md',
+  'CONTRIBUTING.md',
+  'RELEASE_CHECKLIST.md',
+  'REPO_DEV.md',
 ]
 
 let failed = false

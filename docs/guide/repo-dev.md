@@ -21,7 +21,7 @@ bun run module:build
 
 ## Métadonnées CLI dans `dist/cli`
 
-L’étape `module:build` peut encore afficher un warning au sujet de `dist/cli/index.mjs`. Ce warning apparaît avant que le build CLI n’écrive `dist/cli/package.json`. Le contrat supporté est la séquence finale :
+L’étape `module:build` ne doit plus afficher de warning au sujet de `dist/cli/index.mjs` maintenant que les binaires publiés sont des wrappers versionnés sous `bin/`. Le contrat supporté reste la séquence finale :
 
 ```bash
 bun run cli:build

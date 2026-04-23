@@ -133,9 +133,7 @@ describe('resolveAuthOptions', () => {
   it('preserves explicit authStrategies without reintroducing jwt defaults', () => {
     const auth = {
       authStrategies: ['local'] as AuthStrategies,
-      jwtOptions: {
-        secret,
-      },
+      secret,
     }
 
     const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)

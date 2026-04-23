@@ -52,18 +52,22 @@ export function useProtectedTool(basePath: string, defaults: Partial<ProtectedTo
   async function request<T = any>(path = '', options: ProtectedToolRequestOptions = {}) {
     const method = String(options.method || (options.body != null ? 'POST' : 'GET')).toUpperCase()
     const url = withQuery(joinToolPath(basePath, path), options.query)
+    const hasBody = options.body != null && method !== 'GET' && method !== 'HEAD'
+    const headers = new Headers(defaults.headers || {})
+    new Headers(options.headers || {}).forEach((value, key) => {
+      headers.set(key, value)
+    })
+    if (hasBody && !headers.has('content-type'))
+      headers.set('content-type', 'application/json')
+
     return await authFetch<T>(url, {
       ...defaults,
       ...options,
       method,
-      body: options.body != null && method !== 'GET' && method !== 'HEAD'
+      body: hasBody
         ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body))
         : undefined,
-      headers: {
-        'content-type': options.body != null && method !== 'GET' && method !== 'HEAD' ? 'application/json' : undefined,
-        ...(defaults.headers || {}),
-        ...(options.headers || {}),
-      },
+      headers,
     })
   }
 

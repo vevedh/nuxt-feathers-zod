@@ -21,7 +21,7 @@ bun run module:build
 
 ## CLI dist metadata
 
-The module build step can still print a warning about `dist/cli/index.mjs`. This happens before the dedicated CLI build writes `dist/cli/package.json`. The supported contract is the final sequence:
+The module build step should no longer warn about `dist/cli/index.mjs` now that published bin entrypoints are checked-in wrappers under `bin/`. The supported contract remains the final sequence:
 
 ```bash
 bun run cli:build

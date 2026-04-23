@@ -1,11 +1,13 @@
-import type { MongoOptions } from './mongodb'
+import type { MongoOptions, ResolvedMongoOptions } from './mongodb'
 import { resolveMongoOptions } from './mongodb'
 
 export interface DataBaseOptions {
   mongo?: MongoOptions
 }
 
-export type ResolvedDataBaseOptions = DataBaseOptions
+export interface ResolvedDataBaseOptions {
+  mongo?: ResolvedMongoOptions
+}
 
 export function resolveDataBaseOptions(database: DataBaseOptions): ResolvedDataBaseOptions {
   const resolvedDataBaseOptions: ResolvedDataBaseOptions = {}

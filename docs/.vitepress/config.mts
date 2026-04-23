@@ -5,34 +5,24 @@ const isProd = process.env.NODE_ENV === 'production'
 const internalGuideLinks = [
   '/guide/open-core',
   '/guide/open-core-vs-pro',
-  '/guide/support-policy',
   '/guide/playground',
   '/en/guide/open-core',
   '/en/guide/open-core-vs-pro',
-  '/en/guide/support-policy',
   '/en/guide/playground',
 ]
 
-const alwaysHiddenGuideLinks = [
-  '/guide/release-checklist',
-  '/en/guide/release-checklist',
-]
+const alwaysHiddenGuideLinks: string[] = []
 
 const internalGuideSrcExclude = [
   'guide/open-core.md',
   'guide/open-core-vs-pro.md',
-  'guide/support-policy.md',
   'guide/playground.md',
   'en/guide/open-core.md',
   'en/guide/open-core-vs-pro.md',
-  'en/guide/support-policy.md',
   'en/guide/playground.md',
 ]
 
-const alwaysHiddenSrcExclude = [
-  'guide/release-checklist.md',
-  'en/guide/release-checklist.md',
-]
+const alwaysHiddenSrcExclude: string[] = []
 
 function withInternalGuide(items: Array<{ text: string; link: string }>) {
   const visible = items.filter((item) => !alwaysHiddenGuideLinks.includes(item.link))
@@ -56,15 +46,11 @@ export default defineConfig({
         nav: [
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'Référence', link: '/reference/' },
-          { text: 'CLI', link: '/guide/cli' },
+          { text: 'CLI', link: '/reference/cli' },
+          { text: 'Auth locale', link: '/guide/auth-local' },
           { text: 'Keycloak SSO', link: '/guide/keycloak-sso' },
-          { text: 'Auth runtime', link: '/guide/auth-runtime' },
-          { text: 'Admin client', link: '/guide/admin-client' },
-          { text: 'Builder playground', link: '/guide/builder-playground' },
-          { text: 'Démos produit', link: '/guide/product-demos' },
-                { text: 'Builder Studio', link: '/guide/builder-studio' },
-                { text: 'Upload/download de fichiers', link: '/guide/file-upload-download' },
-                { text: 'Dépannage', link: '/guide/troubleshooting' },
+          { text: 'Upload/download', link: '/guide/file-upload-download' },
+          { text: 'Publication', link: '/guide/publishing' },
         ],
 
         sidebar: {
@@ -73,12 +59,14 @@ export default defineConfig({
               text: 'Guide',
               items: withInternalGuide([
                 { text: 'Démarrage rapide', link: '/guide/getting-started' },
+                { text: 'Publication npm & Git', link: '/guide/publishing' },
+                { text: 'Workflow communautaire', link: '/guide/community-workflow' },
+                { text: 'Checklist de release', link: '/guide/release-checklist' },
                 { text: 'Socle open source standard', link: '/guide/open-core' },
                 { text: 'Open core vs Pro', link: '/guide/open-core-vs-pro' },
                 { text: 'Politique de support', link: '/guide/support-policy' },
                 { text: 'Matrice de compatibilité', link: '/guide/compatibility-matrix' },
                 { text: 'Limites connues', link: '/guide/known-limits' },
-                { text: 'Checklist de release', link: '/guide/release-checklist' },
                 { text: 'Scénarios smoke', link: '/guide/smoke-scenarios' },
                 { text: 'Modes (embedded/remote)', link: '/guide/modes' },
                 { text: 'Mode remote', link: '/guide/remote' },
@@ -166,15 +154,11 @@ export default defineConfig({
         nav: [
           { text: 'Guide', link: '/en/guide/getting-started' },
           { text: 'Reference', link: '/en/reference/' },
-          { text: 'CLI', link: '/en/guide/cli' },
+          { text: 'CLI', link: '/en/reference/cli' },
+          { text: 'Local auth', link: '/en/guide/auth-local' },
           { text: 'Keycloak SSO', link: '/en/guide/keycloak-sso' },
-          { text: 'Auth runtime', link: '/en/guide/auth-runtime' },
-          { text: 'Admin client', link: '/en/guide/admin-client' },
-          { text: 'Builder playground', link: '/en/guide/builder-playground' },
-                { text: 'Product demos', link: '/en/guide/product-demos' },
-                { text: 'Builder Studio', link: '/en/guide/builder-studio' },
-                { text: 'File upload/download', link: '/en/guide/file-upload-download' },
-                { text: 'Troubleshooting', link: '/en/guide/troubleshooting' },
+          { text: 'File upload/download', link: '/en/guide/file-upload-download' },
+          { text: 'Publishing', link: '/en/guide/publishing' },
         ],
 
         sidebar: {
@@ -183,12 +167,14 @@ export default defineConfig({
               text: 'Guide',
               items: withInternalGuide([
                 { text: 'Quick start', link: '/en/guide/getting-started' },
+                { text: 'npm & Git publishing', link: '/en/guide/publishing' },
+                { text: 'Community workflow', link: '/en/guide/community-workflow' },
+                { text: 'Release checklist', link: '/en/guide/release-checklist' },
                 { text: 'Open source core', link: '/en/guide/open-core' },
                 { text: 'Open core vs Pro', link: '/en/guide/open-core-vs-pro' },
                 { text: 'Support policy', link: '/en/guide/support-policy' },
                 { text: 'Compatibility matrix', link: '/en/guide/compatibility-matrix' },
                 { text: 'Known limits', link: '/en/guide/known-limits' },
-                { text: 'Release checklist', link: '/en/guide/release-checklist' },
                 { text: 'Smoke scenarios', link: '/en/guide/smoke-scenarios' },
                 { text: 'Modes (embedded/remote)', link: '/en/guide/modes' },
                 { text: 'Remote mode', link: '/en/guide/remote' },

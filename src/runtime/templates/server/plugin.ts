@@ -4,78 +4,105 @@ import type { DefaultAuthOptions } from '../../options/authentication'
 import type { ServicesDirs } from '../../options/services'
 import type { RestOptions } from '../../options/transports/rest'
 import type { WebsocketOptions } from '../../options/transports/websocket'
+
 import { scanDirExports } from 'unimport'
+
 import { filterExports, setImportsMeta } from '../../options/utils'
-import { put, puts } from '../utils'
+import { put } from '../utils'
 
 async function getServices(servicesDirs: ServicesDirs): Promise<Import[]> {
   const services = await scanDirExports(servicesDirs, {
     filePatterns: ['**/*.ts'],
     types: false,
   })
+
   return services
     .filter(({ from }) => !/\w+\.\w+\.ts$/.test(from))
     .filter(filterExports)
 }
 
+function toNamedRegistrars(imports: any[], kind: 'service' | 'plugin'): string {
+  if (!imports.length)
+    return '[]'
+
+  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`${kind} ${item.name || item.as || item.meta.importId}`)} }`).join(',\n')}\n]`
+}
+
+function toNamedModules(imports: any[]): string {
+  if (!imports.length)
+    return '[]'
+
+  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`module ${item.name || item.as || item.meta.importId}`)}, moduleOptions: ${JSON.stringify(item.options ?? null)} }`).join(',\n')}\n]`
+}
+
+function normalizePath(value: string): string {
+  if (!value)
+    return ''
+  return value.startsWith('/') ? value : `/${value}`
+}
+
+function trimTrailingSlash(value: string): string {
+  if (!value)
+    return ''
+  return value.length > 1 && value.endsWith('/') ? value.slice(0, -1) : value
+}
+
+function buildRouterBlock({ koa, exp, sio, restPath }: { koa: boolean, exp: boolean, sio: boolean, restPath: string | undefined }): string {
+  const lines: string[] = []
+
+  if (koa)
+    lines.push(`  createKoaRouter(app, ${JSON.stringify(restPath)})`)
+  if (exp)
+    lines.push(`  createExpressRouter(app, ${JSON.stringify(restPath)})`)
+  if (sio)
+    lines.push('  createSocketIoRouter(app)')
+
+  if (!lines.length)
+    lines.push('  return app')
+
+  return `const nfzCreateRouters = (app) => {\n${lines.join('\n')}\n}\n`
+}
+
 export function getServerPluginContents(options: ResolvedOptions) {
   return async (): Promise<string> => {
     const services = setImportsMeta(await getServices(options.servicesDirs))
-
     const plugins = options.server.plugins
     const serverModules = options.server.modules
     const loadOrder = ((options.server as any)?.loadOrder || ['modules:pre', 'plugins', 'services', 'modules:post']) as string[]
     const preModules = serverModules.filter(m => (m as any).phase !== 'post')
     const postModules = serverModules.filter(m => (m as any).phase === 'post')
-
     const modules = [...services, ...plugins, ...serverModules]
 
     const transports = options?.transports
-    const rest = !!transports?.rest
+    const rest = Boolean(transports?.rest)
     const framework = (transports?.rest as RestOptions)?.framework
     const exp = framework === 'express'
     const koa = framework === 'koa'
-    const sio = !!transports?.websocket
-
-    const routers = [exp && 'createExpressRouter', koa && 'createKoaRouter', sio && 'createSocketIoRouter'].filter(Boolean)
-
-    const mongo = !!options.database?.mongo
+    const sio = Boolean(transports?.websocket)
 
     const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
     const auth = (authStrategies || []).length > 0
 
-    // keycloak
-    const keycloakEnabled = !!options.keycloak
+    const keycloakEnabled = Boolean(options.keycloak)
     const keycloak = options.keycloak as any
 
     const restPath = (transports?.rest as RestOptions)?.path
     const websocketOptions = (transports?.websocket as WebsocketOptions) || undefined
     const websocketPath = websocketOptions?.path
 
-    const swaggerEnabled = !!options.swagger
+    const swaggerEnabled = Boolean(options.swagger)
     const swagger = options.swagger as any
-
-    const normalizePath = (p: string) => {
-      if (!p)
-        return ''
-      return p.startsWith('/') ? p : `/${p}`
-    }
-
-    const trimTrailingSlash = (p: string) => {
-      if (!p)
-        return ''
-      return p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p
-    }
-
     const docsPath = trimTrailingSlash(normalizePath(swagger?.docsPath ?? '/docs'))
     const docsJsonPath = trimTrailingSlash(normalizePath(swagger?.docsJsonPath ?? '/docs.json'))
 
+    const routers = [exp && 'createExpressRouter', koa && 'createKoaRouter', sio && 'createSocketIoRouter'].filter(Boolean).join(', ')
+
     const swaggerInitBlock = swaggerEnabled
-      ? `  // Init Swagger (feathers-swagger legacy)
+      ? `const nfzInitSwagger = async (app) => {
   app.configure(swagger.customMethodsHandler)
   app.configure(swagger({
-    docsPath: '${docsPath}',
-    docsJsonPath: '${docsJsonPath}',
+    docsPath: ${JSON.stringify(docsPath)},
+    docsJsonPath: ${JSON.stringify(docsJsonPath)},
     specs: {
       info: ${JSON.stringify(swagger?.info ?? { title: 'API Docs', description: 'Feathers API', version: '1.0.0' })},
       components: {
@@ -87,147 +114,85 @@ export function getServerPluginContents(options: ResolvedOptions) {
           },
         },
       },
-      security: [
-        { BearerAuth: [] },
-      ],
+      security: [{ BearerAuth: [] }],
     },
-    ui: swagger.swaggerUI({ docsPath: '${docsPath}' }),
+    ui: swagger.swaggerUI({ docsPath: ${JSON.stringify(docsPath)} }),
   }))
+}
 `
-      : ''
+      : 'const nfzInitSwagger = undefined\n'
 
     const keycloakInitBlock = keycloakEnabled
-      ? `  // Init Keycloak-only SSO (global hook + bridge service)
-  const keycloakConfig = ${JSON.stringify({
-    serverUrl: keycloak.serverUrl,
-    realm: keycloak.realm,
-    clientId: keycloak.clientId,
-    issuer: keycloak.issuer || `${keycloak.serverUrl.replace(/\/$/, '')}/realms/${keycloak.realm}`,
-    audience: keycloak.audience || keycloak.clientId,
-    secret: keycloak.secret,
-    userService: keycloak.userService || 'users',
-    serviceIdField: keycloak.serviceIdField || 'keycloakId',
-    authServicePath: keycloak.authServicePath || '/_keycloak',
-    permissions: !!keycloak.permissions,
-  })}
-  app.hooks({ before: [keycloakAuthorizationHook(app, keycloakConfig)] })
-  app.use(keycloakConfig.authServicePath, keycloakBridgeService(app, keycloakConfig) as any)
+      ? `const nfzKeycloakConfig = ${JSON.stringify({
+          serverUrl: keycloak.serverUrl,
+          realm: keycloak.realm,
+          clientId: keycloak.clientId,
+          issuer: keycloak.issuer || `${keycloak.serverUrl.replace(/\/$/, '')}/realms/${keycloak.realm}`,
+          audience: keycloak.audience || keycloak.clientId,
+          secret: keycloak.secret,
+          userService: keycloak.userService || 'users',
+          serviceIdField: keycloak.serviceIdField || 'keycloakId',
+          authServicePath: keycloak.authServicePath || '/_keycloak',
+          permissions: Boolean(keycloak.permissions),
+        }, null, 2)}
+const nfzInitKeycloak = async (app) => {
+  await setupKeycloakBridge(app, nfzKeycloakConfig)
+}
 `
-      : ''
+      : 'const nfzInitKeycloak = undefined\n'
 
-    // IMPORTANT: Nitro may load this file through a Rollup pipeline that does *not* transpile TypeScript.
-    // Keep the generated plugin free of TS-only syntax.
+    const configLiteral = JSON.stringify({
+      transports: {
+        rest: rest ? { enabled: true, framework, path: restPath } : false,
+        websocket: sio ? { enabled: true, ...(websocketOptions || {}), path: websocketPath ?? '/socket.io' } : false,
+      },
+      loadFeathersConfig: Boolean(options.loadFeathersConfig),
+      auth: { enabled: auth },
+      server: {
+        secureDefaults: (options.server as any)?.secureDefaults,
+        secure: (options.server as any)?.secure,
+      },
+      database: {
+        mongo: options.database?.mongo
+          ? {
+              enabled: true,
+              url: options.database.mongo.url || null,
+              management: options.database.mongo.management || null,
+            }
+          : false,
+      },
+    }, null, 2)
+
     return `// ! Generated by nuxt-feathers-zod - do not change manually
-${put(keycloakEnabled, `import { keycloakAuthorizationHook, keycloakBridgeService } from './keycloak'`)}
+${put(keycloakEnabled, `import { setupKeycloakBridge } from './keycloak'`)}
+import { createServerBootstrap } from 'nuxt-feathers-zod/server-bootstrap'
 import { createFeathersApp, configureFeathersInfrastructure } from './app'
 ${put(swaggerEnabled, `import swagger from 'feathers-swagger'`)}
-${put(rest, `import { ${framework}ErrorHandler } from '@gabortorma/feathers-nitro-adapter/handlers'`)}
-import { ${routers.join(', ')} } from '@gabortorma/feathers-nitro-adapter/routers'
+${put(exp, `import { expressErrorHandler } from '@gabortorma/feathers-nitro-adapter/handlers'`)}
+${put(Boolean(routers), `import { ${routers} } from '@gabortorma/feathers-nitro-adapter/routers'`)}
 import { defineNitroPlugin } from 'nitropack/dist/runtime/plugin'
 ${modules.map(module => module.meta.import).join('\n')}
 
-export default defineNitroPlugin(async (nitroApp) => {
-  const config = {
-    transports: {
-      rest: ${rest ? JSON.stringify({ enabled: true, framework, path: restPath }) : 'false'},
-      websocket: ${sio ? JSON.stringify({ enabled: true, ...(websocketOptions || {}), path: websocketPath ?? '/socket.io' }) : 'false'},
-    },
-    loadFeathersConfig: ${options.loadFeathersConfig ? 'true' : 'false'},
-    auth: ${JSON.stringify({ enabled: auth })},
-    server: ${JSON.stringify({
-      secureDefaults: (options.server as any)?.secureDefaults,
-      secure: (options.server as any)?.secure,
-    })},
-    database: ${JSON.stringify({
-      mongo: options.database?.mongo
-        ? {
-            enabled: true,
-            url: options.database?.mongo?.url || null,
-            management: options.database?.mongo?.management || null,
-          }
-        : false,
-    })},
-  }
-
-  const mongoConfigured = !!(config.database && config.database.mongo && config.database.mongo.enabled && config.database.mongo.url)
-  console.info('[NFZ server] mongo configured=' + (mongoConfigured ? 'true' : 'false') + ' url=' + (mongoConfigured ? '[configured]' : ''))
-
-  const app = await createFeathersApp(nitroApp, config)
-  globalThis.__NFZ_EMBEDDED_APP = app
-  if (typeof app === 'function')
-    globalThis.__NFZ_EMBEDDED_EXPRESS_APP = app
-
-  const configureFeathersPlugin = async (plugin, label = 'plugin') => {
-    if (typeof plugin !== 'function')
-      return true
-
-    try {
-      const result = plugin(app)
-      if (result && typeof result.then === 'function')
-        await result
-      return true
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error || '')
-      const missingMongoClient
-        = message.includes("uses adapter 'mongodb'")
-          && message.includes("app.get('mongodbClient') is not configured")
-
-      if (missingMongoClient) {
-        console.warn("[nuxt-feathers-zod] Skipping " + label + " because MongoDB infrastructure is not initialized (missing app.get('mongodbClient')).")
-        return false
-      }
-
-      throw error
-    }
-  }
-
-${put(swaggerEnabled, swaggerInitBlock)}
-${put(keycloakEnabled, keycloakInitBlock)}
-
-    // Init infrastructure (auth, mongodb, etc.)
-  await configureFeathersInfrastructure(app, config)
-  console.info('[NFZ server] mongo infrastructure ready=' + (app.get('mongodb_ok') === true ? 'true' : 'false'))
-
-  // Init server modules, plugins and services in configured load order
-  for (const phase of ${JSON.stringify(loadOrder)}) {
-    if (phase === 'modules:pre') {
-      ${preModules.map(m => `await ${m.meta.importId}(app, { nitroApp, config, transports: config.transports, server: config.server, moduleOptions: ${JSON.stringify((m as any).options ?? null)} })`).join('\n      ')}
-      continue
-    }
-
-    if (phase === 'plugins') {
-      ${plugins.map(plugin => `await configureFeathersPlugin(${plugin.meta.importId}, 'plugin ${plugin.name || plugin.as || plugin.meta.importId}')`).join('\n      ')}
-      continue
-    }
-
-    if (phase === 'services') {
-      ${services.map(service => `await configureFeathersPlugin(${service.meta.importId}, 'service ${service.name || service.as || service.meta.importId}')`).join('\n      ')}
-      continue
-    }
-
-    if (phase === 'modules:post') {
-      ${postModules.map(m => `await ${m.meta.importId}(app, { nitroApp, config, transports: config.transports, server: config.server, moduleOptions: ${JSON.stringify((m as any).options ?? null)} })`).join('\n      ')}
-    }
-  }
-
-${put(exp, `  // Set up Express middleware for 404s and the error handler
-  app.configure(expressErrorHandler)
-`)}
-
-  // IMPORTANT:
-  // Mount Nitro routers *synchronously* after app.setup().
-  // If we mount them in a deferred promise, early requests in dev can 404.
-  await app.setup()
-
-${puts([
-  [koa, `  // Init koa router\n  createKoaRouter(app, '${restPath}')`],
-  [exp, `  // Init express router\n  createExpressRouter(app, '${restPath}')`],
-  [sio, `  // Init socket.io router\n  createSocketIoRouter(app)`],
-])}
-
-  nitroApp.hooks.hook('close', async () => app.teardown())
-})
+const nfzServerConfig = ${configLiteral}
+const nfzServices = ${toNamedRegistrars(services, 'service')}
+const nfzPlugins = ${toNamedRegistrars(plugins, 'plugin')}
+const nfzPreModules = ${toNamedModules(preModules)}
+const nfzPostModules = ${toNamedModules(postModules)}
+${swaggerInitBlock}${keycloakInitBlock}${buildRouterBlock({ koa, exp, sio, restPath })}
+export default defineNitroPlugin(createServerBootstrap({
+  config: nfzServerConfig,
+  createApp: createFeathersApp,
+  configureInfrastructure: configureFeathersInfrastructure,
+  initSwagger: nfzInitSwagger,
+  initKeycloak: nfzInitKeycloak,
+  expressErrorHandler: ${exp ? 'expressErrorHandler' : 'undefined'},
+  createRouters: nfzCreateRouters,
+  loadOrder: ${JSON.stringify(loadOrder)},
+  preModules: nfzPreModules,
+  postModules: nfzPostModules,
+  plugins: nfzPlugins,
+  services: nfzServices,
+}))
 `
   }
 }

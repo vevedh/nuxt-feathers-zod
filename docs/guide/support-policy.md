@@ -3,9 +3,9 @@ editLink: false
 ---
 # Politique de support
 
-## Ce qui est supporté dans le core standard
+## Ce qui est supporté en priorité
 
-Le support prioritaire couvre :
+Le socle prioritaire couvre :
 
 - Nuxt 4
 - Bun
@@ -14,36 +14,31 @@ Le support prioritaire couvre :
 - Express / Koa
 - auth locale / JWT
 - bridge Keycloak SSO
-- CLI de génération
-- `auth service`, `add mongodb-compose`, `add server-module`
-- Swagger legacy optionnel
+- génération CLI
 - MongoDB management en mode opt-in
+- packaging npm avec sous-chemins exports validés
 
-## Ce qui est supporté en priorité
+## Parcours à protéger en premier
 
-Quand une régression apparaît, les parcours à protéger en premier sont :
+Quand une régression apparaît, les parcours à protéger en priorité sont :
 
 1. nouvelle app Nuxt 4 + `init embedded`
-2. embedded + `users` + auth locale
+2. embedded + auth locale
 3. remote REST
 4. remote Socket.IO
-5. Keycloak bridge
-6. `bunx nuxt-feathers-zod --help` sous Bun/Windows
+5. `bunx nuxt-feathers-zod --help`
+6. `bun run test:e2e`
+7. `bun run smoke:tarball`
 
-## Dépréciations
+## Politique de correction
 
-Les alias historiques peuvent rester supportés, mais :
-
-- ils ne doivent plus être la forme recommandée
-- la doc doit afficher la forme canonique
-- le changement doit être tracé dans `PATCHLOG.md`
-
-## Principe de correction
-
-Une correction “core” doit privilégier :
+Une correction core doit privilégier :
 
 - compatibilité arrière quand c’est raisonnable
 - exemple minimal mis à jour
 - docs FR/EN alignées
-- journalisation dans `PATCHLOG.md` et `PROMPT_CONTEXT.md`
-- validation explicite du parsing CLI Bun/TypeScript quand une erreur de syntaxe a déjà été rencontrée
+- validation réelle via build, typecheck, E2E ou tarball smoke selon le périmètre
+
+## Hygiène du dépôt
+
+Le root du dépôt doit rester centré sur le module public. Les notes historiques de maintenance sont déplacées dans `archives/`.

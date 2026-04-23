@@ -15,7 +15,6 @@ const targets = [
   'docs/en/guide/cli.md',
   'docs/reference/cli.md',
   'docs/en/reference/cli.md',
-  'AI_CONTEXT/CLI_REFERENCE.md',
 ]
 
 const replacements = [

@@ -3,9 +3,9 @@ editLink: false
 ---
 # Support policy
 
-## What is supported in the standard core
+## What gets priority support
 
-Priority support covers:
+The priority core covers:
 
 - Nuxt 4
 - Bun
@@ -15,25 +15,20 @@ Priority support covers:
 - local / JWT auth
 - Keycloak SSO bridge
 - generation CLI
-- optional legacy Swagger
+- opt-in MongoDB management
+- npm packaging with validated exported subpaths
 
-## What gets priority when fixing regressions
+## Flows to protect first
 
-When a regression appears, these flows should be protected first:
+When a regression appears, protect these flows first:
 
 1. new Nuxt 4 app + `init embedded`
-2. embedded + `users` + local auth
+2. embedded + local auth
 3. remote REST
 4. remote Socket.IO
-5. Keycloak bridge
-
-## Deprecations
-
-Historical aliases may remain supported, but:
-
-- they must stop being the recommended form
-- the docs must show the canonical form
-- the change must be tracked in `PATCHLOG.md`
+5. `bunx nuxt-feathers-zod --help`
+6. `bun run test:e2e`
+7. `bun run smoke:tarball`
 
 ## Fix policy
 
@@ -42,4 +37,8 @@ A core fix should prefer:
 - backward compatibility when reasonable
 - an updated minimal example
 - aligned FR/EN docs
-- traceability in `PATCHLOG.md` and `PROMPT_CONTEXT.md`
+- real validation through build, typecheck, E2E or tarball smoke depending on scope
+
+## Repository hygiene
+
+The repository root should stay focused on the public module. Historical maintainer notes are moved into `archives/`.

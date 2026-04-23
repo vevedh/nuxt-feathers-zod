@@ -18,10 +18,10 @@ export function useFeathers() {
 export function useService<L extends keyof ServiceTypes>(path: L) {
   const { piniaClient, client } = useFeathers()
   const host = (piniaClient && typeof piniaClient.service === 'function') ? piniaClient : client
-  return (host as any).service<ServiceTypes[L]>(String(path))
+  return (host as any).service(String(path)) as ServiceTypes[L]
 }
 
 export function useRawService<L extends keyof ServiceTypes>(path: L) {
   const { client } = useFeathers()
-  return client.service<ServiceTypes[L]>(String(path))
+  return (client as any).service(String(path)) as ServiceTypes[L]
 }

@@ -23,7 +23,7 @@ function normalizeProtectedServiceError(error: any) {
 export function useProtectedService<L extends keyof ServiceTypes>(path: L): ServiceTypes[L] {
   const { client } = useFeathers()
   const auth = useAuthRuntime()
-  const service = client.service<ServiceTypes[L]>(String(path)) as any
+  const service = (client as any).service(String(path)) as any
   const nonWrappedMethods = new Set(['hooks', 'publish'])
 
   return new Proxy(service, {

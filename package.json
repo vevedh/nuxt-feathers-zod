@@ -19,9 +19,29 @@
       "types": "./dist/runtime/server.d.ts",
       "import": "./dist/runtime/server.js"
     },
+    "./server-bootstrap": {
+      "types": "./dist/runtime/server/bootstrap.d.ts",
+      "import": "./dist/runtime/server/bootstrap.js"
+    },
+    "./server-app-utils": {
+      "types": "./dist/runtime/server/app-utils.d.ts",
+      "import": "./dist/runtime/server/app-utils.js"
+    },
+    "./server-mongodb": {
+      "types": "./dist/runtime/server/mongodb.d.ts",
+      "import": "./dist/runtime/server/mongodb.js"
+    },
+    "./server-keycloak": {
+      "types": "./dist/runtime/server/keycloak.d.ts",
+      "import": "./dist/runtime/server/keycloak.js"
+    },
     "./client": {
       "types": "./dist/runtime/client.d.ts",
       "import": "./dist/runtime/client.js"
+    },
+    "./client-runtime": {
+      "types": "./dist/runtime/client/defineNfzClientPlugin.d.ts",
+      "import": "./dist/runtime/client/defineNfzClientPlugin.js"
     },
     "./auth-utils": {
       "types": "./dist/runtime/utils/auth.d.ts",
@@ -113,8 +133,23 @@
       "server": [
         "./dist/runtime/server.d.ts"
       ],
+      "server-bootstrap": [
+        "./dist/runtime/server/bootstrap.d.ts"
+      ],
+      "server-app-utils": [
+        "./dist/runtime/server/app-utils.d.ts"
+      ],
+      "server-mongodb": [
+        "./dist/runtime/server/mongodb.d.ts"
+      ],
+      "server-keycloak": [
+        "./dist/runtime/server/keycloak.d.ts"
+      ],
       "client": [
         "./dist/runtime/client.d.ts"
+      ],
+      "client-runtime": [
+        "./dist/runtime/client/defineNfzClientPlugin.d.ts"
       ],
       "auth-utils": [
         "./dist/runtime/utils/auth.d.ts"
@@ -179,30 +214,35 @@
     }
   },
   "bin": {
-    "nuxt-feathers-zod": "./dist/cli/index.mjs",
-    "nfz": "./dist/cli/index.mjs"
+    "nuxt-feathers-zod": "./bin/nuxt-feathers-zod",
+    "nfz": "./bin/nfz"
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run build",
+    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run build && bun run sanity:package-exports",
     "dev": "bun run playground:dev",
     "playground:ensure-link": "node scripts/ensure-playground-self-link.mjs",
     "playground:dev": "bun run playground:ensure-link && nuxi dev playground",
-    "build": "bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta",
+    "build": "bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports",
     "playground:build": "bun run playground:ensure-link && nuxi build playground",
     "module:prepare": "nuxt-module-build prepare",
     "module:build": "nuxt-module-build build",
-    "prepare": "bun run sync:release-meta && bun run sanity:internal-imports && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run playground:ensure-link",
+    "prepare": "bun run sync:release-meta && bun run sanity:internal-imports && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link",
     "typecheck": "bunx tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "vitest run -c vitest.config.mts",
+    "test:e2e": "vitest run -c vitest.config.mts test/e2e/**/*.spec.ts",
+    "smoke:tarball": "node scripts/smoke-tarball-install.mjs",
+    "release:check:full": "bun run release:check && bun run test:e2e && bun run smoke:tarball",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "cli:smoke": "bun scripts/cli-smoke.ts",
     "publish:npm": "bun run prepack && bun publish --access public",
-    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run build && bun run docs:build && bun run cli:smoke && bun pm pack --dry-run",
+    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run build && bun run docs:build && bun run cli:smoke && bun pm pack --dry-run && bun run sanity:package-exports",
     "release": "bunx release-it",
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
@@ -224,7 +264,8 @@
     "repo:doctor": "bun run clean:repo && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:file-service-template",
     "sanity:cli-dist-meta": "node scripts/check-cli-dist-meta.mjs",
     "repo:bootstrap": "bun install && bun run repo:doctor",
-    "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs"
+    "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs",
+    "sanity:package-exports": "node scripts/check-package-exports.mjs"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"
@@ -295,7 +336,8 @@
     "vitest": "4.0.18",
     "vitest-mongodb": "1.0.3",
     "vue": "3.5.30",
-    "vue-router": "4.5.1"
+    "vue-router": "4.5.1",
+    "happy-dom": "^15.11.7"
   },
   "homepage": "https://vevedh.github.io/nuxt-feathers-zod/",
   "bugs": {

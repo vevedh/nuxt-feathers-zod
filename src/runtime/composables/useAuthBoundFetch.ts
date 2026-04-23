@@ -6,15 +6,14 @@ export interface AuthBoundOptions extends RequestInit {
   retryOn401?: boolean
 }
 
-function mergeHeaders(input: HeadersInit | undefined, authorization: string | null) {
+function mergeHeaders(input: HeadersInit | undefined, authorization: string | null): Headers {
   const headers = new Headers(input || {})
-  if (authorization && !headers.has('authorization') && !headers.has('Authorization')) {
+  if (authorization && !headers.has('authorization') && !headers.has('Authorization'))
     headers.set('Authorization', authorization)
-  }
   return headers
 }
 
-function toRequestInit(input: RequestInfo | URL, init: AuthBoundOptions, headers: Headers) {
+function toRequestInit(input: RequestInfo | URL, init: AuthBoundOptions, headers: Headers): RequestInit {
   const request = input instanceof Request ? input : null
   const base: RequestInit = request
     ? {
@@ -38,18 +37,20 @@ function toRequestInit(input: RequestInfo | URL, init: AuthBoundOptions, headers
     headers,
   }
 
-  delete (result as any).auth
-  delete (result as any).retryOn401
+  delete (result as Partial<AuthBoundOptions>).auth
+  delete (result as Partial<AuthBoundOptions>).retryOn401
   return result
 }
 
-function resolveNativeFetch() {
+type NativeFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+
+function resolveNativeFetch(): NativeFetch {
   if (import.meta.server)
-    return useRequestFetch()
+    return useRequestFetch() as unknown as NativeFetch
   if (typeof window !== 'undefined' && typeof window.fetch === 'function')
-    return window.fetch.bind(window)
+    return window.fetch.bind(window) as NativeFetch
   if (typeof globalThis.fetch === 'function')
-    return globalThis.fetch.bind(globalThis)
+    return globalThis.fetch.bind(globalThis) as NativeFetch
   throw new Error('[nuxt-feathers-zod] No native fetch implementation available')
 }
 
@@ -57,7 +58,7 @@ export function useAuthBoundFetchImplementation(defaults: Partial<AuthBoundOptio
   const auth = useAuthRuntime()
   const nativeFetch = resolveNativeFetch()
 
-  return async function authBoundFetch(input: RequestInfo | URL, init: AuthBoundOptions = {}) {
+  return async function authBoundFetch(input: RequestInfo | URL, init: AuthBoundOptions = {}): Promise<Response> {
     const authMode = init.auth ?? defaults.auth ?? 'required'
     const retryOn401 = init.retryOn401 ?? defaults.retryOn401 ?? true
 
@@ -67,7 +68,7 @@ export function useAuthBoundFetchImplementation(defaults: Partial<AuthBoundOptio
         await auth.ensureValidatedBearer('auth-bound-fetch')
     }
 
-    async function execute() {
+    const execute = async (): Promise<Response> => {
       const authorization = authMode === 'none' ? null : await auth.getAuthorizationHeader()
       const headers = mergeHeaders(init.headers, authorization)
       return await nativeFetch(input, toRequestInit(input, init, headers))
@@ -88,7 +89,7 @@ export function useAuthBoundFetch(defaults: Partial<AuthBoundOptions> = {}) {
   const request = useAuthBoundFetchImplementation(defaults)
 
   return async function authBoundRequest<T = any>(input: RequestInfo | URL, init: AuthBoundOptions = {}): Promise<T> {
-    const response = await request(input, init)
+    const response: Response = await request(input, init)
     if (response.status === 204)
       return null as T
 

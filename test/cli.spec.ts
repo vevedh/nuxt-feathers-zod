@@ -44,9 +44,10 @@ it('publishes the CLI bin from dist instead of src', async () => {
     bin?: Record<string, string>
     files?: string[]
   }
-  expect(pkg.bin?.['nuxt-feathers-zod']).toBe('./dist/cli/index.mjs')
-  expect(pkg.bin?.nfz).toBe('./dist/cli/index.mjs')
+  expect(pkg.bin?.['nuxt-feathers-zod']).toBe('./bin/nuxt-feathers-zod')
+  expect(pkg.bin?.nfz).toBe('./bin/nfz')
   expect(pkg.files).toContain('dist')
+  expect(pkg.files).toContain('bin')
   expect(pkg.files).not.toContain('src/cli')
 })
   it('resolves built-in server modules to package subpath exports in consumer apps', async () => {

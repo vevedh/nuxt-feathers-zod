@@ -3,17 +3,33 @@ editLink: false
 ---
 # Checklist de release
 
-Cette page n’est plus publiée dans la documentation publique.
+La checklist mainteneur officielle du module est aussi conservée à la racine du dépôt dans `RELEASE_CHECKLIST.md`.
 
-Les procédures de publication npm/git et les notes d’administration du dépôt sont désormais maintenues dans `README_private.md` côté mainteneur.
+Cette page publique résume la discipline minimale attendue avant publication.
 
+## Contrôles publics à garder au vert
 
-## Stabilisation 6.4.25
+```bash
+bun run build
+bun run typecheck
+bun run test:e2e
+bun run smoke:tarball
+```
 
-Avant publication officielle :
+## Contrôles packaging utiles
 
-- vérifier `bunx nuxt-feathers-zod --help`
-- vérifier `bunx nuxt-feathers-zod doctor`
-- vérifier la cohérence README + `docs/guide/cli.md` + `docs/reference/cli.md` + `docs/en/guide/cli.md`
-- vérifier que la surface CLI documentée couvre aussi `templates/plugins/modules/middlewares`
-- vérifier que la version `package.json` cible la release à publier
+```bash
+bun run sanity:package-exports
+bun run sanity:cli-dist-meta
+bun pm pack --dry-run
+```
+
+## Publication
+
+Voir le guide dédié : [Publication npm & Git](./publishing)
+
+## Voir aussi
+
+- [Workflow communautaire](./community-workflow)
+- [Flux de développement du dépôt](./repo-dev)
+- [Politique de support](./support-policy.md)
