@@ -1,3 +1,8 @@
+## 6.5.0
+- fix `cli:smoke` doctor expectations to match the current embedded auth defaults and divergent field mapping output.
+- stabilize E2E fixtures by aligning embedded auth setup with the already stable absolute-path pattern used by the basic fixture.
+- keep the repository on the release-hardened path for npm/GitHub publication after the validated 6.4.138 line.
+
 ## 6.4.138
 - promote the previously validated 6.4.137 release candidate to a stable 6.4.138 release line.
 - stabilize release validation workflow for community publication (typecheck, e2e, tarball smoke, docs build/preview).

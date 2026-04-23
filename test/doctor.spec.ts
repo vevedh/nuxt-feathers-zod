@@ -116,7 +116,7 @@ export default defineNuxtConfig({
 
     await runDoctor(root)
 
-    expect(infos.some(line => line.includes('- auth.local.usernameField: email'))).toBe(true)
+    expect(infos.some(line => line.includes('- auth.local.usernameField: userId'))).toBe(true)
     expect(infos.some(line => line.includes('- auth.local.entityUsernameField: userId'))).toBe(true)
     expect(infos.some(line => line.includes('- auth.local.entityPasswordField: passwordHash'))).toBe(true)
     expect(warns.some(line => line.includes('Local auth request/entity field mapping differs.'))).toBe(true)

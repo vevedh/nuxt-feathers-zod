@@ -1,12 +1,15 @@
+import { fileURLToPath } from 'node:url'
+import { $fetch, setup } from '@nuxt/test-utils/e2e'
 import { describe, expect, it } from 'vitest'
-import { setup, $fetch } from '@nuxt/test-utils/e2e'
 
-describe('e2e embedded-auth fixture', async () => {
-  await setup({
-    rootDir: 'test/fixtures/embedded-auth',
-    server: true,
-    browser: false,
-  })
+await setup({
+  rootDir: fileURLToPath(new URL('../fixtures/embedded-auth', import.meta.url)),
+  server: true,
+  dev: false,
+  browser: false,
+})
+
+describe('e2e embedded-auth fixture', () => {
 
   it('renders the auth fixture home page', async () => {
     const html = await $fetch<string>('/')

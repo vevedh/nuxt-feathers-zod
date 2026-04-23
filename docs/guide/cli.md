@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.4.138**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.5.0**.
 
 ## Commande d’entrée
 

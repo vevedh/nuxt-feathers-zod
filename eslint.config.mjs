@@ -46,7 +46,7 @@ export default withNuxt(
       'uno.config.ts',
       'package.json',
       'tsconfig.syntax.json',
-      // Transitional release cleanup for 6.4.138: keep CI green while
+      // Transitional release cleanup for 6.5.0: keep CI green while
       // preserving runtime/build coverage. These files remain covered by
       // typecheck, E2E, smoke tarball, docs build, or packaging checks.
       'scripts/**',
