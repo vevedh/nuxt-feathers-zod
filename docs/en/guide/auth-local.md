@@ -1,8 +1,8 @@
-
-> 6.4.133 note: the default local auth mapping is restored to `userId/password`, matching the current NFZ CLI/playground auth-ready baseline in this repository.
 ---
 editLink: false
 ---
+> 6.4.133 note: the default local auth mapping is restored to `userId/password`, matching the current NFZ CLI/playground auth-ready baseline in this repository.
+
 # Local auth (JWT)
 
 When `feathers.auth = true` in embedded mode, the module can use classic Feathers auth:
@@ -83,3 +83,4 @@ curl http://localhost:3000/feathers/users \
 - `users` remains the reference service for embedded auth
 - generate `users` through the CLI
 - avoid enabling `auth` without a detectable `users` service
+

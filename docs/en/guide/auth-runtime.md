@@ -1,8 +1,8 @@
-
-> 6.4.130 note: `ensureReady()` remains the owner of bootstrap readiness, while `reAuthenticate()` no longer forces `ready` directly.
 ---
 editLink: false
 ---
+> 6.4.130 note: `ensureReady()` remains the owner of bootstrap readiness, while `reAuthenticate()` no longer forces `ready` directly.
+
 # Unified auth runtime
 
 Since `6.4.92+`, `nuxt-feathers-zod` provides a unified client auth runtime to reduce drift between:
@@ -191,3 +191,4 @@ For protected NFZ tools:
 - for Keycloak SSO, use `useKeycloakBridge()` when a screen needs an explicit synchronization step before a protected call
 
 > In embedded mode, `useMongoManagementClient()` automatically resolves the Mongo management base path behind the embedded REST prefix. The routes shown in the playground are REST endpoints to call through the NFZ client helpers, not Vue Router pages.
+

@@ -1,8 +1,8 @@
-
-> Note 6.4.133 : le mapping local par défaut revient à `userId/password`, cohérent avec la base auth-ready actuelle CLI/playground dans ce dépôt.
 ---
 editLink: false
 ---
+> Note 6.4.133 : le mapping local par défaut revient à `userId/password`, cohérent avec la base auth-ready actuelle CLI/playground dans ce dépôt.
+
 # Auth locale (JWT)
 
 Quand `feathers.auth = true` en mode embedded, le module peut utiliser l’auth Feathers classique :
@@ -83,3 +83,4 @@ curl http://localhost:3000/feathers/users \
 - `users` reste le service de référence pour l’auth embedded
 - générer `users` via la CLI
 - éviter d’activer `auth` sans service `users` détectable
+

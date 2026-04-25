@@ -229,7 +229,7 @@ async function handleRemoteAuthKeycloakCommand(cwd: string, args: CliContextArgs
         enabled: true,
         payloadMode: 'keycloak',
         strategy: 'jwt',
-        tokenField: 'accessToken',
+        tokenField: 'access_token',
         servicePath: 'authentication',
         reauth: true,
       },
@@ -347,7 +347,7 @@ async function handleInitRemoteCommand(cwd: string, args: CliContextArgs) {
   assertInitRemoteArgs(args, transport, authEnabled)
   const payloadMode = (typeof args.payloadMode === 'string' ? String(args.payloadMode) : 'jwt') as 'jwt' | 'keycloak'
   const strategy = typeof args.strategy === 'string' ? String(args.strategy) : 'jwt'
-  const tokenField = typeof args.tokenField === 'string' ? String(args.tokenField) : 'accessToken'
+  const tokenField = typeof args.tokenField === 'string' ? String(args.tokenField) : (payloadMode === 'keycloak' ? 'access_token' : 'accessToken')
   const servicePath = typeof args.servicePath === 'string' ? String(args.servicePath) : 'authentication'
   const reauth = parseBooleanFlag(args.reauth as string | boolean | undefined, true)
 
@@ -779,6 +779,7 @@ export function createCliCommand() {
     args: {
       dir: { type: 'string', description: 'Templates output directory' },
       force: { type: 'boolean', description: 'Overwrite existing files' },
+      diff: { type: 'boolean', description: 'Preview template overwrite differences before writing' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },
     run: async ({ args }) => {
@@ -843,6 +844,7 @@ export function createCliCommand() {
       tokenField: { type: 'string', description: 'Token field name' },
       servicePath: { type: 'string', description: 'Authentication service path' },
       reauth: { type: 'boolean', description: 'Enable reauthentication' },
+      force: { type: 'boolean', description: 'Overwrite existing config fields when patching nuxt.config' },
       dry: { type: 'boolean', description: 'Dry run without writes' },
     },
     run: async ({ args }) => {

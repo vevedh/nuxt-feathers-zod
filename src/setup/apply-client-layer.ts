@@ -7,6 +7,7 @@ import { addImports, addPlugin, addTemplate, createResolver } from '@nuxt/kit'
 import { detectResolvedMode, isResolvedRemoteAuthEnabled, isResolvedServerEnabled } from '../runtime/options/mode'
 import { getClientTemplates } from '../runtime/templates/client'
 import { resolveTemplateOverrideForFilename } from '../runtime/templates/overrides'
+import { resolveRuntimePath } from './runtime-path'
 import { dedupeStrings } from './utils'
 import { ensurePinia } from './internals/ensure-pinia'
 
@@ -15,6 +16,7 @@ export async function applyClientLayer(options: ResolvedOptions, nuxt: Nuxt): Pr
     return
 
   const resolver = createResolver(import.meta.url)
+  const runtime = (path: string): string => resolveRuntimePath(resolver, path)
   const mode = detectResolvedMode(options)
   const serverEnabled = isResolvedServerEnabled(options)
   const clientOptions = options.client as ClientOptions
@@ -35,14 +37,14 @@ export async function applyClientLayer(options: ResolvedOptions, nuxt: Nuxt): Pr
     )
 
     if (enableAuthBootstrap) {
-      addImports({ from: resolver.resolve('../runtime/stores/auth'), name: 'useAuthStore' })
-      addPlugin({ order: 21, src: resolver.resolve('../runtime/plugins/feathers-auth') })
+      addImports({ from: runtime('stores/auth'), name: 'useAuthStore' })
+      addPlugin({ order: 21, src: runtime('plugins/feathers-auth') })
     }
 
     if (options.keycloak) {
       addPlugin({
         order: 22,
-        src: resolver.resolve('../runtime/plugins/keycloak-sso'),
+        src: runtime('plugins/keycloak-sso'),
         mode: 'client',
       })
     }

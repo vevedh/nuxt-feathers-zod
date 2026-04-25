@@ -14,8 +14,24 @@ function walk(dir, out = []) {
   return out
 }
 
+function findMisplacedYamlFence(src) {
+  if (src.startsWith('---\n')) return -1
+  const lines = src.split(/\r?\n/)
+  const start = lines.findIndex(line => line.trim() === '---')
+  if (start <= 0) return -1
+  const end = lines.findIndex((line, index) => index > start && line.trim() === '---')
+  if (end === -1) return -1
+  const yamlCandidate = lines.slice(start + 1, end)
+  return yamlCandidate.some(line => /^[A-Za-z0-9_-]+:\s/.test(line)) ? start + 1 : -1
+}
+
 function checkFrontmatter(absPath) {
-  const src = readFileSync(absPath, 'utf8')
+  const src = readFileSync(absPath, 'utf8').replace(/^\uFEFF/, '')
+  const misplaced = findMisplacedYamlFence(src)
+  if (misplaced !== -1) {
+    return [`${relative(root, absPath)}:${misplaced}: YAML front matter must start at line 1`]
+  }
+
   if (!src.startsWith('---\n')) return []
   const end = src.indexOf('\n---\n', 4)
   if (end === -1) return [`${relative(root, absPath)}: unterminated YAML front matter`]

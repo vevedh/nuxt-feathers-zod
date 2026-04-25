@@ -177,7 +177,7 @@ Flags overview:
     --auth true|false           (default: false)
     --payloadMode jwt|keycloak  (default: jwt)
     --strategy jwt              (default: jwt)
-    --tokenField accessToken    (default: accessToken)
+    --tokenField accessToken    (default: accessToken, access_token when --payloadMode keycloak)
     --servicePath authentication (default: authentication)
     --reauth true|false         (default: true)
     --force

@@ -1,12 +1,12 @@
-
+---
+editLink: false
+---
 ## Patch 6.4.131
 
 Le résolveur d'authentification préserve désormais les `authStrategies` fournies explicitement dans `nuxt.config.ts` au lieu de réinjecter silencieusement les valeurs par défaut.
 
 > Référence 6.4.133 : pour l'auth locale, les champs par défaut reviennent à `userId/password` et `entityUsernameField/entityPasswordField` suivent le même mapping tant qu'ils ne sont pas surchargés.
----
-editLink: false
----
+
 # Authentification
 
 Le core open source couvre trois scénarios principaux :
@@ -95,3 +95,4 @@ Pour les pages ou outils protégés :
 - attendre `auth.ensureReady()`
 - utiliser `useAuthenticatedRequest()` pour les routes HTTP protégées
 - utiliser `useProtectedService()` pour les services Feathers protégés
+

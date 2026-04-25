@@ -1,8 +1,8 @@
-
-> Note 6.4.130 : `ensureReady()` reste le propriétaire de l'état de bootstrap (`ready`), tandis que `reAuthenticate()` ne le force plus directement.
 ---
 editLink: false
 ---
+> Note 6.4.130 : `ensureReady()` reste le propriétaire de l'état de bootstrap (`ready`), tandis que `reAuthenticate()` ne le force plus directement.
+
 # Runtime auth unifié
 
 Depuis `6.4.92+`, `nuxt-feathers-zod` fournit un runtime auth client unifié pour éviter les dérives entre :
@@ -191,3 +191,4 @@ Pour les outils protégés NFZ :
 - en Keycloak SSO, utiliser `useKeycloakBridge()` si l’écran a besoin d’une synchronisation explicite avant un appel protégé
 
 > En mode embedded, `useMongoManagementClient()` résout automatiquement le base path Mongo derrière le préfixe REST embedded. Les routes affichées dans le playground sont des endpoints REST à appeler via le client NFZ, pas des routes Vue Router.
+

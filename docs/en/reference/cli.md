@@ -9,7 +9,7 @@ Entry command:
 bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Official OSS surface aligned with **v6.4.124**.
+Official OSS surface aligned with **v6.5.0**.
 
 ## Recommended public core
 
@@ -37,7 +37,7 @@ Official OSS surface aligned with **v6.4.124**.
 - `add mongodb-compose`
 
 
-## Doctor in 6.4.124
+## Doctor in 6.5.0
 
 Doctor now highlights embedded local-auth configuration, including:
 
@@ -136,13 +136,16 @@ Detailed flag coverage stays in the [CLI guide](/en/guide/cli).
 <!-- release-version: 6.4.49 -->
 
 
-<!-- release-version: 6.4.124 -->
+<!-- release-version: 6.5.0 -->
 
 
-<!-- release-version: 6.4.124 -->
+<!-- release-version: 6.5.0 -->
 
 
 <!-- release-version: 6.4.125 -->
 
 
 <!-- release-version: 6.5.0 -->
+
+
+<!-- release-version: 6.5.1 -->

@@ -9,7 +9,7 @@ Commande d’entrée :
 bunx nuxt-feathers-zod <command> [args] [--flags]
 ```
 
-Surface officielle OSS alignée sur la version **6.4.124**.
+Surface officielle OSS alignée sur la version **6.5.0**.
 
 ## Noyau public recommandé
 
@@ -62,7 +62,7 @@ bunx nuxt-feathers-zod add middleware is-admin --target policy
 Pour les exemples détaillés, voir le [Guide CLI](/guide/cli#differences-entre-plugin-server-module-module-client-module-hook-policy).
 
 
-## Doctor en 6.4.124
+## Doctor en 6.5.0
 
 Le doctor met maintenant en évidence la configuration d’auth locale embedded :
 
@@ -161,13 +161,16 @@ La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
 <!-- release-version: 6.4.49 -->
 
 
-<!-- release-version: 6.4.124 -->
+<!-- release-version: 6.5.0 -->
 
 
-<!-- release-version: 6.4.124 -->
+<!-- release-version: 6.5.0 -->
 
 
 <!-- release-version: 6.4.125 -->
 
 
 <!-- release-version: 6.5.0 -->
+
+
+<!-- release-version: 6.5.1 -->

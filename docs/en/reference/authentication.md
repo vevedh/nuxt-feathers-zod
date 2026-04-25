@@ -1,12 +1,12 @@
-
+---
+editLink: false
+---
 ## 6.4.131 patch
 
 The authentication resolver now preserves explicit `authStrategies` from `nuxt.config.ts` instead of silently reintroducing the default strategies.
 
 > 6.4.133 reference: local auth defaults are restored to `userId/password`, and `entityUsernameField/entityPasswordField` follow the same mapping unless you override them explicitly.
----
-editLink: false
----
+
 # Authentication
 
 The OSS core covers three main scenarios:
@@ -95,3 +95,4 @@ For protected pages or tools:
 - wait for `auth.ensureReady()`
 - use `useAuthenticatedRequest()` for protected HTTP routes
 - use `useProtectedService()` for protected Feathers services
+

@@ -1,0 +1,8 @@
+This patch fixes a Nitro/esbuild parse error: "Unexpected ','" in generated .nuxt/feathers/server/rbac.ts.
+
+It removes trailing commas and provides a syntax-safe RBAC helper implementation.
+Apply by overwriting the corresponding file in your module source:
+- src/runtime/templates/server/rbac.ts (preferred, template source)
+- src/runtime/server/rbac.ts (fallback if your build copies from runtime directly)
+
+Then rebuild the module and clear your app .nuxt directory.

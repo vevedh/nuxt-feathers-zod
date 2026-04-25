@@ -1,4 +1,6 @@
-
+---
+editLink: false
+---
 ## Patch 6.4.132
 
 NFZ utilise maintenant `app.get('mongoPath')` comme source de vérité unique du base path Mongo admin embedded. Le template `mongodb.ts` ne relit plus `management.basePath` au moment du montage des services ; il initialise `app.get('mongoPath')` une seule fois si nécessaire, puis s'aligne sur cette valeur runtime pour toutes les routes.
@@ -6,9 +8,7 @@ NFZ utilise maintenant `app.get('mongoPath')` comme source de vérité unique du
 ## Patch 6.4.131
 
 Quand `management.auth.enabled = true` et `management.auth.authenticate = false`, NFZ conserve maintenant les métadonnées de sécurité Mongo admin et laisse `requireMongoAdmin()` appliquer la politique correspondante sans imposer une authentification préalable. L'inférence du nom de base Mongo supprime aussi désormais un slash final éventuel.
----
-editLink: false
----
+
 # MongoDB management
 
 `nuxt-feathers-zod` peut exposer une couche **optionnelle** de gestion MongoDB à partir du template embedded `feathers/server/mongodb.ts`.
@@ -128,3 +128,4 @@ When `feathers.database.mongo.management.auth.userProperty` is customized, the g
 ### Mongo admin authentication bridge
 
 Mongo management routes now use the standard Feathers `authenticate(...)` hook before `requireMongoAdmin(...)`. This keeps Mongo admin aligned with the authentication pipeline used by regular protected Feathers services while preserving the dedicated Mongo admin authorization layer. Mongo management auth also exposes `authStrategies` (default `['jwt']`).
+
