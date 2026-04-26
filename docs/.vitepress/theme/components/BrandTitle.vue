@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { useData } from 'vitepress'
-
+import { useData, withBase } from 'vitepress'
 
 const { isDark } = useData()
+
+const logoDark = withBase('/images/plume-dark.png')
+const logoLight = withBase('/images/plume-light.png')
 </script>
 
 <template>
   <div class="vp-brand">
     <img
-      :src="isDark ? 'https://vevedh.github.io/nuxt-feathers-zod/images/plume-dark.png' : 'https://vevedh.github.io/nuxt-feathers-zod/images/plume-light.png'"
+      :src="isDark ? logoDark : logoLight"
       alt="nuxt-feathers-zod"
       class="vp-brand-logo"
     >
