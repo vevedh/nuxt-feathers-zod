@@ -18,7 +18,7 @@ Remote mode configures **only the Feathers client** to point to an external serv
 bunx nuxi@latest init my-nfz-remote
 cd my-nfz-remote
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport socketio --force
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove

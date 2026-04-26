@@ -6,8 +6,7 @@ hero:
   text: "FeathersJS v5 + Zod for Nuxt 4"
   tagline: "Un module Nuxt backend-first pour embarquer Feathers dans Nitro ou connecter un client Feathers à une API distante, avec un workflow CLI-first propre à publier et maintenir."
   image:
-    light: /nuxt-feathers-zod/images/plume-light.svg
-    dark: /nuxt-feathers-zod/images/plume-dark.svg
+    src: /images/plume-dark.png
     alt: Logo plume
   actions:
     - theme: brand
@@ -60,7 +59,7 @@ C’est un **socle Nuxt 4 + Feathers v5** pour construire une architecture full-
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users

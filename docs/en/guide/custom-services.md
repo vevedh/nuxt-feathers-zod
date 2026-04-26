@@ -20,7 +20,7 @@ This is the right choice for:
 bunx nuxi@latest init my-nfz-actions
 cd my-nfz-actions
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview --docs

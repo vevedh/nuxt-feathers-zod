@@ -88,7 +88,7 @@ bunx nuxt-feathers-zod doctor
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users
@@ -101,7 +101,7 @@ bun dev
 bunx nuxi@latest init my-nfz-remote
 cd my-nfz-remote
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
@@ -174,3 +174,9 @@ La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
 
 
 <!-- release-version: 6.5.9 -->
+
+
+<!-- release-version: 6.5.16 -->
+
+
+<!-- release-version: 6.5.17 -->

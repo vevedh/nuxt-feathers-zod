@@ -2,50 +2,17 @@
 import { useData, withBase } from 'vitepress'
 
 const { isDark } = useData()
-
-const logoDark = withBase('/images/plume-dark.svg')
-const logoLight = withBase('/images/plume-light.svg')
 </script>
 
 <template>
-  <div class="vp-brand">
+  <a class="vp-brand" :href="withBase('/')" aria-label="nuxt-feathers-zod home">
     <img
-      :src="isDark ? logoDark : logoLight"
-      alt="nuxt-feathers-zod"
+      :src="withBase(isDark ? '/images/plume-dark.png' : '/images/plume-light.png')"
+      alt=""
       class="vp-brand-logo"
     >
-
     <span class="vp-brand-title">
-      nuxt-feathers-
-      <span class="vp-brand-zod">zod</span>
+      <span class="vp-brand-main">nuxt-feathers-</span><span class="vp-brand-zod">zod</span>
     </span>
-  </div>
+  </a>
 </template>
-
-<style scoped>
-.vp-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.vp-brand-logo {
-  height: 28px;
-  width: auto;
-}
-
-.vp-brand-title {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-size: 1rem;
-  color: var(--vp-c-text-1);
-}
-
-.vp-brand-zod {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-style: italic;
-}
-</style>

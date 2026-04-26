@@ -24,7 +24,7 @@ This page shows a **small Nuxt 4 app** using:
 bunx nuxi@latest init my-nfz-remote-keycloak
 cd my-nfz-remote-keycloak
 bun install
-bun add nuxt-feathers-zod feathers-pinia keycloak-js
+bun add nuxt-feathers-zod keycloak-js
 bun add -D @pinia/nuxt
 ```
 

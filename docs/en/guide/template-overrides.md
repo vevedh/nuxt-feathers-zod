@@ -11,7 +11,7 @@ Overrides let you replace some templates generated under `.nuxt/feathers/**` wit
 bunx nuxi@latest init my-nfz-overrides
 cd my-nfz-overrides
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod init templates --dir feathers/templates

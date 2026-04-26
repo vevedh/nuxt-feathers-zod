@@ -26,7 +26,7 @@ L'objectif est de fournir un scénario simple, concret et directement réutilisa
 bunx nuxi@latest init my-nfz-remote-keycloak
 cd my-nfz-remote-keycloak
 bun install
-bun add nuxt-feathers-zod feathers-pinia keycloak-js
+bun add nuxt-feathers-zod keycloak-js
 bun add -D @pinia/nuxt
 ```
 

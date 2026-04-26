@@ -3,6 +3,7 @@ import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import BrandTitle from './components/BrandTitle.vue'
 import BrandTitleAfter from './components/BrandTitleAfter.vue'
+import './style.css'
 
 export default {
   extends: DefaultTheme,
@@ -11,5 +12,5 @@ export default {
       'nav-bar-title-before': () => h(BrandTitle),
       'nav-bar-title-after': () => h(BrandTitleAfter),
     })
-  }
+  },
 } satisfies Theme

@@ -15,7 +15,7 @@ Le parcours recommandé reste :
 bunx nuxi@latest init my-nfz-services
 cd my-nfz-services
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service articles --adapter mongodb --collection articles --idField _id --docs

@@ -5,7 +5,7 @@ editLink: false
 
 La CLI `bunx nuxt-feathers-zod` est la **méthode officielle** pour initialiser une app Nuxt 4, générer les artefacts du module et diagnostiquer un projet existant.
 
-Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.5.11**.
+Cette page aligne la documentation publique sur la surface CLI OSS stabilisée pour la release **6.5.17**.
 
 ## Commande d’entrée
 
@@ -302,7 +302,7 @@ bunx nuxt-feathers-zod doctor
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users
@@ -315,7 +315,7 @@ bun dev
 bunx nuxi@latest init my-nfz-auth
 cd my-nfz-auth
 bun install
-bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force --auth --swagger
 bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod --collection users --idField _id --docs
@@ -331,7 +331,7 @@ bun dev
 bunx nuxi@latest init my-nfz-remote
 cd my-nfz-remote
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove

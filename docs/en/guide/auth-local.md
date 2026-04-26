@@ -17,7 +17,7 @@ When `feathers.auth = true` in embedded mode, the module can use classic Feather
 bunx nuxi@latest init my-nfz-auth
 cd my-nfz-auth
 bun install
-bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force --auth --swagger
 bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id --docs

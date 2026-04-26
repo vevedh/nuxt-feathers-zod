@@ -52,7 +52,7 @@ Use NFZ when you want:
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users
@@ -71,7 +71,7 @@ Those four rules avoid the most common scan, auth entity and export mismatches.
 ## Install
 
 ```bash
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 ```
 
@@ -117,3 +117,9 @@ MIT
 
 
 <!-- release-version: 6.5.11 -->
+
+
+<!-- release-version: 6.5.16 -->
+
+
+<!-- release-version: 6.5.17 -->

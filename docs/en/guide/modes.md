@@ -22,7 +22,7 @@ The Feathers server runs **inside the same Nuxt 4 app**.
 bunx nuxi@latest init my-nfz-embedded
 cd my-nfz-embedded
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --framework express --force
 bunx nuxt-feathers-zod add service messages
@@ -53,7 +53,7 @@ Nuxt does not start any Feathers server. It configures a **client** to an extern
 bunx nuxi@latest init my-nfz-remote
 cd my-nfz-remote
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove

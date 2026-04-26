@@ -19,7 +19,7 @@ Le stockage est local sur disque, dans un dossier configurable. Le starter est p
 bunx nuxi@latest init my-nfz-files
 cd my-nfz-files
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 ```
 

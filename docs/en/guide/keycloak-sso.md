@@ -11,7 +11,7 @@ This flow makes **Keycloak the browser-side identity source**, then materializes
 bunx nuxi@latest init my-nfz-keycloak
 cd my-nfz-keycloak
 bun install
-bun add nuxt-feathers-zod feathers-pinia keycloak-js
+bun add nuxt-feathers-zod keycloak-js
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --auth true --payloadMode keycloak --force
 bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp

@@ -13,7 +13,7 @@ Le module injecte un client Feathers dans Nuxt et fournit une base cohérente po
 bunx nuxi@latest init my-nfz-frontend
 cd my-nfz-frontend
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
 bunx nuxt-feathers-zod add remote-service articles --path articles --methods find,get

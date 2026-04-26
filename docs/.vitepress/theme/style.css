@@ -1,19 +1,14 @@
 :root {
-  /* Brand (close to Nuxt UI docs vibe) */
-  --vp-c-brand-1: #2563eb; /* blue-600 */
-  --vp-c-brand-2: #7c3aed; /* violet-600 */
-  --vp-c-brand-3: #0ea5e9; /* sky-500 */
-
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #7c3aed;
+  --vp-c-brand-3: #0ea5e9;
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: linear-gradient(90deg, var(--vp-c-brand-1), var(--vp-c-brand-2));
-
-  /* Softer cards & surfaces */
   --vp-c-bg: #ffffff;
   --vp-c-bg-alt: #f8fafc;
   --vp-c-bg-soft: #f1f5f9;
   --vp-c-divider: rgba(2, 6, 23, 0.08);
   --vp-c-divider-light: rgba(2, 6, 23, 0.06);
-
   --vp-custom-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
 }
 
@@ -23,54 +18,64 @@
   --vp-c-bg-soft: #111c33;
   --vp-c-divider: rgba(148, 163, 184, 0.18);
   --vp-c-divider-light: rgba(148, 163, 184, 0.12);
-
   --vp-custom-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-/* Hide default title/logo (we render our own) */
-.VPNavBarTitle .title,
-.VPNavBarTitle .logo {
+/* Stable VitePress navbar branding.
+   The custom brand is rendered through nav-bar-title-before.
+   Keep the title container visible and hide only the default VitePress logo/text. */
+.VPNavBarTitle .title {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+.VPNavBarTitle .title > .logo,
+.VPNavBarTitle .title > span:not(.vp-brand-title) {
   display: none !important;
 }
 
-/* Branded header (plume + gradient "zod") */
-.nfz-brand {
+.vp-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.6rem;
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vp-brand:hover {
+  color: var(--vp-c-text-1);
   text-decoration: none;
 }
 
-.nfz-brand-logo {
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.12);
+.vp-brand-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
-.dark .nfz-brand-logo {
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-}
-
-.nfz-brand-title {
+.vp-brand-title {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1;
-  font-size: 14px;
 }
 
-.nfz-brand-strong {
+.vp-brand-main {
   color: var(--vp-c-text-1);
-  font-style: italic;
 }
 
-.nfz-brand-grad {
-  background: linear-gradient(90deg, var(--vp-c-brand-1), var(--vp-c-brand-2));
+.vp-brand-zod {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-style: italic;
 }
 
-/* Home: make it feel like Nuxt UI template (rounded, airy) */
 .VPHome {
   padding-bottom: 40px;
 }
@@ -99,7 +104,6 @@
   letter-spacing: -0.015em;
 }
 
-/* Content cards like Nuxt UI */
 .VPDoc .content-container {
   padding-top: 8px;
 }
@@ -108,22 +112,12 @@
   letter-spacing: -0.025em;
 }
 
-/* Sidebar: slightly softer */
 .VPSidebar {
   background: color-mix(in srgb, var(--vp-c-bg) 92%, var(--vp-c-bg-alt));
 }
 
-/* Links: subtle underline on hover */
 .VPLink:hover {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
-}
-
-/* Hide default VitePress title text next to our BrandTitle */
-.VPNavBarTitle .title > span {
-  display: none !important;
-}
-.VPNavBarTitle .title {
-  display: none !important;
 }

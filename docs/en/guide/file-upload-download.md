@@ -19,7 +19,7 @@ It uses local disk storage and is meant as a **clear self-hosted starter** for N
 bunx nuxi@latest init my-nfz-files
 cd my-nfz-files
 bun install
-bun add nuxt-feathers-zod feathers-pinia
+bun add nuxt-feathers-zod
 bun add -D @pinia/nuxt
 ```
 

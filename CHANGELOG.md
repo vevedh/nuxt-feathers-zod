@@ -1,5 +1,26 @@
 # Changelog
 
+## 6.5.17 - Docs frontmatter sanity scope fix
+
+- Corrige `scripts/check-docs-frontmatter.mjs` pour ne plus analyser `docs/node_modules/**` ni les répertoires de cache/build VitePress.
+- Aligne `verify:sanity` avec le comportement attendu après `bun install` : seuls les fichiers Markdown maintenus par le projet sont contrôlés.
+- Met à jour `PROMPT_CONTEXT.md` avec l’analyse complète post-`verify:all`, le diagnostic et la règle de maintenance associée.
+
+
+## 6.5.16
+
+- Added root PROMPT_CONTEXT.md as durable development handoff context for future chats.
+- Added AI_CONTEXT/CLI_REFERENCE.md and aligned release metadata checks on 6.5.16.
+- Re-audited the complete archive structure, CLI surface, docs frontmatter, runtime option files and client ESM interop guards.
+- Stabilised VitePress navbar branding by using nav-bar-title-before/nav-bar-title-after slots and avoiding full .VPNavBarTitle .title hiding.
+- Kept local VitePress branding assets for navbar and home hero.
+
+## 6.5.15
+
+- Repacked from the complete 6.5.11 source tree to restore missing runtime option files.
+- Fixed VitePress navbar branding and local hero/logo assets.
+- Aligned standard install snippets with optional Feathers-Pinia usage.
+
 ## 6.5.11
 
 - fix browser/tarball runtime: stop forcing @feathersjs/* CommonJS packages into Vite optimizeDeps for the native NFZ client

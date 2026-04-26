@@ -11,7 +11,7 @@ The module supports `feathers-swagger` in legacy mode.
 bunx nuxi@latest init my-nfz-swagger
 cd my-nfz-swagger
 bun install
-bun add nuxt-feathers-zod feathers-pinia feathers-swagger swagger-ui-dist
+bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
 bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force --swagger
 bunx nuxt-feathers-zod add service users --docs

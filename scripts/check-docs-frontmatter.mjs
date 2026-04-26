@@ -4,11 +4,25 @@ import { join, relative } from 'node:path'
 const root = process.cwd()
 const docsRoot = join(root, 'docs')
 
+const IGNORED_DIRECTORIES = new Set([
+  'node_modules',
+  '.vitepress/cache',
+  '.vitepress/dist',
+  '.vitepress/.temp',
+])
+
+function shouldIgnoreDirectory(absPath) {
+  const rel = relative(docsRoot, absPath).replace(/\\/g, '/')
+  return IGNORED_DIRECTORIES.has(rel) || rel.split('/').includes('node_modules')
+}
+
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const abs = join(dir, name)
     const st = statSync(abs)
-    if (st.isDirectory()) walk(abs, out)
+    if (st.isDirectory()) {
+      if (!shouldIgnoreDirectory(abs)) walk(abs, out)
+    }
     else if (st.isFile() && name.endsWith('.md')) out.push(abs)
   }
   return out
