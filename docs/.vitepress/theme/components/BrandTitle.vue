@@ -3,8 +3,8 @@ import { useData, withBase } from 'vitepress'
 
 const { isDark } = useData()
 
-const logoDark = withBase('/images/plume-dark.png')
-const logoLight = withBase('/images/plume-light.png')
+const logoDark = withBase('/images/plume-dark.svg')
+const logoLight = withBase('/images/plume-light.svg')
 </script>
 
 <template>

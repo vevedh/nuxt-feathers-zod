@@ -6,7 +6,8 @@ hero:
   text: "FeathersJS v5 + Zod for Nuxt 4"
   tagline: "Un module Nuxt backend-first pour embarquer Feathers dans Nitro ou connecter un client Feathers à une API distante, avec un workflow CLI-first propre à publier et maintenir."
   image:
-    src: /images/plume-dark.png
+    light: /nuxt-feathers-zod/images/plume-light.svg
+    dark: /nuxt-feathers-zod/images/plume-dark.svg
     alt: Logo plume
   actions:
     - theme: brand
