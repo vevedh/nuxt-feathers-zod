@@ -1,9 +1,23 @@
 // grabbed from feathers-pinia
 import type { Params } from '@feathersjs/feathers'
-import { FetchClient } from '@feathersjs/rest-client'
+import * as restClientModule from '@feathersjs/rest-client'
+
+interface FetchClientLike {
+  options: { headers?: Record<string, string> }
+  connection: { raw: (url: string, options: any) => Promise<{ _data: any, status: number }> }
+  request(options: any, params: Params): Promise<any>
+}
+
+type FetchClientConstructor = new (...args: any[]) => FetchClientLike
+
+const FetchClientBase = ((restClientModule as any).FetchClient ?? (restClientModule as any).default?.FetchClient) as FetchClientConstructor
+
+if (!FetchClientBase) {
+  throw new TypeError('[nuxt-feathers-zod] Unable to resolve @feathersjs/rest-client FetchClient.')
+}
 
 // A feathers-rest transport adapter for https://github.com/unjs/ofetch
-export class OFetch extends FetchClient {
+export class OFetch extends FetchClientBase {
   override async request(options: any, params: Params) {
     const fetchOptions = Object.assign({}, options, (params as any).connection)
 

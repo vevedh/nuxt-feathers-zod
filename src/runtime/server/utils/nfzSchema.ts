@@ -1,13 +1,13 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs'
+import { join, resolve, dirname, isAbsolute } from 'node:path'
 
-export interface FieldMeta {
+export type FieldMeta = {
   type: string
   required?: boolean
   array?: boolean
 }
 
-export interface ServiceSchemaInfo {
+export type ServiceSchemaInfo = {
   service: string
   servicesDir: string
   schemaFile: string
@@ -39,20 +39,18 @@ export function normalizeServiceName(name: string) {
   return name.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-')
 }
 
+
 function resolveServicesDir(projectRoot: string, dir: string) {
   // Support absolute paths (POSIX/Windows) and UNC paths on Windows
-  if (isAbsolute(dir) || dir.startsWith('\\\\'))
-    return dir
+  if (isAbsolute(dir) || dir.startsWith('\\\\')) return dir
   return join(projectRoot, dir)
 }
 export function findProjectRoot(from: string) {
   let cur = resolve(from)
   for (let i = 0; i < 12; i++) {
-    if (existsSync(join(cur, 'package.json')))
-      return cur
+    if (existsSync(join(cur, 'package.json'))) return cur
     const parent = dirname(cur)
-    if (parent === cur)
-      break
+    if (parent === cur) break
     cur = parent
   }
   return resolve(from)
@@ -61,24 +59,18 @@ export function findProjectRoot(from: string) {
 function shallowScanForSchema(rootDir: string, serviceKebab: string, maxDepth = 5): string | null {
   const target = `${serviceKebab}.schema.ts`
   function walk(dir: string, depth: number): string | null {
-    if (depth > maxDepth)
-      return null
+    if (depth > maxDepth) return null
     let entries: string[] = []
-    try { entries = readdirSync(dir) }
-    catch { return null }
+    try { entries = readdirSync(dir) } catch { return null }
     for (const name of entries) {
-      if (IGNORE_DIRS.has(name))
-        continue
+      if (IGNORE_DIRS.has(name)) continue
       const full = join(dir, name)
       let st
-      try { st = statSync(full) }
-      catch { continue }
+      try { st = statSync(full) } catch { continue }
       if (st.isDirectory()) {
         const hit = walk(full, depth + 1)
-        if (hit)
-          return hit
-      }
-      else if (st.isFile() && name === target) {
+        if (hit) return hit
+      } else if (st.isFile() && name === target) {
         return full
       }
     }
@@ -119,13 +111,11 @@ export function readManifest(projectRoot: string, servicesDirs: string[]) {
   // Prefer first servicesDir as canonical
   const baseDir = servicesDirs[0] ?? 'services'
   const manifestPath = join(projectRoot, baseDir, '.nfz', 'manifest.json')
-  if (!existsSync(manifestPath))
-    return { manifest: null as any, manifestPath: null as string | null }
+  if (!existsSync(manifestPath)) return { manifest: null as any, manifestPath: null as string | null }
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     return { manifest, manifestPath }
-  }
-  catch {
+  } catch {
     return { manifest: null as any, manifestPath }
   }
 }
@@ -147,26 +137,20 @@ export function listServices(projectRoot: string, servicesDirs: string[]) {
   // 2) scan all servicesDirs for directories (fallback / preloading)
   for (const dir of servicesDirs) {
     const root = resolveServicesDir(projectRoot, dir)
-    if (!existsSync(root))
-      continue
+    if (!existsSync(root)) continue
 
     let entries: string[] = []
-    try { entries = readdirSync(root) }
-    catch { continue }
+    try { entries = readdirSync(root) } catch { continue }
 
     for (const entry of entries) {
-      if (entry.startsWith('.'))
-        continue
+      if (entry.startsWith('.')) continue
       const full = join(root, entry)
       let st
-      try { st = statSync(full) }
-      catch { continue }
-      if (!st.isDirectory())
-        continue
+      try { st = statSync(full) } catch { continue }
+      if (!st.isDirectory()) continue
 
       const serviceName = normalizeServiceName(entry)
-      if (seen.has(serviceName))
-        continue
+      if (seen.has(serviceName)) continue
       out.push({ name: serviceName, source: 'scan' })
       seen.add(serviceName)
     }
@@ -177,6 +161,7 @@ export function listServices(projectRoot: string, servicesDirs: string[]) {
   const scans = out.slice(manifestCount).sort((a, b) => a.name.localeCompare(b.name))
   return [...out.slice(0, manifestCount), ...scans]
 }
+
 
 function inferType(expr: string): FieldMeta {
   const meta: FieldMeta = { type: 'string', required: true, array: false }
@@ -192,20 +177,13 @@ function inferType(expr: string): FieldMeta {
     e = arrMatch[1].trim()
   }
 
-  if (e.startsWith('objectIdSchema'))
-    meta.type = 'objectId'
-  else if (e.startsWith('z.string'))
-    meta.type = 'string'
-  else if (e.startsWith('z.number().int'))
-    meta.type = 'int'
-  else if (e.startsWith('z.number'))
-    meta.type = 'number'
-  else if (e.startsWith('z.boolean'))
-    meta.type = 'boolean'
-  else if (e.startsWith('z.coerce.date') || e.startsWith('z.date'))
-    meta.type = 'date'
-  else if (e.startsWith('z.any') || e.startsWith('z.unknown'))
-    meta.type = 'json'
+  if (e.startsWith('objectIdSchema')) meta.type = 'objectId'
+  else if (e.startsWith('z.string')) meta.type = 'string'
+  else if (e.startsWith('z.number().int')) meta.type = 'int'
+  else if (e.startsWith('z.number')) meta.type = 'number'
+  else if (e.startsWith('z.boolean')) meta.type = 'boolean'
+  else if (e.startsWith('z.coerce.date') || e.startsWith('z.date')) meta.type = 'date'
+  else if (e.startsWith('z.any') || e.startsWith('z.unknown')) meta.type = 'json'
   else meta.type = 'string'
 
   return meta
@@ -213,14 +191,13 @@ function inferType(expr: string): FieldMeta {
 
 export function parseSchemaFile(schemaFile: string): { schemaConst: string | null, fields: Record<string, FieldMeta> } {
   const src = readFileSync(schemaFile, 'utf-8')
-  const m = src.match(/export const (\w+)Schema\s*=\s*z\.object\(\{\s*([\s\S]*?)\}\)\s*/)
-  if (!m)
-    return { schemaConst: null, fields: {} }
+  const m = src.match(/export const (\w+)Schema\s*=\s*z\.object\(\{\s*([\s\S]*?)\}\)\s*/m)
+  if (!m) return { schemaConst: null, fields: {} }
   const schemaConst = m[1]
   const body = m[2]
   const fields: Record<string, FieldMeta> = {}
 
-  const lineRe = /^\s*([A-Z_]\w*)\s*:\s*([^,]+),?\s*$/gim
+  const lineRe = /^\s*([A-Za-z_]\w*)\s*:\s*([^,]+),?\s*$/gm
   let lm
   while ((lm = lineRe.exec(body)) !== null) {
     const key = lm[1]
@@ -268,8 +245,7 @@ export function getServiceInfo(projectRoot: string, servicesDirs: string[], serv
 }
 
 function sameMeta(a?: FieldMeta, b?: FieldMeta) {
-  if (!a || !b)
-    return false
+  if (!a || !b) return false
   return a.type === b.type
     && (a.required !== false) === (b.required !== false)
     && (!!a.array) === (!!b.array)
@@ -285,14 +261,11 @@ export function diffFields(manifestFields: Record<string, FieldMeta> | null, sch
   const sKeys = new Set(Object.keys(schemaFields))
 
   for (const k of mKeys) {
-    if (!sKeys.has(k))
-      onlyInManifest.push(k)
-    else if (!sameMeta(mf[k], schemaFields[k]))
-      changed.push(k)
+    if (!sKeys.has(k)) onlyInManifest.push(k)
+    else if (!sameMeta(mf[k], schemaFields[k])) changed.push(k)
   }
   for (const k of sKeys) {
-    if (!mKeys.has(k))
-      onlyInSchema.push(k)
+    if (!mKeys.has(k)) onlyInSchema.push(k)
   }
 
   onlyInManifest.sort()
@@ -322,8 +295,7 @@ function zodExpr(meta: FieldMeta): string {
 }
 
 function ensureDir(path: string) {
-  if (!existsSync(path))
-    mkdirSync(path, { recursive: true })
+  if (!existsSync(path)) mkdirSync(path, { recursive: true })
 }
 
 export function writeManifestFields(projectRoot: string, servicesDirs: string[], serviceName: string, fields: Record<string, FieldMeta>) {
@@ -334,25 +306,21 @@ export function writeManifestFields(projectRoot: string, servicesDirs: string[],
 
   let manifest: any = { services: {} }
   if (existsSync(manifestPath)) {
-    try { manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) }
-    catch {}
+    try { manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) } catch {}
   }
-  if (!manifest.services)
-    manifest.services = {}
-  if (!manifest.services[serviceName])
-    manifest.services[serviceName] = {}
+  if (!manifest.services) manifest.services = {}
+  if (!manifest.services[serviceName]) manifest.services[serviceName] = {}
 
   manifest.services[serviceName].fields = fields
 
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8')
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf-8')
   return manifestPath
 }
 
 export function applySchemaFields(schemaFile: string, fields: Record<string, FieldMeta>, idField?: string) {
   const src = readFileSync(schemaFile, 'utf-8')
   const parsed = parseSchemaFile(schemaFile)
-  if (!parsed.schemaConst)
-    throw new Error('Could not locate `export const <name>Schema = z.object({ ... })` in schema file')
+  if (!parsed.schemaConst) throw new Error('Could not locate `export const <name>Schema = z.object({ ... })` in schema file')
 
   const schemaConst = parsed.schemaConst
   const newObjectBody = Object.entries(fields).map(([k, meta]) => `  ${k}: ${zodExpr(meta)},`).join('\n')

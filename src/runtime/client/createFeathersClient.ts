@@ -1,5 +1,4 @@
 import { useRequestURL, useRuntimeConfig } from '#app'
-import { feathers } from '@feathersjs/feathers'
 
 import type { ClientApplication } from '../client'
 import type { NfzClientPluginConfig } from './types'
@@ -9,6 +8,124 @@ import { authentication } from '#build/feathers/client/authentication'
 import { getPublicClientMode, getPublicRemoteConfig } from '../utils/config'
 
 const STANDARD_METHODS = new Set(['find', 'get', 'create', 'update', 'patch', 'remove'])
+
+type Listener = (...args: any[]) => void
+
+type DefaultServiceFactory = (path: string) => any
+
+function normalizeServicePath(path: string): string {
+  return String(path || '').replace(/^\/+/, '').replace(/\/+$/, '')
+}
+
+class NativeFeathersClient {
+  private readonly settings = new Map<string, any>()
+  private readonly services = new Map<string, any>()
+  private readonly listeners = new Map<string, Set<Listener>>()
+  private defaultServiceFactory: DefaultServiceFactory | null = null
+
+  authentication?: any
+  authenticate?: (payload: any, params?: any) => Promise<any>
+  reAuthenticate?: (force?: boolean, strategy?: string) => Promise<any>
+  logout?: (params?: any) => Promise<any>
+
+  configure(plugin: any): this {
+    if (typeof plugin === 'function')
+      plugin(this)
+    else if (plugin && typeof plugin.configure === 'function')
+      plugin.configure(this)
+    return this
+  }
+
+  set(name: string, value: any): this {
+    this.settings.set(name, value)
+    ;(this as any)[name] = value
+    return this
+  }
+
+  get(name: string): any {
+    return this.settings.get(name)
+  }
+
+  use(path: string, service: any): this {
+    const normalized = normalizeServicePath(path)
+    this.services.set(normalized, service)
+    return this
+  }
+
+  service(path: string): any {
+    const normalized = normalizeServicePath(path)
+    const existing = this.services.get(normalized)
+    if (existing)
+      return existing
+
+    if (this.defaultServiceFactory) {
+      const service = this.defaultServiceFactory(normalized)
+      this.services.set(normalized, service)
+      return service
+    }
+
+    const connection = this.get('connection')
+    if (connection && typeof connection.service === 'function') {
+      const service = connection.service(normalized)
+      this.services.set(normalized, service)
+      return service
+    }
+
+    throw new Error(`[nuxt-feathers-zod] Service not found: ${normalized}`)
+  }
+
+  setDefaultService(factory: DefaultServiceFactory): this {
+    this.defaultServiceFactory = factory
+    return this
+  }
+
+  on(event: string, listener: Listener): this {
+    const listeners = this.listeners.get(event) || new Set<Listener>()
+    listeners.add(listener)
+    this.listeners.set(event, listeners)
+    return this
+  }
+
+  once(event: string, listener: Listener): this {
+    const wrapped: Listener = (...args) => {
+      this.off(event, wrapped)
+      listener(...args)
+    }
+    return this.on(event, wrapped)
+  }
+
+  off(event: string, listener?: Listener): this {
+    if (!listener) {
+      this.listeners.delete(event)
+      return this
+    }
+
+    const listeners = this.listeners.get(event)
+    listeners?.delete(listener)
+    return this
+  }
+
+  emit(event: string, ...args: any[]): boolean {
+    const listeners = this.listeners.get(event)
+    if (!listeners?.size)
+      return false
+
+    for (const listener of listeners)
+      listener(...args)
+
+    return true
+  }
+}
+
+function createFeathersApplication(): ClientApplication {
+  // Do not import @feathersjs/feathers in browser runtime files.
+  // The official Feathers v5 package currently resolves to CommonJS in some
+  // Nuxt/Vite tarball scenarios, especially with Nuxt 4.1.x, which can expose
+  // raw `exports` to the browser. This minimal client implements the subset of
+  // Feathers application APIs that NFZ generated clients need: configure, use,
+  // service, set/get, auth helpers and basic event emitter methods.
+  return new NativeFeathersClient() as unknown as ClientApplication
+}
 
 export function createFeathersClient(config: NfzClientPluginConfig): ClientApplication {
   const runtime = useRuntimeConfig()
@@ -34,7 +151,7 @@ export function createFeathersClient(config: NfzClientPluginConfig): ClientAppli
         transport: remoteConfig?.transport,
       }
 
-  const feathersClient: ClientApplication = feathers()
+  const feathersClient = createFeathersApplication()
   feathersClient.configure(connection(baseUrl, overrides))
 
   if (config.authEnabled)

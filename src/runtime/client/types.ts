@@ -1,5 +1,3 @@
-import type { CreatePiniaClientConfig } from 'feathers-pinia'
-
 import type { FeathersClientPlugin } from '../client'
 
 export interface RemoteServiceDescriptor {
@@ -13,6 +11,6 @@ export interface NfzClientPluginConfig {
   services: FeathersClientPlugin[]
   plugins: FeathersClientPlugin[]
   remoteServices: RemoteServiceDescriptor[]
-  piniaOptions?: CreatePiniaClientConfig | Record<string, unknown> | false
+  piniaOptions?: Record<string, unknown> | false
   debug?: boolean
 }

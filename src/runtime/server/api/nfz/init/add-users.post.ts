@@ -1,5 +1,5 @@
+import { defineEventHandler, readBody, setResponseStatus } from 'h3'
 import { spawn } from 'node:child_process'
-import { readBody } from 'h3'
 
 let running = false
 
@@ -19,9 +19,9 @@ export default defineEventHandler(async (event) => {
     return { ok: false, message: 'Init step is already running (locked)' }
   }
 
-  const body = await readBody(event)
-  const usernameField = String(body?.usernameField || 'userId').trim() || 'userId'
-  const passwordField = String(body?.passwordField || 'password').trim() || 'password'
+  const body = await readBody(event) as any
+  // The add service CLI currently uses the local auth defaults userId/password.
+  // usernameField/passwordField are kept in the request body contract for future extension.
 
   running = true
   try {
@@ -35,10 +35,6 @@ export default defineEventHandler(async (event) => {
       '--auth',
       '--adapter',
       String(body?.adapter || 'mongodb'),
-      '--localUsernameField',
-      usernameField,
-      '--localPasswordField',
-      passwordField,
     ]
 
     const child = spawn(process.platform === 'win32' ? 'bunx.cmd' : 'bunx', args, {
@@ -50,18 +46,12 @@ export default defineEventHandler(async (event) => {
     const cap = 64 * 1024
     let out = ''
     let err = ''
-    child.stdout?.on('data', (d) => {
-      if (out.length < cap)
-        out += String(d)
-    })
-    child.stderr?.on('data', (d) => {
-      if (err.length < cap)
-        err += String(d)
-    })
+    child.stdout?.on('data', (d) => { if (out.length < cap) out += String(d) })
+    child.stderr?.on('data', (d) => { if (err.length < cap) err += String(d) })
 
     const code: number = await new Promise((resolve, reject) => {
       child.on('error', reject)
-      child.on('close', c => resolve(c ?? 0))
+      child.on('close', (c) => resolve(c ?? 0))
     })
 
     if (code !== 0) {
@@ -75,12 +65,10 @@ export default defineEventHandler(async (event) => {
       stdout: out,
       stderr: err,
     }
-  }
-  catch (e: any) {
+  } catch (e: any) {
     setResponseStatus(event, 500)
     return { ok: false, message: e?.message || String(e) }
-  }
-  finally {
+  } finally {
     running = false
   }
 })

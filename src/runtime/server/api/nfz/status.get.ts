@@ -1,9 +1,10 @@
+import { defineEventHandler } from 'h3'
 import { existsSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
-import { useRuntimeConfig } from '#imports'
+import { join, resolve, isAbsolute } from 'node:path'
 import { readRbacFile } from '../../rbac/rbacFile'
-import { getNfzConsoleConfig } from '../../utils/nfzConsoleContext'
 import { getProjectRootFromNuxt } from '../../utils/nfzPaths'
+import { getNfzConsoleConfig } from '../../utils/nfzConsoleContext'
+import { useRuntimeConfig } from '#imports'
 
 type StatusState =
   | 'empty'
@@ -29,20 +30,20 @@ export default defineEventHandler(async (event) => {
 
   const servicesDirsAbs = servicesDirs.map((d: string) => absDir(projectRoot, d))
 
-  const usersSchemaPaths = servicesDirsAbs.flatMap(d => ([
+  const usersSchemaPaths = servicesDirsAbs.flatMap((d: string) => ([
     join(d, 'users', 'users.schema.ts'),
     join(d, 'users', 'users.schema.js'),
     join(d, 'users', 'users.schema.mts'),
   ]))
 
-  const usersServicePaths = servicesDirsAbs.flatMap(d => ([
+  const usersServicePaths = servicesDirsAbs.flatMap((d: string) => ([
     join(d, 'users', 'users.ts'),
     join(d, 'users', 'users.js'),
     join(d, 'users', 'users.mts'),
   ]))
 
-  const hasUsersSchema = usersSchemaPaths.some(p => existsSync(p))
-  const hasUsersService = usersServicePaths.some(p => existsSync(p))
+  const hasUsersSchema = usersSchemaPaths.some((p: string) => existsSync(p))
+  const hasUsersService = usersServicePaths.some((p: string) => existsSync(p))
   const hasUsers = hasUsersSchema || hasUsersService
 
   const keycloakEnabled = !!feathers.keycloak
@@ -50,12 +51,9 @@ export default defineEventHandler(async (event) => {
   const authProvider = keycloakEnabled ? 'keycloak' : (authEnabled ? 'local' : null)
 
   let state: StatusState = 'unknown'
-  if (!hasUsers && authEnabled && !keycloakEnabled)
-    state = 'needs-users'
-  else if (!hasUsers && !authEnabled)
-    state = 'empty'
-  else if (hasUsers || keycloakEnabled)
-    state = 'ready'
+  if (!hasUsers && authEnabled && !keycloakEnabled) state = 'needs-users'
+  else if (!hasUsers && !authEnabled) state = 'empty'
+  else if (hasUsers || keycloakEnabled) state = 'ready'
 
   const rbacFile = readRbacFile(projectRoot, servicesDirs)
   const rbac = {
@@ -80,7 +78,7 @@ export default defineEventHandler(async (event) => {
     rbac,
     hints: {
       generateUsersCmd: 'bunx nuxt-feathers-zod add service users --auth',
-      servicesDirsConfig: 'feathers: { servicesDirs: [\'services\'] }',
+      servicesDirsConfig: "feathers: { servicesDirs: ['services'] }",
       rbacFile: 'services/.nfz/rbac.json (par défaut, dans le 1er servicesDir)',
       restartHint: 'Après génération de fichiers, redémarre le dev server (Ctrl+C puis bun dev) et supprime .nuxt si besoin.',
     },

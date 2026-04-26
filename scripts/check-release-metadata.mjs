@@ -15,6 +15,7 @@ const checks = [
   ['docs/en/guide/cli.md', [version]],
   ['docs/reference/cli.md', [version]],
   ['docs/en/reference/cli.md', [version]],
+  ['AI_CONTEXT/CLI_REFERENCE.md', [version]],
 ]
 
 let failed = false

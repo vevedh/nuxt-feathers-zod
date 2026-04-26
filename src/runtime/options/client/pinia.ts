@@ -36,9 +36,12 @@ export function resolvePiniaOptions(piniaOptions: PiniaOptions | boolean | undef
 
   const piniaDefaultOptions = getPiniaDefaults(mongodb)
 
-  if (piniaOptions === true || piniaOptions === undefined)
+  // Feathers-Pinia is optional and must be explicitly enabled.
+  // Keeping it disabled by default prevents Vite/browser interop issues in
+  // applications that only need the standard Feathers client and NFZ auth runtime.
+  if (piniaOptions === true)
     pinia = piniaDefaultOptions
-  else if (piniaOptions !== false)
+  else if (typeof piniaOptions === 'object' && piniaOptions)
     pinia = { ...piniaDefaultOptions, ...piniaOptions }
 
   return pinia

@@ -1,3 +1,76 @@
+# Changelog
+
+## 6.5.11
+
+- fix browser/tarball runtime: stop forcing @feathersjs/* CommonJS packages into Vite optimizeDeps for the native NFZ client
+- keep Feathers-Pinia Vite interop hints opt-in only when feathers.client.pinia is explicitly enabled
+- prevents @feathersjs/feathers/lib/index.js from being served/executed in Nuxt 4.1 browser dev when installing from .tgz
+
+## 6.5.10
+
+- fix client runtime: remove browser static imports of `@feathersjs/feathers`, `@feathersjs/rest-client`, and `@feathersjs/authentication-client` from the generated Nuxt client path.
+- add a native NFZ client shell for tarball installs under Nuxt 4.1.x, avoiding raw CommonJS `exports` in the browser.
+- add native REST/auth client templates compatible with generated `.shared.ts` service registrations.
+
+
+- Fixed the remaining browser ESM/CJS mismatch that appears when NFZ is consumed as a packed tarball instead of a local file dependency.
+- Added nested Vite optimizer entries such as `nuxt-feathers-zod > @feathersjs/feathers` so tarball-installed Feathers CommonJS packages are pre-bundled before browser execution.
+- Added equivalent nested optimizer entries for `feathers-pinia > @feathersjs/*`, but only when `feathers.client.pinia` is explicitly enabled.
+- Patched both `src/setup/apply-client-layer.ts` and `dist/module.mjs` so the package is immediately testable from the generated archive/tarball.
+
+## 6.5.8 - OFetch typecheck method signature follow-up
+
+- Fixed `src/runtime/adapters/ofetch.ts` typecheck failure TS2425 by typing `FetchClientLike.request` as a method signature instead of a function-valued property.
+- Kept the v6.5.7 ESM interop rule intact: no static default or fragile named import from `@feathersjs/rest-client` in browser-served runtime client code.
+- Aligned `dist/runtime/adapters/ofetch.d.ts` with the corrected method-shaped declaration.
+
+## 6.5.7 - Runtime client ESM import policy
+
+- Hardened browser-served runtime files against fragile CommonJS/ESM interop by forbidding static default and named imports from `@feathersjs/*` client packages and `feathers-pinia`.
+- Replaced the static `feathers-pinia` re-export in `src/runtime/composables/pinia.ts` with explicit dynamic loaders: `loadFeathersPinia()`, `resolveCreatePiniaClient()` and `resolveFeathersPiniaHelper()`.
+- Updated the NFZ client plugin to resolve `createPiniaClient` through the safe dynamic loader only when `feathers.client.pinia` is enabled.
+- Adjusted the OFetch adapter declaration so the generated `.d.ts` no longer reintroduces a named `FetchClient` import from `@feathersjs/rest-client`.
+- Added `scripts/check-client-runtime-esm-interop.mjs` and wired it into `verify:sanity` through `sanity:client-runtime-esm-interop`.
+
+## 6.5.6 - Feathers client transport ESM interop
+
+- Fix generated client connection template for Nuxt 4 native ESM by replacing default imports from `@feathersjs/rest-client` and `@feathersjs/socketio-client` with namespace imports and runtime factory resolution.
+- Fix generated client authentication template by replacing default import from `@feathersjs/authentication-client` with namespace import and runtime factory resolution.
+- Fix `OFetch` adapter to resolve `FetchClient` from the rest-client namespace instead of relying on a named import.
+- Add REST, Socket.IO and authentication client packages to Vite `needsInterop` hints for standard NFZ clients.
+- Addresses: `@feathersjs/rest-client/lib/index.js does not provide an export named 'default'` from `.nuxt/feathers/client/connection.ts`.
+
+## 6.5.5 - Feathers core ESM interop
+
+- Fix browser-time ESM/CJS interop for the standard NFZ Feathers client when consumed from npm.
+- Replace the static named import `import { feathers } from '@feathersjs/feathers'` in the client runtime with a namespace import and runtime factory resolution.
+- Always add Vite interop hints for Feathers core client packages when the NFZ client layer is enabled; Feathers-Pinia hints remain opt-in.
+- Addresses: `@feathersjs/feathers/lib/index.js does not provide an export named 'feathers'` from `createFeathersClient.js`.
+
+
+## 6.5.4 - Feathers-Pinia optional runtime split
+
+- Keeps Feathers-Pinia fully opt-in through `feathers.client.pinia`.
+- Moves NFZ auth bootstrap out of the Feathers-Pinia branch, so auth works with `pinia: false`.
+- Stops forcing Feathers-Pinia Vite interop hints for standard Feathers clients.
+- Documents the distinction between `@pinia/nuxt` application stores and `feathers-pinia` service stores.
+
+## 6.5.3
+
+### Fixed
+
+- Make Feathers-Pinia opt-in instead of enabled by default to avoid browser-time Vite interop failures in apps that only use the NFZ auth runtime and standard Feathers client.
+- Lazy-load `feathers-pinia` inside `defineNfzClientPlugin()` only when `feathers.client.pinia` is explicitly enabled. This prevents unconditional loading of `feathers-pinia` and avoids `@feathersjs/feathers/lib/index.js does not provide an export named 'feathers'` in NFZ Studio.
+- Keep Vite compatibility settings for applications that explicitly enable `feathers.client.pinia: true`.
+
+## 6.5.2
+
+### Fixed
+
+- Stabilize the Nuxt/Vite client bundling path for `feathers-pinia` and FeathersJS client packages when the module is consumed from npm (`nuxt-feathers-zod@^6.5.1` regression).
+- Add Feathers client packages to `vite.optimizeDeps.include` and `build.transpile` when `feathers.client.pinia` is enabled, preventing browser-time errors such as: `@feathersjs/feathers/lib/index.js does not provide an export named 'feathers'`.
+- Declare `@feathersjs/commons` as a direct dependency because `feathers-pinia` expects it as a Feathers peer dependency.
+
 ## 6.5.0
 - fix `cli:smoke` doctor expectations to match the current embedded auth defaults and divergent field mapping output.
 - stabilize E2E fixtures by aligning embedded auth setup with the already stable absolute-path pattern used by the basic fixture.
@@ -139,7 +212,6 @@
 - ajout d’une roadmap publique NFZ vNext orientée DX/auth/builder/diagnostics
 - ajout des fichiers de contexte de patch (`JOURNAL.md`, `PATCHLOG.md`, `PROMPT_CONTEXT.md`, `AI_CONTEXT/PROJECT_CONTEXT.md`) pour les prochaines itérations
 
-# Changelog
 
 ## 6.4.45
 
@@ -210,7 +282,6 @@
 - Fixed CLI inline help for `add middleware <name>` so all supported targets are shown, including `route`, `client-module`, `hook`, and `policy`.
 - Synced README and AI context reference with the new route middleware generator example `auth-keycloak`.
 
-# Changelog
 
 ## v6.4.9
 
@@ -247,7 +318,6 @@
 - Stopped aliasing deep imports like `js-sha256/src/sha256.js`, which previously caused Vite/esbuild to rewrite the shim import into an invalid local path in consumer Nuxt 4 apps.
 - Kept the runtime shim approach for `keycloak-js`, while making the package safer for downstream apps.
 
-# Changelog
 
 ## v6.4.4
 
@@ -308,7 +378,6 @@
 - Updated release metadata and README references from `6.3.7` to `6.3.8`.
 - Updated package publication settings to include the built CLI and top-level release documents.
 
-# Changelog
 
 
 ## v6.4.1

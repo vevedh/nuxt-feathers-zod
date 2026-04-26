@@ -1,3 +1,4 @@
+import { defineEventHandler } from 'h3'
 import { readRbacFile } from '../../rbac/rbacFile'
 import { getProjectRootFromNuxt } from '../../utils/nfzPaths'
 

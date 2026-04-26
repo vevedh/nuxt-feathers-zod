@@ -1,13 +1,14 @@
 import type { NuxtApp } from '#app'
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
-import { createPiniaClient, type CreatePiniaClientConfig } from 'feathers-pinia'
-
 import type { NfzClientPluginConfig } from './types'
+
+type FeathersPiniaClientConfig = Record<string, unknown>
 
 import { createFeathersClient } from './createFeathersClient'
 import { remoteAuthenticate } from './remote-auth'
 import { waitForPinia } from './wait-for-pinia'
 import { wrapApiServices } from './wrap-api-services'
+import { resolveCreatePiniaClient } from '../composables/pinia'
 import { getPublicClientMode, getPublicRemoteConfig, getPublicRemoteAuthConfig } from '../utils/config'
 
 export function defineNfzClientPlugin(config: NfzClientPluginConfig) {
@@ -30,11 +31,21 @@ export function defineNfzClientPlugin(config: NfzClientPluginConfig) {
         )
       }
       else {
-        piniaClient = createPiniaClient(feathersClient, {
+        const createPiniaClient = await resolveCreatePiniaClient()
+        const serializablePiniaOptions = (
+          piniaOptions && typeof piniaOptions === 'object'
+            ? piniaOptions
+            : {}
+        ) as FeathersPiniaClientConfig & { idField?: string }
+
+        piniaClient = createPiniaClient(feathersClient as any, {
+          ...serializablePiniaOptions,
+          idField: typeof serializablePiniaOptions.idField === 'string'
+            ? serializablePiniaOptions.idField
+            : 'id',
           ssr: mode === 'remote' ? false : !!import.meta.server,
-          ...(piniaOptions as CreatePiniaClientConfig),
           pinia: piniaInstance as any,
-        })
+        } as any)
       }
     }
 

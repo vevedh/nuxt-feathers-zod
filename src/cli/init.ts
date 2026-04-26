@@ -53,7 +53,8 @@ function pickNuxtConfigFile(projectRoot: string) {
  * If AST patching can't confidently update the file, we fallback to a minimal regex patch.
  */
 
-interface PatchResult { changed: boolean, content: string, reason: string }
+type PatchResult = { changed: boolean, content: string, reason: string }
+
 
 function printUnifiedDiff(label: string, before: string, after: string) {
   const a = before.split(/\r?\n/)
@@ -62,7 +63,7 @@ function printUnifiedDiff(label: string, before: string, after: string) {
   // LCS DP (OK for small config files)
   const n = a.length
   const m = b.length
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0))
 
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
@@ -74,7 +75,7 @@ function printUnifiedDiff(label: string, before: string, after: string) {
   out.push(`--- ${label}`)
   out.push(`+++ ${label} (patched)`)
 
-  let i = 0; let j = 0
+  let i = 0, j = 0
   while (i < n && j < m) {
     if (a[i] === b[j]) {
       out.push(` ${a[i]}`)
@@ -84,8 +85,7 @@ function printUnifiedDiff(label: string, before: string, after: string) {
     if (dp[i + 1][j] >= dp[i][j + 1]) {
       out.push(`-${a[i]}`)
       i++
-    }
-    else {
+    } else {
       out.push(`+${b[j]}`)
       j++
     }
@@ -96,18 +96,19 @@ function printUnifiedDiff(label: string, before: string, after: string) {
   consola.box(out.join('\n'))
 }
 
+
 function regexPatchNuxtConfig(raw: string, servicesDirName: string, mongoDefaultUrl?: string): PatchResult {
   // Already configured -> do nothing.
   // (We still may need to add mongodb.url, so we only short-circuit if feathers already exists and includes mongodb.url.)
-  if (/['"]nuxt-feathers-zod['"]/.test(raw) && /\bfeathers\s*:/.test(raw) && (!mongoDefaultUrl || /\bdatabase\s*:/.test(raw)))
+  if (/['"]nuxt-feathers-zod['"]/.test(raw) && /\bfeathers\s*:/m.test(raw) && (!mongoDefaultUrl || /\bdatabase\s*:/m.test(raw)))
     return { changed: false, content: raw, reason: 'already configured' }
 
   let next = raw
 
   // Patch modules array if present (array literal only; regex fallback is conservative)
-  if (/\bmodules\s*:\s*\[/.test(next)) {
+  if (/\bmodules\s*:\s*\[/m.test(next)) {
     next = next.replace(
-      /(\bmodules\s*:\s*\[)([^\]]*)(\])/,
+      /(\bmodules\s*:\s*\[)([^\]]*)(\])/m,
       (full, start, inner, end) => {
         if (/['"]nuxt-feathers-zod['"]/.test(full))
           return full
@@ -120,7 +121,7 @@ function regexPatchNuxtConfig(raw: string, servicesDirName: string, mongoDefault
     )
   }
 
-  const escapeSingleQuotes = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
+  const escapeSingleQuotes = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
   const feathersBlockLines = [
     '  feathers: {',
@@ -139,37 +140,38 @@ function regexPatchNuxtConfig(raw: string, servicesDirName: string, mongoDefault
   ].join('\n')
 
   // Fix common typo: servicesDir (singular) -> servicesDirs (plural)
-  if (/\bfeathers\s*:/.test(next) && /\bservicesDir\s*:/.test(next) && !/\bservicesDirs\s*:/.test(next)) {
-    next = next.replace(/\bservicesDir\s*:/, 'servicesDirs:')
+  if (/\bfeathers\s*:/m.test(next) && /\bservicesDir\s*:/m.test(next) && !/\bservicesDirs\s*:/m.test(next)) {
+    next = next.replace(/\bservicesDir\s*:/m, 'servicesDirs:')
   }
 
+
   // Inject feathers block if missing and we can find modules block
-  if (!/\bfeathers\s*:/.test(next) && /\bmodules\s*:\s*\[[^\]]*\]/.test(next)) {
+  if (!/\bfeathers\s*:/m.test(next) && /\bmodules\s*:\s*\[[^\]]*\]/m.test(next)) {
     next = next.replace(
-      /(\bmodules\s*:\s*\[[^\]]*\]\s*(?:,\s*)?\n)/,
-      m => `${m}${feathersBlockLines}\n`,
+      /(\bmodules\s*:\s*\[[^\]]*\]\s*,?\s*\n)/m,
+      (m) => `${m}${feathersBlockLines}\n`,
     )
   }
 
   // If feathers exists but database.mongo is requested, try a tiny injection (very conservative)
-  if (mongoDefaultUrl && /\bfeathers\s*:/.test(next) && !/\bdatabase\s*:/.test(next)) {
+  if (mongoDefaultUrl && /\bfeathers\s*:/m.test(next) && !/\bdatabase\s*:/m.test(next)) {
     next = next.replace(
-      /(\bfeathers\s*:\s*\{)/,
-      m => `${m}\n    database: {\n      mongo: {\n        url: process.env.MONGODB_URL || '${mongoDefaultUrl.replace(/'/g, '\\\'')}',\n      },\n    },`,
+      /(\bfeathers\s*:\s*\{)/m,
+      (m) => `${m}\n    database: {\n      mongo: {\n        url: process.env.MONGODB_URL || '${mongoDefaultUrl.replace(/'/g, "\\'")}',\n      },\n    },`,
     )
   }
 
   // If no modules block, inject a compact defaults block right after defineNuxtConfig({
   if (next === raw) {
-    const anchor = /defineNuxtConfig\(\{\s*/
+    const anchor = /defineNuxtConfig\(\{\s*\n?/m
     if (anchor.test(next)) {
       const insert = [
         '  // Added by nuxt-feathers-zod init (safe defaults)',
-        '  modules: [\'nuxt-feathers-zod\'],',
+        "  modules: ['nuxt-feathers-zod'],",
         feathersBlockLines.trimEnd(),
         '',
       ].join('\n')
-      next = next.replace(anchor, m => `${m}${insert}\n`)
+      next = next.replace(anchor, (m) => `${m}${insert}\n`)
     }
   }
 
@@ -179,208 +181,222 @@ async function astPatchNuxtConfig(raw: string, servicesDirName: string, mongoDef
   // Import lazily so init stays fast in normal cases
   const ts = await import('typescript')
   try {
-    const sourceFile = ts.createSourceFile(
-      'nuxt.config.ts',
-      raw,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TS,
-    )
 
-    const exportAssign = sourceFile.statements.find(s => ts.isExportAssignment(s)) as any | undefined
-    if (!exportAssign)
-      return null
+  const sourceFile = ts.createSourceFile(
+    'nuxt.config.ts',
+    raw,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
 
-    const expr = exportAssign.expression
+  const exportAssign = sourceFile.statements.find(s => ts.isExportAssignment(s)) as any | undefined
+  if (!exportAssign)
+    return null
 
-    function getIdText(n: any): string | null {
-      if (!n)
-        return null
-      if (ts.isIdentifier(n))
-        return n.text
-      return null
+  const expr = exportAssign.expression as any
+
+  function getIdText(n: any): string | null {
+    if (!n) return null
+    if (ts.isIdentifier(n)) return n.text
+    return null
+  }
+
+  function getPropName(p: any): string | null {
+    if (!p || !p.name) return null
+    if (ts.isIdentifier(p.name)) return p.name.text
+    if (ts.isStringLiteral(p.name)) return p.name.text
+    return null
+  }
+
+  function findProp(obj: any, name: string): any | null {
+    const prop = obj.properties.find((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === name)
+    return prop || null
+  }
+
+  function ensureStringInArray(arr: any, value: string): { node: any, changed: boolean } {
+    if (!ts.isArrayLiteralExpression(arr))
+      return { node: arr, changed: false }
+
+    const exists = arr.elements.some((e: any) => ts.isStringLiteral(e) && e.text === value)
+    if (exists)
+      return { node: arr, changed: false }
+
+    const newElts = [ts.factory.createStringLiteral(value), ...arr.elements]
+    return { node: ts.factory.updateArrayLiteralExpression(arr, newElts), changed: true }
+  }
+
+  function ensureModules(obj: any): { obj: any, changed: boolean, warnings: string[] } {
+    const warnings: string[] = []
+    let changed = false
+
+    const modulesProp = findProp(obj, 'modules')
+    if (!modulesProp) {
+      const newModules = ts.factory.createPropertyAssignment(
+        ts.factory.createIdentifier('modules'),
+        ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral('nuxt-feathers-zod')], true),
+      )
+      const newObj = ts.factory.updateObjectLiteralExpression(obj, [newModules, ...obj.properties])
+      return { obj: newObj, changed: true, warnings }
     }
 
-    function getPropName(p: any): string | null {
-      if (!p || !p.name)
-        return null
-      if (ts.isIdentifier(p.name))
-        return p.name.text
-      if (ts.isStringLiteral(p.name))
-        return p.name.text
-      return null
+    const init = modulesProp.initializer
+    if (!ts.isArrayLiteralExpression(init)) {
+      warnings.push('modules is not an array literal; skipped modules patch')
+      return { obj, changed: false, warnings }
     }
 
-    function findProp(obj: any, name: string): any | null {
-      const prop = obj.properties.find((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === name)
-      return prop || null
+    const ensured = ensureStringInArray(init, 'nuxt-feathers-zod')
+    if (ensured.changed) {
+      changed = true
+      const updatedProp = ts.factory.updatePropertyAssignment(modulesProp, modulesProp.name, ensured.node)
+      const newProps = obj.properties.map((p: any) => (p === modulesProp ? updatedProp : p))
+      return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
     }
 
-    function ensureStringInArray(arr: any, value: string): { node: any, changed: boolean } {
-      if (!ts.isArrayLiteralExpression(arr))
-        return { node: arr, changed: false }
+    return { obj, changed, warnings }
+  }
 
-      const exists = arr.elements.some((e: any) => ts.isStringLiteral(e) && e.text === value)
-      if (exists)
-        return { node: arr, changed: false }
+  function ensureFeathers(obj: any, extra?: { mongodbUrlExpr?: any }): { obj: any, changed: boolean, warnings: string[] } {
+    const warnings: string[] = []
+    let changed = false
 
-      const newElts = [ts.factory.createStringLiteral(value), ...arr.elements]
-      return { node: ts.factory.updateArrayLiteralExpression(arr, newElts), changed: true }
+    const feathersProp = findProp(obj, 'feathers')
+    if (!feathersProp) {
+      const newFeathers = ts.factory.createPropertyAssignment(
+        ts.factory.createIdentifier('feathers'),
+        ts.factory.createObjectLiteralExpression([
+          ts.factory.createPropertyAssignment(
+            ts.factory.createIdentifier('servicesDirs'),
+            ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral(servicesDirName)], true),
+          ),
+          ...(extra?.mongodbUrlExpr
+            ? [ts.factory.createPropertyAssignment(
+                ts.factory.createIdentifier('database'),
+                ts.factory.createObjectLiteralExpression([
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier('mongo'),
+                    ts.factory.createObjectLiteralExpression([
+                      ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr),
+                    ], true),
+                  ),
+                ], true),
+              )]
+            : []),
+        ], true),
+      )
+      const newObj = ts.factory.updateObjectLiteralExpression(obj, [...obj.properties, newFeathers])
+      return { obj: newObj, changed: true, warnings }
     }
 
-    function ensureModules(obj: any): { obj: any, changed: boolean, warnings: string[] } {
-      const warnings: string[] = []
-      let changed = false
+    const init = feathersProp.initializer
+    if (!ts.isObjectLiteralExpression(init)) {
+      warnings.push('feathers is not an object literal; skipped feathers patch')
+      return { obj, changed: false, warnings }
+    }
 
-      const modulesProp = findProp(obj, 'modules')
-      if (!modulesProp) {
-        const newModules = ts.factory.createPropertyAssignment(
-          ts.factory.createIdentifier('modules'),
-          ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral('nuxt-feathers-zod')], true),
-        )
-        const newObj = ts.factory.updateObjectLiteralExpression(obj, [newModules, ...obj.properties])
-        return { obj: newObj, changed: true, warnings }
-      }
+    let sdProp = findProp(init, 'servicesDirs')
+    // Common typo compatibility: servicesDir -> servicesDirs
+    const sdSingular = !sdProp ? findProp(init, 'servicesDir') : null
+    if (!sdProp && sdSingular) {
+      changed = true
+      const renamed = ts.factory.createPropertyAssignment(
+        ts.factory.createIdentifier('servicesDirs'),
+        sdSingular.initializer,
+      )
+      const newInitProps = init.properties
+        .filter((p: any) => p !== sdSingular)
+        .map((p: any) => p)
+      const newInit = ts.factory.updateObjectLiteralExpression(init, [...newInitProps, renamed])
+      const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
+      const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
+      return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
+    }
 
-      const init = modulesProp.initializer
-      if (!ts.isArrayLiteralExpression(init)) {
-        warnings.push('modules is not an array literal; skipped modules patch')
-        return { obj, changed: false, warnings }
-      }
+    if (!sdProp) {
+      changed = true
+      const newSd = ts.factory.createPropertyAssignment(
+        ts.factory.createIdentifier('servicesDirs'),
+        ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral(servicesDirName)], true),
+      )
+      const newInit = ts.factory.updateObjectLiteralExpression(init, [...init.properties, newSd])
+      const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
+      const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
+      return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
+    }
 
-      const ensured = ensureStringInArray(init, 'nuxt-feathers-zod')
-      if (ensured.changed) {
+    const sdInit = sdProp.initializer
+    if (!ts.isArrayLiteralExpression(sdInit)) {
+      warnings.push('feathers.servicesDirs is not an array literal; skipped servicesDirs patch')
+      return { obj, changed: false, warnings }
+    }
+
+    const ensured = ensureStringInArray(sdInit, servicesDirName)
+    if (ensured.changed) {
+      changed = true
+      const updatedSdProp = ts.factory.updatePropertyAssignment(sdProp, sdProp.name, ensured.node)
+      const newInitProps = init.properties.map((p: any) => (p === sdProp ? updatedSdProp : p))
+      const newInit = ts.factory.updateObjectLiteralExpression(init, newInitProps)
+      const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
+      const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
+      return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
+    }
+
+    // Ensure feathers.database.mongo.url if requested (only if feathers is an object literal)
+    if (extra?.mongodbUrlExpr) {
+      const databaseProp = findProp(init, 'database')
+      const makeMongoObj = () => ts.factory.createObjectLiteralExpression([
+        ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr),
+      ], true)
+
+      const makeDatabaseObj = () => ts.factory.createObjectLiteralExpression([
+        ts.factory.createPropertyAssignment(ts.factory.createIdentifier('mongo'), makeMongoObj()),
+      ], true)
+
+      if (!databaseProp) {
         changed = true
-        const updatedProp = ts.factory.updatePropertyAssignment(modulesProp, modulesProp.name, ensured.node)
-        const newProps = obj.properties.map((p: any) => (p === modulesProp ? updatedProp : p))
-        return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
-      }
-
-      return { obj, changed, warnings }
-    }
-
-    function ensureFeathers(obj: any, extra?: { mongodbUrlExpr?: any }): { obj: any, changed: boolean, warnings: string[] } {
-      const warnings: string[] = []
-      let changed = false
-
-      const feathersProp = findProp(obj, 'feathers')
-      if (!feathersProp) {
-        const newFeathers = ts.factory.createPropertyAssignment(
-          ts.factory.createIdentifier('feathers'),
-          ts.factory.createObjectLiteralExpression([
-            ts.factory.createPropertyAssignment(
-              ts.factory.createIdentifier('servicesDirs'),
-              ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral(servicesDirName)], true),
-            ),
-            ...(extra?.mongodbUrlExpr
-              ? [ts.factory.createPropertyAssignment(
-                  ts.factory.createIdentifier('database'),
-                  ts.factory.createObjectLiteralExpression([
-                    ts.factory.createPropertyAssignment(
-                      ts.factory.createIdentifier('mongo'),
-                      ts.factory.createObjectLiteralExpression([
-                        ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr),
-                      ], true),
-                    ),
-                  ], true),
-                )]
-              : []),
-          ], true),
+        const newDatabase = ts.factory.createPropertyAssignment(
+          ts.factory.createIdentifier('database'),
+          makeDatabaseObj(),
         )
-        const newObj = ts.factory.updateObjectLiteralExpression(obj, [...obj.properties, newFeathers])
-        return { obj: newObj, changed: true, warnings }
-      }
-
-      const init = feathersProp.initializer
-      if (!ts.isObjectLiteralExpression(init)) {
-        warnings.push('feathers is not an object literal; skipped feathers patch')
-        return { obj, changed: false, warnings }
-      }
-
-      const sdProp = findProp(init, 'servicesDirs')
-      // Common typo compatibility: servicesDir -> servicesDirs
-      const sdSingular = !sdProp ? findProp(init, 'servicesDir') : null
-      if (!sdProp && sdSingular) {
-        changed = true
-        const renamed = ts.factory.createPropertyAssignment(
-          ts.factory.createIdentifier('servicesDirs'),
-          sdSingular.initializer,
-        )
-        const newInitProps = init.properties
-          .filter((p: any) => p !== sdSingular)
-          .map((p: any) => p)
-        const newInit = ts.factory.updateObjectLiteralExpression(init, [...newInitProps, renamed])
+        const newInit = ts.factory.updateObjectLiteralExpression(init, [...init.properties, newDatabase])
         const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
         const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
         return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
       }
 
-      if (!sdProp) {
+      const databaseInit = databaseProp.initializer
+      if (!ts.isObjectLiteralExpression(databaseInit)) {
+        warnings.push('feathers.database is not an object literal; skipped database.mongo.url patch')
+        return { obj, changed, warnings }
+      }
+
+      const mongoProp = findProp(databaseInit, 'mongo')
+      if (!mongoProp) {
         changed = true
-        const newSd = ts.factory.createPropertyAssignment(
-          ts.factory.createIdentifier('servicesDirs'),
-          ts.factory.createArrayLiteralExpression([ts.factory.createStringLiteral(servicesDirName)], true),
+        const newMongo = ts.factory.createPropertyAssignment(
+          ts.factory.createIdentifier('mongo'),
+          makeMongoObj(),
         )
-        const newInit = ts.factory.updateObjectLiteralExpression(init, [...init.properties, newSd])
-        const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
-        const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
-        return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
-      }
-
-      const sdInit = sdProp.initializer
-      if (!ts.isArrayLiteralExpression(sdInit)) {
-        warnings.push('feathers.servicesDirs is not an array literal; skipped servicesDirs patch')
-        return { obj, changed: false, warnings }
-      }
-
-      const ensured = ensureStringInArray(sdInit, servicesDirName)
-      if (ensured.changed) {
-        changed = true
-        const updatedSdProp = ts.factory.updatePropertyAssignment(sdProp, sdProp.name, ensured.node)
-        const newInitProps = init.properties.map((p: any) => (p === sdProp ? updatedSdProp : p))
+        const newDatabaseInit = ts.factory.updateObjectLiteralExpression(databaseInit, [...databaseInit.properties, newMongo])
+        const updatedDatabaseProp = ts.factory.updatePropertyAssignment(databaseProp, databaseProp.name, newDatabaseInit)
+        const newInitProps = init.properties.map((p: any) => (p === databaseProp ? updatedDatabaseProp : p))
         const newInit = ts.factory.updateObjectLiteralExpression(init, newInitProps)
         const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
         const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
         return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
       }
 
-      // Ensure feathers.database.mongo.url if requested (only if feathers is an object literal)
-      if (extra?.mongodbUrlExpr) {
-        const databaseProp = findProp(init, 'database')
-        const makeMongoObj = () => ts.factory.createObjectLiteralExpression([
-          ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr),
-        ], true)
-
-        const makeDatabaseObj = () => ts.factory.createObjectLiteralExpression([
-          ts.factory.createPropertyAssignment(ts.factory.createIdentifier('mongo'), makeMongoObj()),
-        ], true)
-
-        if (!databaseProp) {
+      const mongoInit = mongoProp.initializer
+      if (ts.isObjectLiteralExpression(mongoInit)) {
+        const urlProp = findProp(mongoInit, 'url')
+        if (!urlProp) {
           changed = true
-          const newDatabase = ts.factory.createPropertyAssignment(
-            ts.factory.createIdentifier('database'),
-            makeDatabaseObj(),
-          )
-          const newInit = ts.factory.updateObjectLiteralExpression(init, [...init.properties, newDatabase])
-          const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
-          const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
-          return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
-        }
-
-        const databaseInit = databaseProp.initializer
-        if (!ts.isObjectLiteralExpression(databaseInit)) {
-          warnings.push('feathers.database is not an object literal; skipped database.mongo.url patch')
-          return { obj, changed, warnings }
-        }
-
-        const mongoProp = findProp(databaseInit, 'mongo')
-        if (!mongoProp) {
-          changed = true
-          const newMongo = ts.factory.createPropertyAssignment(
-            ts.factory.createIdentifier('mongo'),
-            makeMongoObj(),
-          )
-          const newDatabaseInit = ts.factory.updateObjectLiteralExpression(databaseInit, [...databaseInit.properties, newMongo])
+          const newUrl = ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr)
+          const newMongoInit = ts.factory.updateObjectLiteralExpression(mongoInit, [...mongoInit.properties, newUrl])
+          const updatedMongoProp = ts.factory.updatePropertyAssignment(mongoProp, mongoProp.name, newMongoInit)
+          const newDatabaseInitProps = databaseInit.properties.map((p: any) => (p === mongoProp ? updatedMongoProp : p))
+          const newDatabaseInit = ts.factory.updateObjectLiteralExpression(databaseInit, newDatabaseInitProps)
           const updatedDatabaseProp = ts.factory.updatePropertyAssignment(databaseProp, databaseProp.name, newDatabaseInit)
           const newInitProps = init.properties.map((p: any) => (p === databaseProp ? updatedDatabaseProp : p))
           const newInit = ts.factory.updateObjectLiteralExpression(init, newInitProps)
@@ -388,158 +404,140 @@ async function astPatchNuxtConfig(raw: string, servicesDirName: string, mongoDef
           const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
           return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
         }
+      }
+      else {
+        warnings.push('feathers.database.mongo is not an object literal; skipped database.mongo.url patch')
+      }
+    }
 
-        const mongoInit = mongoProp.initializer
-        if (ts.isObjectLiteralExpression(mongoInit)) {
-          const urlProp = findProp(mongoInit, 'url')
-          if (!urlProp) {
-            changed = true
-            const newUrl = ts.factory.createPropertyAssignment(ts.factory.createIdentifier('url'), extra.mongodbUrlExpr)
-            const newMongoInit = ts.factory.updateObjectLiteralExpression(mongoInit, [...mongoInit.properties, newUrl])
-            const updatedMongoProp = ts.factory.updatePropertyAssignment(mongoProp, mongoProp.name, newMongoInit)
-            const newDatabaseInitProps = databaseInit.properties.map((p: any) => (p === mongoProp ? updatedMongoProp : p))
-            const newDatabaseInit = ts.factory.updateObjectLiteralExpression(databaseInit, newDatabaseInitProps)
-            const updatedDatabaseProp = ts.factory.updatePropertyAssignment(databaseProp, databaseProp.name, newDatabaseInit)
-            const newInitProps = init.properties.map((p: any) => (p === databaseProp ? updatedDatabaseProp : p))
-            const newInit = ts.factory.updateObjectLiteralExpression(init, newInitProps)
-            const updatedFeathersProp = ts.factory.updatePropertyAssignment(feathersProp, feathersProp.name, newInit)
-            const newProps = obj.properties.map((p: any) => (p === feathersProp ? updatedFeathersProp : p))
-            return { obj: ts.factory.updateObjectLiteralExpression(obj, newProps), changed, warnings }
-          }
-        }
-        else {
-          warnings.push('feathers.database.mongo is not an object literal; skipped database.mongo.url patch')
+
+
+    return { obj, changed, warnings }
+  }
+
+  function extractConfigObject(e: any): { kind: 'object', obj: any, wrap: (updatedObj: any) => any } | null {
+    // export default defineNuxtConfig({ ... })
+    if (ts.isCallExpression(e) && getIdText(e.expression) === 'defineNuxtConfig') {
+      const arg0 = e.arguments[0]
+      // defineNuxtConfig({ ... })
+      if (arg0 && ts.isObjectLiteralExpression(arg0)) {
+        return {
+          kind: 'object',
+          obj: arg0,
+          wrap: updatedObj => ts.factory.updateCallExpression(e, e.expression, e.typeArguments, [updatedObj, ...e.arguments.slice(1)]),
         }
       }
 
-      return { obj, changed, warnings }
-    }
-
-    function extractConfigObject(e: any): { kind: 'object', obj: any, wrap(updatedObj: any): any } | null {
-    // export default defineNuxtConfig({ ... })
-      if (ts.isCallExpression(e) && getIdText(e.expression) === 'defineNuxtConfig') {
-        const arg0 = e.arguments[0]
-        // defineNuxtConfig({ ... })
-        if (arg0 && ts.isObjectLiteralExpression(arg0)) {
+      // defineNuxtConfig(() => ({ ... }))
+      if (arg0 && (ts.isArrowFunction(arg0) || ts.isFunctionExpression(arg0))) {
+        const body = arg0.body
+        // () => ({ ... })
+        if (ts.isParenthesizedExpression(body) && ts.isObjectLiteralExpression(body.expression)) {
+          const innerObj = body.expression
           return {
             kind: 'object',
-            obj: arg0,
-            wrap: updatedObj => ts.factory.updateCallExpression(e, e.expression, e.typeArguments, [updatedObj, ...e.arguments.slice(1)]),
+            obj: innerObj,
+            wrap: (updatedObj) => {
+              const newBody = ts.factory.updateParenthesizedExpression(body, updatedObj)
+              const newFn = ts.isArrowFunction(arg0)
+                ? ts.factory.updateArrowFunction(arg0, arg0.modifiers, arg0.typeParameters, arg0.parameters, arg0.type, arg0.equalsGreaterThanToken, newBody)
+                : ts.factory.updateFunctionExpression(arg0, arg0.modifiers, arg0.asteriskToken, arg0.name, arg0.typeParameters, arg0.parameters, arg0.type, arg0.body)
+              const newArgs = [newFn, ...e.arguments.slice(1)]
+              return ts.factory.updateCallExpression(e, e.expression, e.typeArguments, newArgs)
+            },
           }
         }
 
-        // defineNuxtConfig(() => ({ ... }))
-        if (arg0 && (ts.isArrowFunction(arg0) || ts.isFunctionExpression(arg0))) {
-          const body = arg0.body
-          // () => ({ ... })
-          if (ts.isParenthesizedExpression(body) && ts.isObjectLiteralExpression(body.expression)) {
-            const innerObj = body.expression
+        // () => { return { ... } }
+        if (ts.isBlock(body)) {
+          const ret = body.statements.find((s: any) => ts.isReturnStatement(s) && s.expression && ts.isObjectLiteralExpression(s.expression))
+          if (ret && ts.isReturnStatement(ret) && ret.expression) {
+            const innerObj = ret.expression as any
             return {
               kind: 'object',
               obj: innerObj,
               wrap: (updatedObj) => {
-                const newBody = ts.factory.updateParenthesizedExpression(body, updatedObj)
+                const newStatements = body.statements.map((s: any) => {
+                  if (s === ret) return ts.factory.updateReturnStatement(ret, updatedObj)
+                  return s
+                })
+                const newBlock = ts.factory.updateBlock(body, newStatements)
                 const newFn = ts.isArrowFunction(arg0)
-                  ? ts.factory.updateArrowFunction(arg0, arg0.modifiers, arg0.typeParameters, arg0.parameters, arg0.type, arg0.equalsGreaterThanToken, newBody)
-                  : ts.factory.updateFunctionExpression(arg0, arg0.modifiers, arg0.asteriskToken, arg0.name, arg0.typeParameters, arg0.parameters, arg0.type, arg0.body)
+                  ? ts.factory.updateArrowFunction(arg0, arg0.modifiers, arg0.typeParameters, arg0.parameters, arg0.type, arg0.equalsGreaterThanToken, newBlock)
+                  : ts.factory.updateFunctionExpression(arg0, arg0.modifiers, arg0.asteriskToken, arg0.name, arg0.typeParameters, arg0.parameters, arg0.type, newBlock)
                 const newArgs = [newFn, ...e.arguments.slice(1)]
                 return ts.factory.updateCallExpression(e, e.expression, e.typeArguments, newArgs)
               },
             }
           }
-
-          // () => { return { ... } }
-          if (ts.isBlock(body)) {
-            const ret = body.statements.find((s: any) => ts.isReturnStatement(s) && s.expression && ts.isObjectLiteralExpression(s.expression))
-            if (ret && ts.isReturnStatement(ret) && ret.expression) {
-              const innerObj = ret.expression as any
-              return {
-                kind: 'object',
-                obj: innerObj,
-                wrap: (updatedObj) => {
-                  const newStatements = body.statements.map((s: any) => {
-                    if (s === ret)
-                      return ts.factory.updateReturnStatement(ret, updatedObj)
-                    return s
-                  })
-                  const newBlock = ts.factory.updateBlock(body, newStatements)
-                  const newFn = ts.isArrowFunction(arg0)
-                    ? ts.factory.updateArrowFunction(arg0, arg0.modifiers, arg0.typeParameters, arg0.parameters, arg0.type, arg0.equalsGreaterThanToken, newBlock)
-                    : ts.factory.updateFunctionExpression(arg0, arg0.modifiers, arg0.asteriskToken, arg0.name, arg0.typeParameters, arg0.parameters, arg0.type, newBlock)
-                  const newArgs = [newFn, ...e.arguments.slice(1)]
-                  return ts.factory.updateCallExpression(e, e.expression, e.typeArguments, newArgs)
-                },
-              }
-            }
-          }
-        }
-
-        return null
-      }
-
-      // export default { ... }
-      if (ts.isObjectLiteralExpression(e)) {
-        return {
-          kind: 'object',
-          obj: e,
-          wrap: updatedObj => updatedObj,
         }
       }
 
       return null
     }
 
-    const extracted = extractConfigObject(expr)
-    if (!extracted)
-      return null
-
-    // If already configured -> short-circuit
-    const hasModules = extracted.obj.properties.some((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === 'modules')
-    const hasFeathers = extracted.obj.properties.some((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === 'feathers')
-    if (hasModules && hasFeathers) {
-    // still might be missing our module or servicesDirs, so continue; but keep reason consistent
+    // export default { ... }
+    if (ts.isObjectLiteralExpression(e)) {
+      return {
+        kind: 'object',
+        obj: e,
+        wrap: updatedObj => updatedObj,
+      }
     }
 
-    // Optional: include mongodb.url configuration when requested (via init)
-    // Expression: process.env.MONGODB_URL || '<defaultUrl>'
-    let mongodbUrlExpr: any | undefined
-    if (mongoDefaultUrl) {
-      const processIdent = ts.factory.createIdentifier('process')
-      const envAccess = ts.factory.createPropertyAccessExpression(processIdent, 'env')
-      const urlAccess = ts.factory.createPropertyAccessExpression(envAccess, 'MONGODB_URL')
-      mongodbUrlExpr = ts.factory.createBinaryExpression(
-        urlAccess,
-        ts.SyntaxKind.BarBarToken,
-        ts.factory.createStringLiteral(mongoDefaultUrl),
-      )
-    }
-
-    const m = ensureModules(extracted.obj)
-    const f = ensureFeathers(m.obj, mongodbUrlExpr ? { mongodbUrlExpr } : undefined)
-
-    const changed = m.changed || f.changed
-    const warnings = [...m.warnings, ...f.warnings].filter(Boolean)
-
-    if (!changed && warnings.length === 0)
-      return { changed: false, content: raw, reason: 'already configured' }
-
-    const newExpr = extracted.wrap(f.obj)
-    if (!newExpr)
-      return null
-    const newExport = ts.factory.updateExportAssignment(exportAssign, exportAssign.modifiers, exportAssign.isExportEquals, newExpr)
-    const newStatements = sourceFile.statements.map((s: any) => (s === exportAssign ? newExport : s))
-    const newSourceFile = ts.factory.updateSourceFile(sourceFile, newStatements)
-
-    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
-    const content = printer.printFile(newSourceFile)
-
-    const reason = warnings.length
-      ? `ast patch (with warnings: ${warnings.join('; ')})`
-      : 'ast patch'
-
-    return { changed: content !== raw, content, reason }
+    return null
   }
-  catch (e) {
+
+  const extracted = extractConfigObject(expr)
+  if (!extracted)
+    return null
+
+  // If already configured -> short-circuit
+  const hasModules = extracted.obj.properties.some((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === 'modules')
+  const hasFeathers = extracted.obj.properties.some((p: any) => ts.isPropertyAssignment(p) && getPropName(p) === 'feathers')
+  if (hasModules && hasFeathers) {
+    // still might be missing our module or servicesDirs, so continue; but keep reason consistent
+  }
+
+  // Optional: include mongodb.url configuration when requested (via init)
+  // Expression: process.env.MONGODB_URL || '<defaultUrl>'
+  let mongodbUrlExpr: any | undefined
+  if (mongoDefaultUrl) {
+    const processIdent = ts.factory.createIdentifier('process')
+    const envAccess = ts.factory.createPropertyAccessExpression(processIdent, 'env')
+    const urlAccess = ts.factory.createPropertyAccessExpression(envAccess, 'MONGODB_URL')
+    mongodbUrlExpr = ts.factory.createBinaryExpression(
+      urlAccess,
+      ts.SyntaxKind.BarBarToken,
+      ts.factory.createStringLiteral(mongoDefaultUrl),
+    )
+  }
+
+  const m = ensureModules(extracted.obj)
+  const f = ensureFeathers(m.obj, mongodbUrlExpr ? { mongodbUrlExpr } : undefined)
+
+  const changed = m.changed || f.changed
+  const warnings = [...m.warnings, ...f.warnings].filter(Boolean)
+
+  if (!changed && warnings.length === 0)
+    return { changed: false, content: raw, reason: 'already configured' }
+
+  const newExpr = extracted.wrap(f.obj)
+  if (!newExpr)
+    return null
+  const newExport = ts.factory.updateExportAssignment(exportAssign, exportAssign.modifiers, newExpr)
+  const newStatements = sourceFile.statements.map((s: any) => (s === exportAssign ? newExport : s))
+  const newSourceFile = ts.factory.updateSourceFile(sourceFile, newStatements)
+
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+  const content = printer.printFile(newSourceFile)
+
+  const reason = warnings.length
+    ? `ast patch (with warnings: ${warnings.join('; ')})`
+    : 'ast patch'
+
+  return { changed: content !== raw, content, reason }
+  } catch (e) {
     // Fallback to regex patch if AST patch fails (Windows/Bun edge cases)
     return null
   }
@@ -548,17 +546,15 @@ async function astPatchNuxtConfig(raw: string, servicesDirName: string, mongoDef
 async function patchNuxtConfig(raw: string, servicesDirName: string, mongoDefaultUrl: string | undefined, opts: { printDiff: boolean, label?: string }): Promise<PatchResult> {
   // AST patch is preferred but can fail on some TS/Bun/Windows edge cases.
   // Never crash init: fall back to regex patch.
-  const looksPatchable
-    = /export\s+default\b/.test(raw)
-      && (/defineNuxtConfig\s*\(/.test(raw) || /export\s+default\s*\{/.test(raw))
+  const looksPatchable =
+    /export\s+default\b/.test(raw)
+    && (/defineNuxtConfig\s*\(/.test(raw) || /export\s+default\s*\{/.test(raw))
 
   if (looksPatchable) {
     try {
       const res = await astPatchNuxtConfig(raw, servicesDirName, mongoDefaultUrl)
-      if (res)
-        return res
-    }
-    catch {
+      if (res) return res
+    } catch {
       // ignore
     }
   }
@@ -636,7 +632,7 @@ ${content}`)
         const re = new RegExp(`^${key}=`, 'm')
         if (re.test(content))
           return content
-        return `${content.trimEnd() + (content.trim() ? '\n' : '')}${key}=${value}\n`
+        return content.trimEnd() + (content.trim() ? '\n' : '') + `${key}=${value}\n`
       }
 
       let nextEnv = envExisting
@@ -681,10 +677,9 @@ ${content}`)
       servicePath: undefined,
       collectionName: undefined,
       docs: opts.docs,
+      schema: opts.auth ? 'zod' : 'none',
       dry: opts.dry,
       force: opts.force,
-      localUsernameField: 'userId',
-      localPasswordField: 'password',
     })
   }
   else {

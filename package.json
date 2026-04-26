@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.5.1",
+  "version": "6.5.11",
   "packageManager": "bun@1.3.6",
   "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
   "author": "Herve de CHAVIGNY",
@@ -265,7 +265,26 @@
     "sanity:cli-dist-meta": "node scripts/check-cli-dist-meta.mjs",
     "repo:bootstrap": "bun install && bun run repo:doctor",
     "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs",
-    "sanity:package-exports": "node scripts/check-package-exports.mjs"
+    "sanity:package-exports": "node scripts/check-package-exports.mjs",
+    "deps:check": "taze",
+    "deps:check:recursive": "taze -r",
+    "deps:update:patch": "taze patch -w",
+    "deps:update:minor": "taze minor -w",
+    "deps:update:latest": "taze latest -w",
+    "deps:update:major": "taze major -w",
+    "deps:update:safe": "bun run deps:update:patch && bun install && bun run verify:all",
+    "deps:update:minor:safe": "bun run deps:update:minor && bun install && bun run verify:all",
+    "deps:update:full-smoke": "bun run build && bun run cli:full-smoke && bun run verify:sanity",
+    "verify:install": "bun install --frozen-lockfile",
+    "verify:build": "bun run build",
+    "verify:typecheck": "bun run typecheck",
+    "verify:test": "bun test",
+    "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
+    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run docs:check-frontmatter && bun run sanity:client-runtime-esm-interop",
+    "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
+    "verify:full": "bun run verify:install && bun run verify:all",
+    "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
+    "sanity:client-runtime-esm-interop": "node scripts/check-client-runtime-esm-interop.mjs"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0"
@@ -276,6 +295,7 @@
     "@feathersjs/authentication-client": "5.0.42",
     "@feathersjs/authentication-local": "5.0.42",
     "@feathersjs/authentication-oauth": "^5.0.40",
+    "@feathersjs/commons": "5.0.42",
     "@feathersjs/configuration": "5.0.42",
     "@feathersjs/errors": "^5.0.37",
     "@feathersjs/express": "5.0.42",
@@ -338,14 +358,15 @@
     "dotenv": "^16.4.5",
     "dotenv-cli": "11.0.0",
     "eslint": "^9.39.2",
+    "happy-dom": "^15.11.7",
     "nuxt": "^4.3.0",
     "release-it": "19.2.4",
+    "taze": "^19.11.0",
     "typescript": "5.9.3",
     "vitest": "4.0.18",
     "vitest-mongodb": "1.0.3",
     "vue": "3.5.30",
-    "vue-router": "4.5.1",
-    "happy-dom": "^15.11.7"
+    "vue-router": "4.5.1"
   },
   "homepage": "https://vevedh.github.io/nuxt-feathers-zod/",
   "bugs": {

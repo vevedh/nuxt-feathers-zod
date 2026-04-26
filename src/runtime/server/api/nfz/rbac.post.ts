@@ -1,4 +1,4 @@
-import { readBody } from 'h3'
+import { defineEventHandler, readBody } from 'h3'
 import { readRbacFile, writeRbacFile } from '../../rbac/rbacFile'
 import { getProjectRootFromNuxt } from '../../utils/nfzPaths'
 
@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
     policies: (body?.policies && typeof body.policies === 'object') ? body.policies : current.policies,
   }
 
-  const out = writeRbacFile(projectRoot, servicesDirs, next)
+  const out = writeRbacFile(projectRoot, servicesDirs, next as any)
 
-  return { ok: true, ...out }
+  const { ok: _ok, ...payload } = out as Record<string, unknown>
+  return { ...payload, ok: true }
 })

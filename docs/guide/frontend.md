@@ -1,6 +1,8 @@
 ---
 editLink: false
 ---
+
+> `feathers-pinia` est optionnel. Pour un client Feathers standard, `useAuthRuntime()` et les appels via `$api`/`useAdminFeathers()` suffisent. Consultez [Feathers-Pinia optionnel](/guide/feathers-pinia).
 # Utilisation côté frontend
 
 Le module injecte un client Feathers dans Nuxt et fournit une base cohérente pour travailler avec `useService()` et `feathers-pinia`.

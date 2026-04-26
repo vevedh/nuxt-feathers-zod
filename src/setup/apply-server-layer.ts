@@ -32,11 +32,10 @@ export async function applyServerLayer(options: ResolvedOptions, nuxt: Nuxt): Pr
 
   for (const serverTemplate of getServerTemplates(options)) {
     const override = resolveTemplateOverrideForFilename(serverTemplate.filename, options)
-    const template = addTemplate(
-      override
-        ? { filename: serverTemplate.filename, src: override.absPath, write: true, options }
-        : { ...serverTemplate, options },
-    )
+    const templateInput = (override
+      ? { filename: serverTemplate.filename, src: override.absPath, write: true, options }
+      : { ...serverTemplate, options }) as any
+    const template = addTemplate(templateInput)
 
     if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin'))
       serverPluginDst = template.dst

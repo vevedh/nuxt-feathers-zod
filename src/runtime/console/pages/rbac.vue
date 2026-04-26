@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 type RbacMethod = 'find' | 'get' | 'create' | 'update' | 'patch' | 'remove'
 type RbacPolicies = Record<string, Partial<Record<RbacMethod, string[]>>>
 
-interface RbacFile {
+type RbacFile = {
   enabled: boolean
   denyByDefault: boolean
   roles: string[]
@@ -29,36 +29,30 @@ async function loadAll() {
     status.value = await $fetch('/api/nfz/status')
     const res: any = await $fetch('/api/nfz/rbac')
     rbac.value = res.file
-  }
-  catch (e: any) {
+  } catch (e: any) {
     error.value = e?.data?.message || e?.message || String(e)
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
 
 function ensurePolicy(service: string) {
-  if (!rbac.value)
-    return
+  if (!rbac.value) return
   rbac.value.policies ||= {}
   rbac.value.policies[service] ||= {}
 }
 
 function toggleRole(service: string, method: RbacMethod, role: string) {
-  if (!rbac.value)
-    return
+  if (!rbac.value) return
   ensurePolicy(service)
   const cur = new Set((rbac.value.policies[service]?.[method] || []).map(String))
-  if (cur.has(role))
-    cur.delete(role)
+  if (cur.has(role)) cur.delete(role)
   else cur.add(role)
   rbac.value.policies[service]![method] = [...cur]
 }
 
 async function save() {
-  if (!rbac.value)
-    return
+  if (!rbac.value) return
   saving.value = true
   error.value = null
   okMsg.value = null
@@ -66,11 +60,9 @@ async function save() {
     await $fetch('/api/nfz/rbac', { method: 'POST', body: rbac.value })
     okMsg.value = 'RBAC enregistré.'
     await loadAll()
-  }
-  catch (e: any) {
+  } catch (e: any) {
     error.value = e?.data?.message || e?.message || String(e)
-  }
-  finally {
+  } finally {
     saving.value = false
   }
 }
@@ -82,16 +74,14 @@ const services = computed(() => {
   return Array.from(new Set([...(Array.isArray(list) ? list : []), ...fromPolicies])).sort()
 })
 
-const methods: RbacMethod[] = ['find', 'get', 'create', 'update', 'patch', 'remove']
+const methods: RbacMethod[] = ['find','get','create','update','patch','remove']
 
 onMounted(loadAll)
 </script>
 
 <template>
   <div style="padding: 16px; max-width: 1100px; margin: 0 auto;">
-    <h1 style="font-size: 20px; font-weight: 700;">
-      RBAC
-    </h1>
+    <h1 style="font-size: 20px; font-weight: 700;">RBAC</h1>
     <p style="opacity: 0.8; margin: 6px 0 16px;">
       Mode: <b>{{ status?.authProvider || 'n/a' }}</b> —
       Source des rôles: <b>{{ status?.authProvider === 'keycloak' ? 'JWT (realm/client roles)' : 'user.roles' }}</b>
@@ -104,32 +94,28 @@ onMounted(loadAll)
       {{ okMsg }}
     </div>
 
-    <div v-if="loading">
-      Chargement…
-    </div>
+    <div v-if="loading">Chargement…</div>
 
     <div v-else-if="rbac">
       <div style="display:flex; gap: 12px; align-items:center; flex-wrap: wrap; margin: 10px 0 16px;">
         <label style="display:flex; gap:8px; align-items:center;">
-          <input v-model="rbac.enabled" type="checkbox" :disabled="!canWrite" />
+          <input type="checkbox" v-model="rbac.enabled" :disabled="!canWrite" />
           <span>Activer RBAC</span>
         </label>
         <label style="display:flex; gap:8px; align-items:center;">
-          <input v-model="rbac.denyByDefault" type="checkbox" :disabled="!canWrite" />
+          <input type="checkbox" v-model="rbac.denyByDefault" :disabled="!canWrite" />
           <span>Deny-by-default</span>
         </label>
 
         <div style="flex: 1;"></div>
 
-        <button :disabled="!canWrite || saving" style="padding: 8px 12px; border-radius: 8px;" @click="save">
+        <button :disabled="!canWrite || saving" @click="save" style="padding: 8px 12px; border-radius: 8px;">
           {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
         </button>
       </div>
 
       <div style="margin: 10px 0 18px;">
-        <div style="font-weight:600; margin-bottom:8px;">
-          Rôles
-        </div>
+        <div style="font-weight:600; margin-bottom:8px;">Rôles</div>
         <div style="display:flex; gap: 8px; flex-wrap: wrap;">
           <span v-for="r in rbac.roles" :key="r" style="padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(127,127,127,.4);">
             {{ r }}
@@ -148,9 +134,7 @@ onMounted(loadAll)
         <table style="border-collapse: collapse; width: 100%; min-width: 860px;">
           <thead>
             <tr>
-              <th style="text-align:left; padding: 10px; border-bottom: 1px solid rgba(127,127,127,.25);">
-                Service
-              </th>
+              <th style="text-align:left; padding: 10px; border-bottom: 1px solid rgba(127,127,127,.25);">Service</th>
               <th v-for="m in methods" :key="m" style="text-align:left; padding: 10px; border-bottom: 1px solid rgba(127,127,127,.25); text-transform: uppercase; font-size: 12px;">
                 {{ m }}
               </th>
@@ -167,13 +151,13 @@ onMounted(loadAll)
                     v-for="r in rbac.roles"
                     :key="r"
                     :disabled="!canWrite"
+                    @click="toggleRole(s, m, r)"
                     :style="{
                       padding: '4px 8px',
                       borderRadius: '999px',
                       border: '1px solid rgba(127,127,127,.35)',
-                      opacity: (rbac.policies?.[s]?.[m] || []).includes(r) ? 1 : 0.4,
+                      opacity: (rbac.policies?.[s]?.[m] || []).includes(r) ? 1 : 0.4
                     }"
-                    @click="toggleRole(s, m, r)"
                   >
                     {{ r }}
                   </button>

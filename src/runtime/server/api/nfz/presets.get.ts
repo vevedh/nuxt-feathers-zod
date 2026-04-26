@@ -1,3 +1,4 @@
+import { defineEventHandler } from 'h3'
 import { listPresets } from '../../../../core/presets'
 
 export default defineEventHandler(() => {

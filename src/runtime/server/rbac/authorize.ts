@@ -2,7 +2,7 @@ import type { HookContext } from '@feathersjs/feathers'
 import type { RbacFile, RbacMethod } from './types'
 import { extractRolesKeycloak, extractRolesLocal } from './extractRoles'
 
-export interface RbacAuthorizeOptions {
+export type RbacAuthorizeOptions = {
   /** 'local' or 'keycloak' */
   provider: 'local' | 'keycloak'
   /** Keycloak clientId for resource_access roles */
@@ -14,8 +14,7 @@ export interface RbacAuthorizeOptions {
 }
 
 function normalizeMethod(m: string): RbacMethod | null {
-  if (m === 'find' || m === 'get' || m === 'create' || m === 'update' || m === 'patch' || m === 'remove')
-    return m
+  if (m === 'find' || m === 'get' || m === 'create' || m === 'update' || m === 'patch' || m === 'remove') return m
   return null
 }
 
@@ -24,19 +23,15 @@ export function createAuthorizeHook(getRbac: () => RbacFile, opts: RbacAuthorize
   return async (context: HookContext) => {
     const method = normalizeMethod(context.method)
     const path = (context.path || '').replace(/^\//, '')
-    if (!method || !path)
-      return context
-    if (skip.has(path))
-      return context
+    if (!method || !path) return context
+    if (skip.has(path)) return context
 
     const rbac = getRbac()
-    if (!rbac?.enabled)
-      return context
+    if (!rbac?.enabled) return context
 
     const required = rbac.policies?.[path]?.[method]
     if (!required || required.length === 0) {
-      if (opts.denyByDefault)
-        throw new Error('Forbidden')
+      if (opts.denyByDefault) throw new Error('Forbidden')
       return context
     }
 
@@ -46,8 +41,7 @@ export function createAuthorizeHook(getRbac: () => RbacFile, opts: RbacAuthorize
       : extractRolesLocal(user)
 
     const allow = roles.some(r => required.includes(r))
-    if (!allow)
-      throw new Error('Forbidden')
+    if (!allow) throw new Error('Forbidden')
     return context
   }
 }

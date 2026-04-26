@@ -2,7 +2,7 @@ export type PresetId = 'mongo+local-auth+users+seed'
 
 export type PresetFieldType = 'string' | 'select' | 'boolean' | 'password'
 
-export interface PresetField {
+export type PresetField = {
   key: string
   label: string
   type: PresetFieldType
@@ -13,7 +13,7 @@ export interface PresetField {
   options?: Array<{ label: string, value: string }>
 }
 
-export interface PresetDefinition {
+export type PresetDefinition = {
   id: PresetId
   title: string
   description?: string
@@ -24,9 +24,9 @@ export interface PresetDefinition {
 
 export type PresetParams = Record<string, any>
 
-export interface PlanStep { title: string, details: string[] }
+export type PlanStep = { title: string, details: string[] }
 
-export interface PresetPlan {
+export type PresetPlan = {
   ok: true
   preset: PresetId
   command: string[]
@@ -37,7 +37,7 @@ export interface PresetPlan {
   masked?: Record<string, string>
 }
 
-export interface CoreContext {
+export type CoreContext = {
   rootDir: string
   allowWrite: boolean
 }
