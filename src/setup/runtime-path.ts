@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs'
  * returns a concrete path with a real extension whenever possible.
  */
 export function resolveRuntimePath(
-  resolver: { resolve: (...paths: string[]) => string },
+  resolver: { resolve(...paths: string[]): string },
   relativePath: string,
 ): string {
   const normalized = relativePath

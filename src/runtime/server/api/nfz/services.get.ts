@@ -1,9 +1,9 @@
-import { defineEventHandler } from 'h3'
 import { useRuntimeConfig } from '#imports'
+import { defineEventHandler } from 'h3'
 import { findProjectRoot, listServices } from '../../utils/nfzSchema'
 
 export default defineEventHandler((event) => {
-  const rc = useRuntimeConfig() as any
+  const rc = useRuntimeConfig()
 
   // Prefer explicit console.servicesDirs, else feathers.servicesDirs, else default
   const feathersDirs: string[] = rc?._feathers?.servicesDirs ?? []

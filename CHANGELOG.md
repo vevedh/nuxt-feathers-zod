@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.5.18 - ESLint hardening and lint:fix cleanup
+
+- Corrige les erreurs bloquantes de `bun lint:fix` détectées après validation de la 6.5.17.
+- Remplace les groupes capturants inutilisés par des groupes non capturants dans `bin/postinstall.mjs` et `src/cli/init.ts`.
+- Remplace `Array(m + 1)` par `Array.from({ length: m + 1 }, () => 0)` dans le diff CLI pour respecter `unicorn/no-new-array`.
+- Réécrit le parsing léger des schemas dans `src/runtime/server/utils/nfzSchema.ts` pour éviter les regex à backtracking polynomial et l'assignation dans un `while`.
+- Ajoute `examples/**/*.ts` au `tsconfig.json` afin que les exemples TypeScript soient couverts par le project service ESLint.
+- Supprime le fichier temporaire `tmp-check.mjs`, qui importait `dist/**` et déclenchait `antfu/no-import-dist`.
+- Met à jour `PROMPT_CONTEXT.md` avec le diagnostic et les règles de reprise associées.
+
 ## 6.5.17 - Docs frontmatter sanity scope fix
 
 - Corrige `scripts/check-docs-frontmatter.mjs` pour ne plus analyser `docs/node_modules/**` ni les répertoires de cache/build VitePress.

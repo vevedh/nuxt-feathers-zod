@@ -4,7 +4,7 @@ export type CreatePiniaClient = (...args: any[]) => any
 export type FeathersPiniaHelper = (...args: any[]) => any
 
 export async function loadFeathersPinia(): Promise<FeathersPiniaModule> {
-  return await import('feathers-pinia') as FeathersPiniaModule
+  return import('feathers-pinia')
 }
 
 export async function resolveCreatePiniaClient(): Promise<CreatePiniaClient> {

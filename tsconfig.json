@@ -26,6 +26,7 @@
     "scripts/**/*.ts",
     "types/**/*.d.ts",
     "test/**/*.ts",
+    "examples/**/*.ts",
     "nuxt.config.ts"
   ],
   "exclude": [

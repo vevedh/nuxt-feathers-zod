@@ -1,6 +1,6 @@
+import type { RbacFile } from './types'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { RbacFile } from './types'
 import { getNfzDir } from '../utils/nfzPaths'
 
 export function defaultRbacFile(): RbacFile {
@@ -20,7 +20,8 @@ export function getRbacPath(projectRoot: string, servicesDirs?: string[]) {
 
 export function readRbacFile(projectRoot: string, servicesDirs?: string[]): RbacFile {
   const p = getRbacPath(projectRoot, servicesDirs)
-  if (!existsSync(p)) return defaultRbacFile()
+  if (!existsSync(p))
+    return defaultRbacFile()
   try {
     const raw = readFileSync(p, 'utf-8')
     const parsed = JSON.parse(raw || '{}')
@@ -29,7 +30,8 @@ export function readRbacFile(projectRoot: string, servicesDirs?: string[]): Rbac
       ...parsed,
       policies: parsed?.policies && typeof parsed.policies === 'object' ? parsed.policies : {},
     } satisfies RbacFile
-  } catch {
+  }
+  catch {
     return defaultRbacFile()
   }
 }
@@ -41,6 +43,6 @@ export function writeRbacFile(projectRoot: string, servicesDirs: string[] | unde
     ...next,
     updatedAt: new Date().toISOString(),
   }
-  writeFileSync(p, JSON.stringify(file, null, 2) + '\n', 'utf-8')
+  writeFileSync(p, `${JSON.stringify(file, null, 2)}\n`, 'utf-8')
   return { path: p, file }
 }
