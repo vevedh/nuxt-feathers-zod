@@ -18,6 +18,11 @@ export default withNuxt(
       'docs/**',
       'playground/**',
       'out.js',
+      // Local scratch files generated during manual dist/runtime inspections.
+      'tmp-check.mjs',
+      'tmp-*.mjs',
+      '**/tmp-check.mjs',
+      '**/tmp-*.mjs',
       // Transitional release-readiness exclusions: legacy monolithic CLI/templates
       // remain build-tested, but are temporarily excluded from strict style linting.
       'src/cli/core.ts',

@@ -1,5 +1,20 @@
 # Changelog
 
+## 6.5.20 - Preset preview typecheck fix
+
+- Corrige l'erreur TypeScript `TS2352` dans `src/runtime/server/api/nfz/presets/preview.post.ts` détectée par `bun verify:all` pendant `bun run typecheck`.
+- Convertit explicitement le résultat typé `PresetPlan` via `unknown` avant destructuration comme `Record<string, unknown>`.
+- Préserve le contrat API existant de la preview des presets : suppression de `ok` depuis le plan interne puis retour `{ ...payload, ok: true }`.
+- Complète `PROMPT_CONTEXT.md` avec le diagnostic, le correctif et la règle de maintenance associée.
+
+
+## 6.5.19 - Lint scratch-file guard
+
+- Corrige le cas `bun lint:fix` où un fichier local temporaire `tmp-check.mjs` pouvait rester à la racine du projet et déclencher `antfu/no-import-dist`.
+- Ajoute `tmp-check.mjs`, `tmp-*.mjs`, `**/tmp-check.mjs` et `**/tmp-*.mjs` aux ignores ESLint afin que les fichiers de diagnostic locaux ne bloquent plus le lint du module.
+- Ajoute les mêmes motifs à `.gitignore` pour éviter d'embarquer ces fichiers scratch dans les futures archives.
+- Complète `PROMPT_CONTEXT.md` avec le diagnostic et la règle de maintenance associée.
+
 ## 6.5.18 - ESLint hardening and lint:fix cleanup
 
 - Corrige les erreurs bloquantes de `bun lint:fix` détectées après validation de la 6.5.17.

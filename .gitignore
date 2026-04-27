@@ -87,6 +87,8 @@ README_private.md
 *.tgz
 out.js
 tmpfile
+tmp-check.mjs
+tmp-*.mjs
 
 # Local archival material
 archives/

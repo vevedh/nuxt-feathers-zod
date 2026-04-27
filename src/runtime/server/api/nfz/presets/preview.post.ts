@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   try {
     const preset = assertPresetId(presetRaw)
     const plan = computePlan(preset, params)
-    const { ok: _ok, ...payload } = plan as Record<string, unknown>
+    const { ok: _ok, ...payload } = plan as unknown as Record<string, unknown>
     return { ...payload, ok: true }
   }
   catch (e: any) {
