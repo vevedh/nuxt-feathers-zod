@@ -20,32 +20,40 @@ export function computePlan(presetId: PresetId, params: PresetParams = {}): Pres
   const force = params.force !== false
 
   const command = ['bunx', 'nuxt-feathers-zod', 'init', '--preset', def.cliPreset]
-  if (force) command.push('--force')
+  if (force)
+    command.push('--force')
 
   const env: Record<string, string> = {}
-  if (mongodbUrl) env.MONGODB_URL = mongodbUrl
-  if (firstUser) env.FIRST_USER = firstUser
-  if (firstPassword) env.FIRST_PASSWORD = firstPassword
+  if (mongodbUrl)
+    env.MONGODB_URL = mongodbUrl
+  if (firstUser)
+    env.FIRST_USER = firstUser
+  if (firstPassword)
+    env.FIRST_PASSWORD = firstPassword
   // Optional knobs read by init CLI (future-proof)
-  if (localUsernameField) env.NFZ_LOCAL_USERNAME_FIELD = localUsernameField
-  if (localPasswordField) env.NFZ_LOCAL_PASSWORD_FIELD = localPasswordField
-  if (servicesDir) env.NFZ_SERVICES_DIR = servicesDir
-  if (writeDockerCompose) env.NFZ_WRITE_DOCKER_COMPOSE = '1'
+  if (localUsernameField)
+    env.NFZ_LOCAL_USERNAME_FIELD = localUsernameField
+  if (localPasswordField)
+    env.NFZ_LOCAL_PASSWORD_FIELD = localPasswordField
+  if (servicesDir)
+    env.NFZ_SERVICES_DIR = servicesDir
+  if (writeDockerCompose)
+    env.NFZ_WRITE_DOCKER_COMPOSE = '1'
 
   const plan = [
     { title: 'Patch nuxt.config.ts', details: [
       `feathers.servicesDirs = ['${servicesDir}']`,
       `feathers.database.mongo.url = ${mongodbUrl ? 'MONGODB_URL (.env)' : '(missing)'}`,
-    ]},
+    ] },
     { title: 'Write .env', details: [
       `MONGODB_URL=${mongodbUrl || '(missing)'}`,
       `FIRST_USER=${firstUser} → ${localUsernameField}`,
       `FIRST_PASSWORD=${firstPassword ? '********' : '(missing)'} → ${localPasswordField}`,
-    ]},
+    ] },
     { title: 'Generate users service', details: [
       `local auth fields: usernameField=${localUsernameField}, passwordField=${localPasswordField}`,
       `security: hashPassword('${localPasswordField}'), protect('${localPasswordField}')`,
-    ]},
+    ] },
     { title: 'Write docker-compose.yaml', details: writeDockerCompose ? ['enabled'] : ['skipped'] },
   ]
 
@@ -53,6 +61,7 @@ export function computePlan(presetId: PresetId, params: PresetParams = {}): Pres
 }
 
 export function assertPresetId(id: string): PresetId {
-  if (isPresetId(id)) return id
+  if (isPresetId(id))
+    return id
   throw new Error(`Unknown preset: ${id}`)
 }

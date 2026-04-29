@@ -1,11 +1,11 @@
 import { createError, defineEventHandler, readBody } from 'h3'
-import { assertPresetId, computePlan, applyPlan } from '../../../../core/presets'
-import { applySchemaFields, getServiceInfo, writeManifestFields } from '../../utils/nfzSchema'
+import { applyPlan, assertPresetId, computePlan } from '../../../../core/presets'
 import { assertNfzConsoleWriteAllowed } from '../../utils/nfzApiContext'
 import { getNfzRootDir } from '../../utils/nfzConsoleContext'
+import { applySchemaFields, getServiceInfo, writeManifestFields } from '../../utils/nfzSchema'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event) as any
+  const body = await readBody(event)
   const ctx = assertNfzConsoleWriteAllowed(event)
 
   if (body?.preset) {
@@ -26,20 +26,20 @@ export default defineEventHandler(async (event) => {
     if (!info.manifestFields) {
       throw createError({ statusCode: 400, message: 'No manifest fields to sync (manifest missing for this service)' })
     }
-    applySchemaFields(info.schemaFile, info.manifestFields as any, info.idField)
+    applySchemaFields(info.schemaFile, info.manifestFields, info.idField)
     return { ok: true, ...getServiceInfo(ctx.projectRoot, ctx.servicesDirs, service) }
   }
 
   if (body?.sync === 'schema-to-manifest') {
-    writeManifestFields(ctx.projectRoot, ctx.servicesDirs, info.service, info.schemaFields as any)
+    writeManifestFields(ctx.projectRoot, ctx.servicesDirs, info.service, info.schemaFields)
     return { ok: true, ...getServiceInfo(ctx.projectRoot, ctx.servicesDirs, service) }
   }
 
   if (!body?.fields || typeof body.fields !== 'object')
     throw createError({ statusCode: 400, message: 'Body.fields is required for service apply' })
 
-  writeManifestFields(ctx.projectRoot, ctx.servicesDirs, info.service, body.fields as any)
-  applySchemaFields(info.schemaFile, body.fields as any, info.idField)
+  writeManifestFields(ctx.projectRoot, ctx.servicesDirs, info.service, body.fields)
+  applySchemaFields(info.schemaFile, body.fields, info.idField)
 
   return { ok: true, ...getServiceInfo(ctx.projectRoot, ctx.servicesDirs, service) }
 })

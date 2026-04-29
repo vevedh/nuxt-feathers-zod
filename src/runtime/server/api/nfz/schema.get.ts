@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getQuery } from 'h3'
-import { getServiceInfo } from '../../utils/nfzSchema'
 import { getNfzApiContext } from '../../utils/nfzApiContext'
+import { getServiceInfo } from '../../utils/nfzSchema'
 
 export default defineEventHandler((event) => {
   const query = getQuery(event)

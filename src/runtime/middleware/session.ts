@@ -8,7 +8,7 @@ function normalizePath(path: string): string {
 }
 
 function resolveSessionOptions() {
-  const pub = useRuntimeConfig().public as any
+  const pub = useRuntimeConfig().public
   const session = pub?._feathers?.pinia?.session ?? {}
   return {
     redirectTo: typeof session.redirectTo === 'string' ? session.redirectTo : '/login',

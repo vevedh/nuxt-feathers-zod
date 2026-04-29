@@ -4,7 +4,7 @@ import * as restClientModule from '@feathersjs/rest-client'
 
 interface FetchClientLike {
   options: { headers?: Record<string, string> }
-  connection: { raw: (url: string, options: any) => Promise<{ _data: any, status: number }> }
+  connection: { raw(url: string, options: any): Promise<{ _data: any, status: number }> }
   request(options: any, params: Params): Promise<any>
 }
 

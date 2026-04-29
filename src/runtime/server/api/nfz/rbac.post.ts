@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     policies: (body?.policies && typeof body.policies === 'object') ? body.policies : current.policies,
   }
 
-  const out = writeRbacFile(projectRoot, servicesDirs, next as any)
+  const out = writeRbacFile(projectRoot, servicesDirs, next)
   const { ok: _ok, ...payload } = out as Record<string, unknown>
 
   return {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type PresetField = {
+interface PresetField {
   key: string
   label: string
   type: 'string' | 'password' | 'select' | 'boolean'
@@ -10,14 +10,14 @@ type PresetField = {
   options?: Array<{ label: string, value: any }>
 }
 
-type PresetDefinition = {
+interface PresetDefinition {
   id: string
   title: string
   description?: string
   fields: PresetField[]
 }
 
-type PreviewResponse = {
+interface PreviewResponse {
   ok: boolean
   preset: string
   command: string[]
@@ -31,7 +31,7 @@ const preview = ref<PreviewResponse | null>(null)
 const busy = ref(false)
 const error = ref<string | null>(null)
 
-async function loadPresets () {
+async function loadPresets() {
   error.value = null
   const res = await $fetch<{ presets: PresetDefinition[] }>('/api/nfz/presets')
   presets.value = res.presets
@@ -39,17 +39,20 @@ async function loadPresets () {
   if (preset) {
     selectedPresetId.value = preset.id
     // init defaults
-    preset.fields.forEach(f => {
-      if (form[f.key] === undefined) form[f.key] = f.default ?? (f.type === 'boolean' ? false : '')
+    preset.fields.forEach((f) => {
+      if (form[f.key] === undefined)
+        form[f.key] = f.default ?? (f.type === 'boolean' ? false : '')
     })
   }
 }
 
 watch(selectedPresetId, () => {
   const preset = presets.value.find(p => p.id === selectedPresetId.value)
-  if (!preset) return
-  preset.fields.forEach(f => {
-    if (form[f.key] === undefined) form[f.key] = f.default ?? (f.type === 'boolean' ? false : '')
+  if (!preset)
+    return
+  preset.fields.forEach((f) => {
+    if (form[f.key] === undefined)
+      form[f.key] = f.default ?? (f.type === 'boolean' ? false : '')
   })
   preview.value = null
 })
@@ -58,33 +61,37 @@ onMounted(loadPresets)
 
 const selectedPreset = computed(() => presets.value.find(p => p.id === selectedPresetId.value))
 
-async function doPreview () {
+async function doPreview() {
   busy.value = true
   error.value = null
   try {
     preview.value = await $fetch<PreviewResponse>('/api/nfz/presets/preview', {
       method: 'POST',
-      body: { preset: selectedPresetId.value, params: { ...form } }
+      body: { preset: selectedPresetId.value, params: { ...form } },
     })
-  } catch (e: any) {
+  }
+  catch (e: any) {
     error.value = e?.data?.message || e?.message || String(e)
-  } finally {
+  }
+  finally {
     busy.value = false
   }
 }
 
-async function doApply () {
+async function doApply() {
   busy.value = true
   error.value = null
   try {
     await $fetch('/api/nfz/presets/apply', {
       method: 'POST',
-      body: { preset: selectedPresetId.value, params: { ...form } }
+      body: { preset: selectedPresetId.value, params: { ...form } },
     })
     await doPreview()
-  } catch (e: any) {
+  }
+  catch (e: any) {
     error.value = e?.data?.message || e?.message || String(e)
-  } finally {
+  }
+  finally {
     busy.value = false
   }
 }
@@ -94,7 +101,9 @@ async function doApply () {
   <div class="mx-auto max-w-5xl p-4 space-y-6">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-semibold">Preset Init</h1>
+        <h1 class="text-2xl font-semibold">
+          Preset Init
+        </h1>
         <p class="text-sm text-gray-500 dark:text-gray-400">
           Initialiser rapidement un projet Nuxt 4 (MongoDB + auth locale + users + seed).
         </p>
@@ -109,7 +118,9 @@ async function doApply () {
     <UCard>
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="font-medium">Choisir un preset</div>
+          <div class="font-medium">
+            Choisir un preset
+          </div>
           <USelect
             v-model="selectedPresetId"
             :options="presets.map(p => ({ label: p.title, value: p.id }))"
@@ -152,7 +163,9 @@ async function doApply () {
               v-model="form[f.key]"
             />
 
-            <p v-if="f.help" class="text-xs text-gray-500">{{ f.help }}</p>
+            <p v-if="f.help" class="text-xs text-gray-500">
+              {{ f.help }}
+            </p>
           </div>
         </div>
 
@@ -170,7 +183,9 @@ async function doApply () {
     <UCard v-if="preview">
       <template #header>
         <div class="flex items-center justify-between">
-          <div class="font-medium">Plan</div>
+          <div class="font-medium">
+            Plan
+          </div>
           <div class="text-xs text-gray-500">
             <span class="mr-2">Commande:</span>
             <code class="text-xs">{{ preview.command.join(' ') }}</code>
@@ -180,9 +195,13 @@ async function doApply () {
 
       <div class="space-y-4">
         <div v-for="(step, i) in preview.plan" :key="i" class="space-y-1">
-          <div class="font-medium">{{ step.title }}</div>
+          <div class="font-medium">
+            {{ step.title }}
+          </div>
           <ul v-if="step.details?.length" class="list-disc pl-6 text-sm text-gray-600 dark:text-gray-300">
-            <li v-for="(d, j) in step.details" :key="j">{{ d }}</li>
+            <li v-for="(d, j) in step.details" :key="j">
+              {{ d }}
+            </li>
           </ul>
         </div>
       </div>

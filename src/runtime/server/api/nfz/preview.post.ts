@@ -1,10 +1,10 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import { assertPresetId, computePlan } from '../../../../core/presets'
-import { getServiceInfo } from '../../utils/nfzSchema'
 import { getNfzApiContext } from '../../utils/nfzApiContext'
+import { getServiceInfo } from '../../utils/nfzSchema'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event) as any
+  const body = await readBody(event)
 
   if (body?.preset) {
     const preset = assertPresetId(String(body.preset))

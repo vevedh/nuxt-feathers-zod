@@ -1,4 +1,4 @@
-export * from './types'
-export { listPresets, getPreset, isPresetId } from './presets'
-export { computePlan, assertPresetId } from './plan'
 export { applyPlan } from './apply'
+export { assertPresetId, computePlan } from './plan'
+export { getPreset, isPresetId, listPresets } from './presets'
+export * from './types'

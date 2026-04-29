@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
-import { listServices } from '../../utils/nfzSchema'
 import { getNfzApiContext } from '../../utils/nfzApiContext'
+import { listServices } from '../../utils/nfzSchema'
 
 export default defineEventHandler((event) => {
   const { projectRoot, servicesDirs } = getNfzApiContext(event)

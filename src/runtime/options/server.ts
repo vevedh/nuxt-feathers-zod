@@ -149,7 +149,7 @@ async function resolveServerModuleEntries(
   }
 
   const toResolvedBuiltin = (from: string, options?: any, phase: 'pre' | 'post' = 'pre') => {
-    const builtinImport = setImportMeta({ name: 'default', from } as Import) as ResolvedServerModule
+    const builtinImport = setImportMeta({ name: 'default', from }) as ResolvedServerModule
     if (options !== undefined)
       builtinImport.options = options
     builtinImport.phase = phase

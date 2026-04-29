@@ -56,7 +56,7 @@ export const useSessionStore = defineStore('nfz-session', () => {
       strategy: credentials.strategy || 'local',
       ...credentials,
     }
-    return await runtime.authenticate(payload)
+    return runtime.authenticate(payload)
   }
 
   async function logout() {
@@ -64,7 +64,7 @@ export const useSessionStore = defineStore('nfz-session', () => {
   }
 
   async function setSession(payload: NfzSessionSetPayload, source: 'runtime' | 'storage' | 'authenticate' = 'runtime') {
-    await runtime.setSession(payload as any, source)
+    await runtime.setSession(payload, source)
   }
 
   return {

@@ -12,7 +12,7 @@ export interface NfzPiniaRuntime {
  * only for explicit application/session stores such as useSessionStore().
  */
 export function useNfzPinia(): NfzPiniaRuntime {
-  const nuxtApp = useNuxtApp() as any
+  const nuxtApp = useNuxtApp()
   const pinia = nuxtApp.$pinia ?? null
   return {
     available: Boolean(pinia),

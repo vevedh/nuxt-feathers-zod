@@ -54,7 +54,7 @@ function patchModulesArray(src) {
   // modules: [ ... ]
   // Insert 'nuxt-feathers-zod' as the first entry if missing.
   return src.replace(
-    /(\bmodules\s*:\s*\[)([^\]]*)(\])/m,
+    /(\bmodules\s*:\s*\[)([^\]]*)(\])/,
     (full, start, inner, end) => {
       if (/['"]nuxt-feathers-zod['"]/.test(full))
         return full
@@ -73,40 +73,40 @@ function patchModulesArray(src) {
 
 function injectDefaultsAfterDefine(src) {
   // Very conservative insert right after "defineNuxtConfig({".
-  const anchor = /defineNuxtConfig\(\{\s*\n?/m
+  const anchor = /defineNuxtConfig\(\{\s*/
   if (!anchor.test(src))
     return src
 
   const insert = [
-    "  // Added by nuxt-feathers-zod postinstall (safe defaults)",
-    "  modules: ['nuxt-feathers-zod'],",
-    "  feathers: {",
-    "    // IMPORTANT: keep this aligned with the official module docs.",
-    "    servicesDirs: ['services'],",
-    "  },",
-    "",
+    '  // Added by nuxt-feathers-zod postinstall (safe defaults)',
+    '  modules: [\'nuxt-feathers-zod\'],',
+    '  feathers: {',
+    '    // IMPORTANT: keep this aligned with the official module docs.',
+    '    servicesDirs: [\'services\'],',
+    '  },',
+    '',
   ].join('\n')
 
-  return src.replace(anchor, (m) => `${m}${insert}\n`)
+  return src.replace(anchor, m => `${m}${insert}\n`)
 }
 
 function injectFeathersDefaultsNearTop(src) {
   // If modules exist but feathers doesn't, try to add feathers block right after modules.
-  if (/\bfeathers\s*:/m.test(src))
+  if (/\bfeathers\s*:/.test(src))
     return src
 
-  const re = /(\bmodules\s*:\s*\[[^\]]*\]\s*,?\s*\n)/m
+  const re = /(\bmodules\s*:\s*\[[^\]]*\]\s*(?:,\s*)?\n)/
   if (!re.test(src))
     return src
 
   const insert = [
-    "  feathers: {",
-    "    servicesDirs: ['services'],",
-    "  },",
-    "",
+    '  feathers: {',
+    '    servicesDirs: [\'services\'],',
+    '  },',
+    '',
   ].join('\n')
 
-  return src.replace(re, (m) => `${m}${insert}\n`)
+  return src.replace(re, m => `${m}${insert}\n`)
 }
 
 function patchNuxtConfig(raw) {
@@ -119,7 +119,7 @@ function patchNuxtConfig(raw) {
   let next = raw
 
   // 1) Try to patch existing modules array.
-  if (/\bmodules\s*:\s*\[/m.test(next)) {
+  if (/\bmodules\s*:\s*\[/.test(next)) {
     next = patchModulesArray(next)
     next = injectFeathersDefaultsNearTop(next)
     return { changed: next !== raw, content: next }

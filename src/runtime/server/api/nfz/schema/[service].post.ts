@@ -1,8 +1,8 @@
 import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
-import { applySchemaFields, getServiceInfo, writeManifestFields } from '../../../utils/nfzSchema'
 import { assertNfzConsoleWriteAllowed, getNfzApiContext } from '../../../utils/nfzApiContext'
+import { applySchemaFields, getServiceInfo, writeManifestFields } from '../../../utils/nfzSchema'
 
-type Body = {
+interface Body {
   fields?: Record<string, any>
   dryRun?: boolean
   /** Synchronize sources without manually editing fields */
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
   if (!service)
     throw createError({ statusCode: 400, message: 'Missing :service param' })
 
-  const body = (await readBody(event)) as Body
+  const body = (await readBody(event))
   const { projectRoot, servicesDirs } = getNfzApiContext(event)
   const info = getServiceInfo(projectRoot, servicesDirs, service)
 
@@ -60,11 +60,11 @@ export default defineEventHandler(async (event) => {
       if (!info.manifestFields) {
         throw createError({ statusCode: 400, message: 'No manifest fields to sync (manifest missing for this service)' })
       }
-      applySchemaFields(info.schemaFile, info.manifestFields as any, info.idField)
+      applySchemaFields(info.schemaFile, info.manifestFields, info.idField)
       return getServiceInfo(projectRoot, servicesDirs, service)
     }
 
-    writeManifestFields(projectRoot, servicesDirs, info.service, info.schemaFields as any)
+    writeManifestFields(projectRoot, servicesDirs, info.service, info.schemaFields)
     return getServiceInfo(projectRoot, servicesDirs, service)
   }
 
@@ -80,8 +80,8 @@ export default defineEventHandler(async (event) => {
 
   assertNfzConsoleWriteAllowed(event)
 
-  writeManifestFields(projectRoot, servicesDirs, info.service, body.fields as any)
-  applySchemaFields(info.schemaFile, body.fields as any, info.idField)
+  writeManifestFields(projectRoot, servicesDirs, info.service, body.fields)
+  applySchemaFields(info.schemaFile, body.fields, info.idField)
 
   return getServiceInfo(projectRoot, servicesDirs, service)
 })

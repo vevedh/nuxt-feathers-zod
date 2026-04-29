@@ -1,6 +1,6 @@
-import { defineEventHandler } from 'h3'
 import { existsSync } from 'node:fs'
-import { join, resolve, isAbsolute } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
+import { defineEventHandler } from 'h3'
 import { readRbacFile } from '../../rbac/rbacFile'
 import { getNfzApiContext } from '../../utils/nfzApiContext'
 
@@ -43,9 +43,12 @@ export default defineEventHandler(async (event) => {
   const authProvider = keycloakEnabled ? 'keycloak' : (authEnabled ? 'local' : null)
 
   let state: StatusState = 'unknown'
-  if (!hasUsers && authEnabled && !keycloakEnabled) state = 'needs-users'
-  else if (!hasUsers && !authEnabled) state = 'empty'
-  else if (hasUsers || keycloakEnabled) state = 'ready'
+  if (!hasUsers && authEnabled && !keycloakEnabled)
+    state = 'needs-users'
+  else if (!hasUsers && !authEnabled)
+    state = 'empty'
+  else if (hasUsers || keycloakEnabled)
+    state = 'ready'
 
   const rbacFile = readRbacFile(projectRoot, servicesDirs)
   const rbac = {
@@ -70,7 +73,7 @@ export default defineEventHandler(async (event) => {
     rbac,
     hints: {
       generateUsersCmd: 'bunx nuxt-feathers-zod add service users --auth',
-      servicesDirsConfig: "feathers: { servicesDirs: ['services'] }",
+      servicesDirsConfig: 'feathers: { servicesDirs: [\'services\'] }',
       rbacFile: 'services/.nfz/rbac.json (par défaut, dans le 1er servicesDir)',
       restartHint: 'Après génération de fichiers, redémarre le dev server (Ctrl+C puis bun dev) et supprime .nuxt si besoin.',
     },

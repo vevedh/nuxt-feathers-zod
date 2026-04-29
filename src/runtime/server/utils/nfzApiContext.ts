@@ -1,7 +1,7 @@
-import { createError } from 'h3'
 import { useRuntimeConfig } from '#imports'
-import { getProjectRootFromNuxt } from './nfzPaths'
+import { createError } from 'h3'
 import { getNfzConsoleConfig } from './nfzConsoleContext'
+import { getProjectRootFromNuxt } from './nfzPaths'
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter(Boolean).map(String) : []
@@ -9,7 +9,7 @@ function asStringArray(value: unknown): string[] {
 
 export function getNfzApiContext(event: any) {
   const nuxt = event.context?.nuxt
-  const rc = useRuntimeConfig() as any
+  const rc = useRuntimeConfig()
   const runtimeFeathers = rc?._feathers || rc?.public?._feathers || {}
   const optionFeathers = nuxt?.options?.feathers || {}
 
