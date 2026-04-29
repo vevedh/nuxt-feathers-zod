@@ -2,7 +2,7 @@
 
 > Module Nuxt 4 pour FeathersJS v5 (Dove), orienté CLI-first, avec génération de services Zod-first en option.
 
-**Version stable actuelle :** `6.5.26`
+**Version stable actuelle :** `6.5.28`
 
 - Documentation : `https://vevedh.github.io/nuxt-feathers-zod/`
 - Démarrage rapide : `docs/guide/getting-started.md`
@@ -54,6 +54,7 @@ cd my-nfz-app
 bun install
 bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
+bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 bunx nuxt-feathers-zod add service users
 bun dev
 ```
@@ -114,4 +115,4 @@ bun run smoke:tarball
 MIT
 
 
-<!-- release-version: 6.5.26 -->
+<!-- release-version: 6.5.28 -->

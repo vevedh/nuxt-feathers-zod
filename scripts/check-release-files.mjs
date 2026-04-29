@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const targetDir = resolve(process.argv[2] || process.cwd())
@@ -10,6 +10,12 @@ const requiredFiles = [
   'CONTRIBUTING.md',
   'RELEASE_CHECKLIST.md',
   'REPO_DEV.md',
+  'docs/.vitepress/theme/index.ts',
+  'docs/.vitepress/theme/style.css',
+  'docs/.vitepress/theme/components/BrandTitle.vue',
+  'docs/.vitepress/theme/components/BrandTitleAfter.vue',
+  'docs/public/images/plume-dark.png',
+  'docs/public/images/plume-light.png',
 ]
 
 let failed = false
@@ -28,8 +34,7 @@ for (const file of requiredFiles) {
     continue
   }
 
-  const text = readFileSync(fullPath, 'utf8').trim()
-  if (!text) {
+  if (stat.size <= 0) {
     console.error(`[nuxt-feathers-zod] Required release file is empty: ${file}`)
     failed = true
   }

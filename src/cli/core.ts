@@ -90,6 +90,7 @@ Commands:
   init templates                Initialize template overrides (default: feathers/templates)
   init embedded                 Initialize embedded server mode (Feathers inside Nuxt/Nitro)
   init remote                   Initialize remote client mode (Feathers client -> external server)
+  init starter                  Scaffold Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter
   remote auth keycloak          Configure remote auth payload mode for Keycloak
   add service <name>            Generate an embedded service (or a service with custom methods via --custom)
   add file-service <name>       Generate a local upload/download file service scaffold
@@ -122,6 +123,7 @@ Examples:
   bunx nuxt-feathers-zod add service actions --custom --methods find,get --customMethods run,preview
   bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
   bunx nuxt-feathers-zod init remote --url http://localhost:3030
+  bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
   bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport rest
   bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
   bunx nuxt-feathers-zod add mongodb-compose

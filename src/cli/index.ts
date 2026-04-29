@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
-import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { cp, readdir } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { defineCommand, runMain } from 'citty'
 import consola from 'consola'
@@ -132,6 +133,75 @@ function parseWebsocketOptions(args: Record<string, unknown>) {
 }
 
 type CliContextArgs = Record<string, unknown> & { _: string[] }
+
+const STARTER_PRESETS = new Set([
+  'quasar-unocss-pinia',
+  'quasar-unocss-pinia-auth',
+])
+
+function resolveStarterPresetSource(preset: string): string {
+  const normalized = preset.trim() || 'quasar-unocss-pinia-auth'
+  if (!STARTER_PRESETS.has(normalized)) {
+    throw new Error(
+      `Unknown starter preset "${preset}". Available: ${Array.from(STARTER_PRESETS).join(', ')}`,
+    )
+  }
+
+  return resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../examples/nfz-quasar-unocss-pinia-starter',
+  )
+}
+
+async function handleInitStarterCommand(cwd: string, args: CliContextArgs) {
+  const preset = typeof args.preset === 'string'
+    ? String(args.preset)
+    : 'quasar-unocss-pinia-auth'
+  const dir = typeof args.dir === 'string'
+    ? String(args.dir)
+    : 'nfz-quasar-unocss-pinia-starter'
+  const force = Boolean(args.force)
+  const dry = Boolean(args.dry)
+
+  const sourceDir = resolveStarterPresetSource(preset)
+  const targetDir = resolve(cwd, dir)
+
+  if (!existsSync(sourceDir)) {
+    throw new Error(
+      `Starter preset source not found: ${sourceDir}. Ensure package files include examples/.`,
+    )
+  }
+
+  if (existsSync(targetDir) && !force) {
+    throw new Error(
+      `Target directory already exists: ${targetDir}. Re-run with --force to overwrite/merge.`,
+    )
+  }
+
+  if (dry) {
+    consola.info(`[nuxt-feathers-zod] init starter preset=${preset}`)
+    consola.info(`- source: ${sourceDir}`)
+    consola.info(`- target: ${targetDir}`)
+    return
+  }
+
+  await cp(sourceDir, targetDir, {
+    recursive: true,
+    force: true,
+    filter: (src) => {
+      const normalized = src.replace(/\\/g, '/')
+      return !/\/(node_modules|\.nuxt|\.output|dist)\b/.test(normalized)
+    },
+  })
+
+  consola.success(`[nuxt-feathers-zod] starter copied to ${targetDir}`)
+  consola.info('Next steps:')
+  consola.info(`  cd ${dir}`)
+  consola.info('  bun install')
+  consola.info('  cp .env.example .env')
+  consola.info('  bun run db:up')
+  consola.info('  bun dev')
+}
 
 function hasDefinedFlag(args: Record<string, unknown>, key: string) {
   return args[key] !== undefined
@@ -852,6 +922,21 @@ export function createCliCommand() {
     },
   })
 
+  const initStarterCommand = defineCommand({
+    meta: {
+      name: 'starter',
+      description: 'Scaffold a Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter',
+    },
+    args: {
+      preset: { type: 'string', description: 'Starter preset name' },
+      dir: { type: 'string', description: 'Target directory' },
+      force: { type: 'boolean', description: 'Overwrite/merge existing files' },
+      dry: { type: 'boolean', description: 'Dry run without writes' },
+    },
+    run: async ({ args }) => {
+      await handleInitStarterCommand(process.cwd(), args as CliContextArgs)
+    },
+  })
   const initCommand = defineCommand({
     meta: {
       name: 'init',
@@ -861,6 +946,7 @@ export function createCliCommand() {
       templates: initTemplatesCommand,
       embedded: initEmbeddedCommand,
       remote: initRemoteCommand,
+      starter: initStarterCommand,
     },
     run: ({ rawArgs }) => {
       if (!rawArgs.length)

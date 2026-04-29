@@ -3,7 +3,7 @@ editLink: false
 ---
 # CLI Reference
 
-> OSS reference snapshot: **v6.5.26**
+> OSS reference snapshot: **v6.5.28**
 
 The `nuxt-feathers-zod` CLI is the official interface for initializing projects, generating Feathers services, registering remote services, adding middleware, enabling MongoDB management and diagnosing an NFZ application.
 
@@ -22,6 +22,7 @@ bunx nfz <command> [args] [--flags]
 | `init embedded` | Initializes embedded Feathers inside Nuxt/Nitro. |
 | `init remote` | Initializes remote client mode against an external Feathers API. |
 | `init templates` | Copies overridable templates into `feathers/templates`. |
+| `init starter` | Copies the Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter from `examples/nfz-quasar-unocss-pinia-starter`. |
 | `remote auth keycloak` | Configures remote Keycloak payload mode. |
 | `add service <name>` | Generates an embedded memory/mongodb service. |
 | `add service <name> --custom` | Generates an adapter-less service with custom methods. |
@@ -52,6 +53,17 @@ bunx nuxt-feathers-zod init remote --url https://api.example.com --transport soc
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 ```
 
+## Quasar + UnoCSS + Pinia starter
+
+```bash
+bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+cd nfz-starter
+bun install
+cp .env.example .env
+bun run db:up
+bun dev
+```
+
 ## RuntimeConfig contract
 
 Read NFZ runtime metadata from:
@@ -77,4 +89,4 @@ The public Builder contract is:
 
 Historical compatibility remains for `/api/nfz/schema/:service`.
 
-<!-- release-version: 6.5.26 -->
+<!-- release-version: 6.5.28 -->

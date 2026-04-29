@@ -1,0 +1,123 @@
+:root {
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #7c3aed;
+  --vp-c-brand-3: #0ea5e9;
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(90deg, var(--vp-c-brand-1), var(--vp-c-brand-2));
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-alt: #f8fafc;
+  --vp-c-bg-soft: #f1f5f9;
+  --vp-c-divider: rgba(2, 6, 23, 0.08);
+  --vp-c-divider-light: rgba(2, 6, 23, 0.06);
+  --vp-custom-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+}
+
+.dark {
+  --vp-c-bg: #0b1220;
+  --vp-c-bg-alt: #0f172a;
+  --vp-c-bg-soft: #111c33;
+  --vp-c-divider: rgba(148, 163, 184, 0.18);
+  --vp-c-divider-light: rgba(148, 163, 184, 0.12);
+  --vp-custom-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Stable VitePress navbar branding.
+   The custom brand is rendered through nav-bar-title-before.
+   Keep the title container visible and hide only the default VitePress logo/text. */
+.VPNavBarTitle .title {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+.VPNavBarTitle .title > .logo,
+.VPNavBarTitle .title > span:not(.vp-brand-title) {
+  display: none !important;
+}
+
+.vp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vp-brand:hover {
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+}
+
+.vp-brand-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.vp-brand-title {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.vp-brand-main {
+  color: var(--vp-c-text-1);
+}
+
+.vp-brand-zod {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: italic;
+}
+
+.VPHome {
+  padding-bottom: 40px;
+}
+
+.VPHomeHero {
+  padding-top: 28px;
+}
+
+.VPHomeHero .image {
+  filter: drop-shadow(var(--vp-custom-shadow));
+}
+
+.VPHomeFeatures .VPFeature {
+  border-radius: 18px;
+  border: 1px solid var(--vp-c-divider-light);
+  background: linear-gradient(180deg, var(--vp-c-bg), var(--vp-c-bg-alt));
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.06);
+}
+
+.dark .VPHomeFeatures .VPFeature {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.VPHomeFeatures .VPFeature .title {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.VPDoc .content-container {
+  padding-top: 8px;
+}
+
+.VPDoc .content-container h1 {
+  letter-spacing: -0.025em;
+}
+
+.VPSidebar {
+  background: color-mix(in srgb, var(--vp-c-bg) 92%, var(--vp-c-bg-alt));
+}
+
+.VPLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}

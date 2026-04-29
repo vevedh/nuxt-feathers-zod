@@ -3,7 +3,7 @@ editLink: false
 ---
 # Référence CLI
 
-> OSS reference snapshot: **v6.5.26**
+> OSS reference snapshot: **v6.5.28**
 
 La CLI `nuxt-feathers-zod` est l’interface officielle pour initialiser un projet, générer les services Feathers, enregistrer les services distants, ajouter les middlewares, activer MongoDB management et diagnostiquer une application NFZ.
 
@@ -22,6 +22,7 @@ bunx nfz <command> [args] [--flags]
 | `init embedded` | Initialise le mode serveur embedded Feathers dans Nuxt/Nitro. |
 | `init remote` | Initialise le mode client remote vers une API Feathers externe. |
 | `init templates` | Copie les templates surchargeables dans `feathers/templates`. |
+| `init starter` | Copie le starter Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ depuis `examples/nfz-quasar-unocss-pinia-starter`. |
 | `remote auth keycloak` | Configure le mode remote avec payload Keycloak. |
 | `add service <name>` | Génère un service embedded adapter memory/mongodb. |
 | `add service <name> --custom` | Génère un service adapter-less avec méthodes custom. |
@@ -46,6 +47,17 @@ bun install
 bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users --auth --schema zod
+bun dev
+```
+
+### Starter Quasar + UnoCSS + Pinia
+
+```bash
+bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+cd nfz-starter
+bun install
+cp .env.example .env
+bun run db:up
 bun dev
 ```
 
@@ -196,4 +208,4 @@ useRuntimeConfig().feathers
 useRuntimeConfig().public.feathers
 ```
 
-<!-- release-version: 6.5.26 -->
+<!-- release-version: 6.5.28 -->

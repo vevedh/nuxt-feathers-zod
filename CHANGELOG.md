@@ -1,3 +1,19 @@
+## 6.5.28 - VitePress branding restore
+
+- Restored the VitePress custom theme under `docs/.vitepress/theme/**`.
+- Restored `docs/public/**`, including the plume logo assets used by the navbar and home hero.
+- Re-enabled the custom navbar brand `nuxt-feathers-zod` with the plume logo via `BrandTitle.vue`.
+- Added docs branding assets to `scripts/check-release-files.mjs` so future archives fail fast if the theme or images disappear.
+- No runtime, CLI command, or starter behavior change; this patch repairs the documentation branding package surface.
+
+## 6.5.27 - Quasar UnoCSS Pinia starter preset
+
+- Added `examples/nfz-quasar-unocss-pinia-starter`.
+- Added CLI command `init starter` with preset `quasar-unocss-pinia-auth`.
+- Starter includes MongoDB compose, seeded admin user, local JWT auth, Pinia session store, RBAC middleware, Quasar dashboard layout and Feathers access facade.
+- Starter private pages use `routeRules.ssr=false` to avoid SSR/client auth redirection hydration mismatches.
+- Quasar ripple is disabled in the starter to reduce non-passive `touchstart` warnings on dashboard controls.
+
 ## 6.5.26 - Documentation dead-link cleanup
 
 - Bumped the package baseline to `6.5.26`.
