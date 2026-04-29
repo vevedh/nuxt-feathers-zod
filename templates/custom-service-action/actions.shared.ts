@@ -1,3 +1,4 @@
+import { useRuntimeConfig } from '#imports'
 import type { Params } from '@feathersjs/feathers'
 import type { RestService } from '@feathersjs/rest-client'
 import type { ClientApplication } from 'nuxt-feathers-zod/client'
@@ -15,9 +16,9 @@ export type ActionsClientService = RestService & {
 }
 
 function getRestConfig() {
-  const cfg = useRuntimeConfig<Record<string, any>>()
+  const cfg = useRuntimeConfig() as Record<string, any>
   const publicCfg = cfg.public ?? {}
-  const feathersCfg = publicCfg.feathers ?? {}
+  const feathersCfg = publicCfg._feathers ?? {}
 
   const restPrefix =
     feathersCfg?.rest?.path

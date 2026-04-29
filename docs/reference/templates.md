@@ -3,40 +3,11 @@ editLink: false
 ---
 # Templates
 
-Le module génère son runtime sous :
+Cette page est conservée pour rendre la navigation VitePress cohérente dans l’archive 6.5.23.
 
-```txt
-.nuxt/feathers/
-```
+Pour le contrat maintenu actuellement, consulte :
 
-## Arborescence typique
+- [Guide CLI](/guide/cli)
+- [Référence CLI](/reference/cli)
 
-```txt
-.nuxt/feathers/
-├─ client/
-├─ server/
-└─ types/
-```
-
-## Overrides
-
-Il est possible de surcharger les templates runtime avec un dossier de projet,
-généralement :
-
-```txt
-feathers/templates
-```
-
-Contrôle via `feathers.templates` :
-
-- `enabled`
-- `dirs`
-- `strict`
-- `allow`
-
-## Cas d'usage
-
-- adapter le plugin client généré
-- personnaliser le plugin serveur
-- modifier les types générés
-- prototyper rapidement un comportement sans forker le module
+<!-- release-version: 6.5.23 -->

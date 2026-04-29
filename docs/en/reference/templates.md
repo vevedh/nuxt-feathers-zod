@@ -3,14 +3,11 @@ editLink: false
 ---
 # Templates
 
-Generated runtime lives in:
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-```txt
-.nuxt/feathers/
-```
+For the current maintained contract, see:
 
-Overrides can be provided from project templates such as:
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-```txt
-feathers/templates
-```
+<!-- release-version: 6.5.23 -->

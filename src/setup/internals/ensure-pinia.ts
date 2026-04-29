@@ -7,7 +7,7 @@ import { hasNuxtModule } from '@nuxt/kit'
 import { consola } from 'consola'
 
 /**
- * Pinia module alignment (best effort).
+ * Application Pinia module alignment (best effort).
  * If @pinia/nuxt is installed but not activated, register it in Nuxt modules.
  * If it is missing, emit an actionable DX warning without side effects.
  */
@@ -29,12 +29,12 @@ export async function ensurePinia(client: ClientOptions, nuxt: Nuxt): Promise<vo
     nuxt.options.modules = nuxt.options.modules || []
     if (!nuxt.options.modules.includes('@pinia/nuxt')) {
       nuxt.options.modules = Array.from(new Set([...(nuxt.options.modules || []), '@pinia/nuxt']))
-      consola.info('[nuxt-feathers-zod] Added @pinia/nuxt to Nuxt modules because feathers.client.pinia is enabled.')
+      consola.info('[nuxt-feathers-zod] Added @pinia/nuxt to Nuxt modules because the NFZ Pinia session layer is enabled.')
     }
   }
   catch {
     consola.warn(
-      `[nuxt-feathers-zod] feathers.client.pinia is enabled but @pinia/nuxt is not installed.${storesHint} `
+      `[nuxt-feathers-zod] NFZ Pinia session layer is enabled but @pinia/nuxt is not installed.${storesHint} `
       + `Install it manually: bun add -D @pinia/nuxt and add '@pinia/nuxt' to your app modules.`,
     )
   }

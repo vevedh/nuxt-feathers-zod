@@ -2,7 +2,7 @@ export type RbacMethod = 'find' | 'get' | 'create' | 'update' | 'patch' | 'remov
 
 export type RbacPolicies = Record<string, Partial<Record<RbacMethod, string[]>>>
 
-export interface RbacFile {
+export type RbacFile = {
   enabled: boolean
   denyByDefault: boolean
   roles: string[]

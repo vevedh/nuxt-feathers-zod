@@ -1,31 +1,71 @@
+---
+editLink: false
+---
 # Flux de développement du dépôt
 
-Utilise ce flux quand tu travailles **dans le dépôt `nuxt-feathers-zod` lui-même**.
+Cette page décrit le flux mainteneur recommandé pour faire évoluer `nuxt-feathers-zod` sans désynchroniser le code, le CLI et la documentation.
 
-## Nettoyage et installation sûrs
+## Objectif
+
+Chaque patch doit conserver le même contrat entre :
+
+- le runtime Nuxt/Feathers généré ;
+- les commandes CLI et les templates produits ;
+- la documentation VitePress ;
+- les scripts de validation et de packaging.
+
+## Cycle de travail recommandé
 
 ```bash
-bun run clean:repo
 bun install
+bun run typecheck
+bun run lint:fix
+bun run docs:build
+bun run verify:all
+npm pack
 ```
 
-Évite de commencer par `bunx nuxi cleanup` dans le dépôt du module. Avant l’installation des dépendances, `nuxi` peut échouer car `@nuxt/kit` n’est pas encore disponible.
+Pour un patch de release, mets aussi à jour :
 
-## Vérifications après installation
+- `package.json` ;
+- `README.md` et `README_fr.md` ;
+- `CHANGELOG.md` ;
+- `JOURNAL.md` ;
+- `PROMPT_CONTEXT.md` ;
+- le fichier `PATCH_VX_Y_Z_*.md` correspondant.
 
-```bash
-bun run repo:doctor
-bun run cli:build
-bun run module:build
+## Règles de cohérence
+
+### RuntimeConfig
+
+Le contrat runtime officiel utilise :
+
+```ts
+runtimeConfig._feathers
+runtimeConfig.public._feathers
 ```
 
-## Métadonnées CLI dans `dist/cli`
+Les anciens chemins `runtimeConfig.feathers` et `runtimeConfig.public.feathers` ne doivent plus être introduits dans le code généré.
 
-L’étape `module:build` ne doit plus afficher de warning au sujet de `dist/cli/index.mjs` maintenant que les binaires publiés sont des wrappers versionnés sous `bin/`. Le contrat supporté reste la séquence finale :
+### Client navigateur
 
-```bash
-bun run cli:build
-bun run sanity:cli-dist-meta
-```
+Les fichiers runtime servis au navigateur doivent éviter les imports ESM/CJS fragiles depuis `@feathersjs/*` et `feathers-pinia`.
 
-Si `sanity:cli-dist-meta` passe, l’artefact CLI final est dans l’état attendu.
+Le contrat standard reste :
+
+- client Feathers natif exposé via `$api`, `$client`, `$feathersClient` ;
+- Pinia utilisé pour la session applicative ;
+- `feathers-pinia` optionnel, non requis pour l'auth runtime standard.
+
+### Documentation
+
+Avant publication, `bun docs:build` doit passer sans lien mort. Les liens internes doivent pointer vers des pages réellement présentes dans `docs/`.
+
+## Voir aussi
+
+- [Publication npm & Git](./publishing)
+- [Checklist de release](./release-checklist)
+- [Workflow communautaire](./community-workflow)
+- [Référence CLI](/reference/cli)
+
+<!-- release-version: 6.5.26 -->

@@ -1,57 +1,70 @@
 ---
-title: Feathers-Pinia optionnel
-description: Comprendre quand activer feathers-pinia dans nuxt-feathers-zod et quand utiliser seulement le client Feathers standard.
+title: Migration depuis Feathers-Pinia
+description: Migrer une application NFZ vers le client Feathers natif, @pinia/nuxt et useSessionStore.
 ---
 
-# Feathers-Pinia optionnel
+# Migration depuis Feathers-Pinia
 
-Depuis la base **6.5.4**, `nuxt-feathers-zod` distingue clairement deux couches :
+Depuis **6.5.21**, `nuxt-feathers-zod` ne s’appuie plus sur `feathers-pinia` pour son runtime client standard.
 
-- **Pinia applicatif** (`@pinia/nuxt`) : stores UI classiques, session, thème, état local.
-- **Feathers-Pinia** (`feathers-pinia`) : stores de services Feathers, cache client, helpers de type `useFind()` / `useGet()`.
+La nouvelle règle est volontairement plus simple :
 
-Ces deux couches ne sont pas équivalentes. Une application peut utiliser `@pinia/nuxt` sans activer `feathers-pinia`.
+- `$api` est toujours le client Feathers natif ;
+- `@pinia/nuxt` sert aux stores applicatifs ;
+- l’authentification passe par `useSessionStore()` et le middleware `session` ;
+- les accès CRUD passent par `$api.service(path)` ou `useService(path)`.
 
-## Configuration recommandée pour NFZ Studio
-
-NFZ Studio utilise `useAuthRuntime()`, `useStudioSessionStore()` et `useAdminFeathers()`. Il n'a pas besoin de stores Feathers-Pinia.
+## Avant
 
 ```ts
-export default defineNuxtConfig({
-  modules: [
-    '@pinia/nuxt',
-    'nuxt-feathers-zod',
-  ],
-
-  feathers: {
-    client: {
-      mode: 'embedded',
-      pinia: false,
-    },
-  },
-})
+const { piniaClient } = useFeathers()
+const users = await piniaClient.service('users').find()
 ```
 
-Cette configuration conserve Pinia pour les stores applicatifs, mais évite d'importer `feathers-pinia` dans le graphe navigateur.
+## Après
 
-## Activer explicitement Feathers-Pinia
+```ts
+const usersService = useService('users')
+const users = await usersService.find({ query: { $limit: 20 } })
+```
 
-Activez `feathers.client.pinia` uniquement quand vous voulez des stores de services Feathers.
+Ou directement :
+
+```ts
+const { $api } = useNuxtApp()
+const users = await $api.service('users').find({ query: { $limit: 20 } })
+```
+
+## Authentification
+
+```ts
+const session = useSessionStore()
+
+await session.login({
+  strategy: 'local',
+  userId,
+  password,
+})
+
+await session.logout()
+```
+
+`useAuthStore()` reste un alias rétrocompatible de `useSessionStore()`.
+
+## Configuration recommandée
 
 ```ts
 export default defineNuxtConfig({
-  modules: [
-    '@pinia/nuxt',
-    'nuxt-feathers-zod',
-  ],
+  modules: ['@pinia/nuxt', 'nuxt-feathers-zod'],
 
   feathers: {
     client: {
       mode: 'embedded',
       pinia: {
-        idField: 'id',
-        services: {
-          users: { idField: '_id' },
+        storesDirs: ['stores'],
+        session: {
+          redirectTo: '/login',
+          publicRoutes: ['/', '/login'],
         },
       },
     },
@@ -59,18 +72,8 @@ export default defineNuxtConfig({
 })
 ```
 
-Dans ce mode, NFZ ajoute les hints Vite nécessaires pour `feathers-pinia` et les packages Feathers client.
+`client.pinia` conserve une compatibilité de forme avec les anciennes configurations, mais ne génère plus de stores de cache de services.
 
-## Matrice d'usage
+## Pourquoi ce changement ?
 
-| Mode | Feathers client | Auth runtime | Feathers-Pinia |
-|---|---:|---:|---:|
-| API embedded sans UI | Non | Non | Non |
-| Embedded + client standard | Oui | Selon `auth` | Non |
-| Remote REST/Socket.IO | Oui | Selon remote auth | Non par défaut |
-| Remote + Keycloak | Oui | Oui | Non par défaut |
-| CRUD client avec stores | Oui | Selon besoin | Oui, explicitement |
-
-## Règle de stabilité
-
-`feathers-pinia` ne doit jamais être importé au top-level du runtime client standard. Il est chargé dynamiquement seulement si `feathers.client.pinia` est activé. Cela évite les erreurs Vite/browser autour des exports CommonJS de `@feathersjs/feathers`.
+Cette approche réduit les problèmes d’interop CommonJS/ESM côté navigateur, simplifie le debugging Nuxt 4/Vite et rend le flux d’authentification plus lisible.

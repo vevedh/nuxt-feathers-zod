@@ -1,31 +1,71 @@
+---
+editLink: false
+---
 # Repository development flow
 
-Use this flow when working **inside the `nuxt-feathers-zod` repository itself**.
+This page documents the recommended maintainer flow for evolving `nuxt-feathers-zod` without desynchronizing code, CLI commands, and documentation.
 
-## Safe cleanup and install
+## Goal
+
+Every patch must keep the same contract across:
+
+- the generated Nuxt/Feathers runtime;
+- CLI commands and generated templates;
+- the VitePress documentation;
+- validation and packaging scripts.
+
+## Recommended workflow
 
 ```bash
-bun run clean:repo
 bun install
+bun run typecheck
+bun run lint:fix
+bun run docs:build
+bun run verify:all
+npm pack
 ```
 
-Avoid starting with `bunx nuxi cleanup` in the module repository. Before dependencies are installed, `nuxi` can fail because `@nuxt/kit` is not available yet.
+For a release patch, also update:
 
-## Post-install checks
+- `package.json`;
+- `README.md` and `README_fr.md`;
+- `CHANGELOG.md`;
+- `JOURNAL.md`;
+- `PROMPT_CONTEXT.md`;
+- the matching `PATCH_VX_Y_Z_*.md` file.
 
-```bash
-bun run repo:doctor
-bun run cli:build
-bun run module:build
+## Consistency rules
+
+### RuntimeConfig
+
+The official runtime contract uses:
+
+```ts
+runtimeConfig._feathers
+runtimeConfig.public._feathers
 ```
 
-## CLI dist metadata
+Legacy paths such as `runtimeConfig.feathers` and `runtimeConfig.public.feathers` must not be introduced in generated code.
 
-The module build step should no longer warn about `dist/cli/index.mjs` now that published bin entrypoints are checked-in wrappers under `bin/`. The supported contract remains the final sequence:
+### Browser client
 
-```bash
-bun run cli:build
-bun run sanity:cli-dist-meta
-```
+Runtime files served to the browser must avoid fragile ESM/CJS imports from `@feathersjs/*` and `feathers-pinia`.
 
-If `sanity:cli-dist-meta` passes, the final CLI artifact is in the expected state.
+The standard contract remains:
+
+- native Feathers client exposed as `$api`, `$client`, `$feathersClient`;
+- Pinia used for the application session;
+- `feathers-pinia` optional, not required for the standard auth runtime.
+
+### Documentation
+
+Before publishing, `bun docs:build` must pass without dead links. Internal links must point to pages that actually exist under `docs/`.
+
+## See also
+
+- [npm & Git publishing](./publishing)
+- [Release checklist](./release-checklist)
+- [Community workflow](./community-workflow)
+- [CLI reference](/en/reference/cli)
+
+<!-- release-version: 6.5.26 -->

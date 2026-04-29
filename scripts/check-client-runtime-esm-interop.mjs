@@ -69,32 +69,6 @@ for (const file of files) {
 }
 
 
-const optimizerSourceFiles = [
-  'src/setup/apply-client-layer.ts',
-  'dist/module.mjs',
-]
-const requiredOptimizerFragments = [
-  'FEATHERS_CLIENT_TARBALL_CJS_DEPS',
-  'nuxt-feathers-zod > ${dep}',
-  'FEATHERS_PINIA_TARBALL_CJS_DEPS',
-  'feathers-pinia > ${dep}',
-]
-for (const optimizerFile of optimizerSourceFiles) {
-  const abs = join(root, optimizerFile)
-  let source = ''
-  try {
-    source = readFileSync(abs, 'utf8')
-  }
-  catch {
-    continue
-  }
-
-  for (const fragment of requiredOptimizerFragments) {
-    if (!source.includes(fragment))
-      failures.push(`${optimizerFile} - missing Vite nested CJS optimizer fragment: ${fragment}`)
-  }
-}
-
 if (failures.length) {
   console.error('[nuxt-feathers-zod] Forbidden fragile browser-runtime imports detected:\n')
   for (const failure of failures)

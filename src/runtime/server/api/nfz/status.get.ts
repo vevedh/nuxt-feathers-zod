@@ -1,10 +1,8 @@
-import { existsSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
-import { useRuntimeConfig } from '#imports'
 import { defineEventHandler } from 'h3'
+import { existsSync } from 'node:fs'
+import { join, resolve, isAbsolute } from 'node:path'
 import { readRbacFile } from '../../rbac/rbacFile'
-import { getNfzConsoleConfig } from '../../utils/nfzConsoleContext'
-import { getProjectRootFromNuxt } from '../../utils/nfzPaths'
+import { getNfzApiContext } from '../../utils/nfzApiContext'
 
 type StatusState =
   | 'empty'
@@ -17,16 +15,9 @@ function absDir(rootDir: string, p: string) {
 }
 
 export default defineEventHandler(async (event) => {
-  const nuxt = event.context?.nuxt
-  const nuxtRoot = nuxt?.options?.rootDir || process.cwd()
-  const projectRoot = getProjectRootFromNuxt(nuxtRoot)
-  const feathers = nuxt?.options?.feathers || {}
-  const rc: any = useRuntimeConfig()
-  const rcFeathers = rc?.feathers || rc?.public?.feathers || {}
-
-  const servicesDirs = (rcFeathers.servicesDirs && rcFeathers.servicesDirs.length)
-    ? rcFeathers.servicesDirs
-    : ((feathers.servicesDirs && feathers.servicesDirs.length) ? feathers.servicesDirs : ['services'])
+  const ctx = getNfzApiContext(event)
+  const nuxtRoot = ctx.nuxt?.options?.rootDir || process.cwd()
+  const { projectRoot, servicesDirs, optionFeathers, runtimeFeathers } = ctx
 
   const servicesDirsAbs = servicesDirs.map((d: string) => absDir(projectRoot, d))
 
@@ -46,17 +37,15 @@ export default defineEventHandler(async (event) => {
   const hasUsersService = usersServicePaths.some((p: string) => existsSync(p))
   const hasUsers = hasUsersSchema || hasUsersService
 
-  const keycloakEnabled = !!feathers.keycloak
-  const authEnabled = feathers.auth !== false || keycloakEnabled
+  const keycloakEnabled = !!(optionFeathers.keycloak || runtimeFeathers.keycloak)
+  const authOption = optionFeathers.auth ?? runtimeFeathers.auth
+  const authEnabled = authOption !== false || keycloakEnabled
   const authProvider = keycloakEnabled ? 'keycloak' : (authEnabled ? 'local' : null)
 
   let state: StatusState = 'unknown'
-  if (!hasUsers && authEnabled && !keycloakEnabled)
-    state = 'needs-users'
-  else if (!hasUsers && !authEnabled)
-    state = 'empty'
-  else if (hasUsers || keycloakEnabled)
-    state = 'ready'
+  if (!hasUsers && authEnabled && !keycloakEnabled) state = 'needs-users'
+  else if (!hasUsers && !authEnabled) state = 'empty'
+  else if (hasUsers || keycloakEnabled) state = 'ready'
 
   const rbacFile = readRbacFile(projectRoot, servicesDirs)
   const rbac = {
@@ -75,13 +64,13 @@ export default defineEventHandler(async (event) => {
     servicesDirs,
     authEnabled,
     authProvider,
-    consoleEnabled: getNfzConsoleConfig(nuxt).enabled,
-    allowWrite: getNfzConsoleConfig(nuxt).allowWrite,
+    consoleEnabled: ctx.console.enabled,
+    allowWrite: ctx.console.allowWrite,
     hasUsers,
     rbac,
     hints: {
       generateUsersCmd: 'bunx nuxt-feathers-zod add service users --auth',
-      servicesDirsConfig: 'feathers: { servicesDirs: [\'services\'] }',
+      servicesDirsConfig: "feathers: { servicesDirs: ['services'] }",
       rbacFile: 'services/.nfz/rbac.json (par défaut, dans le 1er servicesDir)',
       restartHint: 'Après génération de fichiers, redémarre le dev server (Ctrl+C puis bun dev) et supprime .nuxt si besoin.',
     },

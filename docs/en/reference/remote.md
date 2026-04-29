@@ -1,24 +1,13 @@
 ---
 editLink: false
 ---
-# Remote mode
+# Remote
 
-In remote mode the module does not start a local Feathers server.
-It configures a Feathers client that points to an external API.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## Minimal configuration
+For the current maintained contract, see:
 
-```ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-  feathers: {
-    client: {
-      mode: 'remote',
-      remote: {
-        url: 'https://api.example.com',
-        transport: 'rest'
-      }
-    }
-  }
-})
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
+
+<!-- release-version: 6.5.23 -->

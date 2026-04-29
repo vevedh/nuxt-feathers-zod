@@ -1,35 +1,13 @@
 ---
 editLink: false
 ---
-# Release checklist
+# Release Checklist
 
-The official maintainer checklist also lives at the repository root in `RELEASE_CHECKLIST.md`.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-This public page summarizes the minimum release discipline expected before publishing.
+For the current maintained contract, see:
 
-## Public checks to keep green
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-```bash
-bun run build
-bun run typecheck
-bun run test:e2e
-bun run smoke:tarball
-```
-
-## Useful packaging checks
-
-```bash
-bun run sanity:package-exports
-bun run sanity:cli-dist-meta
-bun pm pack --dry-run
-```
-
-## Publishing
-
-See the dedicated guide: [npm & Git publishing](./publishing)
-
-## See also
-
-- [Community workflow](./community-workflow)
-- [Repository development flow](./repo-dev)
-- [Support policy](./support-policy.md)
+<!-- release-version: 6.5.23 -->

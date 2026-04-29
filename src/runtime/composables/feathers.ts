@@ -2,23 +2,28 @@ import type { ClientApplication, ServiceTypes } from '../client'
 import { useNuxtApp } from '#imports'
 
 interface ApiInjection {
-  $api: unknown
+  $api: ClientApplication
   $client?: ClientApplication
-  $piniaClient?: unknown
+  $piniaClient?: null
 }
 
 export function useFeathers() {
   const nuxtApp = useNuxtApp() as unknown as ApiInjection
-  const api = nuxtApp.$api
   const client = (nuxtApp.$client ?? nuxtApp.$api) as ClientApplication
-  const piniaClient = (nuxtApp.$piniaClient ?? (api !== client ? api : null)) as any
-  return { api, client, piniaClient }
+  const api = (nuxtApp.$api ?? client) as ClientApplication
+
+  return {
+    api,
+    client,
+    // Kept only to avoid breaking old destructuring code. NFZ no longer
+    // creates a the legacy service-store wrapper client.
+    piniaClient: null,
+  }
 }
 
 export function useService<L extends keyof ServiceTypes>(path: L) {
-  const { piniaClient, client } = useFeathers()
-  const host = (piniaClient && typeof piniaClient.service === 'function') ? piniaClient : client
-  return (host as any).service(String(path)) as ServiceTypes[L]
+  const { api } = useFeathers()
+  return (api as any).service(String(path)) as ServiceTypes[L]
 }
 
 export function useRawService<L extends keyof ServiceTypes>(path: L) {

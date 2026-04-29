@@ -3,186 +3,197 @@ editLink: false
 ---
 # Référence CLI
 
-Commande d’entrée :
+> OSS reference snapshot: **v6.5.26**
+
+La CLI `nuxt-feathers-zod` est l’interface officielle pour initialiser un projet, générer les services Feathers, enregistrer les services distants, ajouter les middlewares, activer MongoDB management et diagnostiquer une application NFZ.
+
+## Utilisation
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
+# alias
+bunx nfz <command> [args] [--flags]
 ```
 
-Surface officielle OSS alignée sur la version **6.5.9**.
+## Surface officielle alignée avec le code
 
-## Noyau public recommandé
+| Commande | Rôle |
+| --- | --- |
+| `init embedded` | Initialise le mode serveur embedded Feathers dans Nuxt/Nitro. |
+| `init remote` | Initialise le mode client remote vers une API Feathers externe. |
+| `init templates` | Copie les templates surchargeables dans `feathers/templates`. |
+| `remote auth keycloak` | Configure le mode remote avec payload Keycloak. |
+| `add service <name>` | Génère un service embedded adapter memory/mongodb. |
+| `add service <name> --custom` | Génère un service adapter-less avec méthodes custom. |
+| `add file-service <name>` | Génère un service local upload/download. |
+| `add remote-service <name>` | Enregistre un service distant côté client. |
+| `add middleware <name>` | Génère un middleware ou artefact associé. |
+| `add server-module <name>` | Génère un module serveur embedded avancé. |
+| `add mongodb-compose` | Génère `docker-compose-db.yaml` pour MongoDB. |
+| `mongo management` | Active ou met à jour les routes MongoDB management. |
+| `schema <service>` | Inspecte, valide ou répare le schéma d’un service. |
+| `auth service <name>` | Active ou désactive les hooks JWT sur un service. |
+| `doctor` | Diagnostique la configuration du projet. |
 
-- `init embedded`
-- `init remote`
-- `remote auth keycloak`
-- `add service <name>`
-- `add remote-service <name>`
-- `add file-service <name>`
-- `add middleware <name>`
-- `schema <service>`
-- `auth service <name>`
-- `mongo management`
-- `doctor`
+## Exemples recommandés
 
-## Commandes secondaires / compatibilité
-
-- `add custom-service <name>`
-- `init templates`
-- `templates list`
-- `plugins list|add`
-- `modules list|add`
-- `middlewares list|add`
-- `add server-module <name>`
-- `add mongodb-compose`
-
-
-## Cibles avancées : quand utiliser `plugin`, `server-module`, `module`, `client-module`, `hook`, `policy`
-
-### Résumé rapide
-
-- `plugin` : plugin serveur Feathers global
-- `server-module` : module serveur/infrastructure
-- `module` : alias de `server-module`
-- `client-module` : plugin Nuxt chargé côté navigateur
-- `hook` : logique de hook Feathers réutilisable
-- `policy` : règle d'autorisation spécialisée
-
-### Commandes CLI associées
-
-```bash
-bunx nuxt-feathers-zod plugins add audit-bootstrap
-bunx nuxt-feathers-zod add server-module security-headers
-bunx nuxt-feathers-zod add middleware request-logger --target module
-bunx nuxt-feathers-zod add middleware api-debug --target client-module
-bunx nuxt-feathers-zod add middleware attach-tenant --target hook
-bunx nuxt-feathers-zod add middleware is-admin --target policy
-```
-
-Pour les exemples détaillés, voir le [Guide CLI](/guide/cli#differences-entre-plugin-server-module-module-client-module-hook-policy).
-
-
-## Doctor en 6.5.9
-
-Le doctor met maintenant en évidence la configuration d’auth locale embedded :
-
-- `auth.enabled`
-- `auth.authStrategies`
-- `auth.local.usernameField` / `auth.local.passwordField`
-- `auth.local.entityUsernameField` / `auth.local.entityPasswordField`
-- un exemple de payload local Feathers
-- un warning explicite si la cartographie requête ↔ entité diverge
-
-## Exemples de référence
-
-### Vérification minimale
-
-```bash
-bunx nuxt-feathers-zod --help
-bunx nuxt-feathers-zod doctor
-```
-
-### Nouvelle app embedded
+### Projet embedded minimal
 
 ```bash
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
+bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users
+bunx nuxt-feathers-zod add service users --auth --schema zod
 bun dev
 ```
 
-### Nouvelle app remote
+### Projet embedded MongoDB
 
 ```bash
-bunx nuxi@latest init my-nfz-remote
-cd my-nfz-remote
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
-bun dev
-```
-
-### Services et maintenance de schéma
-
-```bash
-bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id
-bunx nuxt-feathers-zod auth service users --enabled true
-bunx nuxt-feathers-zod schema users --show
-bunx nuxt-feathers-zod schema users --validate
-bunx nuxt-feathers-zod schema users --diff
-bunx nuxt-feathers-zod schema users --repair-auth
-```
-
-<!-- mongodb-adapter-note -->
-> **Note MongoDB** — Quand tu utilises `--adapter mongodb`, une base MongoDB doit déjà être active et joignable par l'application. Tu peux générer rapidement un `docker-compose.yaml` pour démarrer une base MongoDB en écoute avec : `bunx nuxt-feathers-zod add mongodb-compose`.
-
-### Runtime / Mongo
-
-```bash
-bunx nuxt-feathers-zod add middleware trace-headers --target nitro
-bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-bunx nuxt-feathers-zod add mongodb-compose
+bunx nuxt-feathers-zod add mongodb-compose --port 27017 --database app
+bunx nuxt-feathers-zod init embedded --force --auth
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --schema zod
 bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
 ```
 
-## Notes de stabilité
-
-### `schema <service>` : options à retenir
-
-- `--validate` : vérifie la cohérence manifest ↔ fichiers générés
-- `--repair-auth` : restaure la baseline auth-compatible d’un service `users`
-- `--diff` : inspecte le drift avant écriture
-
-### `add middleware <name>` : lecture des cibles
-
-- cibles publiques recommandées : `nitro`, `route`
-- cibles avancées : `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
-
-### Compatibilité historique
-
-`add custom-service <name>` reste accepté, mais la forme recommandée est :
+### Projet remote
 
 ```bash
-bunx nuxt-feathers-zod add service <name> --custom
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
+bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 ```
 
-La documentation détaillée des flags reste dans le [Guide CLI](/guide/cli).
+### Remote + Keycloak
 
+```bash
+bunx nuxt-feathers-zod remote auth keycloak \
+  --ssoUrl https://sso.example.com \
+  --realm myrealm \
+  --clientId myapp
+```
 
-<!-- release-version: 6.4.48 -->
+## Options principales
 
+### `init embedded`
 
-<!-- release-version: 6.4.49 -->
+```bash
+bunx nuxt-feathers-zod init embedded \
+  --framework express \
+  --servicesDir services \
+  --restPath /feathers \
+  --websocketPath /socket.io \
+  --auth true \
+  --swagger false \
+  --force
+```
 
+Flags importants :
 
-<!-- release-version: 6.5.9 -->
+- `--framework express|koa`
+- `--servicesDir <dir>`
+- `--restPath <path>`
+- `--websocketPath <path>`
+- `--secureDefaults true|false`
+- `--cors true|false`
+- `--compression true|false`
+- `--helmet true|false`
+- `--bodyParserJson true|false`
+- `--bodyParserUrlencoded true|false`
+- `--serveStatic true|false`
+- `--serverModulesPreset express-baseline`
+- `--auth true|false`
+- `--swagger true|false`
 
+### `init remote`
 
-<!-- release-version: 6.5.9 -->
+```bash
+bunx nuxt-feathers-zod init remote \
+  --url https://api.example.com \
+  --transport socketio \
+  --restPath /feathers \
+  --websocketPath /socket.io \
+  --auth true \
+  --payloadMode jwt
+```
 
+Flags importants :
 
-<!-- release-version: 6.4.125 -->
+- `--url <http(s)://...>`, requis
+- `--transport socketio|rest|auto`, défaut CLI : `socketio`
+- `--restPath <path>`
+- `--websocketPath <path>`
+- `--auth true|false`
+- `--payloadMode jwt|keycloak`
+- `--strategy jwt`
+- `--tokenField accessToken`
+- `--servicePath authentication`
+- `--reauth true|false`
 
+### `add service <name>`
 
-<!-- release-version: 6.5.9 -->
+```bash
+bunx nuxt-feathers-zod add service messages --schema zod
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
+bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview --schema zod
+```
 
+Règles alignées avec le code :
 
-<!-- release-version: 6.5.9 -->
+- `--methods` et `--customMethods` sont acceptés uniquement avec `--custom`.
+- `--collection` exige `--adapter mongodb`.
+- `--idField` est ignoré/interdit pour les services adapter-less.
+- Le service généré met à jour `services/.nfz/manifest.json`.
 
+### `add file-service <name>`
 
-<!-- release-version: 6.5.16 -->
+```bash
+bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets --auth true
+```
 
+Le template partagé généré utilise désormais `runtimeConfig.public._feathers`, pas `runtimeConfig.public.feathers`, pour résoudre le fallback REST.
 
-<!-- release-version: 6.5.18 -->
+### `mongo management`
 
+```bash
+bunx nuxt-feathers-zod mongo management \
+  --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin \
+  --auth false \
+  --basePath /mongo
+```
 
-<!-- release-version: 6.5.19 -->
+## Builder API runtime
 
+Depuis la 6.5.26, la documentation, le code runtime et le contrat public Builder sont alignés sur :
 
-<!-- release-version: 6.5.20 -->
+- `GET /api/nfz/services`
+- `GET /api/nfz/manifest`
+- `POST /api/nfz/manifest`
+- `GET /api/nfz/schema?service=<name>`
+- `POST /api/nfz/schema`
+- `POST /api/nfz/preview`
+- `POST /api/nfz/apply`
+
+Les routes historiques restent compatibles :
+
+- `GET /api/nfz/schema/:service`
+- `POST /api/nfz/schema/:service`
+
+## RuntimeConfig officiel
+
+Le runtime doit lire :
+
+```ts
+const serverConfig = useRuntimeConfig()._feathers
+const publicConfig = useRuntimeConfig().public._feathers
+```
+
+À ne plus utiliser dans les nouveaux fichiers :
+
+```ts
+useRuntimeConfig().feathers
+useRuntimeConfig().public.feathers
+```
+
+<!-- release-version: 6.5.26 -->

@@ -1,4 +1,60 @@
+## 6.5.26 - Documentation dead-link cleanup
+
+- Bumped the package baseline to `6.5.26`.
+- Added the missing VitePress pages `docs/guide/repo-dev.md` and `docs/en/guide/repo-dev.md`.
+- Added the repository development flow to the French and English sidebars.
+- Fixed the `bun docs:build` failure caused by dead links to `/guide/repo-dev` and `./repo-dev`.
+- No runtime or CLI behavior change; this patch only keeps the documentation contract buildable.
+
+## 6.5.25 - Lint max-len cleanup
+
+- Bumped the package baseline to `6.5.25`.
+- Wrapped long lines reported by `bun lint:fix` in `src/cli/init.ts`, `src/runtime/adapters/ofetch.ts`, `src/runtime/console/pages/rbac.vue`, `src/runtime/server/keycloak.ts`, and `src/runtime/server/utils/nfzSchema.ts`.
+- No functional runtime, CLI, Builder, or documentation contract change; this is a style-clean patch after the 6.5.24 typecheck fix.
+
+## 6.5.24 - Typecheck fix for generated actions and nested init route
+
+- Bumped the package baseline to `6.5.24`.
+- Fixed `services/actions/actions.shared.ts` and the custom action template to avoid passing a generic type argument to Nuxt's generated `useRuntimeConfig()` import.
+- Fixed the nested `/api/nfz/init/add-users` route import path to resolve `src/runtime/server/utils/nfzApiContext.ts` correctly from the `init/` subdirectory.
+- This patch keeps the 6.5.23 code/CLI/docs alignment and only corrects the reported TypeScript regressions.
+
 # Changelog
+
+## 6.5.23 - Code, CLI and documentation alignment
+
+- Bumped the package baseline to `6.5.23`.
+- Aligned CLI-generated shared templates for file services and adapter-less custom services with the canonical `runtimeConfig.public._feathers` contract.
+- Added explicit `useRuntimeConfig` imports to CLI-generated browser shared templates.
+- Aligned `/api/nfz/rbac`, `/api/nfz/status` and `/api/nfz/init/add-users` with the centralized `getNfzApiContext()` / `assertNfzConsoleWriteAllowed()` helpers.
+- Restored the missing CLI documentation files required by `sanity:release-meta`: `docs/guide/cli.md`, `docs/en/guide/cli.md`, `docs/reference/cli.md`, `docs/en/reference/cli.md`.
+- Restored minimal reference indexes and session-auth Pinia pages referenced by the VitePress navigation.
+- Updated `AI_CONTEXT/CLI_REFERENCE.md`, README release metadata and the manual service guide to stop documenting legacy `public.feathers` reads.
+
+
+## 6.5.22 - Runtime config and Builder API alignment
+
+- Fixed server/runtime consistency by reading internal configuration from `runtimeConfig._feathers` instead of legacy `runtimeConfig.feathers` fallbacks.
+- Added server-side `_feathers.servicesDirs` and `_feathers.console` runtime metadata so Builder APIs can resolve service folders and write permissions reliably.
+- Fixed missing `useRuntimeConfig` imports in `useNfzAdminClient()` and custom action service shared templates.
+- Aligned custom action REST fallback with `runtimeConfig.public._feathers`.
+- Implemented the canonical Builder API routes: `/api/nfz/manifest`, `/api/nfz/schema`, `/api/nfz/preview` and `/api/nfz/apply`.
+- Kept compatibility with the historical per-service routes `/api/nfz/schema/:service`.
+- Replaced generic RBAC `Error('Forbidden')` throws with Feathers `Forbidden` errors.
+- Updated FR/EN Builder and runtime-config documentation.
+
+## 6.5.21
+
+- Removed the standard runtime dependency on `feathers-pinia`.
+- Kept `$api` and `$client` as native Feathers clients.
+- Added the official `useSessionStore()` Pinia store for authentication UI state.
+- Kept `useAuthStore()` as a backward-compatible alias.
+- Added the built-in named Nuxt route middleware `session`.
+- Updated the auth bootstrap plugin to restore the native auth runtime session.
+- Kept `client.pinia` as the `@pinia/nuxt` session-store layer, not as a service-cache wrapper.
+- Added FR/EN documentation for the simplified session-auth flow and migration from Feathers-Pinia.
+- Removed `feathers-pinia` from package and playground dependencies.
+
 
 ## 6.5.20 - Preset preview typecheck fix
 

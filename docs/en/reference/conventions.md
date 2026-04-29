@@ -3,19 +3,11 @@ editLink: false
 ---
 # Conventions
 
-## Root owns everything
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-Declare Feathers/Mongo/Schema dependencies at the repository root to avoid type-check issues in the playground.
+For the current maintained contract, see:
 
-## No pnpm / no `catalog:`
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-- remove pnpm files
-- replace `catalog:` versions with semver compatible with Bun
-- set `packageManager` to Bun
-
-## Custom methods (SSR-safe + transport-agnostic)
-
-- never declare a custom method in `methods` unless it exists on the client service
-- in SSR: register native methods only
-- in browser: patch custom methods before `client.use()`
-- order: `remote.run` -> `remote.request` -> `remote.send` -> HTTP fallback
+<!-- release-version: 6.5.23 -->

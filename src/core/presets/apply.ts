@@ -1,5 +1,5 @@
-import type { CoreContext, PresetPlan } from './types'
 import { spawn } from 'node:child_process'
+import type { CoreContext, PresetPlan } from './types'
 
 let running = false
 
@@ -56,8 +56,7 @@ export async function applyPlan(plan: PresetPlan, ctx: CoreContext) {
     }
 
     return { ok: true, stdout, stderr }
-  }
-  finally {
+  } finally {
     running = false
   }
 }

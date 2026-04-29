@@ -1,39 +1,13 @@
 ---
 editLink: false
 ---
-# Swagger (legacy)
+# Swagger
 
-The module supports `feathers-swagger` in legacy mode.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## Example: new Nuxt 4 app + Swagger
+For the current maintained contract, see:
 
-```bash
-bunx nuxi@latest init my-nfz-swagger
-cd my-nfz-swagger
-bun install
-bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --force --swagger
-bunx nuxt-feathers-zod add service users --docs
-bun dev
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-## Manual activation
-
-```ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-  feathers: {
-    swagger: true
-  }
-})
-```
-
-## Usual URLs
-
-- UI: `http://localhost:3000/feathers/docs/`
-- Spec: `http://localhost:3000/feathers/swagger.json`
-
-## Stable point to preserve
-
-In this integration, the spec is served via `../swagger.json` from the UI.
+<!-- release-version: 6.5.23 -->

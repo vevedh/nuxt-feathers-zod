@@ -1,16 +1,13 @@
+---
+editLink: false
+---
 # Troubleshooting
 
-## `/feathers/<service>` returns 404
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-Likely causes:
+For the current maintained contract, see:
 
-- no embedded service was detected
-- the embedded plugin crashed before `await app.setup()`
-- the generated service expects MongoDB but `mongodbClient` is not configured
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-Checklist:
-
-```bash
-bunx nuxt-feathers-zod doctor
-bunx nuxt-feathers-zod add service users --adapter memory
-```
+<!-- release-version: 6.5.23 -->

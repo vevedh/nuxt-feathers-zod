@@ -2,7 +2,7 @@
 
 > Module Nuxt 4 pour FeathersJS v5 (Dove), orienté CLI-first, avec génération de services Zod-first en option.
 
-**Version stable actuelle :** `6.5.20`
+**Version stable actuelle :** `6.5.26`
 
 - Documentation : `https://vevedh.github.io/nuxt-feathers-zod/`
 - Démarrage rapide : `docs/guide/getting-started.md`
@@ -27,7 +27,7 @@ NFZ est adapté si tu veux :
 - des services Feathers générés par une **CLI déterministe**
 - des types partagés et des schémas **Zod-first** en option
 - des flux **auth locale/JWT** ou une intégration **Keycloak SSO**
-- des helpers côté client pour **Pinia / feathers-pinia**
+- des helpers côté client pour **Pinia / store session**
 - un chemin vers la **gestion MongoDB**, les diagnostics et le builder tooling
 
 ## Ce que le module OSS inclut
@@ -52,8 +52,7 @@ NFZ est adapté si tu veux :
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod feathers-pinia
-bun add -D @pinia/nuxt
+bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
 bunx nuxt-feathers-zod add service users
 bun dev
@@ -71,8 +70,7 @@ Ces quatre règles évitent la plupart des problèmes de scan, d’entité auth 
 ## Installation
 
 ```bash
-bun add nuxt-feathers-zod feathers-pinia
-bun add -D @pinia/nuxt
+bun add nuxt-feathers-zod @pinia/nuxt pinia
 ```
 
 Dépendances Swagger optionnelles :
@@ -114,3 +112,6 @@ bun run smoke:tarball
 ## Licence
 
 MIT
+
+
+<!-- release-version: 6.5.26 -->

@@ -2,6 +2,7 @@ import type { Nuxt } from '@nuxt/schema'
 import type { AuthOptions, PublicAuthOptions, ResolvedAuthOptions, ResolvedAuthOptionsOrDisabled } from './authentication'
 import type { ClientOptions, ResolvedClientOptions, ResolvedClientOptionsOrDisabled } from './client'
 import type { PiniaOptions } from './client/pinia'
+import type { ConsoleOptions, ResolvedConsoleOptions } from './console'
 import type { DataBaseOptions, ResolvedDataBaseOptions } from './database'
 import type { MongoManagementRouteSpec } from './database/mongodb'
 import type { KeycloakOptions, ResolvedKeycloakOptions, ResolvedKeycloakOptionsOrDisabled } from './keycloak'
@@ -17,6 +18,7 @@ import { createResolver } from '@nuxt/kit'
 import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
 import { resolveClientOptions } from './client'
+import { resolveConsoleOptions } from './console'
 import { resolveDataBaseOptions } from './database'
 import { getMongoManagementRoutes } from './database/mongodb'
 import { resolveKeycloakOptions } from './keycloak'
@@ -41,6 +43,7 @@ export interface ModuleOptions {
   swagger?: SwaggerOptionsOrDisabled
   templates?: TemplatesOptions
   devtools?: boolean
+  console?: ConsoleOptions | boolean
 }
 
 export interface ResolvedOptions {
@@ -57,9 +60,12 @@ export interface ResolvedOptions {
   swagger?: ResolvedSwaggerOptionsOrDisabled
   templates: ResolvedTemplatesOptions
   devtools: boolean
+  console?: ResolvedConsoleOptions
 }
 
 export interface FeathersRuntimeConfig {
+  servicesDirs?: ServicesDirs
+  console?: ResolvedConsoleOptions
   auth?: ResolvedAuthOptions
   keycloak?: Partial<ResolvedKeycloakOptions>
 }
@@ -161,6 +167,10 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const validator = resolveValidatorOptions(options.validator)
   const swagger = resolveSwaggerOptions(options.swagger, transports)
   const templates = resolveTemplatesOptions(options.templates, rootDir)
+  const consoleOptions = resolveConsoleOptions(options.console, {
+    dev: Boolean(nuxt.options.dev),
+    servicesDirs,
+  })
 
   const servicesImports = getResolvedClientMode(client) === 'embedded'
     ? await getServicesImports(servicesDirs)
@@ -192,6 +202,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     swagger,
     templates,
     devtools: options.devtools !== false,
+    console: consoleOptions,
   }
 }
 
@@ -225,6 +236,8 @@ function toPublicRemoteClientConfig(client: ResolvedClientOptions['remote']) {
 
 export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeConfig {
   return {
+    servicesDirs: options.servicesDirs,
+    console: options.console,
     auth: options.auth || undefined,
     keycloak: options.keycloak || undefined,
   }

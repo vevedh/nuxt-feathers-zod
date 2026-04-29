@@ -1,14 +1,14 @@
 # Builder client
 
-La phase **6.4.111** introduit `useBuilderClient()` pour le **Builder Studio**.
+`useBuilderClient()` centralise les appels HTTP authentifiés vers les surfaces internes du **Builder Studio** via `useAuthBoundFetch()`.
 
 ## Objectif
 
-Comme `useMongoManagementClient()`, ce helper centralise les appels HTTP authifiés vers les surfaces internes du builder via `useAuthBoundFetch()`.
+Le helper évite de coder les routes `/api/nfz/**` en dur dans les dashboards Nuxt/NFZ Studio. Il lit les métadonnées publiques depuis `runtimeConfig.public._feathers.builder`, puis applique automatiquement le token courant grâce à `useAuthBoundFetch()`.
 
-## Routes formalisées
+## Routes canoniques implémentées
 
-Le runtime public expose désormais `runtimeConfig.public._feathers.builder` avec des routes canoniques :
+Le runtime public expose `runtimeConfig.public._feathers.builder` avec les routes suivantes, désormais alignées avec les endpoints serveur :
 
 - `GET /api/nfz/services`
 - `GET /api/nfz/manifest`
@@ -18,23 +18,36 @@ Le runtime public expose désormais `runtimeConfig.public._feathers.builder` ave
 - `POST /api/nfz/preview`
 - `POST /api/nfz/apply`
 
+Les routes historiques par service restent disponibles :
+
+- `GET /api/nfz/schema/:service`
+- `POST /api/nfz/schema/:service`
+
 ## Exemple
 
 ```ts
 const builder = useBuilderClient()
 
-const manifest = await builder.getManifest()
 const services = await builder.getServices()
-const preview = await builder.preview({ manifest })
+const manifest = await builder.getManifest()
+
+const preview = await builder.preview({
+  service: 'messages',
+  fields: {
+    text: { type: 'string', required: true },
+  },
+})
+
+const applied = await builder.apply({
+  service: 'messages',
+  fields: {
+    text: { type: 'string', required: true },
+  },
+})
 ```
 
-## Contrat
+## Écriture protégée
 
-Le module n'implémente pas encore ces endpoints côté serveur.
-Cette phase formalise :
+Les opérations d’écriture (`POST /api/nfz/manifest`, `POST /api/nfz/schema`, `POST /api/nfz/apply`) vérifient `feathers.console.allowWrite` via le runtime serveur `_feathers.console` et les options Nuxt du projet consommateur.
 
-- les métadonnées publiques
-- le helper client auth-aware
-- le contrat de routes du Builder Studio
-
-La phase suivante aligne la surface de validation playground dessus.
+Bonne pratique : garder `allowWrite: false` en production et l’activer uniquement en développement ou dans un environnement Studio explicitement protégé.

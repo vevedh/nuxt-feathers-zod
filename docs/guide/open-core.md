@@ -42,7 +42,7 @@ Le socle standard couvre déjà les usages suivants.
 - support `memory` et `mongodb`
 - services sans adapter avec méthodes custom
 - `useService()` côté app
-- intégration `feathers-pinia`
+- intégration `@pinia/nuxt` + store session
 - config publique runtime cohérente pour le mode remote
 
 ### 4) Auth supportée

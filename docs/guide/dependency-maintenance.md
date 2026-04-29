@@ -147,7 +147,7 @@ Les familles suivantes doivent être mises à jour avec prudence :
 ```txt
 nuxt / nitropack / @nuxt/kit / @nuxt/schema
 vite / vue / vue-router
-pinia / feathers-pinia
+pinia / @pinia/nuxt
 @feathersjs/*
 @feathersjs/mongodb / mongodb
 quasar / @quasar/extras
@@ -176,7 +176,7 @@ Les mises à jour majeures doivent être traitées par lot, jamais en mise à jo
 Lot 1 : Nuxt / Nitro / Vite
 Lot 2 : FeathersJS
 Lot 3 : MongoDB
-Lot 4 : Quasar / Pinia / feathers-pinia
+Lot 4 : Quasar / Pinia / session store
 Lot 5 : tooling TypeScript / Vitest / ESLint
 ```
 

@@ -3,690 +3,78 @@ editLink: false
 ---
 # CLI
 
-The CLI `bunx nuxt-feathers-zod` is the **official method** to initialize a Nuxt 4 app, generate NFZ-compatible artifacts and diagnose an existing project.
+> OSS reference snapshot: **v6.5.26**
 
-This page is aligned with the OSS command surface stabilized for release **6.5.20**.
+The `nuxt-feathers-zod` CLI is the official interface for initializing projects, generating Feathers services, registering remote services, adding middleware, enabling MongoDB management and diagnosing an NFZ application.
 
-## Entry command
+## Usage
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
+# alias
+bunx nfz <command> [args] [--flags]
 ```
 
-## Official OSS CLI surface
-
-### Recommended public core
-
-- `init embedded`
-- `init remote`
-- `remote auth keycloak`
-- `add service <name>`
-- `add remote-service <name>`
-- `add file-service <name>`
-- `add middleware <name>`
-- `schema <service>`
-- `auth service <name>`
-- `mongo management`
-- `doctor`
-
-### Secondary commands / compatibility aliases
-
-- `add custom-service <name>`
-- `init templates`
-- `templates list`
-- `plugins list|add`
-- `modules list|add`
-- `middlewares list|add`
-- `add server-module <name>`
-- `add mongodb-compose`
-
-
-### Initialization
-
-- `init templates`
-- `init embedded`
-- `init remote`
-- `remote auth keycloak`
-
-### Services
-
-- `add service <name>`
-- `add service <name> --custom`
-- `add remote-service <name>`
-- `add file-service <name>`
-- `auth service <name>`
-- `schema <service>`
-
-### Runtime artifacts
-
-- `add middleware <name>`
-- `add server-module <name>`
-- `add mongodb-compose`
-- `mongo management`
-
-### OSS asset helpers
-
-- `templates list`
-- `plugins list`
-- `plugins add <name>`
-- `modules list`
-- `modules add <name>`
-- `middlewares list`
-- `middlewares add <name>`
-
-### Diagnostics
-
-- `doctor`
-
-
-## Differences between `plugin`, `server-module`, `module`, `client-module`, `hook`, `policy`
-
-These targets are not equivalent. The right way to choose is: **where the file is generated, when it runs, and which problem it solves**.
-
-### `plugin`
-
-A `plugin` is a **global server-side Feathers plugin**.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod plugins add audit-bootstrap
-```
-
-Generated file:
-
-```txt
-server/feathers/audit-bootstrap.ts
-```
-
-Use it when:
-- you need to attach global logic to the Feathers application
-- you want to register `app.hooks({ setup: [...] })`
-- you need cross-cutting server bootstrap code
-
-Example usage:
-
-```ts
-import { auditBootstrap } from '~/server/feathers/audit-bootstrap'
-
-export default defineNitroPlugin(async () => {
-  // the NFZ runtime loads the server plugin
-})
-```
-
-Typical cases: global logging, metrics, application-level bootstrap hooks.
-
-### `server-module`
-
-A `server-module` is a **server infrastructure module** loaded around the Feathers/Nitro runtime.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod add server-module security-headers
-```
-
-Generated file:
-
-```txt
-server/feathers/modules/security-headers.ts
-```
-
-Use it when:
-- you need to add HTTP headers
-- you want to wire `helmet`, rate-limit, healthcheck, request logger
-- you are modifying the server layer more than Feathers business logic
-
-Example usage:
-
-```ts
-export default async function securityHeaders(app: any) {
-  app.use((req: any, res: any, next: any) => {
-    res.setHeader('X-Frame-Options', 'DENY')
-    next()
-  })
-}
-```
-
-Typical cases: HTTP hardening, health endpoints, Express/Koa middleware.
-
-### `module`
-
-`module` is currently **a practical alias for `server-module`** in the CLI.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod add middleware request-logger --target module
-```
-
-Generated file:
-
-```txt
-server/feathers/modules/request-logger.ts
-```
-
-Use it when:
-- you prefer the shorter `module` target
-- otherwise prefer `server-module`, which is clearer in the docs
-
-Example usage:
-
-```bash
-bunx nuxt-feathers-zod add middleware healthcheck --target module
-```
-
-Same usage family as `server-module`.
-
-### `client-module`
-
-A `client-module` is a **Nuxt client plugin** loaded only in the browser.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod add middleware api-debug --target client-module
-```
-
-Generated file:
-
-```txt
-app/plugins/api-debug.client.ts
-```
-
-Use it when:
-- you want to enrich `$api`
-- you need client-side diagnostics
-- you want browser-side telemetry
-
-Example usage:
-
-```ts
-export default defineNuxtPlugin((nuxtApp) => {
-  console.info('[nfz] client module ready', !!nuxtApp.$api)
-})
-```
-
-Typical cases: Feathers client debugging, frontend instrumentation, browser-only helpers.
-
-### `hook`
-
-A `hook` is a **reusable Feathers hook function**.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod add middleware attach-tenant --target hook
-```
-
-Generated file:
-
-```txt
-server/feathers/hooks/attach-tenant.ts
-```
-
-Use it when:
-- you need to enrich `context.params`
-- you want to transform `context.data`
-- you need reusable before/after/around logic
-
-Example usage:
-
-```ts
-import { attachTenant } from '../hooks/attach-tenant'
-
-export const before = {
-  all: [attachTenant()]
-}
-```
-
-Typical cases: multi-tenant context, data normalization, context enrichment.
-
-### `policy`
-
-A `policy` is a specialized **authorization guard**.
-
-Associated CLI command:
-
-```bash
-bunx nuxt-feathers-zod add middleware is-admin --target policy
-```
-
-Generated file:
-
-```txt
-server/feathers/policies/is-admin.ts
-```
-
-Use it when:
-- you need explicit allow/deny logic
-- you want a centralized RBAC rule
-- you want to protect a service or a method
-
-Example usage:
-
-```ts
-import { isAdminPolicy } from '../policies/is-admin'
-
-export const before = {
-  all: [isAdminPolicy()]
-}
-```
-
-Typical cases: admin-only, same-user-or-admin, business access control rules.
-
-### Practical summary
-
-- `plugin`: global server-side Feathers extension
-- `server-module`: server/infrastructure extension
-- `module`: alias of `server-module`
-- `client-module`: Nuxt client plugin
-- `hook`: reusable Feathers hook logic
-- `policy`: authorization-focused hook
-
-## Minimum stability check
-
-```bash
-bunx nuxt-feathers-zod --help
-bunx nuxt-feathers-zod doctor
-```
-
-## Recommended path: new Nuxt 4 app
-
-### Embedded
+## Command surface aligned with the code
+
+| Command | Purpose |
+| --- | --- |
+| `init embedded` | Initializes embedded Feathers inside Nuxt/Nitro. |
+| `init remote` | Initializes remote client mode against an external Feathers API. |
+| `init templates` | Copies overridable templates into `feathers/templates`. |
+| `remote auth keycloak` | Configures remote Keycloak payload mode. |
+| `add service <name>` | Generates an embedded memory/mongodb service. |
+| `add service <name> --custom` | Generates an adapter-less service with custom methods. |
+| `add file-service <name>` | Generates a local upload/download service. |
+| `add remote-service <name>` | Registers a client-side remote service. |
+| `add middleware <name>` | Generates middleware or related artifacts. |
+| `add server-module <name>` | Generates an advanced embedded server module. |
+| `add mongodb-compose` | Generates `docker-compose-db.yaml` for MongoDB. |
+| `mongo management` | Enables or updates MongoDB management routes. |
+| `schema <service>` | Inspects, validates or repairs service schema state. |
+| `auth service <name>` | Enables or disables JWT hooks on a service. |
+| `doctor` | Diagnoses the project configuration. |
+
+## Recommended examples
 
 ```bash
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
+bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users
+bunx nuxt-feathers-zod add service users --auth --schema zod
 bun dev
 ```
 
-### Embedded + local auth
-
 ```bash
-bunx nuxi@latest init my-nfz-auth
-cd my-nfz-auth
-bun install
-bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --force --auth --swagger
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod --collection users --idField _id --docs
-bun dev
-```
-
-<!-- mongodb-adapter-note -->
-> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
-
-### Remote
-
-```bash
-bunx nuxi@latest init my-nfz-remote
-cd my-nfz-remote
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
-bun dev
-```
-
-## Important DX rules
-
-- **default adapter = `memory`**
-- **default schema = `none`**
-- **recommended `servicesDirs` = `['services']`**
-- in embedded mode, **generate services through the CLI**
-- in embedded browser mode, `transport: auto` now prefers **REST**
-- in remote mode, `transport: auto` prefers **socketio** when available and falls back to **REST** otherwise
-- `add custom-service` remains supported, but the public recommended form is `add service <name> --custom`
-
-## `init templates`
-
-Initializes a template override directory.
-
-```bash
-bunx nuxt-feathers-zod init templates --dir feathers/templates
-```
-
-Useful flags:
-
-- `--dir <dir>`
-- `--force`
-- `--dry`
-- `--diff`
-
-## `init embedded`
-
-Initializes **embedded** mode: a Feathers server inside Nitro.
-
-```bash
-bunx nuxt-feathers-zod init embedded --force
-```
-
-Important flags:
-
-- `--framework express|koa`
-- `--servicesDir <dir>`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--websocketTransports <list>`
-- `--websocketConnectTimeout <ms>`
-- `--websocketCorsOrigin <value>`
-- `--websocketCorsCredentials true|false`
-- `--websocketCorsMethods <list>`
-- `--secureDefaults true|false`
-- `--cors true|false`
-- `--compression true|false`
-- `--helmet true|false`
-- `--bodyParserJson true|false`
-- `--bodyParserUrlencoded true|false`
-- `--serveStatic true|false`
-- `--serveStaticPath <path>`
-- `--serveStaticDir <dir>`
-- `--serverModulesPreset <name>`
-- `--expressBaseline`
-- `--auth true|false`
-- `--swagger true|false`
-- `--force`
-- `--dry`
-
-## `init remote`
-
-Initializes **remote** mode: a Feathers client against an external server.
-
-```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-```
-
-Important flags:
-
-- `--url <http(s)://...>`
-- `--transport socketio|rest|auto`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--websocketTransports <list>`
-- `--websocketConnectTimeout <ms>`
-- `--websocketCorsOrigin <value>`
-- `--websocketCorsCredentials true|false`
-- `--websocketCorsMethods <list>`
-- `--auth true|false`
-- `--payloadMode jwt|keycloak`
-- `--strategy <name>`
-- `--tokenField <name>`
-- `--servicePath <path>`
-- `--reauth true|false`
-- `--force`
-- `--dry`
-
-## `remote auth keycloak`
-
-Configures the Keycloak bridge in the app.
-
-```bash
-bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp
-```
-
-## `add service <name>`
-
-Generates an embedded service.
-
-```bash
-bunx nuxt-feathers-zod add service users --adapter mongodb --schema zod --collection users --idField _id
-```
-
-<!-- mongodb-adapter-note -->
-> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
-
-Useful flags:
-
-- `--custom`
-- `--type adapter|custom`
-- `--adapter memory|mongodb`
-- `--schema none|zod|json`
-- `--auth true|false`
-- `--authAware true|false`
-- `--idField id|_id`
-- `--path <servicePath>`
-- `--collection <name>`
-- `--methods find,get,create,patch,remove`
-- `--customMethods run,preview`
-- `--docs true|false`
-- `--servicesDir <dir>`
-- `--force`
-- `--dry`
-
-### Auth-aware `users` generation
-
-`--auth` protects service methods with JWT hooks. `--authAware` controls local-auth-specific password handling.
-
-Examples:
-
-```bash
-bunx nuxt-feathers-zod add service users --auth --schema none --adapter memory --force
-bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id --force
-bunx nuxt-feathers-zod add service users --auth --authAware false --schema json --adapter memory --force
-```
-
-<!-- mongodb-adapter-note -->
-> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
-
-## `add remote-service <name>`
-
-Adds a client-only service into `feathers.client.remote.services`.
-
-```bash
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
 bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 ```
 
-## `auth service <name>`
+## RuntimeConfig contract
 
-Enables or disables JWT auth hooks on an existing embedded service.
+Read NFZ runtime metadata from:
 
-```bash
-bunx nuxt-feathers-zod auth service users --enabled true
-bunx nuxt-feathers-zod auth service users --enabled false
+```ts
+const serverConfig = useRuntimeConfig()._feathers
+const publicConfig = useRuntimeConfig().public._feathers
 ```
 
-## `schema <service>`
+New code must not read `runtimeConfig.feathers` or `runtimeConfig.public.feathers`.
 
-Inspects or mutates the service manifest schema state.
+## Builder API runtime
 
-```bash
-bunx nuxt-feathers-zod schema users --show
-bunx nuxt-feathers-zod schema users --json
-bunx nuxt-feathers-zod schema users --set-mode zod
-bunx nuxt-feathers-zod schema users --add-field title:string!
-bunx nuxt-feathers-zod schema users --rename-field title:headline
-```
+The public Builder contract is:
 
-Main flags:
+- `GET /api/nfz/services`
+- `GET /api/nfz/manifest`
+- `POST /api/nfz/manifest`
+- `GET /api/nfz/schema?service=<name>`
+- `POST /api/nfz/schema`
+- `POST /api/nfz/preview`
+- `POST /api/nfz/apply`
 
-- `--show`
-- `--json`
-- `--export`
-- `--get`
-- `--set-mode none|zod|json`
-- `--add-field <spec>`
-- `--remove-field <name>`
-- `--set-field <spec>`
-- `--rename-field <from:to>`
-- `--validate`
-- `--repair-auth`
-- `--diff`
-- `--servicesDir <dir>`
-- `--force`
-- `--dry`
+Historical compatibility remains for `/api/nfz/schema/:service`.
 
-`--validate` checks manifest ↔ generated-files coherence. `--repair-auth` restores the expected baseline for an auth-compatible `users` service. `--diff` helps inspect drift before writing changes.
-
-## `add middleware <name>`
-
-Generates a middleware artifact. Supported targets include Nitro middleware, Nuxt route middleware, Feathers plugins, hooks, policies, and embedded server modules.
-
-```bash
-bunx nuxt-feathers-zod add middleware trace-headers --target nitro
-bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-```
-
-Supported targets:
-
-- **recommended public targets**: `nitro`, `route`
-- **advanced targets**: `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
-
-Public docs recommend starting with `nitro` and `route`. The other targets remain supported but mostly address expert or internal scaffolding needs.
-
-## `add server-module <name>`
-
-Directly generates an embedded server module in `server/feathers/modules`.
-
-```bash
-bunx nuxt-feathers-zod add server-module helmet --preset helmet
-bunx nuxt-feathers-zod add server-module express-baseline --preset express-baseline
-```
-
-## `add mongodb-compose`
-
-Generates a `docker-compose-db.yaml` file to bootstrap MongoDB locally.
-
-```bash
-bunx nuxt-feathers-zod add mongodb-compose
-bunx nuxt-feathers-zod add mongodb-compose --out docker-compose-db.yaml --service mongodb --database app --rootUser root --rootPassword change-me
-```
-
-<!-- mongodb-compose-purpose-note -->
-> This command creates a ready-to-run `docker-compose.yaml` that starts a listening MongoDB database for services generated with `--adapter mongodb`.
-
-## `mongo management`
-
-Enables or updates the embedded MongoDB management surface in `nuxt.config.*`.
-
-```bash
-bunx nuxt-feathers-zod mongo management   --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin   --enabled true   --auth false   --basePath /mongo
-```
-
-Useful flags:
-
-- `--url <mongodb-url>`
-- `--enabled true|false`
-- `--auth true|false`
-- `--basePath <path>`
-- `--exposeDatabasesService true|false`
-- `--exposeCollectionsService true|false`
-- `--exposeUsersService true|false`
-- `--exposeCollectionCrud true|false`
-- `--dry`
-
-
-Additional `mongo management` flags aligned with `feathers.database.mongo.*`:
-
-- `--whitelistDatabases <csv>` → `feathers.database.mongo.management.whitelistDatabases`
-- `--blacklistDatabases <csv>` → `feathers.database.mongo.management.blacklistDatabases`
-- `--whitelistCollections <csv>` → `feathers.database.mongo.management.whitelistCollections`
-- `--blacklistCollections <csv>` → `feathers.database.mongo.management.blacklistCollections`
-- `--showSystemDatabases true|false` → `feathers.database.mongo.management.showSystemDatabases`
-- `--allowCreateDatabase true|false` → `feathers.database.mongo.management.allowCreateDatabase`
-- `--allowDropDatabase true|false` → `feathers.database.mongo.management.allowDropDatabase`
-- `--allowCreateCollection true|false` → `feathers.database.mongo.management.allowCreateCollection`
-- `--allowDropCollection true|false` → `feathers.database.mongo.management.allowDropCollection`
-- `--allowInsertDocuments true|false` → `feathers.database.mongo.management.allowInsertDocuments`
-- `--allowPatchDocuments true|false` → `feathers.database.mongo.management.allowPatchDocuments`
-- `--allowReplaceDocuments true|false` → `feathers.database.mongo.management.allowReplaceDocuments`
-- `--allowRemoveDocuments true|false` → `feathers.database.mongo.management.allowRemoveDocuments`
-
-Canonical routes:
-
-- `/mongo/databases` (legacy alias accepted: `/mongo`)
-- `/mongo/<db>/collections`
-- `/mongo/<db>/stats`
-- `/mongo/<db>/<collection>/indexes`
-- `/mongo/<db>/<collection>/count`
-- `/mongo/<db>/<collection>/schema`
-- `/mongo/<db>/<collection>/documents`
-- `/mongo/<db>/<collection>/aggregate`
-
-## OSS helpers: templates, plugins, modules, middlewares
-
-### `templates list`
-
-Lists available OSS templates.
-
-```bash
-bunx nuxt-feathers-zod templates list
-```
-
-### `plugins list` / `plugins add <name>`
-
-```bash
-bunx nuxt-feathers-zod plugins list
-bunx nuxt-feathers-zod plugins add audit-log
-```
-
-The generator creates a Feathers server plugin based on `defineFeathersServerPlugin`.
-
-### `modules list` / `modules add <name>`
-
-```bash
-bunx nuxt-feathers-zod modules list
-bunx nuxt-feathers-zod modules add security-headers --preset security-headers
-```
-
-The generator creates a Feathers server module based on `defineFeathersServerModule`.
-
-### `middlewares list` / `middlewares add <name>`
-
-```bash
-bunx nuxt-feathers-zod middlewares list --target nitro
-bunx nuxt-feathers-zod middlewares add request-id --target nitro
-```
-
-## `doctor`
-
-Quick diagnosis for the current project.
-
-```bash
-bunx nuxt-feathers-zod doctor
-```
-
-The report covers:
-
-- client mode (`embedded` / `remote`)
-- remote transport and target URL
-- detected `servicesDirs`
-- scanned local services
-- embedded local auth with:
-  - `auth.enabled`
-  - `auth.authStrategies`
-  - `auth.local.usernameField`
-  - `auth.local.entityUsernameField`
-  - a Feathers-compatible local payload example
-  - a warning when request ↔ entity field mapping diverges (in that case, use `buildLocalAuthPayload()` or `runtimeConfig.public._feathers.auth.local`)
-- remote Keycloak config
-- Mongo management config with:
-  - redacted URL
-  - normalized `basePath`
-  - computed route surface
-  - warning when `management.enabled = true` but `database.mongo.url` is missing
-
-
-## File upload/download starter
-
-Dedicated command:
-
-```bash
-bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
-```
-
-
-## 6.4.124
-
-- `doctor` now covers embedded local-auth mapping (`usernameField`, `entityUsernameField`, etc.) and prints a Feathers-compatible local payload example.
-- an explicit warning is emitted when request fields and entity fields diverge, guiding consumer UIs toward `buildLocalAuthPayload()` or `runtimeConfig.public._feathers.auth.local`.
-
-## 6.4.121
-
-- Documentation clarified: every example using `--adapter mongodb` now reminds users that an active MongoDB database is required, and that `bunx nuxt-feathers-zod add mongodb-compose` can generate a quick `docker-compose.yaml`.
+<!-- release-version: 6.5.26 -->

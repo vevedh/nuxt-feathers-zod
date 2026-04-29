@@ -1,92 +1,13 @@
-# Smoke scenarios
+---
+editLink: false
+---
+# Smoke Scenarios
 
-These scenarios are the minimum baseline used to validate the standard open-source core.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## 1. Minimal embedded mode
+For the current maintained contract, see:
 
-```bash
-bunx nuxi@latest init my-nfz-app
-cd my-nfz-app
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service messages
-bun dev
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-Expected: the app starts and the embedded service is available.
-
-## 2. Embedded + local auth + swagger
-
-```bash
-bunx nuxi@latest init my-nfz-auth
-cd my-nfz-auth
-bun install
-bun add nuxt-feathers-zod feathers-swagger swagger-ui-dist
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --force --auth --swagger
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id --docs
-bun dev
-```
-
-<!-- mongodb-adapter-note -->
-> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
-
-Expected: local auth is active and Swagger docs are available.
-
-## 3. Remote REST
-
-```bash
-bunx nuxi@latest init my-nfz-remote-rest
-cd my-nfz-remote-rest
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
-bun dev
-```
-
-## 4. Remote Socket.IO
-
-```bash
-bunx nuxi@latest init my-nfz-remote-socket
-cd my-nfz-remote-socket
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-bunx nuxt-feathers-zod add remote-service messages --path messages --methods find,get,create,patch,remove
-bun dev
-```
-
-## 5. Adapter-less service with custom methods
-
-```bash
-bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview
-```
-
-Expected: the service and its custom methods are generated without using a persistence adapter.
-
-
-## 6. Minimal CLI surface
-
-```bash
-bunx nuxt-feathers-zod --help
-```
-
-Expected: the CLI renders without Bun/TypeScript parsing errors.
-
-## 7. Local MongoDB bootstrap
-
-```bash
-bunx nuxt-feathers-zod add mongodb-compose
-```
-
-Expected: a usable `docker-compose-db.yaml` file is generated for local tests.
-
-
-## Related
-
-- See also `known-good-configurations.md` for the OSS baseline combinations kept green by the stabilization work.
+<!-- release-version: 6.5.23 -->

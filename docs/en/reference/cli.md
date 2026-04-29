@@ -1,163 +1,80 @@
 ---
 editLink: false
 ---
-# CLI reference
+# CLI Reference
 
-Entry command:
+> OSS reference snapshot: **v6.5.26**
+
+The `nuxt-feathers-zod` CLI is the official interface for initializing projects, generating Feathers services, registering remote services, adding middleware, enabling MongoDB management and diagnosing an NFZ application.
+
+## Usage
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
+# alias
+bunx nfz <command> [args] [--flags]
 ```
 
-Official OSS surface aligned with **v6.5.9**.
+## Command surface aligned with the code
 
-## Recommended public core
+| Command | Purpose |
+| --- | --- |
+| `init embedded` | Initializes embedded Feathers inside Nuxt/Nitro. |
+| `init remote` | Initializes remote client mode against an external Feathers API. |
+| `init templates` | Copies overridable templates into `feathers/templates`. |
+| `remote auth keycloak` | Configures remote Keycloak payload mode. |
+| `add service <name>` | Generates an embedded memory/mongodb service. |
+| `add service <name> --custom` | Generates an adapter-less service with custom methods. |
+| `add file-service <name>` | Generates a local upload/download service. |
+| `add remote-service <name>` | Registers a client-side remote service. |
+| `add middleware <name>` | Generates middleware or related artifacts. |
+| `add server-module <name>` | Generates an advanced embedded server module. |
+| `add mongodb-compose` | Generates `docker-compose-db.yaml` for MongoDB. |
+| `mongo management` | Enables or updates MongoDB management routes. |
+| `schema <service>` | Inspects, validates or repairs service schema state. |
+| `auth service <name>` | Enables or disables JWT hooks on a service. |
+| `doctor` | Diagnoses the project configuration. |
 
-- `init embedded`
-- `init remote`
-- `remote auth keycloak`
-- `add service <name>`
-- `add remote-service <name>`
-- `add file-service <name>`
-- `add middleware <name>`
-- `schema <service>`
-- `auth service <name>`
-- `mongo management`
-- `doctor`
-
-## Secondary commands / compatibility
-
-- `add custom-service <name>`
-- `init templates`
-- `templates list`
-- `plugins list|add`
-- `modules list|add`
-- `middlewares list|add`
-- `add server-module <name>`
-- `add mongodb-compose`
-
-
-## Doctor in 6.5.9
-
-Doctor now highlights embedded local-auth configuration, including:
-
-- `auth.enabled`
-- `auth.authStrategies`
-- `auth.local.usernameField` / `auth.local.passwordField`
-- `auth.local.entityUsernameField` / `auth.local.entityPasswordField`
-- a Feathers local payload example
-- an explicit warning when request ↔ entity mapping diverges
-
-## Reference examples
-
-### Minimum check
-
-```bash
-bunx nuxt-feathers-zod --help
-bunx nuxt-feathers-zod doctor
-```
-
-### New embedded app
+## Recommended examples
 
 ```bash
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
+bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users
+bunx nuxt-feathers-zod add service users --auth --schema zod
 bun dev
 ```
 
-### New remote app
-
 ```bash
-bunx nuxi@latest init my-nfz-remote
-cd my-nfz-remote
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
-bun dev
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
+bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
 ```
 
-### Services and schema maintenance
+## RuntimeConfig contract
 
-```bash
-bunx nuxt-feathers-zod add service users --auth --schema zod --adapter mongodb --collection users --idField _id
-bunx nuxt-feathers-zod auth service users --enabled true
-bunx nuxt-feathers-zod schema users --show
-bunx nuxt-feathers-zod schema users --validate
-bunx nuxt-feathers-zod schema users --diff
-bunx nuxt-feathers-zod schema users --repair-auth
+Read NFZ runtime metadata from:
+
+```ts
+const serverConfig = useRuntimeConfig()._feathers
+const publicConfig = useRuntimeConfig().public._feathers
 ```
 
-<!-- mongodb-adapter-note -->
-> **MongoDB note** — When you use `--adapter mongodb`, a running MongoDB database must already be available and reachable by the app. You can quickly generate a `docker-compose.yaml` to start a listening MongoDB instance with: `bunx nuxt-feathers-zod add mongodb-compose`.
+New code must not read `runtimeConfig.feathers` or `runtimeConfig.public.feathers`.
 
-### Runtime / Mongo
+## Builder API runtime
 
-```bash
-bunx nuxt-feathers-zod add middleware trace-headers --target nitro
-bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-bunx nuxt-feathers-zod add mongodb-compose
-bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
-```
+The public Builder contract is:
 
-## Stability notes
+- `GET /api/nfz/services`
+- `GET /api/nfz/manifest`
+- `POST /api/nfz/manifest`
+- `GET /api/nfz/schema?service=<name>`
+- `POST /api/nfz/schema`
+- `POST /api/nfz/preview`
+- `POST /api/nfz/apply`
 
-### `schema <service>` flags worth knowing
+Historical compatibility remains for `/api/nfz/schema/:service`.
 
-- `--validate`: checks manifest ↔ generated-files coherence
-- `--repair-auth`: restores the auth-compatible baseline for a `users` service
-- `--diff`: inspects drift before writes
-
-### `add middleware <name>` target reading
-
-- recommended public targets: `nitro`, `route`
-- advanced targets: `feathers`, `server-module`, `module`, `client-module`, `hook`, `policy`
-
-### Historical compatibility
-
-`add custom-service <name>` is still accepted, but the recommended form is:
-
-```bash
-bunx nuxt-feathers-zod add service <name> --custom
-```
-
-Detailed flag coverage stays in the [CLI guide](/en/guide/cli).
-
-
-<!-- release-version: 6.4.48 -->
-
-
-<!-- release-version: 6.4.49 -->
-
-
-<!-- release-version: 6.5.9 -->
-
-
-<!-- release-version: 6.5.9 -->
-
-
-<!-- release-version: 6.4.125 -->
-
-
-<!-- release-version: 6.5.9 -->
-
-
-<!-- release-version: 6.5.9 -->
-
-
-<!-- release-version: 6.5.16 -->
-
-
-<!-- release-version: 6.5.18 -->
-
-
-<!-- release-version: 6.5.19 -->
-
-
-<!-- release-version: 6.5.20 -->
+<!-- release-version: 6.5.26 -->

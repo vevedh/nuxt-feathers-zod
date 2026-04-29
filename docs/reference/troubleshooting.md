@@ -1,20 +1,13 @@
+---
+editLink: false
+---
 # Troubleshooting
 
-## `/feathers/<service>` retourne 404
+Cette page est conservée pour rendre la navigation VitePress cohérente dans l’archive 6.5.23.
 
-Causes probables :
+Pour le contrat maintenu actuellement, consulte :
 
-- aucun service embedded détecté
-- le plugin embedded a planté avant `await app.setup()`
-- le service généré dépend de MongoDB alors que `mongodbClient` n'est pas configuré
+- [Guide CLI](/guide/cli)
+- [Référence CLI](/reference/cli)
 
-Checklist :
-
-```bash
-bunx nuxt-feathers-zod doctor
-bunx nuxt-feathers-zod add service users --adapter memory
-```
-
-## Embedded auth casse `postinstall`
-
-Le module dégrade l'auth embedded pendant `prepare/postinstall` si aucun service/schema local n'est encore détecté.
+<!-- release-version: 6.5.23 -->

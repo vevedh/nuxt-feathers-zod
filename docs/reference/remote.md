@@ -1,50 +1,13 @@
 ---
 editLink: false
 ---
-# Mode remote
+# Remote
 
-En mode remote, le module ne démarre aucun serveur Feathers local.
-Il configure uniquement un client Feathers vers une API distante.
+Cette page est conservée pour rendre la navigation VitePress cohérente dans l’archive 6.5.23.
 
-## Vue d'ensemble
+Pour le contrat maintenu actuellement, consulte :
 
-```txt
-Nuxt app
-└─ Feathers client
-   └─ Remote Feathers API
-```
+- [Guide CLI](/guide/cli)
+- [Référence CLI](/reference/cli)
 
-## Configuration minimale
-
-```ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-  feathers: {
-    client: {
-      mode: 'remote',
-      remote: {
-        url: 'https://api.example.com',
-        transport: 'rest'
-      }
-    }
-  }
-})
-```
-
-## Paramètres clés
-
-- `url`
-- `transport`
-- `restPath`
-- `websocketPath`
-- `services`
-- `auth`
-
-## Auth distante
-
-Le mode remote supporte notamment :
-
-- `payloadMode: 'jwt'`
-- `payloadMode: 'keycloak'`
-
-avec un bridge client côté application si nécessaire.
+<!-- release-version: 6.5.23 -->

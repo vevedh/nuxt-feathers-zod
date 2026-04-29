@@ -1,28 +1,13 @@
+---
+editLink: false
+---
 # Architecture
 
-`nuxt-feathers-zod` combines a Nuxt 4 module, a generated runtime in `.nuxt/feathers/**`, a Bun CLI, and two execution modes.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## Overview
+For the current maintained contract, see:
 
-```mermaid
-graph TD
-  A[Nuxt app] --> B[src/module.ts]
-  B --> C[resolveOptions]
-  B --> D[templates .nuxt/feathers]
-  D --> E[client runtime]
-  D --> F[server runtime]
-  E --> G[$api / $client / $feathersClient]
-  F --> H[Embedded Feathers]
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-## Embedded boot order
-
-1. resolve options
-2. generate `.nuxt/feathers/**`
-3. create Feathers app
-4. load generated auth / mongodb plugins
-5. load scanned services
-6. load `server/feathers/**` plugins
-7. run `server/feathers/modules/**` server modules
-8. `await app.setup()`
-9. mount Nitro REST / Socket.io routers
+<!-- release-version: 6.5.23 -->

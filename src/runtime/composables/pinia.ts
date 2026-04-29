@@ -1,30 +1,25 @@
-type FeathersPiniaModule = Record<string, any>
+import { useNuxtApp } from '#imports'
 
-export type CreatePiniaClient = (...args: any[]) => any
-export type FeathersPiniaHelper = (...args: any[]) => any
-
-export async function loadFeathersPinia(): Promise<FeathersPiniaModule> {
-  return import('feathers-pinia')
+export interface NfzPiniaRuntime {
+  available: boolean
+  pinia: unknown | null
 }
 
-export async function resolveCreatePiniaClient(): Promise<CreatePiniaClient> {
-  const mod = await loadFeathersPinia()
-  const factory = mod.createPiniaClient ?? mod.default?.createPiniaClient ?? mod.default
-
-  if (typeof factory !== 'function') {
-    throw new TypeError('[nuxt-feathers-zod] Unable to resolve feathers-pinia createPiniaClient factory.')
+/**
+ * Access the application Pinia instance registered by @pinia/nuxt.
+ *
+ * NFZ no longer wraps the Feathers client with the legacy service-store wrapper. Pinia is used
+ * only for explicit application/session stores such as useSessionStore().
+ */
+export function useNfzPinia(): NfzPiniaRuntime {
+  const nuxtApp = useNuxtApp() as any
+  const pinia = nuxtApp.$pinia ?? null
+  return {
+    available: Boolean(pinia),
+    pinia,
   }
-
-  return factory as CreatePiniaClient
 }
 
-export async function resolveFeathersPiniaHelper(name: string): Promise<FeathersPiniaHelper> {
-  const mod = await loadFeathersPinia()
-  const helper = mod[name] ?? mod.default?.[name]
-
-  if (typeof helper !== 'function') {
-    throw new TypeError(`[nuxt-feathers-zod] Unable to resolve feathers-pinia helper: ${name}.`)
-  }
-
-  return helper as FeathersPiniaHelper
+export function hasNfzPinia(): boolean {
+  return useNfzPinia().available
 }

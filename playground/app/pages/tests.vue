@@ -1,8 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ ssr: false })
-// IMPORTANT (dual-mode): in remote mode, feathers-pinia can throw while mapping
-// network/CORS/cert errors (because the response is missing). For diagnostics we
-// want the *raw* Feathers client injected by the module, not the Pinia wrapper.
+// IMPORTANT (dual-mode): diagnostics must use the raw Feathers client injected by the module.
+// This keeps network/CORS/certificate errors visible without a service-cache wrapper.
 const nuxtApp = useNuxtApp() as any
 const client: any = nuxtApp.$client || nuxtApp.$feathersClient || nuxtApp.$api
 const config = useRuntimeConfig()

@@ -33,7 +33,7 @@ const PRESETS: PresetDefinition[] = [
           { label: 'userId (default)', value: 'userId' },
           { label: 'email', value: 'email' },
         ],
-        help: 'Uniquement pour le service users (auth locale).',
+        help: "Uniquement pour le service users (auth locale).",
       },
       {
         key: 'localPasswordField',
@@ -42,7 +42,7 @@ const PRESETS: PresetDefinition[] = [
         default: 'password',
         required: true,
         placeholder: 'password',
-        help: 'Le générateur applique hashPassword/protect sur ce champ.',
+        help: "Le générateur applique hashPassword/protect sur ce champ.",
       },
       {
         key: 'firstUser',
@@ -51,7 +51,7 @@ const PRESETS: PresetDefinition[] = [
         default: 'admin',
         required: true,
         placeholder: 'admin',
-        help: 'Seed: correspond à usernameField (ex: userId).',
+        help: "Seed: correspond à usernameField (ex: userId).",
       },
       {
         key: 'firstPassword',

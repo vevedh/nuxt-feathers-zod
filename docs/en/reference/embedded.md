@@ -1,28 +1,13 @@
 ---
 editLink: false
 ---
-# Embedded mode
+# Embedded
 
-In embedded mode, the Feathers server runs inside Nuxt/Nitro.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## Overview
+For the current maintained contract, see:
 
-```txt
-Nuxt
-└─ Nitro
-   └─ Feathers App
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-## REST routes
-
-By default:
-
-```txt
-/feathers/<service>
-```
-
-Example:
-
-```txt
-GET /feathers/users
-```
+<!-- release-version: 6.5.23 -->

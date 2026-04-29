@@ -37,7 +37,10 @@ async function safeResolveUser(app: any, cfg: NfzKeycloakConfig, payload: any, h
     const created = await users.create({
       [cfg.serviceIdField]: sub,
       ...(hintedUser && typeof hintedUser === 'object' ? hintedUser : {}),
-      preferred_username: hintedUser?.preferred_username || payload?.preferred_username || hintedUser?.email || payload?.email,
+      preferred_username: hintedUser?.preferred_username
+        || payload?.preferred_username
+        || hintedUser?.email
+        || payload?.email,
       email: hintedUser?.email || payload?.email,
     })
     return created

@@ -1,16 +1,10 @@
-import { useRuntimeConfig } from '#imports'
 import { defineEventHandler } from 'h3'
-import { findProjectRoot, listServices } from '../../utils/nfzSchema'
+import { listServices } from '../../utils/nfzSchema'
+import { getNfzApiContext } from '../../utils/nfzApiContext'
 
 export default defineEventHandler((event) => {
-  const rc = useRuntimeConfig()
+  const { projectRoot, servicesDirs } = getNfzApiContext(event)
 
-  // Prefer explicit console.servicesDirs, else feathers.servicesDirs, else default
-  const feathersDirs: string[] = rc?._feathers?.servicesDirs ?? []
-  const consoleDirs: string[] = rc?._feathers?.console?.servicesDirs ?? []
-  const servicesDirs: string[] = (consoleDirs.length ? consoleDirs : (feathersDirs.length ? feathersDirs : ['services']))
-
-  const projectRoot = findProjectRoot(process.cwd())
   return {
     projectRoot,
     servicesDirs,

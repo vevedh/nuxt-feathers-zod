@@ -157,15 +157,16 @@ export const pingClient = (client: Application) => {
 
       // 3) HTTP fallback via $fetch (transport-agnostic)
       const cfg = useRuntimeConfig().public as any
+      const nfz = cfg?._feathers ?? {}
       const restPrefix =
-        cfg?.feathers?.rest?.path ??
-        cfg?.feathers?.restPath ??
-        cfg?.feathers?.rest?.prefix ??
+        nfz?.rest?.path ??
+        nfz?.restPath ??
+        nfz?.rest?.prefix ??
         '/feathers'
 
       const baseURL =
-        cfg?.feathers?.restUrl ??
-        cfg?.feathers?.baseURL ??
+        nfz?.restUrl ??
+        nfz?.baseURL ??
         ''
 
       return $fetch(`${baseURL}${restPrefix}/${pingPath}/run`, {
@@ -203,5 +204,5 @@ await ping.run({ message: 'hello' })
 
 - ❌ Ne jamais déclarer une méthode custom côté client **en SSR**
 - ✅ Patcher les méthodes custom **avant** `client.use()` en navigateur
-- ✅ Lire `restPrefix/restUrl` depuis `runtimeConfig.public.feathers`
+- ✅ Lire `restPrefix/restUrl` depuis `runtimeConfig.public._feathers`
 - ✅ Toujours fournir un `*.schema.ts` (scan types + typage)

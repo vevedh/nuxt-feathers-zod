@@ -1,25 +1,19 @@
-import { spawn } from 'node:child_process'
 import { defineEventHandler, readBody, setResponseStatus } from 'h3'
+import { spawn } from 'node:child_process'
+import { assertNfzConsoleWriteAllowed } from '../../../utils/nfzApiContext'
 
 let running = false
 
 export default defineEventHandler(async (event) => {
-  const nuxt = event.context?.nuxt
-  const rootDir = nuxt?.options?.rootDir || process.cwd()
-  const feathers = nuxt?.options?.feathers || {}
-
-  const allowWrite = !!feathers.console?.allowWrite
-  if (!allowWrite) {
-    setResponseStatus(event, 403)
-    return { ok: false, message: 'Console write is disabled (feathers.console.allowWrite=false)' }
-  }
+  const ctx = assertNfzConsoleWriteAllowed(event)
+  const rootDir = ctx.projectRoot
 
   if (running) {
     setResponseStatus(event, 423)
     return { ok: false, message: 'Init step is already running (locked)' }
   }
 
-  const body = await readBody(event)
+  const body = await readBody(event) as any
   // The add service CLI currently uses the local auth defaults userId/password.
   // usernameField/passwordField are kept in the request body contract for future extension.
 
@@ -46,18 +40,12 @@ export default defineEventHandler(async (event) => {
     const cap = 64 * 1024
     let out = ''
     let err = ''
-    child.stdout?.on('data', (d) => {
-      if (out.length < cap)
-        out += String(d)
-    })
-    child.stderr?.on('data', (d) => {
-      if (err.length < cap)
-        err += String(d)
-    })
+    child.stdout?.on('data', (d) => { if (out.length < cap) out += String(d) })
+    child.stderr?.on('data', (d) => { if (err.length < cap) err += String(d) })
 
     const code: number = await new Promise((resolve, reject) => {
       child.on('error', reject)
-      child.on('close', c => resolve(c ?? 0))
+      child.on('close', (c) => resolve(c ?? 0))
     })
 
     if (code !== 0) {
@@ -67,16 +55,16 @@ export default defineEventHandler(async (event) => {
 
     return {
       ok: true,
+      projectRoot: ctx.projectRoot,
+      servicesDirs: ctx.servicesDirs,
       message: 'users service generated. Restart the dev server to take effect.',
       stdout: out,
       stderr: err,
     }
-  }
-  catch (e: any) {
+  } catch (e: any) {
     setResponseStatus(event, 500)
     return { ok: false, message: e?.message || String(e) }
-  }
-  finally {
+  } finally {
     running = false
   }
 })

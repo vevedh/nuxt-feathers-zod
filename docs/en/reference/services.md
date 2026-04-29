@@ -3,18 +3,11 @@ editLink: false
 ---
 # Services
 
-Embedded services are typically generated with:
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-```bash
-bunx nuxt-feathers-zod add service users
-```
+For the current maintained contract, see:
 
-## Expected structure
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-```txt
-services/<name>/
-  <name>.ts
-  <name>.class.ts
-  <name>.schema.ts
-  <name>.shared.ts
-```
+<!-- release-version: 6.5.23 -->

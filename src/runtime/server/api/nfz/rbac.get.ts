@@ -1,17 +1,15 @@
 import { defineEventHandler } from 'h3'
 import { readRbacFile } from '../../rbac/rbacFile'
-import { getProjectRootFromNuxt } from '../../utils/nfzPaths'
+import { getNfzApiContext } from '../../utils/nfzApiContext'
 
 export default defineEventHandler(async (event) => {
-  const nuxt = event.context?.nuxt
-  const projectRoot = getProjectRootFromNuxt(nuxt?.options?.rootDir)
-  const feathers = nuxt?.options?.feathers || {}
-  const servicesDirs = feathers.servicesDirs as string[] | undefined
-
+  const { projectRoot, servicesDirs } = getNfzApiContext(event)
   const file = readRbacFile(projectRoot, servicesDirs)
 
   return {
     ok: true,
+    projectRoot,
+    servicesDirs,
     file,
   }
 })

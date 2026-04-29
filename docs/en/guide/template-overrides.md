@@ -1,50 +1,13 @@
 ---
 editLink: false
 ---
-# Template overrides
+# Template Overrides
 
-Overrides let you replace some templates generated under `.nuxt/feathers/**` without forking the module.
+This page is kept to make the VitePress navigation coherent in the 6.5.23 archive.
 
-## Example: new Nuxt 4 app + overrides
+For the current maintained contract, see:
 
-```bash
-bunx nuxi@latest init my-nfz-overrides
-cd my-nfz-overrides
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod init templates --dir feathers/templates
-bun dev
-```
+- [CLI guide](/en/guide/cli)
+- [CLI reference](/en/reference/cli)
 
-## Enable them
-
-```ts
-export default defineNuxtConfig({
-  modules: ['@pinia/nuxt', 'nuxt-feathers-zod'],
-  feathers: {
-    templates: {
-      dirs: ['feathers/templates'],
-      strict: true,
-      allow: ['server/**/*.ts', 'client/**/*.ts', 'types/**/*.d.ts']
-    }
-  }
-})
-```
-
-## What they are useful for
-
-- customizing a generated client plugin
-- adjusting remote connection behavior
-- overriding a targeted server template
-- keeping a custom runtime without forking the module
-
-## Stability recommendation
-
-For the open source core, overrides should remain:
-
-- optional,
-- documented,
-- targeted,
-- easy to disable.
+<!-- release-version: 6.5.23 -->
