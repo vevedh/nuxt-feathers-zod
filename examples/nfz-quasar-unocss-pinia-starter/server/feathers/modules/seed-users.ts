@@ -5,6 +5,9 @@ interface SeedContext {
 }
 
 interface RuntimeConfigLike {
+  app?: {
+    env?: string
+  }
   demo?: {
     user?: string
     password?: string
@@ -36,6 +39,16 @@ function getRuntimeConfig(app: Application): RuntimeConfigLike {
   }
 }
 
+
+function ensureSafeDemoPassword(runtimeConfig: RuntimeConfigLike, password: string): void {
+  const env = String(runtimeConfig.app?.env || process.env.NODE_ENV || 'development').toLowerCase()
+  const isProduction = env === 'production'
+
+  if (isProduction && password === 'admin123') {
+    throw new Error('[nfz-starter] Refus de démarrer en production avec le mot de passe demo par défaut (admin123). Définis NFZ_DEMO_PASSWORD.')
+  }
+}
+
 async function ensureMongoIndexes(app: Application): Promise<void> {
   const db = app.get?.('mongodbDb')
   if (!db || typeof db.collection !== 'function')
@@ -59,6 +72,8 @@ export default async function seedUsers(app: Application, _ctx: SeedContext = {}
   const password = String(demo.password || 'admin123')
   const roles = toRoles(demo.roles)
 
+  ensureSafeDemoPassword(runtimeConfig, password)
+
   const existing = await users.find({
     query: { userId, $limit: 1 },
     paginate: false,
@@ -72,7 +87,7 @@ export default async function seedUsers(app: Application, _ctx: SeedContext = {}
       roles,
     } as any)
 
-    console.info(`[nfz-starter] Seed user created: ${userId} / ${password}`)
+    console.info(`[nfz-starter] Seed user created: ${userId}`)
   }
   else {
     console.info(`[nfz-starter] Seed user already exists: ${userId}`)
