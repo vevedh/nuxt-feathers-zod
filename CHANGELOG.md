@@ -1,3 +1,12 @@
+## 6.5.29 - Main Quasar UnoCSS Pinia starter documentation
+
+- Added the full French guide `docs/guide/starter-quasar-unocss-pinia.md`.
+- Added the English guide `docs/en/guide/starter-quasar-unocss-pinia.md`.
+- Promoted the Quasar + UnoCSS + Pinia + MongoDB starter as a main NFZ application model.
+- Documented the starter structure, NFZ embedded MongoDB configuration, local auth flow, session store, RBAC middleware, `useAdminFeathers()` facade, `messages` store and Quasar QDrawer conventions.
+- Added the starter guide to the VitePress navbar and guide sidebars.
+- Updated README, CLI docs and AI context to reference the main starter.
+
 ## 6.5.28 - VitePress branding restore
 
 - Restored the VitePress custom theme under `docs/.vitepress/theme/**`.

@@ -3,7 +3,7 @@ editLink: false
 ---
 # CLI
 
-> OSS reference snapshot: **v6.5.28**
+> OSS reference snapshot: **v6.5.29**
 
 The `nuxt-feathers-zod` CLI is the official interface for initializing projects, generating Feathers services, registering remote services, adding middleware, enabling MongoDB management and diagnosing an NFZ application.
 
@@ -22,7 +22,7 @@ bunx nfz <command> [args] [--flags]
 | `init embedded` | Initializes embedded Feathers inside Nuxt/Nitro. |
 | `init remote` | Initializes remote client mode against an external Feathers API. |
 | `init templates` | Copies overridable templates into `feathers/templates`. |
-| `init starter` | Copies the Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter from `examples/nfz-quasar-unocss-pinia-starter`. |
+| `init starter` | Copies the main Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB + auth/RBAC starter from `examples/nfz-quasar-unocss-pinia-starter`. |
 | `remote auth keycloak` | Configures remote Keycloak payload mode. |
 | `add service <name>` | Generates an embedded memory/mongodb service. |
 | `add service <name> --custom` | Generates an adapter-less service with custom methods. |
@@ -64,6 +64,8 @@ bun run db:up
 bun dev
 ```
 
+This model is documented as the main starter in [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia). It includes MongoDB, the `admin/admin123` seed, the `studioSession` store, global `session` middleware, the `useAdminFeathers()` facade and a `messages` business store inspired by the Feathers-Pinia pattern.
+
 ## RuntimeConfig contract
 
 Read NFZ runtime metadata from:
@@ -89,4 +91,4 @@ The public Builder contract is:
 
 Historical compatibility remains for `/api/nfz/schema/:service`.
 
-<!-- release-version: 6.5.28 -->
+<!-- release-version: 6.5.29 -->

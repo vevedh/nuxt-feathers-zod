@@ -3,7 +3,7 @@ editLink: false
 ---
 # CLI
 
-> OSS reference snapshot: **v6.5.28**
+> OSS reference snapshot: **v6.5.29**
 
 La CLI `nuxt-feathers-zod` est l’interface officielle pour initialiser un projet, générer les services Feathers, enregistrer les services distants, ajouter les middlewares, activer MongoDB management et diagnostiquer une application NFZ.
 
@@ -22,7 +22,7 @@ bunx nfz <command> [args] [--flags]
 | `init embedded` | Initialise le mode serveur embedded Feathers dans Nuxt/Nitro. |
 | `init remote` | Initialise le mode client remote vers une API Feathers externe. |
 | `init templates` | Copie les templates surchargeables dans `feathers/templates`. |
-| `init starter` | Copie le starter Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ depuis `examples/nfz-quasar-unocss-pinia-starter`. |
+| `init starter` | Copie le starter principal Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB + auth/RBAC depuis `examples/nfz-quasar-unocss-pinia-starter`. |
 | `remote auth keycloak` | Configure le mode remote avec payload Keycloak. |
 | `add service <name>` | Génère un service embedded adapter memory/mongodb. |
 | `add service <name> --custom` | Génère un service adapter-less avec méthodes custom. |
@@ -60,6 +60,8 @@ cp .env.example .env
 bun run db:up
 bun dev
 ```
+
+Ce modèle est décrit comme starter principal dans [Starter Quasar + UnoCSS + Pinia](/guide/starter-quasar-unocss-pinia). Il inclut MongoDB, le seed `admin/admin123`, le store `studioSession`, le middleware global `session`, la façade `useAdminFeathers()` et un store métier `messages` inspiré du pattern Feathers-Pinia.
 
 ### Projet embedded MongoDB
 
@@ -208,4 +210,4 @@ useRuntimeConfig().feathers
 useRuntimeConfig().public.feathers
 ```
 
-<!-- release-version: 6.5.28 -->
+<!-- release-version: 6.5.29 -->

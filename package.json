@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.5.28",
+  "version": "6.5.29",
   "packageManager": "bun@1.3.6",
   "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
   "author": "Herve de CHAVIGNY",

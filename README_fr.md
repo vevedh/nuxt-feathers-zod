@@ -2,10 +2,11 @@
 
 > Module Nuxt 4 pour FeathersJS v5 (Dove), orienté CLI-first, avec génération de services Zod-first en option.
 
-**Version stable actuelle :** `6.5.28`
+**Version stable actuelle :** `6.5.29`
 
 - Documentation : `https://vevedh.github.io/nuxt-feathers-zod/`
 - Démarrage rapide : `docs/guide/getting-started.md`
+- Starter principal : `docs/guide/starter-quasar-unocss-pinia.md`
 - Référence CLI : `docs/reference/cli.md`
 - Workflow communautaire : `docs/guide/community-workflow.md`
 - Discipline de release : `RELEASE_CHECKLIST.md`
@@ -28,6 +29,7 @@ NFZ est adapté si tu veux :
 - des types partagés et des schémas **Zod-first** en option
 - des flux **auth locale/JWT** ou une intégration **Keycloak SSO**
 - des helpers côté client pour **Pinia / store session**
+- un **starter Quasar + UnoCSS + Pinia** officiel avec MongoDB, auth seedée et RBAC
 - un chemin vers la **gestion MongoDB**, les diagnostics et le builder tooling
 
 ## Ce que le module OSS inclut
@@ -44,9 +46,25 @@ NFZ est adapté si tu veux :
 - support Swagger legacy optionnel
 - template overrides
 - surface optionnelle de gestion MongoDB via `database.mongo.management`
+- template starter officiel sous `examples/nfz-quasar-unocss-pinia-starter`
 - contrôles de release avec build, typecheck, E2E et smoke tarball
 
-## Parcours 5 minutes
+## Starter applicatif principal
+
+Pour une application Nuxt 4 complète avec Quasar 2, UnoCSS, Pinia, MongoDB, auth locale seedée, middleware route, RBAC et couche d’accès Feathers encapsulée :
+
+```bash
+bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+cd nfz-starter
+bun install
+cp .env.example .env
+bun run db:up
+bun dev
+```
+
+Le starter est documenté dans `docs/guide/starter-quasar-unocss-pinia.md` et maintenu sous `examples/nfz-quasar-unocss-pinia-starter`.
+
+## Parcours embedded 5 minutes
 
 ```bash
 bunx nuxi@latest init my-nfz-app
@@ -54,7 +72,6 @@ cd my-nfz-app
 bun install
 bun add nuxt-feathers-zod @pinia/nuxt pinia
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 bunx nuxt-feathers-zod add service users
 bun dev
 ```
@@ -83,6 +100,7 @@ bun add feathers-swagger swagger-ui-dist
 ## Liens utiles
 
 - Quick start embedded : `docs/guide/getting-started.md`
+- Starter principal Quasar + UnoCSS + Pinia : `docs/guide/starter-quasar-unocss-pinia.md`
 - Mode remote : `docs/guide/remote.md`
 - Auth locale : `docs/guide/auth-local.md`
 - Keycloak SSO : `docs/guide/keycloak-sso.md`
@@ -115,4 +133,4 @@ bun run smoke:tarball
 MIT
 
 
-<!-- release-version: 6.5.28 -->
+<!-- release-version: 6.5.29 -->
