@@ -32,7 +32,8 @@ function withInternalGuide(items: Array<{ text: string; link: string }>) {
 
 export default defineConfig({
   base: '/nuxt-feathers-zod/',
-  cleanUrls: true,
+  // GitHub Pages resolves /foo.html reliably; cleanUrls can lead to missing assets/routes on project sites.
+  cleanUrls: false,
   lastUpdated: true,
   srcExclude: isProd ? [...internalGuideSrcExclude, ...alwaysHiddenSrcExclude] : alwaysHiddenSrcExclude,
 
