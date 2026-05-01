@@ -30,9 +30,8 @@ Pour un patch de release, mets aussi à jour :
 - `package.json` ;
 - `README.md` et `README_fr.md` ;
 - `CHANGELOG.md` ;
-- `JOURNAL.md` ;
-- `PROMPT_CONTEXT.md` ;
-- le fichier `PATCH_VX_Y_Z_*.md` correspondant.
+- les notes de version publiques ;
+- les pages VitePress impactées par le changement.
 
 ## Règles de cohérence
 

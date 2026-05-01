@@ -30,9 +30,8 @@ For a release patch, also update:
 - `package.json`;
 - `README.md` and `README_fr.md`;
 - `CHANGELOG.md`;
-- `JOURNAL.md`;
-- `PROMPT_CONTEXT.md`;
-- the matching `PATCH_VX_Y_Z_*.md` file.
+- public release notes;
+- VitePress pages impacted by the change.
 
 ## Consistency rules
 

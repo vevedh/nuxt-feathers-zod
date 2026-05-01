@@ -1,213 +1,62 @@
----
-editLink: false
----
 # CLI
 
-> OSS reference snapshot: **v6.5.29**
+Le CLI `nuxt-feathers-zod` est le point d’entrée recommandé pour initialiser un projet, générer les services et maintenir la cohérence entre `nuxt.config.ts`, les manifests et le runtime.
 
-La CLI `nuxt-feathers-zod` est l’interface officielle pour initialiser un projet, générer les services Feathers, enregistrer les services distants, ajouter les middlewares, activer MongoDB management et diagnostiquer une application NFZ.
+Pour la liste exhaustive des commandes et flags, consulte la [référence CLI](/reference/cli).
 
-## Utilisation
+## Commande d’entrée
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
-# alias
+```
+
+Alias :
+
+```bash
 bunx nfz <command> [args] [--flags]
 ```
 
-## Surface officielle alignée avec le code
-
-| Commande | Rôle |
-| --- | --- |
-| `init embedded` | Initialise le mode serveur embedded Feathers dans Nuxt/Nitro. |
-| `init remote` | Initialise le mode client remote vers une API Feathers externe. |
-| `init templates` | Copie les templates surchargeables dans `feathers/templates`. |
-| `init starter` | Copie le starter principal Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB + auth/RBAC depuis `examples/nfz-quasar-unocss-pinia-starter`. |
-| `remote auth keycloak` | Configure le mode remote avec payload Keycloak. |
-| `add service <name>` | Génère un service embedded adapter memory/mongodb. |
-| `add service <name> --custom` | Génère un service adapter-less avec méthodes custom. |
-| `add file-service <name>` | Génère un service local upload/download. |
-| `add remote-service <name>` | Enregistre un service distant côté client. |
-| `add middleware <name>` | Génère un middleware ou artefact associé. |
-| `add server-module <name>` | Génère un module serveur embedded avancé. |
-| `add mongodb-compose` | Génère `docker-compose-db.yaml` pour MongoDB. |
-| `mongo management` | Active ou met à jour les routes MongoDB management. |
-| `schema <service>` | Inspecte, valide ou répare le schéma d’un service. |
-| `auth service <name>` | Active ou désactive les hooks JWT sur un service. |
-| `doctor` | Diagnostique la configuration du projet. |
-
-## Exemples recommandés
-
-### Projet embedded minimal
+## Commandes les plus utilisées
 
 ```bash
-bunx nuxi@latest init my-nfz-app
-cd my-nfz-app
-bun install
-bun add nuxt-feathers-zod @pinia/nuxt pinia
+# Initialiser un backend embedded
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users --auth --schema zod
-bun dev
+
+# Initialiser un client remote
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --force
+
+# Générer un service
+bunx nuxt-feathers-zod add service messages --adapter memory --schema zod
+
+# Générer un service MongoDB
+bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --schema zod
+
+# Générer un service action custom
+bunx nuxt-feathers-zod add service actions --custom --methods find,get --customMethods run,preview
+
+# Déclarer un service distant
+bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
+
+# Diagnostiquer le projet
+bunx nuxt-feathers-zod doctor
 ```
 
-### Starter Quasar + UnoCSS + Pinia
+## Workflow conseillé
 
-```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
-cd nfz-starter
-bun install
-cp .env.example .env
-bun run db:up
-bun dev
-```
+1. Initialise le mode (`embedded` ou `remote`).
+2. Génère les services avec `add service`.
+3. Active les schémas via `--schema zod` pour les services métier.
+4. Utilise `schema <service>` pour faire évoluer les champs.
+5. Lance `doctor` après une migration ou une modification importante.
+6. Utilise `--dry` avant les opérations sensibles.
 
-Ce modèle est décrit comme starter principal dans [Starter Quasar + UnoCSS + Pinia](/guide/starter-quasar-unocss-pinia). Il inclut MongoDB, le seed `admin/admin123`, le store `studioSession`, le middleware global `session`, la façade `useAdminFeathers()` et un store métier `messages` inspiré du pattern Feathers-Pinia.
+## Bonnes pratiques
 
-### Projet embedded MongoDB
+- Évite de créer manuellement les premiers services.
+- Ne garde pas des aliases historiques dans la documentation applicative.
+- Versionne les fichiers générés importants.
+- Documente les overrides de templates.
+- Vérifie le build et le typecheck après une génération importante.
 
-```bash
-bunx nuxt-feathers-zod add mongodb-compose --port 27017 --database app
-bunx nuxt-feathers-zod init embedded --force --auth
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --schema zod
-bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
-```
-
-### Projet remote
-
-```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
-```
-
-### Remote + Keycloak
-
-```bash
-bunx nuxt-feathers-zod remote auth keycloak \
-  --ssoUrl https://sso.example.com \
-  --realm myrealm \
-  --clientId myapp
-```
-
-## Options principales
-
-### `init embedded`
-
-```bash
-bunx nuxt-feathers-zod init embedded \
-  --framework express \
-  --servicesDir services \
-  --restPath /feathers \
-  --websocketPath /socket.io \
-  --auth true \
-  --swagger false \
-  --force
-```
-
-Flags importants :
-
-- `--framework express|koa`
-- `--servicesDir <dir>`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--secureDefaults true|false`
-- `--cors true|false`
-- `--compression true|false`
-- `--helmet true|false`
-- `--bodyParserJson true|false`
-- `--bodyParserUrlencoded true|false`
-- `--serveStatic true|false`
-- `--serverModulesPreset express-baseline`
-- `--auth true|false`
-- `--swagger true|false`
-
-### `init remote`
-
-```bash
-bunx nuxt-feathers-zod init remote \
-  --url https://api.example.com \
-  --transport socketio \
-  --restPath /feathers \
-  --websocketPath /socket.io \
-  --auth true \
-  --payloadMode jwt
-```
-
-Flags importants :
-
-- `--url <http(s)://...>`, requis
-- `--transport socketio|rest|auto`, défaut CLI : `socketio`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--auth true|false`
-- `--payloadMode jwt|keycloak`
-- `--strategy jwt`
-- `--tokenField accessToken`
-- `--servicePath authentication`
-- `--reauth true|false`
-
-### `add service <name>`
-
-```bash
-bunx nuxt-feathers-zod add service messages --schema zod
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
-bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview --schema zod
-```
-
-Règles alignées avec le code :
-
-- `--methods` et `--customMethods` sont acceptés uniquement avec `--custom`.
-- `--collection` exige `--adapter mongodb`.
-- `--idField` est ignoré/interdit pour les services adapter-less.
-- Le service généré met à jour `services/.nfz/manifest.json`.
-
-### `add file-service <name>`
-
-```bash
-bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets --auth true
-```
-
-Le template partagé généré utilise désormais `runtimeConfig.public._feathers`, pas `runtimeConfig.public.feathers`, pour résoudre le fallback REST.
-
-### `mongo management`
-
-```bash
-bunx nuxt-feathers-zod mongo management \
-  --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin \
-  --auth false \
-  --basePath /mongo
-```
-
-## Builder API runtime
-
-Depuis la 6.5.26, la documentation, le code runtime et le contrat public Builder sont alignés sur :
-
-- `GET /api/nfz/services`
-- `GET /api/nfz/manifest`
-- `POST /api/nfz/manifest`
-- `GET /api/nfz/schema?service=<name>`
-- `POST /api/nfz/schema`
-- `POST /api/nfz/preview`
-- `POST /api/nfz/apply`
-
-Les routes historiques restent compatibles :
-
-- `GET /api/nfz/schema/:service`
-- `POST /api/nfz/schema/:service`
-
-## RuntimeConfig officiel
-
-Le runtime doit lire :
-
-```ts
-const serverConfig = useRuntimeConfig()._feathers
-const publicConfig = useRuntimeConfig().public._feathers
-```
-
-À ne plus utiliser dans les nouveaux fichiers :
-
-```ts
-useRuntimeConfig().feathers
-useRuntimeConfig().public.feathers
-```
 
 <!-- release-version: 6.5.29 -->

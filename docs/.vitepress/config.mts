@@ -44,7 +44,8 @@ export default defineConfig({
       description: 'FeathersJS v5 + Zod + Nuxt 4 (Nitro) — module tout-en-un avec CLI',
       themeConfig: {
         nav: [
-          { text: 'Guide', link: '/guide/getting-started' },
+          { text: 'Guide', link: '/guide/complete-guide' },
+          { text: 'Démarrage rapide', link: '/guide/getting-started' },
           { text: 'Starter principal', link: '/guide/starter-quasar-unocss-pinia' },
           { text: 'Référence', link: '/reference/' },
           { text: 'CLI', link: '/reference/cli' },
@@ -59,6 +60,7 @@ export default defineConfig({
             {
               text: 'Guide',
               items: withInternalGuide([
+                { text: 'Guide complet', link: '/guide/complete-guide' },
                 { text: 'Démarrage rapide', link: '/guide/getting-started' },
                 { text: 'Starter principal Quasar', link: '/guide/starter-quasar-unocss-pinia' },
                 { text: 'Publication npm & Git', link: '/guide/publishing' },

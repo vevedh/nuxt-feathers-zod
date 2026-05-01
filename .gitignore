@@ -1,94 +1,54 @@
-# Dependencies
 node_modules
-
-*.zip
-*.rar
-*.tar.gz
-*.tgz
-
-# Logs
-*.log*
-
-# Temp directories
-.temp
-.tmp
-.cache
-.eslintcache
-
-# Yarn
-**/.yarn/cache
-**/.yarn/*state*
-
-# Generated dirs
-dist
-
-# Nuxt
-.nuxt
-.output
-.data
-.vercel_build_output
-.build-*
-.netlify
-
-# Env
-.env
-.env.*
-!.env.example
-!*.example
-
-# Testing
-reports
-coverage
-*.lcov
-.nyc_output
-test-results
-**/playwright/results
-
-# VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
-!.vscode/*.code-snippets
-
-# Intellij idea
-*.iml
-.idea
-
-# OSX
-.DS_Store
-.AppleDouble
-.LSOverride
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# AI / patch helper files
-AI_CONTEXT/
-AI_*/
-.claude/
-.cursor/
-.continue/
-.windsurf/
-.roo/
-.qodo/
-CONTEXT*.md
-PATCH*.md
-PROMPT*.md
+CONTEXT_START.md
 JOURNAL.md
-SCENARIOS.md
-README_private.md
-
-# Local release / scratch artifacts
-*.tgz
-out.js
-tmpfile
-tmp-check.mjs
-tmp-*.mjs
-
-# Local archival material
-archives/
+nuxt-feathers-zod-6.5.2.tgz
+nuxt-feathers-zod-6.5.4.tgz
+nuxt-feathers-zod-6.5.5.tgz
+nuxt-feathers-zod-6.5.8.tgz
+nuxt-feathers-zod-6.5.9.tgz
+nuxt-feathers-zod-6.5.11.zip
+nuxt-feathers-zod-6.5.27.tgz
+nuxt-feathers-zod-pro.zip
+PATCH_APPLY_NOTES.md
+PATCH_KEYCLOAK_ONLY_DOCS.md
+PATCH_PRODUCTION_6.5.0.md
+PATCH_RUNTIME_PATHS_FILE_DEPENDENCY.md
+PATCH_TAZE_DEPENDENCY_MAINTENANCE.md
+PATCH_V6_5_2_FEATHERS_PINIA_VITE_COMPAT.md
+PATCH_V6_5_2_FEATHERS_PINIA_VITE_INTEROP_FOLLOWUP.md
+PATCH_V6_5_2_TYPECHECK_VERIFY_ALL.md
+PATCH_V6_5_2_VERIFY_ALL_SMOKE_METADATA_FOLLOWUP.md
+PATCH_V6_5_2_VERIFY_ALL_TYPECHECK_FOLLOWUP.md
+PATCH_V6_5_3_FEATHERS_PINIA_OPT_IN.md
+PATCH_V6_5_4_FEATHERS_PINIA_OPTIONAL_RUNTIME_SPLIT.md
+PATCH_V6_5_4_TYPECHECK_FEATHERS_PINIA_FOLLOWUP.md
+PATCH_V6_5_5_FEATHERS_CORE_ESM_INTEROP.md
+PATCH_V6_5_6_FEATHERS_CLIENT_TRANSPORT_ESM_INTEROP.md
+PATCH_V6_5_7_RUNTIME_CLIENT_ESM_IMPORT_POLICY.md
+PATCH_V6_5_8_OFETCH_TYPECHECK_METHOD_SIGNATURE.md
+PATCH_V6_5_9_TARBALL_BROWSER_CJS_INTEROP.md
+PATCH_V6_5_10_NATIVE_BROWSER_CLIENT_NO_FEATHERS_CJS.md
+PATCH_V6_5_11_NATIVE_CLIENT_NO_FORCED_FEATHERS_CJS_OPTIMIZE_DEPS.md
+PATCH_V6_5_12_DOCS_BRANDING_COHERENCE.md
+PATCH_V6_5_13_DOCS_BRANDING_VITEPRESS_FIX.md
+PATCH_V6_5_14_NAVBAR_BRANDING_FIX.md
+PATCH_V6_5_15_FULL_DOCS_BRANDING_REPACK.md
+PATCH_V6_5_16_FULL_AUDIT_PROMPT_CONTEXT.md
+PATCH_V6_5_17_DOCS_FRONTMATTER_SCOPE_FIX.md
+PATCH_V6_5_18_ESLINT_FIX.md
+PATCH_V6_5_19_LINT_SCRATCH_FILE_GUARD.md
+PATCH_V6_5_20_PRESET_PREVIEW_TYPECHECK_FIX.md
+PATCH_V6_5_21_NATIVE_SESSION_PINIA_AUTH.md
+PATCH_V6_5_22_RUNTIME_CONFIG_BUILDER_API_ALIGNMENT.md
+PATCH_V6_5_23_CODE_CLI_DOCS_ALIGNMENT.md
+PATCH_V6_5_24_TYPECHECK_FIX.md
+PATCH_V6_5_25_LINT_MAX_LEN_CLEANUP.md
+PATCH_V6_5_26_DOCS_DEAD_LINK_CLEANUP.md
+PATCH_V6_5_27_QUASAR_UNOCSS_PINIA_STARTER_PRESET.md
+PATCH_V6_5_28_VITEPRESS_BRANDING_RESTORE.md
+PATCH_V6_5_29_MAIN_STARTER_DOCUMENTATION.md
+PROMPT_CONTEXT.md
+/.nuxt
+/archives
+/NFZ_BACKLOG_6.4.115-6.4.118.md
+/dist

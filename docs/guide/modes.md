@@ -1,112 +1,163 @@
----
-editLink: false
----
-# Modes : embedded, remote, hybride
+# Modes embedded et remote
 
-`nuxt-feathers-zod` supporte deux modes principaux côté client, plus un cas hybride fréquent avec Keycloak.
+`nuxt-feathers-zod` fonctionne selon deux modes : `embedded` et `remote`.
 
-## 1) Embedded
+Le choix du mode détermine où vit le serveur Feathers et comment le client Nuxt communique avec les services.
 
-Le serveur Feathers tourne **dans la même app Nuxt 4**.
+## Résumé
 
-### Quand choisir embedded
+| Mode | Serveur Feathers | Client Nuxt | Cas d’usage |
+|---|---|---|---|
+| `embedded` | Dans Nitro | Local vers le même runtime | Monorepo, dashboard interne, MVP full-stack |
+| `remote` | Externe | REST ou Socket.IO vers une API distante | Front Nuxt séparé, API déjà existante, SSO centralisé |
 
-- monolithe Nuxt + API
-- démarrage rapide
-- stack simple à déployer
-- besoin de générer services + auth dans un même repo
+## Mode embedded
 
-### Exemple nouvelle app Nuxt 4
+En mode embedded, NFZ génère un runtime Feathers dans `.nuxt/feathers/server` et l’enregistre dans Nitro.
 
-```bash
-bunx nuxi@latest init my-nfz-embedded
-cd my-nfz-embedded
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init embedded --framework express --force
-bunx nuxt-feathers-zod add service messages
-bun dev
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+
+  feathers: {
+    client: {
+      mode: 'embedded',
+      pinia: true,
+    },
+
+    server: {
+      enabled: true,
+      framework: 'express',
+      secureDefaults: true,
+    },
+
+    transports: {
+      rest: {
+        path: '/feathers',
+        framework: 'express',
+      },
+      websocket: true,
+    },
+
+    servicesDirs: ['services'],
+  },
+})
 ```
 
-### Effet attendu
-
-- serveur embedded activé
-- transport REST local actif
-- transport Socket.IO local actif
-- client Nuxt relié à ce serveur local
-
-## 2) Remote
-
-Nuxt ne démarre aucun serveur Feathers. Il configure un **client** vers une API Feathers externe.
-
-### Quand choisir remote
-
-- backend Feathers déjà existant
-- séparation frontend/backend
-- microservices
-- API distante mutualisée
-
-### Exemple nouvelle app Nuxt 4
+Commande CLI :
 
 ```bash
-bunx nuxi@latest init my-nfz-remote
-cd my-nfz-remote
-bun install
-bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --force
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
-bun dev
+bunx nuxt-feathers-zod init embedded --force
 ```
 
-## 3) Cas hybride : remote + Keycloak SSO
+### Quand choisir embedded ?
 
-Cas fréquent :
+Choisis embedded si :
 
-- Keycloak gère l’identité côté navigateur
-- Feathers gère la session applicative côté API
+- tu veux un seul projet Nuxt pour le frontend et le backend ;
+- tu veux exposer des services sous `/feathers/*` ;
+- tu veux générer rapidement des services métier ;
+- tu veux une intégration directe avec MongoDB, auth locale et console NFZ.
 
-Le navigateur obtient un token Keycloak, puis le module appelle `authentication.create(...)` pour matérialiser une session Feathers.
+## Mode remote
 
-### Exemple
+En mode remote, NFZ n’installe pas de serveur local par défaut. Il configure le client Nuxt pour parler à une API Feathers externe.
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+
+  feathers: {
+    client: {
+      mode: 'remote',
+      remote: {
+        url: 'https://api.example.com',
+        transport: 'rest',
+        restPath: '/feathers',
+        services: [
+          { path: 'users', methods: ['find', 'get'] },
+          { path: 'messages', methods: ['find', 'get', 'create'] },
+        ],
+      },
+    },
+
+    server: {
+      enabled: false,
+    },
+
+    auth: false,
+  },
+})
+```
+
+Commande CLI :
 
 ```bash
 bunx nuxt-feathers-zod init remote \
   --url https://api.example.com \
   --transport rest \
-  --auth true \
-  --payloadMode keycloak \
-  --strategy jwt \
-  --tokenField access_token \
-  --servicePath authentication \
   --force
 ```
 
-## Quelle stratégie choisir ?
+### Quand choisir remote ?
 
-### Embedded
+Choisis remote si :
 
-Choisis embedded si tu veux :
+- ton API Feathers existe déjà ;
+- le backend est déployé séparément ;
+- plusieurs frontends consomment le même backend ;
+- tu utilises un SSO centralisé comme Keycloak ;
+- tu veux éviter tout runtime serveur Feathers dans Nuxt.
 
-- le plus simple pour démarrer,
-- tester rapidement les services générés,
-- centraliser Nuxt + Feathers + auth dans le même projet.
+## Transport REST
 
-### Remote
+```ts
+feathers: {
+  transports: {
+    rest: {
+      path: '/feathers',
+      framework: 'express',
+    },
+    websocket: false,
+  },
+}
+```
 
-Choisis remote si tu veux :
+Avantages :
 
-- une séparation claire frontend/backend,
-- connecter Nuxt à un backend existant,
-- ne pas embarquer le serveur Feathers dans Nitro.
+- simple à déboguer ;
+- compatible proxies et outils HTTP ;
+- bon choix pour CRUD classique.
 
-## Invariants à garder stables
+## Transport Socket.IO
 
-Pour le core open source, les invariants recommandés sont :
+```ts
+feathers: {
+  transports: {
+    rest: {
+      path: '/feathers',
+      framework: 'express',
+    },
+    websocket: {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      connectTimeout: 45000,
+    },
+  },
+}
+```
 
-- `servicesDirs: ['services']`
-- embedded = serveur Feathers dans Nitro
-- remote = pas de serveur embedded local
-- `init embedded` et `init remote` sont les points d’entrée officiels
-- `runtimeConfig.public._feathers` doit refléter proprement le mode réel
+Avantages :
+
+- events temps réel ;
+- meilleure UX pour notifications, chat, dashboards live ;
+- compatible authentification Feathers avec reauth.
+
+## Bonnes pratiques
+
+- En embedded, commence avec REST + websocket activé, puis désactive ce qui n’est pas utilisé.
+- En remote, déclare explicitement les services distants consommés.
+- En production, évite les chemins ambigus : garde `/feathers` pour REST et `/socket.io` pour Socket.IO.
+- Documente le mode choisi dans le README applicatif.

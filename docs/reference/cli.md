@@ -1,213 +1,239 @@
----
-editLink: false
----
 # Référence CLI
 
-> OSS reference snapshot: **v6.5.29**
+Cette page documente les commandes publiques du CLI `nuxt-feathers-zod`.
 
-La CLI `nuxt-feathers-zod` est l’interface officielle pour initialiser un projet, générer les services Feathers, enregistrer les services distants, ajouter les middlewares, activer MongoDB management et diagnostiquer une application NFZ.
+Le contenu ci-dessous est aligné sur l’aide intégrée du CLI dans `src/cli/core.ts`.
 
-## Utilisation
+## Commande d’entrée
 
 ```bash
 bunx nuxt-feathers-zod <command> [args] [--flags]
-# alias
+```
+
+Alias :
+
+```bash
 bunx nfz <command> [args] [--flags]
 ```
 
-## Surface officielle alignée avec le code
+## Aide complète
 
-| Commande | Rôle |
-| --- | --- |
-| `init embedded` | Initialise le mode serveur embedded Feathers dans Nuxt/Nitro. |
-| `init remote` | Initialise le mode client remote vers une API Feathers externe. |
-| `init templates` | Copie les templates surchargeables dans `feathers/templates`. |
-| `init starter` | Copie le starter principal Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB + auth/RBAC depuis `examples/nfz-quasar-unocss-pinia-starter`. |
-| `remote auth keycloak` | Configure le mode remote avec payload Keycloak. |
-| `add service <name>` | Génère un service embedded adapter memory/mongodb. |
-| `add service <name> --custom` | Génère un service adapter-less avec méthodes custom. |
-| `add file-service <name>` | Génère un service local upload/download. |
-| `add remote-service <name>` | Enregistre un service distant côté client. |
-| `add middleware <name>` | Génère un middleware ou artefact associé. |
-| `add server-module <name>` | Génère un module serveur embedded avancé. |
-| `add mongodb-compose` | Génère `docker-compose-db.yaml` pour MongoDB. |
-| `mongo management` | Active ou met à jour les routes MongoDB management. |
-| `schema <service>` | Inspecte, valide ou répare le schéma d’un service. |
-| `auth service <name>` | Active ou désactive les hooks JWT sur un service. |
-| `doctor` | Diagnostique la configuration du projet. |
+```txt
+nuxt-feathers-zod CLI
 
-## Exemples recommandés
+Usage:
+  bunx nuxt-feathers-zod <command> [args] [--flags]
 
-### Projet embedded minimal
+Commands:
+  init templates                Initialize template overrides (default: feathers/templates)
+  init embedded                 Initialize embedded server mode (Feathers inside Nuxt/Nitro)
+  init remote                   Initialize remote client mode (Feathers client -> external server)
+  init starter                  Scaffold Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter
+  remote auth keycloak          Configure remote auth payload mode for Keycloak
+  add service <name>            Generate an embedded service (or a service with custom methods via --custom)
+  add file-service <name>       Generate a local upload/download file service scaffold
+  add remote-service <name>     Register a remote service (client-only)
+  add middleware <name>         Generate middleware or middleware-like artifacts
+  add mongodb-compose           Generate docker-compose-db.yaml for MongoDB
+  mongo management             Enable/update embedded MongoDB management routes
+  schema <service>              Inspect schema state or switch schema mode
+  auth service <name>           Enable/disable JWT auth hooks on an existing service
+  doctor                        Diagnose current project configuration
 
-```bash
-bunx nuxi@latest init my-nfz-app
-cd my-nfz-app
-bun install
-bun add nuxt-feathers-zod @pinia/nuxt pinia
-bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users --auth --schema zod
-bun dev
+Global flags (most commands):
+  --dry                         Dry run (no writes)
+  --force                       Overwrite existing files (generators)
+
+Notes:
+  - The CLI auto-patches nuxt.config.* to ensure:
+    - modules: [..., 'nuxt-feathers-zod']
+    - feathers: { ... } minimal defaults required by the chosen command
+  - Embedded: generate services via CLI (recommended), then test REST:
+      GET http://localhost:3000/feathers/<service>
+  - MongoDB adapter requires an embedded mongodbClient (see docs). Default adapter is memory.
+
+Examples:
+  bunx nuxt-feathers-zod init templates
+  bunx nuxt-feathers-zod init embedded --force
+  bunx nuxt-feathers-zod init embedded --force --auth
+  bunx nuxt-feathers-zod add service users
+  bunx nuxt-feathers-zod add service users --adapter mongodb --collection users
+  bunx nuxt-feathers-zod add service actions --custom --methods find,get --customMethods run,preview
+  bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets
+  bunx nuxt-feathers-zod init remote --url http://localhost:3030
+  bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+  bunx nuxt-feathers-zod init remote --url http://localhost:3030 --transport rest
+  bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
+  bunx nuxt-feathers-zod add mongodb-compose
+  bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
+  bunx nuxt-feathers-zod auth service users --enabled true
+  bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example --realm myrealm --clientId myapp
+  bunx nuxt-feathers-zod doctor
+
+Flags overview:
+
+  init templates:
+    --dir <dir>                (default: feathers/templates)
+    --force
+    --dry
+    --diff                      show manifest diff before applying changes
+
+  init embedded:
+    --framework express|koa      (default: express)
+    --servicesDir <dir>          (default: services)
+    --restPath <path>            (default: /feathers)
+    --websocketPath <path>       (default: /socket.io)
+    --websocketTransports <list> (ex: websocket,polling)
+    --websocketConnectTimeout <ms> (default: 45000)
+    --websocketCorsOrigin <value> (ex: true|*|https://app.example.com)
+    --websocketCorsCredentials true|false
+    --websocketCorsMethods <list> (ex: GET,POST)
+    --secureDefaults true|false  (default: true)
+    --cors true|false            (default: true)
+    --compression true|false     (default: true)
+    --helmet true|false          (default: true)
+    --bodyParserJson true|false  (default: true)
+    --bodyParserUrlencoded true|false (default: true)
+    --serveStatic true|false     (default: false)
+    --serveStaticPath <path>     (default: /)
+    --serveStaticDir <dir>       (default: public)
+    --serverModulesPreset <name> (ex: express-baseline)
+    --expressBaseline            scaffold Express baseline server modules
+    --auth true|false            (default: false)
+    --swagger true|false         (default: false)
+    --force
+    --dry
+
+  init remote:
+    --url <http(s)://...>       (required)
+    --transport socketio|rest|auto (default: socketio, auto resolves to socketio in remote mode)
+    --restPath <path>           (default: /feathers)
+    --websocketPath <path>      (default: /socket.io)
+    --websocketTransports <list> (ex: websocket,polling)
+    --websocketConnectTimeout <ms> (default: 45000)
+    --websocketCorsOrigin <value>
+    --websocketCorsCredentials true|false
+    --websocketCorsMethods <list>
+    --auth true|false           (default: false)
+    --payloadMode jwt|keycloak  (default: jwt)
+    --strategy jwt              (default: jwt)
+    --tokenField accessToken    (default: accessToken, access_token when --payloadMode keycloak)
+    --servicePath authentication (default: authentication)
+    --reauth true|false         (default: true)
+    --force
+    --dry
+
+  remote auth keycloak:
+    --ssoUrl <url>              (required)
+    --realm <realm>             (required)
+    --clientId <id>             (required)
+    --dry
+
+  add service <name>:
+    --custom                    generate an adapter-less service with custom methods
+    --type adapter|custom       explicit service kind (optional)
+    --adapter memory|mongodb    (default: memory; ignored for --custom)
+    --schema none|zod|json      (default: none)
+    --auth true|false           (default: false)
+    --idField id|_id            (default: id; mongodb default: _id; ignored for --custom)
+    --path <servicePath>        (default: /<name>)
+    --collection <name>         (mongodb only; ignored for --custom)
+    --methods find,get,create,patch,remove (custom only; optional)
+    --customMethods run,preview (custom only; optional)
+    --docs true|false           (default: false; swagger legacy)
+    --servicesDir <dir>         (default: services)
+    --force
+    --dry
+
+  add file-service <name>:
+    --path <servicePath>        (default: <name>)
+    --storageDir <dir>          (default: storage/<name>)
+    --auth true|false           (default: false)
+    --docs true|false           (default: true)
+    --servicesDir <dir>         (default: services)
+    --force
+    --dry
+
+  add remote-service <name>:
+    --path <servicePath>        (default: <name>)
+    --methods find,get,create,patch,remove,custom (optional)
+    --dry
+
+  add mongodb-compose:
+    --out <file>                (default: docker-compose-db.yaml)
+    --service <name>            (default: mongodb)
+    --port <port>               (default: 27017)
+    --database <name>           (default: app)
+    --rootUser <user>           (default: root)
+    --rootPassword <pass>       (default: change-me)
+    --volume <name>             (default: mongodb_data)
+    --force
+    --dry
+
+  auth service <name>:
+    --servicesDir <dir>         (default: services)
+    --enabled true|false        (default: true)
+    --dry
+
+  mongo management:
+    --url <mongodb-url>         set/update feathers.database.mongo.url
+    --enabled true|false        management.enabled (default: true)
+    --auth true|false           management.auth (default: true)
+    --basePath <path>           management.basePath (default: /mongo)
+    --exposeDatabasesService true|false   management.exposeDatabasesService (default: true)
+    --exposeCollectionsService true|false management.exposeCollectionsService (default: true)
+    --exposeUsersService true|false       management.exposeUsersService (default: false)
+    --exposeCollectionCrud true|false     management.exposeCollectionCrud (default: true)
+    --whitelistDatabases <csv>  management.whitelistDatabases
+    --blacklistDatabases <csv>  management.blacklistDatabases
+    --whitelistCollections <csv> management.whitelistCollections
+    --blacklistCollections <csv> management.blacklistCollections
+    --showSystemDatabases true|false      management.showSystemDatabases (default: false)
+    --allowCreateDatabase true|false      management.allowCreateDatabase (default: false)
+    --allowDropDatabase true|false        management.allowDropDatabase (default: false)
+    --allowCreateCollection true|false    management.allowCreateCollection (default: false)
+    --allowDropCollection true|false      management.allowDropCollection (default: false)
+    --allowInsertDocuments true|false     management.allowInsertDocuments (default: false)
+    --allowPatchDocuments true|false      management.allowPatchDocuments (default: false)
+    --allowReplaceDocuments true|false    management.allowReplaceDocuments (default: false)
+    --allowRemoveDocuments true|false     management.allowRemoveDocuments (default: false)
+    --dry
+
+  add middleware <name>:
+    --target nitro|route|feathers|server-module|module|client-module|hook|policy (default: nitro)
+    --force
+    --dry
+
+  schema <service>:
+    --show                      human-readable schema summary
+    --json                      machine-readable schema summary
+    --export                    write schema summary to services/.nfz/exports
+    --get                       compatibility alias of --show
+    --set-mode none|zod|json    switch schema mode
+    --add-field <spec>          add field (ex: userId:string!, isActive:boolean=true)
+    --remove-field <name>       remove field from manifest/schema
+    --set-field <spec>          create or replace field definition
+    --rename-field <from:to>    rename field preserving definition
+    --validate                  validate manifest/schema coherence
+    --repair-auth               repair auth-compatible users schema baseline
+    --servicesDir <dir>         (default: services)
+    --force
+    --dry
+
+  add server-module <name>:
+    --preset helmet|security-headers|request-logger|healthcheck|rate-limit|express-baseline
+    --force
+    --dry
 ```
 
-### Starter Quasar + UnoCSS + Pinia
+## Bonnes pratiques CLI
 
-```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
-cd nfz-starter
-bun install
-cp .env.example .env
-bun run db:up
-bun dev
-```
+- Utilise `--dry` avant une opération qui modifie plusieurs fichiers.
+- Utilise `--force` seulement lorsque tu acceptes l’écrasement.
+- Garde `servicesDirs: ['services']` sauf raison explicite.
+- Préfère `add service` à la création manuelle du premier service.
+- Lance `doctor` après une migration ou un changement de mode.
+- Pour MongoDB management, garde `--auth true` en dehors d’un environnement local isolé.
 
-Ce modèle est décrit comme starter principal dans [Starter Quasar + UnoCSS + Pinia](/guide/starter-quasar-unocss-pinia). Il inclut MongoDB, le seed `admin/admin123`, le store `studioSession`, le middleware global `session`, la façade `useAdminFeathers()` et un store métier `messages` inspiré du pattern Feathers-Pinia.
-
-### Projet embedded MongoDB
-
-```bash
-bunx nuxt-feathers-zod add mongodb-compose --port 27017 --database app
-bunx nuxt-feathers-zod init embedded --force --auth
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --schema zod
-bunx nuxt-feathers-zod mongo management --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin --auth false
-```
-
-### Projet remote
-
-```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
-```
-
-### Remote + Keycloak
-
-```bash
-bunx nuxt-feathers-zod remote auth keycloak \
-  --ssoUrl https://sso.example.com \
-  --realm myrealm \
-  --clientId myapp
-```
-
-## Options principales
-
-### `init embedded`
-
-```bash
-bunx nuxt-feathers-zod init embedded \
-  --framework express \
-  --servicesDir services \
-  --restPath /feathers \
-  --websocketPath /socket.io \
-  --auth true \
-  --swagger false \
-  --force
-```
-
-Flags importants :
-
-- `--framework express|koa`
-- `--servicesDir <dir>`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--secureDefaults true|false`
-- `--cors true|false`
-- `--compression true|false`
-- `--helmet true|false`
-- `--bodyParserJson true|false`
-- `--bodyParserUrlencoded true|false`
-- `--serveStatic true|false`
-- `--serverModulesPreset express-baseline`
-- `--auth true|false`
-- `--swagger true|false`
-
-### `init remote`
-
-```bash
-bunx nuxt-feathers-zod init remote \
-  --url https://api.example.com \
-  --transport socketio \
-  --restPath /feathers \
-  --websocketPath /socket.io \
-  --auth true \
-  --payloadMode jwt
-```
-
-Flags importants :
-
-- `--url <http(s)://...>`, requis
-- `--transport socketio|rest|auto`, défaut CLI : `socketio`
-- `--restPath <path>`
-- `--websocketPath <path>`
-- `--auth true|false`
-- `--payloadMode jwt|keycloak`
-- `--strategy jwt`
-- `--tokenField accessToken`
-- `--servicePath authentication`
-- `--reauth true|false`
-
-### `add service <name>`
-
-```bash
-bunx nuxt-feathers-zod add service messages --schema zod
-bunx nuxt-feathers-zod add service users --auth --adapter mongodb --collection users --idField _id
-bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run,preview --schema zod
-```
-
-Règles alignées avec le code :
-
-- `--methods` et `--customMethods` sont acceptés uniquement avec `--custom`.
-- `--collection` exige `--adapter mongodb`.
-- `--idField` est ignoré/interdit pour les services adapter-less.
-- Le service généré met à jour `services/.nfz/manifest.json`.
-
-### `add file-service <name>`
-
-```bash
-bunx nuxt-feathers-zod add file-service assets --path api/v1/assets --storageDir storage/assets --auth true
-```
-
-Le template partagé généré utilise désormais `runtimeConfig.public._feathers`, pas `runtimeConfig.public.feathers`, pour résoudre le fallback REST.
-
-### `mongo management`
-
-```bash
-bunx nuxt-feathers-zod mongo management \
-  --url mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin \
-  --auth false \
-  --basePath /mongo
-```
-
-## Builder API runtime
-
-Depuis la 6.5.26, la documentation, le code runtime et le contrat public Builder sont alignés sur :
-
-- `GET /api/nfz/services`
-- `GET /api/nfz/manifest`
-- `POST /api/nfz/manifest`
-- `GET /api/nfz/schema?service=<name>`
-- `POST /api/nfz/schema`
-- `POST /api/nfz/preview`
-- `POST /api/nfz/apply`
-
-Les routes historiques restent compatibles :
-
-- `GET /api/nfz/schema/:service`
-- `POST /api/nfz/schema/:service`
-
-## RuntimeConfig officiel
-
-Le runtime doit lire :
-
-```ts
-const serverConfig = useRuntimeConfig()._feathers
-const publicConfig = useRuntimeConfig().public._feathers
-```
-
-À ne plus utiliser dans les nouveaux fichiers :
-
-```ts
-useRuntimeConfig().feathers
-useRuntimeConfig().public.feathers
-```
 
 <!-- release-version: 6.5.29 -->

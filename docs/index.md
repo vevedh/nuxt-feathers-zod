@@ -10,95 +10,57 @@ hero:
     alt: Logo plume
   actions:
     - theme: brand
+      text: Guide complet
+      link: /guide/complete-guide
+    - theme: alt
       text: Démarrage rapide
       link: /guide/getting-started
-    - theme: alt
-      text: Starter principal
-      link: /guide/starter-quasar-unocss-pinia
     - theme: alt
       text: Référence CLI
       link: /reference/cli
 
 features:
-  - title: "Deux modes, un seul workflow"
-    details: "Embedded pour faire tourner Feathers dans Nitro, remote pour consommer une API Feathers externe avec un client typé."
+  - title: "Nuxt 4 + Feathers v5"
+    details: "Un socle full-stack pour exposer des services Feathers dans Nitro ou consommer une API Feathers distante."
+  - title: "Deux modes maîtrisés"
+    details: "Embedded pour les monorepos backend-first, remote pour connecter Nuxt à une API Feathers existante."
   - title: "CLI-first"
-    details: "Initialisation, services, remote services, middleware et server modules sont générés de façon déterministe."
+    details: "Initialisation, services, auth, remote services, middleware, MongoDB et templates sont générés de façon reproductible."
   - title: "Zod-first en option"
-    details: "Schémas Zod, validation query/data et types partagés quand tu en as besoin, sans l’imposer partout."
-  - title: "Starter principal Quasar"
-    details: "Modèle Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB avec auth locale, middleware session, RBAC et façade Feathers."
-  - title: "Auth réelle"
-    details: "Auth locale/JWT, compatibilité Keycloak SSO et runtime auth outillé côté client."
-  - title: "Packaging sérieux"
-    details: "Build, typecheck, E2E et smoke tarball font partie de la discipline publique du module."
-  - title: "Prêt pour la communauté"
-    details: "Docs FR/EN, workflow de contribution, checklist de release et dépôt nettoyé pour la publication."
+    details: "Schémas Zod, JSON Schema ou mode none selon la maturité et la criticité du service."
+  - title: "Auth et SSO"
+    details: "Auth locale/JWT, runtime client, stores Pinia et intégration Keycloak SSO pour les architectures remote."
+  - title: "MongoDB et outils admin"
+    details: "MongoDB embedded, management routes, console/builder, DevTools et diagnostics pour accélérer le développement."
+  - title: "Starter professionnel"
+    details: "Base Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB avec auth locale et dashboard sécurisé."
+  - title: "Documentation développeur"
+    details: "Guides, référence des options, CLI complet, bonnes pratiques, troubleshooting et workflow de publication."
 ---
 
 ## Commence ici
 
-Choisis le parcours qui correspond à ton besoin principal :
+- **Comprendre le module complet** → [Guide complet](/guide/complete-guide)
+- **Lancer une app en quelques minutes** → [Démarrage rapide](/guide/getting-started)
+- **Choisir le bon mode** → [Modes embedded/remote](/guide/modes)
+- **Créer des services** → [Services](/guide/services)
+- **Configurer toutes les options** → [Référence des options](/reference/options)
+- **Utiliser le CLI** → [Référence CLI](/reference/cli)
 
-- **Découvrir NFZ en 5 minutes** → [Démarrage rapide](/guide/getting-started)
-- **Démarrer un dashboard métier complet** → [Starter principal Quasar + UnoCSS + Pinia](/guide/starter-quasar-unocss-pinia)
-- **Créer un backend Feathers embarqué dans Nuxt** → [Modes embedded/remote](/guide/modes)
-- **Brancher un frontend Nuxt sur une API Feathers distante** → [Mode remote](/guide/remote)
-- **Publier ou maintenir le module OSS** → [Publication npm & Git](/guide/publishing)
-
-## Ce que NFZ raconte clairement à un nouveau visiteur
-
-`nuxt-feathers-zod` n’est pas juste un SDK client.
-C’est un **socle Nuxt 4 + Feathers v5** pour construire une architecture full-stack cohérente avec :
-
-- un **serveur embedded** dans Nitro quand tu veux rester mono-repo,
-- un **client remote** quand tu veux consommer une API Feathers externe,
-- une **CLI** qui génère les pièces importantes au lieu de les recréer à la main,
-- une trajectoire vers l’auth, Mongo management, diagnostics et builder tooling.
-
-## Parcours le plus court
+## Exemple minimal
 
 ```bash
 bunx nuxi@latest init my-nfz-app
 cd my-nfz-app
 bun install
 bun add nuxt-feathers-zod
-bun add -D @pinia/nuxt
 bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users
+bunx nuxt-feathers-zod add service messages --adapter memory --schema zod
 bun dev
 ```
 
-## Règles d’or
+## Positionnement
 
-- Déclare `feathers.servicesDirs = ['services']`.
-- Génère les services via la CLI.
-- N’écris pas manuellement ton premier service si tu veux rester sur le chemin supporté.
-- En mode remote, `feathers.templates.dirs` reste optionnel.
+`nuxt-feathers-zod` n’est pas seulement un SDK client. C’est un module Nuxt 4 pour structurer un backend Feathers, générer les artefacts répétitifs, exposer des transports REST/Socket.IO et garder la configuration synchronisée avec le code.
 
-## Guides recommandés
-
-- [Démarrage rapide](/guide/getting-started)
-- [Starter principal Quasar + UnoCSS + Pinia](/guide/starter-quasar-unocss-pinia)
-- [Services (Zod-first)](/guide/services)
-- [Auth locale](/guide/auth-local)
-- [Keycloak SSO](/guide/keycloak-sso)
-- [Upload/download de fichiers](/guide/file-upload-download)
-- [Dépannage](/guide/troubleshooting)
-
-## Discipline de publication
-
-La base publique du module est maintenant alignée autour de quatre vérifications simples :
-
-```bash
-bun run build
-bun run typecheck
-bun run test:e2e
-bun run smoke:tarball
-```
-
-Voir aussi :
-
-- [Workflow communautaire](/guide/community-workflow)
-- [Checklist de release](/guide/release-checklist)
-- [Publication npm & Git](/guide/publishing)
+Le chemin recommandé est simple : initialise avec le CLI, génère les services, active Zod sur les contrats durables, centralise l’accès client et protège toutes les surfaces d’administration.
