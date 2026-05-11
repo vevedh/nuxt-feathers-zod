@@ -64,6 +64,29 @@ bun dev
 
 Le starter est documenté dans `docs/guide/starter-quasar-unocss-pinia.md` et maintenu sous `examples/nfz-quasar-unocss-pinia-starter`.
 
+
+## Parcours application métier Nuxt 4 + Quasar
+
+Pour un portail métier ou un dashboard admin comme Portail COSCA / Portail Comité, le chemin recommandé n’est pas une installation minimale suivie de fichiers de services écrits à la main. Pars du starter officiel Quasar + UnoCSS + Pinia, puis étends-le service par service.
+
+Le guide d’intégration réelle documente maintenant :
+
+- l’alignement complet `nuxt.config.ts` pour NFZ 6.5.x ;
+- `nuxt-quasar-ui` plutôt qu’un plugin Quasar manuel ;
+- le fichier obligatoire `services/users/users.schema.ts` et la classe runtime `User` ;
+- `passwordHash({ strategy: 'local' })` dans le resolver Zod ;
+- `userExternalResolver` pour masquer `password` ;
+- `useNfzAuth()` comme façade auth UI canonique ;
+- les middlewares admin/member et hooks RBAC ;
+- la migration des seeds Pinia/localStorage vers des services MongoDB.
+
+À lire :
+
+- Guide intégration réelle : `docs/guide/real-world-nuxt4-quasar-app.md`
+- Guide migration : `docs/guide/migrate-existing-nuxt4-app.md`
+- Checklist intégration : `docs/guide/real-world-integration-checklist.md`
+- Snippets : `examples/real-world-nuxt4-quasar-nfz/snippets/`
+
 ## Parcours embedded 5 minutes
 
 ```bash
@@ -101,6 +124,7 @@ bun add feathers-swagger swagger-ui-dist
 
 - Quick start embedded : `docs/guide/getting-started.md`
 - Starter principal Quasar + UnoCSS + Pinia : `docs/guide/starter-quasar-unocss-pinia.md`
+- App métier Nuxt 4 + Quasar : `docs/guide/real-world-nuxt4-quasar-app.md`
 - Mode remote : `docs/guide/remote.md`
 - Auth locale : `docs/guide/auth-local.md`
 - Keycloak SSO : `docs/guide/keycloak-sso.md`

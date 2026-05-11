@@ -28,6 +28,8 @@ features:
     details: "Use generated Zod schemas, query/data validation and shared types when you need them."
   - title: "Main Quasar starter"
     details: "Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB model with local auth, session middleware, RBAC and a Feathers facade."
+  - title: "Real-world business app"
+    details: "A complete guide for integrating NFZ into a business portal with layouts, auth, RBAC, Pinia stores and MongoDB services."
   - title: "Real authentication paths"
     details: "Local/JWT auth, Keycloak SSO compatibility and a dedicated client auth runtime."
   - title: "Packaging confidence"
@@ -42,6 +44,7 @@ Pick the path that matches your first goal:
 
 - **Understand NFZ in 5 minutes** → [Getting started](/en/guide/getting-started)
 - **Start a complete business dashboard** → [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia)
+- **Integrate NFZ into a real business app** → [Real-world Nuxt 4 + Quasar app](/en/guide/real-world-nuxt4-quasar-app)
 - **Build an embedded Feathers backend inside Nuxt** → [Embedded / remote modes](/en/guide/modes)
 - **Connect a Nuxt frontend to a remote Feathers API** → [Remote mode](/en/guide/remote)
 - **Publish or maintain the OSS package** → [npm & Git publishing](/en/guide/publishing)
@@ -80,6 +83,7 @@ bun dev
 
 - [Getting started](/en/guide/getting-started)
 - [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia)
+- [Real-world Nuxt 4 + Quasar app](/en/guide/real-world-nuxt4-quasar-app)
 - [Services (Zod-first)](/en/guide/services)
 - [Local auth](/en/guide/auth-local)
 - [Keycloak SSO](/en/guide/keycloak-sso)

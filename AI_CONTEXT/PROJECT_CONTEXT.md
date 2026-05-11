@@ -349,3 +349,17 @@ A generic CRUD users schema is insufficient even if `userId` and `password` are 
 - objectif: idempotence complète du module pendant bun install / nuxt prepare
 - déduplication des alias Vite, optimizeDeps.include, tsConfig.include et modules @pinia/nuxt
 - cible: empêcher les empilements côté module après une configuration CLI déjà propre
+
+## 2026-05-11 — Real-world Nuxt 4 + Quasar docs on stable 6.5.29
+
+The stable `nuxt-feathers-zod` 6.5.29 archive now includes a real-world integration documentation patch inspired by Portail COSCA / Portail Comité.
+
+Key rule: for a full Nuxt 4 + Quasar + UnoCSS + Pinia business application, recommend the `nfz-quasar-unocss-pinia-starter` as the integration baseline rather than only documenting the bare module install.
+
+Added FR/EN pages cover:
+
+- real-world app integration;
+- migration from existing Nuxt/Pinia/localStorage apps;
+- the recommended starter role;
+- integration checklist;
+- reusable snippets for auth, users service, RBAC hooks, seed and admin access.

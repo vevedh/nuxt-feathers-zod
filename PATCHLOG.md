@@ -350,3 +350,14 @@ Known next step:
 - Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
 
 - Step 4 (E2E + tarball smoke): added @nuxt/test-utils Vitest config, embedded-basic and embedded-auth fixtures, and scripts/smoke-tarball-install.mjs for packed-install smoke validation.
+
+## 6.5.29-real-world-nuxt4-quasar-docs
+
+- Applied the real-world documentation patch directly to the stable 6.5.29 archive.
+- Added FR/EN guides for integrating NFZ in a full Nuxt 4 + Quasar + UnoCSS + Pinia business application.
+- Added FR/EN migration guides for moving an existing Nuxt 4 app from Pinia/localStorage seeds to NFZ services.
+- Added FR/EN real-world integration checklists.
+- Added a dedicated guide explaining the role of the Quasar + UnoCSS + Pinia starter as the recommended application path.
+- Added reusable snippets under `examples/real-world-nuxt4-quasar-nfz/snippets`.
+- Updated VitePress navigation and home pages in both French and English.
+- Updated root README files to surface the business application path.
