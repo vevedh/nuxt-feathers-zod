@@ -25,13 +25,21 @@ Pinia should stop being the business source of truth. It becomes a cache, UX fac
 
 Start with:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=false
 ```
 
 Enable NFZ when the `users` service and MongoDB are ready:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=true
 ```
 
@@ -39,13 +47,21 @@ NFZ_ENABLED=true
 
 During migration:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=true
 ```
 
 In production:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=false
 ```
 
@@ -129,7 +145,11 @@ Vue page -> store/composable -> app.service('service-name')
 
 When services are stable:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=false
 ```
 

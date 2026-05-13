@@ -46,6 +46,10 @@ export function useAdminFeathers() {
     get,
     create,
     patch,
+<<<<<<< HEAD
     remove,
+=======
+    remove
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   }
 }

@@ -25,13 +25,21 @@ Le store Pinia ne doit plus être la vérité métier. Il devient un cache, une 
 
 Commence avec :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=false
 ```
 
 Puis active NFZ lorsque le service `users` et MongoDB sont prêts :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=true
 ```
 
@@ -39,13 +47,21 @@ NFZ_ENABLED=true
 
 Pendant la migration :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=true
 ```
 
 En production :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=false
 ```
 
@@ -129,7 +145,11 @@ page Vue -> store/composable -> app.service('service-name')
 
 Quand les services sont stables :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_DEMO_FALLBACK=false
 ```
 

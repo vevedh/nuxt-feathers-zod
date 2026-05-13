@@ -363,6 +363,7 @@ Added FR/EN pages cover:
 - the recommended starter role;
 - integration checklist;
 - reusable snippets for auth, users service, RBAC hooks, seed and admin access.
+<<<<<<< HEAD
 
 ## 2026-05-11 — v6.5.30 Remote Keycloak + LDAP/AD bridge
 
@@ -372,3 +373,5 @@ Added a real-world remote SSO bridge documentation patch:
 - The browser sends only the Keycloak token (`access_token`), never a trusted `authenticated: true` flag.
 - The remote Feathers backend verifies the Keycloak JWT through JWKS, extracts `preferred_username`, resolves the user from LDAP/AD, maps roles/groups, and returns an enriched application `user` plus a Feathers access token.
 - Added FR/EN docs and `examples/remote-keycloak-ldap/`.
+=======
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb

@@ -203,7 +203,11 @@ Priority:
 
 Recommended variables:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=true
 AUTH_DEMO_FALLBACK=false
 AUTH_SEED_ENABLED=false
@@ -211,7 +215,11 @@ AUTH_SEED_ENABLED=false
 
 For a local demo mode:
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=false
 AUTH_DEMO_FALLBACK=true
 ```

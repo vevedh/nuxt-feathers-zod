@@ -203,7 +203,11 @@ Priorité :
 
 Variables recommandées :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=true
 AUTH_DEMO_FALLBACK=false
 AUTH_SEED_ENABLED=false
@@ -211,7 +215,11 @@ AUTH_SEED_ENABLED=false
 
 Pour un mode démo local :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 NFZ_ENABLED=false
 AUTH_DEMO_FALLBACK=true
 ```
@@ -276,7 +284,11 @@ Ne pas insérer directement en MongoDB, sinon le resolver `passwordHash()` ne se
 
 Variables utiles :
 
+<<<<<<< HEAD
 ```txt
+=======
+```env
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 AUTH_SEED_ENABLED=true
 AUTH_SEED_UPDATE_EXISTING=true
 AUTH_SEED_RESET=false

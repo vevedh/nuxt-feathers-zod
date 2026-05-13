@@ -1,11 +1,19 @@
 import { defineStore } from 'pinia'
 
+<<<<<<< HEAD
 interface LoginCredentials {
+=======
+type LoginCredentials = {
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   email: string
   password: string
 }
 
+<<<<<<< HEAD
 interface AuthUser {
+=======
+type AuthUser = {
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   _id?: string
   email: string
   displayName?: string
@@ -14,7 +22,11 @@ interface AuthUser {
   isAdmin?: boolean
 }
 
+<<<<<<< HEAD
 interface AuthResult {
+=======
+type AuthResult = {
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   accessToken: string
   user?: AuthUser
 }
@@ -52,7 +64,11 @@ export const useStudioSessionStore = defineStore('studioSession', () => {
     isAuthenticated,
     isAdmin,
     setSession,
+<<<<<<< HEAD
     clearSession,
+=======
+    clearSession
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   }
 })
 
@@ -80,7 +96,11 @@ export function useNfzAuth() {
     const result = await $api.authenticate({
       strategy: 'local',
       email: credentials.email,
+<<<<<<< HEAD
       password: credentials.password,
+=======
+      password: credentials.password
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
     }) as AuthResult
 
     session.setSession(result)
@@ -106,6 +126,10 @@ export function useNfzAuth() {
     reAuthenticate,
     isAuthenticated: session.isAuthenticated,
     isAdmin: session.isAdmin,
+<<<<<<< HEAD
     user: session.user,
+=======
+    user: session.user
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   }
 }

@@ -35,10 +35,17 @@ features:
     details: "Auth locale/JWT, runtime client, stores Pinia, Keycloak SSO et bridge LDAP/AD pour les architectures remote."
   - title: "MongoDB et outils admin"
     details: "MongoDB embedded, management routes, console/builder, DevTools et diagnostics pour accélérer le développement."
+<<<<<<< HEAD
   - title: "Production-ready"
     details: "Guides de configuration, runtimeConfig, checks de publication, sécurité des secrets, transports et déploiement."
   - title: "API runtime claire"
     details: "Composables, client Feathers, auth runtime, services typés et événements documentés pour les applications Nuxt."
+=======
+  - title: "Starter professionnel"
+    details: "Base Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB avec auth locale et dashboard sécurisé."
+  - title: "App métier réelle"
+    details: "Guide complet pour intégrer NFZ dans un portail métier avec layouts, auth, RBAC, stores Pinia et services MongoDB."
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   - title: "Documentation développeur"
     details: "Guides, référence des options, CLI complet, événements/hooks, bonnes pratiques et troubleshooting."
 ---
@@ -47,7 +54,10 @@ features:
 
 - **Comprendre le module complet** → [Guide complet](/guide/complete-guide)
 - **Lancer une app en quelques minutes** → [Démarrage rapide](/guide/getting-started)
+<<<<<<< HEAD
 - **Préparer une mise en production** → [Checklist de production](/guide/production)
+=======
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 - **Construire une app métier Nuxt 4 + Quasar** → [Guide intégration réelle](/guide/real-world-nuxt4-quasar-app)
 - **Choisir le bon mode** → [Modes embedded/remote](/guide/modes)
 - **Créer des services** → [Services](/guide/services)

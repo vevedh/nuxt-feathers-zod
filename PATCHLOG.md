@@ -361,6 +361,7 @@ Known next step:
 - Added reusable snippets under `examples/real-world-nuxt4-quasar-nfz/snippets`.
 - Updated VitePress navigation and home pages in both French and English.
 - Updated root README files to surface the business application path.
+<<<<<<< HEAD
 
 ## 6.5.30 - Remote Keycloak LDAP bridge documentation
 
@@ -429,3 +430,5 @@ Known next step:
 - Restored the hero block, action buttons and feather image reference.
 - Kept the production documentation links introduced during the audit pass.
 - Verified the referenced hero image exists under `docs/public/images/plume-dark.png`.
+=======
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb

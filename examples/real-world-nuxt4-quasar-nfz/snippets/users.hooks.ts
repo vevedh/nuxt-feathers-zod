@@ -4,7 +4,11 @@ import { Forbidden, NotAuthenticated } from '@feathersjs/errors'
 
 const authenticateJwt = authenticate('jwt')
 
+<<<<<<< HEAD
 interface UserLike {
+=======
+type UserLike = {
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   _id?: string
   id?: string
   email?: string
@@ -23,7 +27,11 @@ function isAdmin(user: UserLike | undefined): boolean {
   }
 
   const roles = [...(user.roles ?? []), ...(user.groups ?? [])]
+<<<<<<< HEAD
     .map(role => role.toLowerCase())
+=======
+    .map((role) => role.toLowerCase())
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 
   return roles.includes('admin')
 }
@@ -81,6 +89,7 @@ export default {
     create: [requireAdmin],
     update: [requireAdmin],
     patch: [requireAdmin],
+<<<<<<< HEAD
     remove: [requireAdmin],
   },
   after: {
@@ -89,4 +98,14 @@ export default {
   error: {
     all: [],
   },
+=======
+    remove: [requireAdmin]
+  },
+  after: {
+    all: []
+  },
+  error: {
+    all: []
+  }
+>>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 }
