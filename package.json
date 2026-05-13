@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.5.30",
+  "version": "6.5.31",
   "packageManager": "bun@1.3.6",
   "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
   "author": "Herve de CHAVIGNY",
@@ -248,8 +248,8 @@
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
     "release:major": "bunx release-it major",
-    "docs:dev": "bun run docs:check-frontmatter && cd docs && bun install && bunx vitepress dev . --host",
-    "docs:build": "bun run docs:check-frontmatter && cd docs && bun install && bunx vitepress build .",
+    "docs:dev": "bun run docs:check-frontmatter && bun run docs:check-conflicts && cd docs && bun install && bunx vitepress dev . --host",
+    "docs:build": "bun run docs:check-frontmatter && bun run docs:check-conflicts && cd docs && bun install && bunx vitepress build .",
     "docs:preview": "cd docs && bun install && bunx vitepress preview .",
     "sync:actions": "bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run --auth --docs --force",
     "sync:golden": "bun run sync:actions",
@@ -281,11 +281,12 @@
     "verify:typecheck": "bun run typecheck",
     "verify:test": "bun test",
     "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
-    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run docs:check-frontmatter && bun run sanity:client-runtime-esm-interop",
+    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run sanity:client-runtime-esm-interop",
     "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
     "verify:full": "bun run verify:install && bun run verify:all",
     "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
-    "sanity:client-runtime-esm-interop": "node scripts/check-client-runtime-esm-interop.mjs"
+    "sanity:client-runtime-esm-interop": "node scripts/check-client-runtime-esm-interop.mjs",
+    "docs:check-conflicts": "node scripts/check-docs-conflicts.mjs"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0",

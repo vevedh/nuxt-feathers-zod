@@ -122,4 +122,4 @@ bunx nuxt-feathers-zod add service <name>
 Manual folder creation can prevent the scanner from finding the expected exports.
 
 
-<!-- release-version: 6.5.30 -->
+<!-- release-version: 6.5.31 -->

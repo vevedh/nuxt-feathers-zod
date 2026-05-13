@@ -3,11 +3,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     'nuxt-quasar-ui',
     '@unocss/nuxt',
-<<<<<<< HEAD
     'nuxt-feathers-zod',
-=======
-    'nuxt-feathers-zod'
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   ],
 
   quasar: {
@@ -15,24 +11,15 @@ export default defineNuxtConfig({
     iconSet: 'material-icons',
     plugins: ['Dialog', 'Loading', 'Notify', 'AppFullscreen'],
     extras: {
-<<<<<<< HEAD
       fontIcons: ['material-icons'],
     },
     components: {
       autoImport: true,
     },
-=======
-      fontIcons: ['material-icons']
-    },
-    components: {
-      autoImport: true
-    }
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   },
 
   feathers: {
     client: {
-<<<<<<< HEAD
       mode: 'embedded',
     },
     transports: {
@@ -41,16 +28,6 @@ export default defineNuxtConfig({
     },
     server: {
       enabled: true,
-=======
-      mode: 'embedded'
-    },
-    transports: {
-      rest: true,
-      websocket: false
-    },
-    server: {
-      enabled: true
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
     },
     auth: {
       enabled: true,
@@ -63,7 +40,6 @@ export default defineNuxtConfig({
         usernameField: 'email',
         passwordField: 'password',
         entityUsernameField: 'email',
-<<<<<<< HEAD
         entityPasswordField: 'password',
       },
     },
@@ -73,15 +49,4 @@ export default defineNuxtConfig({
       },
     },
   },
-=======
-        entityPasswordField: 'password'
-      }
-    },
-    database: {
-      mongo: {
-        url: process.env.MONGO_URL
-      }
-    }
-  }
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 })

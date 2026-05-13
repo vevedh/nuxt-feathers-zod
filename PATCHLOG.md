@@ -361,7 +361,6 @@ Known next step:
 - Added reusable snippets under `examples/real-world-nuxt4-quasar-nfz/snippets`.
 - Updated VitePress navigation and home pages in both French and English.
 - Updated root README files to surface the business application path.
-<<<<<<< HEAD
 
 ## 6.5.30 - Remote Keycloak LDAP bridge documentation
 
@@ -430,5 +429,28 @@ Known next step:
 - Restored the hero block, action buttons and feather image reference.
 - Kept the production documentation links introduced during the audit pass.
 - Verified the referenced hero image exists under `docs/public/images/plume-dark.png`.
-=======
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
+
+## 2026-05-13 — 6.5.31 GitHub Actions Node 24 compatibility
+
+- Bumped the package version from `6.5.30` to `6.5.31` for the CI/GitHub Pages compatibility patch.
+- Updated `.github/workflows/ci.yml` to run on Node.js 24 and Node 24-compatible official actions:
+  - `actions/checkout@v5`
+  - `actions/setup-node@v5`
+- Updated `.github/workflows/docs.yml` for GitHub Pages deployment:
+  - added `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`;
+  - added `NODE_OPTIONS=--max-old-space-size=4096`;
+  - added `NUXT_TELEMETRY_DISABLED=1`;
+  - switched to Node.js 24;
+  - added `actions/configure-pages@v6`;
+  - switched deployment to `actions/deploy-pages@v5`;
+  - switched upload to `actions/upload-pages-artifact@v4`;
+  - added `.nojekyll` generation before artifact upload.
+- Updated release metadata in README and CLI documentation.
+- Verified workflow YAML syntax, documentation front matter, TypeScript syntax, release metadata and required release files.
+
+## 2026-05-13 — Docs build guard for VitePress conflict markers
+
+- Added `scripts/check-docs-conflicts.mjs` to detect unresolved Git conflict markers before VitePress runs.
+- Updated `docs:build` and `docs:dev` so the marker check runs immediately after frontmatter validation.
+- Updated `verify:sanity` to include the documentation conflict marker check.
+- Regenerated the documentation archive from a clean `docs/en/guide/migrate-existing-nuxt4-app.md` file to prevent VitePress from interpreting `<<<< HEAD` as a snippet import path.

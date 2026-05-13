@@ -13,13 +13,8 @@ export async function seedUsers(app: Application): Promise<void> {
   const existing = await users.find({
     query: {
       email: adminEmail,
-<<<<<<< HEAD
       $limit: 1,
     },
-=======
-      $limit: 1
-    }
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   }) as { data?: unknown[] } | unknown[]
 
   const data = Array.isArray(existing) ? existing : existing.data ?? []
@@ -35,11 +30,7 @@ export async function seedUsers(app: Application): Promise<void> {
       roles: ['admin'],
       groups: ['ADMIN'],
       isAdmin: true,
-<<<<<<< HEAD
       status: 'active',
-=======
-      status: 'active'
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
     })
     return
   }
@@ -51,10 +42,6 @@ export async function seedUsers(app: Application): Promise<void> {
     roles: ['admin'],
     groups: ['ADMIN'],
     isAdmin: true,
-<<<<<<< HEAD
     status: 'active',
-=======
-    status: 'active'
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
   })
 }

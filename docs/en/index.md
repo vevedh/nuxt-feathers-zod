@@ -30,7 +30,6 @@ features:
   - title: "CLI-first"
     details: "Initialization, services, auth, remote services, middleware, MongoDB and templates are generated in a deterministic way."
   - title: "Optional Zod-first"
-<<<<<<< HEAD
     details: "Use Zod schemas, JSON Schema or no schema depending on the maturity and criticality of each service."
   - title: "Auth and SSO"
     details: "Local/JWT auth, client runtime, Pinia stores, Keycloak SSO and LDAP/AD bridge compatibility for remote architectures."
@@ -42,19 +41,6 @@ features:
     details: "Composables, Feathers client, auth runtime, typed services and documented events for Nuxt applications."
   - title: "Developer documentation"
     details: "Guides, options reference, complete CLI reference, events/hooks, best practices and troubleshooting."
-=======
-    details: "Use generated Zod schemas, query/data validation and shared types when you need them."
-  - title: "Main Quasar starter"
-    details: "Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB model with local auth, session middleware, RBAC and a Feathers facade."
-  - title: "Real-world business app"
-    details: "A complete guide for integrating NFZ into a business portal with layouts, auth, RBAC, Pinia stores and MongoDB services."
-  - title: "Real authentication paths"
-    details: "Local/JWT auth, Keycloak SSO compatibility and a dedicated client auth runtime."
-  - title: "Packaging confidence"
-    details: "Build, typecheck, E2E and tarball smoke checks are part of the public release discipline."
-  - title: "Community-ready"
-    details: "FR/EN docs, contribution workflow, release checklist and a cleaner public repository surface."
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 ---
 
 ## Start here
@@ -72,28 +58,7 @@ features:
 - **SSR Keycloak + LDAP/AD variant** → [Keycloak LDAP SSR guide](/en/guide/remote-keycloak-ldap-ssr)
 - **Use the CLI** → [CLI reference](/en/reference/cli)
 
-<<<<<<< HEAD
 ## Minimal example
-=======
-- **Understand NFZ in 5 minutes** → [Getting started](/en/guide/getting-started)
-- **Start a complete business dashboard** → [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia)
-- **Integrate NFZ into a real business app** → [Real-world Nuxt 4 + Quasar app](/en/guide/real-world-nuxt4-quasar-app)
-- **Build an embedded Feathers backend inside Nuxt** → [Embedded / remote modes](/en/guide/modes)
-- **Connect a Nuxt frontend to a remote Feathers API** → [Remote mode](/en/guide/remote)
-- **Publish or maintain the OSS package** → [npm & Git publishing](/en/guide/publishing)
-
-## What NFZ is really about
-
-`nuxt-feathers-zod` is not just a client SDK.
-It is a **Nuxt 4 + Feathers v5 foundation** for teams who want:
-
-- an **embedded server** inside Nitro when a mono-repo full-stack app makes sense,
-- a **remote client layer** when the API already exists elsewhere,
-- a **CLI** that generates the important pieces instead of hand-wiring them,
-- a path toward auth, Mongo management, diagnostics and builder tooling.
-
-## Shortest supported path
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 
 ```bash
 bunx nuxi@latest init my-nfz-app
@@ -111,18 +76,7 @@ bun dev
 
 The recommended path is straightforward: initialize through the CLI, generate services, enable Zod for durable contracts, centralize client access and protect all administration surfaces.
 
-<<<<<<< HEAD
 ## Production path
-=======
-- [Getting started](/en/guide/getting-started)
-- [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia)
-- [Real-world Nuxt 4 + Quasar app](/en/guide/real-world-nuxt4-quasar-app)
-- [Services (Zod-first)](/en/guide/services)
-- [Local auth](/en/guide/auth-local)
-- [Keycloak SSO](/en/guide/keycloak-sso)
-- [File upload/download](/en/guide/file-upload-download)
-- [Troubleshooting](/en/guide/troubleshooting)
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 
 Before publishing or deploying, run the project checks:
 

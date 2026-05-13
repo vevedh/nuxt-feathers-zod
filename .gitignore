@@ -92,3 +92,10 @@ tmp-*.mjs
 
 # Local archival material
 archives/
+/NPM_PACKAGE_METADATA.md
+NFZ_BACKLOG_6.4.109-6.4.114.md
+CHANGELOG.md.bak
+CHANGELOG_v6.3.6.md
+memo_ai.md
+NFZ_BACKLOG_6.4.115-6.4.118.md
+NUXT_MODULES_ISSUE_DRAFT.md

@@ -3,7 +3,7 @@
 `nuxt-feathers-zod` integrates FeathersJS v5 (Dove), Zod schemas and typed service access into Nuxt 4.
 It is designed for applications that need a real backend contract inside a Nuxt project, while keeping the option to connect to an external Feathers API.
 
-Current reference version: **6.5.30**.
+Current reference version: **6.5.31**.
 
 ## What the module provides
 
@@ -123,34 +123,7 @@ bun run dev
 
 ## Production checklist
 
-<<<<<<< HEAD
 Before publishing or deploying an application using this module:
-=======
-
-## Real-world Nuxt 4 + Quasar application path
-
-For a business portal or admin dashboard like Portail COSCA / Portail Comité, the recommended path is not a bare install followed by manual service files. Start from the official Quasar + UnoCSS + Pinia starter, then extend it service by service.
-
-The real-world integration guide now documents:
-
-- full `nuxt.config.ts` alignment for NFZ 6.5.x;
-- `nuxt-quasar-ui` instead of a manual Quasar plugin;
-- the required `services/users/users.schema.ts` + runtime `User` class;
-- `passwordHash({ strategy: 'local' })` in the Zod resolver;
-- `userExternalResolver` to hide `password`;
-- `useNfzAuth()` as the canonical UI auth facade;
-- admin/member middleware and RBAC hooks;
-- MongoDB-backed service migration from Pinia/localStorage seeds.
-
-Read:
-
-- Real-world guide: `docs/guide/real-world-nuxt4-quasar-app.md`
-- Migration guide: `docs/guide/migrate-existing-nuxt4-app.md`
-- Integration checklist: `docs/guide/real-world-integration-checklist.md`
-- Snippets: `examples/real-world-nuxt4-quasar-nfz/snippets/`
-
-## 5-minute embedded path
->>>>>>> efe40e3b9a9f0a0bef0ec181dde71d3b7073cfdb
 
 1. Run `bunx nuxt-feathers-zod doctor`.
 2. Verify `feathers.servicesDirs` and the generated `services/.nfz/manifest.json`.
