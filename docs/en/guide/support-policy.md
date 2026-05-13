@@ -3,7 +3,7 @@ editLink: false
 ---
 # Support policy
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the supported and advanced feature perimeter. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents the supported and advanced feature perimeter, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

@@ -1,94 +1,125 @@
----
-editLink: false
----
-# CLI Reference
+# CLI reference
 
-> OSS reference snapshot: **v6.5.29**
-
-The `nuxt-feathers-zod` CLI is the official interface for initializing projects, generating Feathers services, registering remote services, adding middleware, enabling MongoDB management and diagnosing an NFZ application.
-
-## Usage
+The `nuxt-feathers-zod` CLI initializes projects, generates services and checks configuration consistency.
 
 ```bash
-bunx nuxt-feathers-zod <command> [args] [--flags]
-# alias
-bunx nfz <command> [args] [--flags]
+bunx nuxt-feathers-zod --help
 ```
 
-## Command surface aligned with the code
+## Main commands
 
 | Command | Purpose |
-| --- | --- |
-| `init embedded` | Initializes embedded Feathers inside Nuxt/Nitro. |
-| `init remote` | Initializes remote client mode against an external Feathers API. |
-| `init templates` | Copies overridable templates into `feathers/templates`. |
-| `init starter` | Copies the main Nuxt 4 + Quasar 2 + UnoCSS + Pinia + MongoDB + auth/RBAC starter from `examples/nfz-quasar-unocss-pinia-starter`. |
-| `remote auth keycloak` | Configures remote Keycloak payload mode. |
-| `add service <name>` | Generates an embedded memory/mongodb service. |
-| `add service <name> --custom` | Generates an adapter-less service with custom methods. |
-| `add file-service <name>` | Generates a local upload/download service. |
-| `add remote-service <name>` | Registers a client-side remote service. |
-| `add middleware <name>` | Generates middleware or related artifacts. |
-| `add server-module <name>` | Generates an advanced embedded server module. |
-| `add mongodb-compose` | Generates `docker-compose-db.yaml` for MongoDB. |
-| `mongo management` | Enables or updates MongoDB management routes. |
-| `schema <service>` | Inspects, validates or repairs service schema state. |
-| `auth service <name>` | Enables or disables JWT hooks on a service. |
-| `doctor` | Diagnoses the project configuration. |
+|---|---|
+| `doctor` | Checks Nuxt configuration, services, manifest and common options. |
+| `init embedded` | Configures an application with an embedded Feathers backend. |
+| `init remote` | Configures a client application connected to an external Feathers API. |
+| `init starter` | Prepares an application base from a preset. |
+| `init templates` | Installs service templates. |
+| `add service` | Generates a standard Feathers service. |
+| `add file-service` | Generates an upload/download service. |
+| `add remote-service` | Declares a service consumed from a remote API. |
+| `add custom-service` | Generates an adapter-less service with custom methods. |
+| `add middleware` | Generates application middleware. |
+| `add server-module` | Generates an embedded server module. |
+| `mongo management` | Adds MongoDB administration support. |
+| `schema` | Inspects or edits a service schema. |
+| `auth service` | Adds an authentication-related service. |
+| `templates`, `plugins`, `modules`, `middlewares` | Lists or adds entries from module registries. |
 
-## Recommended examples
-
-```bash
-bunx nuxi@latest init my-nfz-app
-cd my-nfz-app
-bun install
-bun add nuxt-feathers-zod @pinia/nuxt pinia
-bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users --auth --schema zod
-bun dev
-```
+## Diagnostic
 
 ```bash
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth true
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get,create,patch,remove
+bunx nuxt-feathers-zod doctor
 ```
 
-## Quasar + UnoCSS + Pinia starter
+Run it after installation, after service generation and before delivery.
+
+## Initialize embedded mode
 
 ```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
-cd nfz-starter
-bun install
-cp .env.example .env
-bun run db:up
-bun dev
+bunx nuxt-feathers-zod init embedded \
+  --auth \
+  --database mongodb \
+  --framework express \
+  --servicesDir services \
+  --restPath /feathers \
+  --websocketPath /socket.io
 ```
 
-This model is documented as the main starter in [Main Quasar + UnoCSS + Pinia starter](/en/guide/starter-quasar-unocss-pinia). It includes MongoDB, the `admin/admin123` seed, the `studioSession` store, global `session` middleware, the `useAdminFeathers()` facade and a `messages` business store inspired by the Feathers-Pinia pattern.
+Useful options:
 
-## RuntimeConfig contract
+- `--auth` enables the authentication base;
+- `--database mongodb` prepares MongoDB integration;
+- `--framework express|koa` chooses the embedded server framework;
+- `--swagger` enables Swagger documentation when available;
+- `--secureDefaults` applies conservative server options.
 
-Read NFZ runtime metadata from:
+## Initialize remote mode
 
-```ts
-const serverConfig = useRuntimeConfig()._feathers
-const publicConfig = useRuntimeConfig().public._feathers
+```bash
+bunx nuxt-feathers-zod init remote \
+  --url https://api.example.com \
+  --transport socketio \
+  --auth \
+  --payloadMode jwt
 ```
 
-New code must not read `runtimeConfig.feathers` or `runtimeConfig.public.feathers`.
+Useful options:
 
-## Builder API runtime
+- `--url` is required;
+- `--transport socketio|rest` defines the client transport;
+- `--payloadMode jwt|keycloak` adapts the authentication payload;
+- `--tokenField accessToken|access_token` defines the expected token field.
 
-The public Builder contract is:
+## Generate a service
 
-- `GET /api/nfz/services`
-- `GET /api/nfz/manifest`
-- `POST /api/nfz/manifest`
-- `GET /api/nfz/schema?service=<name>`
-- `POST /api/nfz/schema`
-- `POST /api/nfz/preview`
-- `POST /api/nfz/apply`
+```bash
+bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
+```
 
-Historical compatibility remains for `/api/nfz/schema/:service`.
+Useful options:
 
-<!-- release-version: 6.5.29 -->
+- `--adapter memory|mongodb|custom`;
+- `--schema none|zod|json`;
+- `--auth` for an authentication-compatible user service;
+- `--collection <name>` for MongoDB;
+- `--idField <field>` to define the identifier field.
+
+## Service with custom methods
+
+```bash
+bunx nuxt-feathers-zod add custom-service reports --methods find,run --customMethods run
+```
+
+Custom methods should be declared explicitly to keep the client, server and types aligned.
+
+## Remote service
+
+```bash
+bunx nuxt-feathers-zod add remote-service api/ldap-search --methods find
+```
+
+This mode is suited for services exposed by an external backend and consumed from the Nuxt application.
+
+## Schemas
+
+```bash
+bunx nuxt-feathers-zod schema articles --show
+bunx nuxt-feathers-zod schema articles --add-field title:string:required
+bunx nuxt-feathers-zod schema articles --validate
+```
+
+The `schema` command helps inspect and maintain schemas without breaking the runtime contract.
+
+## Important rule
+
+For business services, prefer:
+
+```bash
+bunx nuxt-feathers-zod add service <name>
+```
+
+Manual folder creation can prevent the scanner from finding the expected exports.
+
+
+<!-- release-version: 6.5.30 -->

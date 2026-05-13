@@ -15,6 +15,13 @@ export interface KeycloakOptions {
   onLoad?: 'check-sso' | 'login-required'
 
   /**
+   * SSO runtime mode. NFZ only initializes Keycloak in the browser and stores
+   * the SSO token/user. Backend enrichment (LDAP, RBAC, Feathers JWT) must be
+   * triggered explicitly by the application with auth.bridgeSso().
+   */
+  mode?: 'client-only'
+
+  /**
    * Optional: client secret (only needed for UMA permissions flow)
    */
   secret?: string
@@ -44,8 +51,19 @@ export interface KeycloakOptions {
   permissions?: boolean // default false
 }
 
-export type ResolvedKeycloakOptions = Required<Pick<KeycloakOptions, 'serverUrl' | 'realm' | 'clientId' | 'userService' | 'serviceIdField' | 'authServicePath' | 'permissions' | 'onLoad'>>
-  & Omit<KeycloakOptions, 'userService' | 'serviceIdField' | 'authServicePath' | 'permissions' | 'onLoad'>
+export type ResolvedKeycloakOptions = Required<Pick<
+  KeycloakOptions,
+  | 'serverUrl'
+  | 'realm'
+  | 'clientId'
+  | 'userService'
+  | 'serviceIdField'
+  | 'authServicePath'
+  | 'permissions'
+  | 'onLoad'
+  | 'mode'
+>>
+  & Omit<KeycloakOptions, 'userService' | 'serviceIdField' | 'authServicePath' | 'permissions' | 'onLoad' | 'mode'>
 
 export type ResolvedKeycloakOptionsOrDisabled = ResolvedKeycloakOptions | false
 
@@ -67,5 +85,6 @@ export function resolveKeycloakOptions(keycloak: KeycloakOptions | boolean | und
     authServicePath: keycloak.authServicePath || '/_keycloak',
     permissions: !!keycloak.permissions,
     onLoad: keycloak.onLoad || 'check-sso',
+    mode: 'client-only',
   }
 }

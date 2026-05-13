@@ -1,96 +1,114 @@
 ---
 editLink: false
 ---
-# Keycloak SSO
+# Keycloak SSO client-only
 
-Ce flux fait de **Keycloak la source d’identité** côté navigateur, puis matérialise une session Feathers via le service `authentication`.
+Depuis NFZ `6.5.30`, le modèle recommandé est simple : **Keycloak reste côté client Nuxt**.
 
-## Exemple : nouvelle app Nuxt 4 + remote + Keycloak
+NFZ ne doit pas orchestrer le callback OAuth/OIDC, ne doit pas gérer `#state=...`, et ne doit pas exposer de proxy Nitro pour LDAP. NFZ reste le client Feathers remote.
 
-```bash
-bunx nuxi@latest init my-nfz-keycloak
-cd my-nfz-keycloak
-bun install
-bun add nuxt-feathers-zod keycloak-js
-bun add -D @pinia/nuxt
-bunx nuxt-feathers-zod init remote --url https://api.example.com --transport rest --auth true --payloadMode keycloak --force
-bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm myrealm --clientId myapp
-bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-bunx nuxt-feathers-zod add remote-service users --path users --methods find,get
-bun dev
+```txt
+Keycloak = identité SSO navigateur
+NFZ = client Feathers remote
+LDAP/AD = enrichissement côté backend Feathers
 ```
 
-## Fichier requis
-
-Créer `public/silent-check-sso.html` :
-
-```html
-<!doctype html>
-<html>
-  <body>
-    <script>
-      parent.postMessage(location.href, location.origin)
-    </script>
-  </body>
-</html>
-```
-
-## Configuration type
+## Configuration recommandée
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['@pinia/nuxt', 'nuxt-feathers-zod'],
+  ssr: false,
+
+  modules: [
+    '@pinia/nuxt',
+    'nuxt-feathers-zod',
+  ],
+
+  runtimeConfig: {
+    public: {
+      keycloak: {
+        serverUrl: process.env.KEYCLOAK_SERVER_URL || 'https://keycloak.example.local',
+        realm: process.env.KEYCLOAK_REALM || 'EXAMPLE',
+        clientId: process.env.KEYCLOAK_CLIENT_ID || 'nuxt4app',
+        onLoad: process.env.KEYCLOAK_ON_LOAD || 'check-sso',
+      },
+    },
+  },
+
   feathers: {
     client: {
       mode: 'remote',
       remote: {
-        url: 'https://api.example.com',
+        url: process.env.NFZ_REMOTE_URL || 'https://api.example.local',
         transport: 'rest',
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true
-        }
-      }
+        restPath: process.env.NFZ_REMOTE_REST_PATH ?? '',
+        services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
+          { path: 'users', methods: ['find', 'get'] },
+        ],
+      },
+      pinia: true,
     },
-    keycloak: {
-      serverUrl: 'https://sso.example.com',
-      realm: 'myrealm',
-      clientId: 'myapp',
-      onLoad: 'check-sso'
+
+    keycloak: false,
+    auth: false,
+    server: {
+      enabled: false,
     },
-    auth: true
-  }
+  },
 })
 ```
 
-## Payload envoyé à Feathers
+## Plugin client Keycloak
+
+L'application initialise `keycloak-js` dans `app/plugins/keycloak.client.ts`, puis stocke `token` et `tokenParsed` dans un store Pinia. Le nettoyage de l'URL doit être fait **après** `keycloak.init()`.
 
 ```ts
-await client.service('authentication').create({
-  strategy: 'jwt',
-  access_token: keycloak.token
+const authenticated = await keycloak.init({
+  onLoad: 'check-sso',
+  pkceMethod: 'S256',
+  checkLoginIframe: false,
+  responseMode: 'fragment',
+  silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+})
+
+cleanupOidcCallbackUrl()
+```
+
+Ne nettoie pas `#state=...` avant `keycloak.init()`, sinon Keycloak ne pourra pas finaliser le callback.
+
+## Bridge LDAP explicite
+
+Quand le backend Feathers expose une stratégie `keycloak-ldap`, l'application appelle directement NFZ remote :
+
+```ts
+const { $api } = useNuxtApp()
+const sso = useSsoSessionStore()
+
+const result = await $api.service('authentication').create({
+  strategy: 'keycloak-ldap',
+  username: sso.username,
+  authenticated: true,
+  access_token: sso.token,
+  tokenParsed: sso.tokenParsed,
+  ssoUser: sso.tokenParsed,
 })
 ```
 
-## Conseils de stabilisation
-
-- garder `tokenField` explicite
-- documenter les Redirect URIs et Web Origins côté Keycloak
-- tester d’abord en remote REST pour isoler les problèmes SSO
-
-
-## Pattern recommandé avec runtime helper
+La réponse backend devient la session applicative enrichie :
 
 ```ts
-const auth = useAuthRuntime()
-await auth.ensureReady()
-
-const request = useAuthenticatedRequest()
-const data = await request('/api/private')
+const ldapUser = result.user
+const feathersToken = result.accessToken
 ```
 
-Ce pattern évite de reconstruire l’en-tête Bearer à la main et garde Keycloak + Feathers alignés via le runtime auth unifié.
+## Règles de stabilisation
+
+- garde `ssr: false` pour les applications Keycloak SPA ;
+- garde Keycloak dans un plugin client Nuxt ;
+- configure `feathers.keycloak: false` ;
+- ne crée pas de proxy Nitro `/api/keycloak-ldap` si le backend CORS est corrigé ;
+- sépare `sso-session` et `ldap-session` ;
+- le backend doit accepter `OPTIONS /authentication` et `POST /authentication`.
+
+Guide complet : [Nuxt 4 SPA + Keycloak client-only + LDAP backend](/guide/remote-keycloak-ldap).

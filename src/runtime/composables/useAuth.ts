@@ -6,13 +6,13 @@ export function useAuth() {
   const runtime = useAuthRuntime()
   const nuxtApp = useNuxtApp() as any
 
-  const isSsoAuthenticated = computed(() => runtime.provider.value === 'keycloak' && runtime.authenticated.value)
-  const isFeathersAuthenticated = computed(() => runtime.authenticated.value)
+  const isSsoAuthenticated = computed(() => runtime.ssoAuthenticated.value)
+  const isFeathersAuthenticated = computed(() => runtime.feathersAuthenticated.value)
   const isAuthenticated = computed(() => runtime.authenticated.value)
-  const ssoUser = computed(() => runtime.provider.value === 'keycloak' ? runtime.user.value : null)
-  const feathersUser = computed(() => runtime.user.value)
-  const ssoToken = computed(() => runtime.provider.value === 'keycloak' ? runtime.accessToken.value : null)
-  const feathersToken = computed(() => runtime.accessToken.value)
+  const ssoUser = computed(() => runtime.ssoUser.value)
+  const feathersUser = computed(() => runtime.feathersUser.value)
+  const ssoToken = computed(() => runtime.ssoToken.value)
+  const feathersToken = computed(() => runtime.feathersToken.value)
 
   async function init() {
     await runtime.ensureReady()
@@ -25,8 +25,10 @@ export function useAuth() {
   }
 
   async function logout(options?: any) {
-    if (runtime.provider.value === 'keycloak')
+    if (runtime.provider.value === 'keycloak') {
+      await runtime.logout()
       return nuxtApp.$keycloak?.logout?.(options)
+    }
     return runtime.logout()
   }
 
@@ -44,10 +46,14 @@ export function useAuth() {
     token: runtime.accessToken,
     ssoToken,
     feathersToken,
+    authentication: runtime.authentication,
     init,
     login,
     logout,
     ensureReady: runtime.ensureReady,
+    bridgeSso: runtime.bridgeSso,
+    setSsoSession: runtime.setSsoSession,
+    setFeathersSession: runtime.setFeathersSession,
     getAuthorizationHeader: runtime.getAuthorizationHeader,
   }
 }

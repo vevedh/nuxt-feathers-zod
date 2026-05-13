@@ -38,7 +38,7 @@ export async function syncUnifiedAuthState(
   const authRuntime = useAuthRuntime()
   const resolvedToken = getAccessTokenFromResult(result) || fallbackToken || null
 
-  await authRuntime.setSession({
+  await authRuntime.setFeathersSession({
     accessToken: authenticated ? resolvedToken : null,
     user: authenticated ? (result?.user ?? authRuntime.user.value ?? null) : null,
     authenticated,
@@ -53,6 +53,11 @@ export async function remoteAuthenticate(feathersClient: any, nuxtApp: any): Pro
   const remoteAuth = getPublicRemoteAuthConfig(runtime.public as any)
 
   if (import.meta.server || mode !== 'remote' || !remoteAuth?.enabled)
+    return
+
+  // Keycloak SSO is intentionally client-only in NFZ 6.5.30+.
+  // Applications that need LDAP/backend enrichment must call auth.bridgeSso() explicitly.
+  if (remoteAuth.payloadMode === 'keycloak')
     return
 
   const token = await resolveRemoteToken(nuxtApp)

@@ -1,146 +1,82 @@
 # Configuration
 
-La configuration du module se fait dans le bloc `feathers` de `nuxt.config.ts`.
-
-Cette page donne les configurations les plus courantes. Pour la liste détaillée des options, consulte la [référence des options](/reference/options).
-
-## Configuration embedded minimale
+La configuration du module se place dans la clé `feathers` de `nuxt.config.ts`.
 
 ```ts
 export default defineNuxtConfig({
-  modules: [
-    'nuxt-feathers-zod',
-  ],
-
+  modules: ['nuxt-feathers-zod'],
   feathers: {
+    client: { mode: 'embedded' },
     servicesDirs: ['services'],
+  },
+})
+```
 
-    client: {
-      mode: 'embedded',
-    },
+## Options principales
 
-    server: {
-      enabled: true,
-      framework: 'express',
-    },
+| Option | Rôle |
+|---|---|
+| `client` | Mode client, transport et comportement de connexion. |
+| `server` | Activation et options du serveur embedded. |
+| `servicesDirs` | Dossiers scannés pour les services. |
+| `transports` | REST et Socket.io. |
+| `auth` | Authentification locale/JWT. |
+| `keycloak` | Paramètres Keycloak côté client et bridge. |
+| `database` | Configuration MongoDB et options de management. |
+| `validator` | Validateur utilisé par les schémas. |
+| `swagger` | Documentation Swagger legacy. |
+| `console` | Console/builder embarqué lorsque disponible. |
+| `devtools` | Intégration DevTools lorsque disponible. |
 
+## Runtime config
+
+Le module écrit une configuration privée et une configuration publique sous `_feathers`.
+
+- `runtimeConfig._feathers` : valeurs serveur privées ;
+- `runtimeConfig.public._feathers` : valeurs accessibles côté client.
+
+Les secrets doivent rester dans la configuration privée ou dans les variables d'environnement serveur.
+
+## Exemple embedded MongoDB
+
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: { mode: 'embedded' },
+    servicesDirs: ['services'],
     transports: {
-      rest: {
-        path: '/feathers',
-        framework: 'express',
-      },
-      websocket: true,
+      rest: { enabled: true, path: '/feathers' },
+      websocket: { enabled: true },
     },
-
-    auth: false,
-  },
-})
-```
-
-## Configuration embedded avec MongoDB
-
-```ts
-export default defineNuxtConfig({
-  modules: [
-    'nuxt-feathers-zod',
-  ],
-
-  feathers: {
-    servicesDirs: ['services'],
-
     database: {
-      mongo: {
-        url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
+      mongodb: {
+        enabled: true,
+        url: process.env.MONGO_URL,
       },
     },
+  },
+})
+```
 
+## Exemple remote
+
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
     client: {
-      mode: 'embedded',
-      pinia: true,
+      mode: 'remote',
+      url: 'https://api.example.com',
+      transport: 'socketio',
     },
-
-    server: {
+    auth: {
       enabled: true,
-      framework: 'express',
-      secureDefaults: true,
     },
   },
 })
 ```
 
-## Configuration remote
+## Bonne pratique
 
-```ts
-export default defineNuxtConfig({
-  modules: [
-    'nuxt-feathers-zod',
-  ],
-
-  feathers: {
-    client: {
-      mode: 'remote',
-      remote: {
-        url: 'https://api.example.com',
-        transport: 'rest',
-        restPath: '/feathers',
-        services: [
-          { path: 'users', methods: ['find', 'get'] },
-        ],
-      },
-    },
-
-    server: {
-      enabled: false,
-    },
-
-    auth: false,
-  },
-})
-```
-
-## Configuration remote Keycloak
-
-```ts
-export default defineNuxtConfig({
-  modules: [
-    'nuxt-feathers-zod',
-  ],
-
-  feathers: {
-    client: {
-      mode: 'remote',
-      remote: {
-        url: 'https://api.example.com',
-        transport: 'socketio',
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true,
-        },
-      },
-    },
-
-    keycloak: {
-      serverUrl: 'https://sso.example.com',
-      realm: 'myrealm',
-      clientId: 'my-nuxt-app',
-      onLoad: 'check-sso',
-    },
-
-    server: {
-      enabled: false,
-    },
-  },
-})
-```
-
-## Bonnes pratiques
-
-- Garde une configuration explicite en production.
-- Désactive `auth` tant que le service `users` n’existe pas.
-- En remote, désactive le serveur embedded si tu n’en as pas besoin.
-- En embedded, documente le chemin REST utilisé par les frontends et les proxies.
-- Utilise `doctor` après toute modification importante.
+Centraliser les valeurs d'environnement dans `.env` et ne jamais dupliquer les secrets dans le code source.

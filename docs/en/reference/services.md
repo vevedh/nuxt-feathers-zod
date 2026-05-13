@@ -1,61 +1,82 @@
----
-editLink: false
----
 # Services
 
-This page replaces the former navigation-only placeholder with a practical developer reference for Feathers services scanned from `servicesDirs`. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+Services are the core of the module. They expose Feathers methods and carry the business contract of the application.
 
-## Purpose
-
-Feathers services scanned from `servicesdirs` helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
-
-## When to use this option
-
-Use this page when you need to:
-
-- configure Feathers services scanned from `servicesDirs`;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
-
-## Configuration example
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    servicesDirs: ['services'],
-  }
-})
-```
-
-## CLI example
+## Recommended creation flow
 
 ```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod --force
-bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --schema zod --authAware true
+bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
 ```
 
-## Runtime example
+The CLI creates a structure that matches the module scanner and updates the `.nfz` manifest.
+
+## Standard methods
+
+A Feathers service may expose:
+
+- `find`;
+- `get`;
+- `create`;
+- `update`;
+- `patch`;
+- `remove`.
+
+The actual available methods depend on the generated service and selected options.
+
+## Custom methods
+
+```bash
+bunx nuxt-feathers-zod add custom-service reports --methods find,run --customMethods run
+```
+
+Custom methods must be declared on both the service and the client side. This avoids transport errors, especially across SSR, REST and Socket.io.
+
+## Schemas
+
+The recommended mode for business services is `zod`.
+
+```bash
+bunx nuxt-feathers-zod add service tasks --schema zod
+```
+
+The module also supports lighter modes:
+
+- `none` for a minimal service;
+- `json` for a JSON-oriented description;
+- `zod` for a stronger TypeScript and runtime contract.
+
+## Hooks
+
+Feathers hooks should be used for:
+
+- authentication;
+- RBAC rules;
+- business validation;
+- data enrichment;
+- auditing;
+- business events.
 
 ```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+export default {
+  before: {
+    all: [],
+    find: [],
+    create: [],
   },
-})
+  after: {
+    all: [],
+  },
+  error: {
+    all: [],
+  },
+}
 ```
 
-## Practical advice
+## Best practices
 
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
-
-<!-- release-version: 6.5.23 -->
+- Generate services with the CLI.
+- Keep hooks close to the service.
+- Define exposed methods clearly.
+- Hide sensitive fields in external resolvers.
+- Version the `.nfz` manifest.
+- Prefer domain composables or stores for sensitive pages.

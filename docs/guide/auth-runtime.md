@@ -191,4 +191,3 @@ Pour les outils protégés NFZ :
 - en Keycloak SSO, utiliser `useKeycloakBridge()` si l’écran a besoin d’une synchronisation explicite avant un appel protégé
 
 > En mode embedded, `useMongoManagementClient()` résout automatiquement le base path Mongo derrière le préfixe REST embedded. Les routes affichées dans le playground sont des endpoints REST à appeler via le client NFZ, pas des routes Vue Router.
-

@@ -3,7 +3,7 @@ editLink: false
 ---
 # Swagger legacy
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the legacy `swagger` option powered by `feathers-swagger`. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents the legacy `swagger` option powered by `feathers-swagger`, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

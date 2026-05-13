@@ -3,7 +3,7 @@ editLink: false
 ---
 # RuntimeConfig
 
-This page replaces the former navigation-only placeholder with a practical developer reference for private and public `_feathers` runtime configuration. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents private and public `_feathers` runtime configuration, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

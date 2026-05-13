@@ -14,7 +14,7 @@ Garder le dépôt centré sur :
 - les tests et smoke tests
 - l’outillage de release
 
-Les notes historiques ou internes sont déplacées dans `archives/`.
+
 
 ## Vérifications recommandées
 

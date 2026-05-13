@@ -91,7 +91,7 @@ Commands:
   init embedded                 Initialize embedded server mode (Feathers inside Nuxt/Nitro)
   init remote                   Initialize remote client mode (Feathers client -> external server)
   init starter                  Scaffold Nuxt 4 + Quasar 2 + UnoCSS + Pinia + NFZ starter
-  remote auth keycloak          Configure remote auth payload mode for Keycloak
+  remote auth keycloak          Configure client-only Keycloak SSO
   add service <name>            Generate an embedded service (or a service with custom methods via --custom)
   add file-service <name>       Generate a local upload/download file service scaffold
   add remote-service <name>     Register a remote service (client-only)
@@ -179,7 +179,7 @@ Flags overview:
     --auth true|false           (default: false)
     --payloadMode jwt|keycloak  (default: jwt)
     --strategy jwt              (default: jwt)
-    --tokenField accessToken    (default: accessToken, access_token when --payloadMode keycloak)
+    --tokenField accessToken    (default: accessToken)
     --servicePath authentication (default: authentication)
     --reauth true|false         (default: true)
     --force
@@ -349,6 +349,7 @@ export type NuxtConfigPatch = {
     realm?: string
     clientId?: string
     onLoad?: string
+    mode?: 'client-only'
   }
   
   // embedded init helpers
@@ -847,6 +848,7 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     patch.keycloak?.realm ? `realm: '${patch.keycloak.realm}'` : '',
     patch.keycloak?.clientId ? `clientId: '${patch.keycloak.clientId}'` : '',
     patch.keycloak?.onLoad ? `onLoad: '${patch.keycloak.onLoad}'` : '',
+    patch.keycloak?.mode ? `mode: '${patch.keycloak.mode}'` : '',
   ].filter(Boolean)
 
   const keycloakPart = patch.keycloak

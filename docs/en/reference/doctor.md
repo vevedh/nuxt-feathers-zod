@@ -3,7 +3,7 @@ editLink: false
 ---
 # Doctor
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the project diagnostic command. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents the project diagnostic command, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

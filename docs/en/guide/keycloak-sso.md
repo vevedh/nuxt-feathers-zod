@@ -1,61 +1,114 @@
 ---
 editLink: false
 ---
-# Keycloak SSO
+# Client-only Keycloak SSO
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the `keycloak-sso` feature. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+Starting with NFZ `6.5.30`, the recommended model is simple: **Keycloak stays on the Nuxt client**.
 
-## Purpose
+NFZ should not orchestrate the OAuth/OIDC callback, should not manage `#state=...`, and should not expose a Nitro LDAP proxy. NFZ remains the remote Feathers client.
 
-The `keycloak-sso` feature helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
+```txt
+Keycloak = browser SSO identity
+NFZ = remote Feathers client
+LDAP/AD = Feathers backend enrichment
+```
 
-## When to use this option
-
-Use this page when you need to:
-
-- configure the `keycloak-sso` feature;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
-
-## Configuration example
+## Recommended configuration
 
 ```ts
-// nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+  ssr: false,
+
+  modules: [
+    '@pinia/nuxt',
+    'nuxt-feathers-zod',
+  ],
+
+  runtimeConfig: {
+    public: {
+      keycloak: {
+        serverUrl: process.env.KEYCLOAK_SERVER_URL || 'https://keycloak.example.local',
+        realm: process.env.KEYCLOAK_REALM || 'EXAMPLE',
+        clientId: process.env.KEYCLOAK_CLIENT_ID || 'nuxt4app',
+        onLoad: process.env.KEYCLOAK_ON_LOAD || 'check-sso',
+      },
+    },
+  },
 
   feathers: {
-    servicesDirs: ['services'],
-    client: true,
-  }
-})
-```
+    client: {
+      mode: 'remote',
+      remote: {
+        url: process.env.NFZ_REMOTE_URL || 'https://api.example.local',
+        transport: 'rest',
+        restPath: process.env.NFZ_REMOTE_REST_PATH ?? '',
+        services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
+          { path: 'users', methods: ['find', 'get'] },
+        ],
+      },
+      pinia: true,
+    },
 
-## CLI example
-
-```bash
-bunx nuxt-feathers-zod doctor
-```
-
-## Runtime example
-
-```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+    keycloak: false,
+    auth: false,
+    server: {
+      enabled: false,
+    },
   },
 })
 ```
 
-## Practical advice
+## Keycloak client plugin
 
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
+The application initializes `keycloak-js` in `app/plugins/keycloak.client.ts`, then stores `token` and `tokenParsed` in a Pinia store. The URL cleanup must run **after** `keycloak.init()`.
 
-<!-- release-version: 6.5.23 -->
+```ts
+const authenticated = await keycloak.init({
+  onLoad: 'check-sso',
+  pkceMethod: 'S256',
+  checkLoginIframe: false,
+  responseMode: 'fragment',
+  silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+})
+
+cleanupOidcCallbackUrl()
+```
+
+Do not clean `#state=...` before `keycloak.init()`, otherwise Keycloak cannot complete the callback.
+
+## Explicit LDAP bridge
+
+When the Feathers backend exposes a `keycloak-ldap` strategy, the application directly calls NFZ remote:
+
+```ts
+const { $api } = useNuxtApp()
+const sso = useSsoSessionStore()
+
+const result = await $api.service('authentication').create({
+  strategy: 'keycloak-ldap',
+  username: sso.username,
+  authenticated: true,
+  access_token: sso.token,
+  tokenParsed: sso.tokenParsed,
+  ssoUser: sso.tokenParsed,
+})
+```
+
+The backend response becomes the enriched application session:
+
+```ts
+const ldapUser = result.user
+const feathersToken = result.accessToken
+```
+
+## Stabilization rules
+
+- keep `ssr: false` for Keycloak SPA applications;
+- keep Keycloak in a Nuxt client plugin;
+- configure `feathers.keycloak: false`;
+- do not create a Nitro `/api/keycloak-ldap` proxy when backend CORS is fixed;
+- separate `sso-session` and `ldap-session`;
+- the backend must accept `OPTIONS /authentication` and `POST /authentication`.
+
+Full guide: [Nuxt 4 SPA + client-only Keycloak + LDAP backend](/en/guide/remote-keycloak-ldap).

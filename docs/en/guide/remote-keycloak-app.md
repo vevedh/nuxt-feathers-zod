@@ -1,86 +1,83 @@
 ---
 editLink: false
 ---
-# Remote Keycloak app
+# Nuxt 4 remote + client-only Keycloak example
 
-This page replaces the former navigation-only placeholder with a practical developer reference for Keycloak-based remote authentication. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+Starting with NFZ `6.5.30`, the recommended example keeps Keycloak **outside the NFZ runtime**. The Nuxt application initializes Keycloak on the client, then uses NFZ as the remote Feathers client.
 
-## Purpose
-
-Keycloak-based remote authentication helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
-
-## When to use this option
-
-Use this page when you need to:
-
-- configure Keycloak-based remote authentication;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
-
-## Configuration example
+## Short configuration
 
 ```ts
-// nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+  ssr: false,
+
+  modules: [
+    '@pinia/nuxt',
+    'nuxt-feathers-zod',
+  ],
+
+  runtimeConfig: {
+    public: {
+      keycloak: {
+        serverUrl: 'https://keycloak.example.local',
+        realm: 'EXAMPLE',
+        clientId: 'nuxt-app',
+        onLoad: 'check-sso',
+      },
+    },
+  },
 
   feathers: {
     client: {
       mode: 'remote',
       remote: {
-        url: 'https://api.example.com',
+        url: 'https://api.example.local',
         transport: 'rest',
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true,
-        },
+        restPath: '',
         services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
           { path: 'users', methods: ['find', 'get'] },
         ],
       },
+      pinia: true,
     },
-    keycloak: {
-      serverUrl: 'https://sso.example.com',
-      realm: 'internal',
-      clientId: 'nuxt-app',
-      onLoad: 'check-sso',
-      authServicePath: '/_keycloak',
-    },
-    server: { enabled: false },
+
+    keycloak: false,
     auth: false,
-  }
-})
-```
-
-## CLI example
-
-```bash
-bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm internal --clientId nuxt-app
-```
-
-## Runtime example
-
-```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+    server: { enabled: false },
   },
 })
 ```
 
-## Practical advice
+## Optional LDAP usage
 
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
+```ts
+const { $api } = useNuxtApp()
+const sso = useSsoSessionStore()
 
-<!-- release-version: 6.5.23 -->
+const result = await $api.service('authentication').create({
+  strategy: 'keycloak-ldap',
+  username: sso.username,
+  authenticated: true,
+  access_token: sso.token,
+  tokenParsed: sso.tokenParsed,
+  ssoUser: sso.tokenParsed,
+})
+```
+
+## Complete example
+
+The complete model is provided in:
+
+```txt
+examples/nuxt4-keycloak-ldap-spa-ref/
+```
+
+It includes Nuxt 4 SPA, Quasar, UnoCSS, Pinia, client-only Keycloak, direct NFZ `6.5.30` remote mode, LDAP auto-sync after `keycloak.init()` and a manual synchronization button.
+
+## Watch points
+
+- Keycloak must live in `app/plugins/keycloak.client.ts`.
+- The `#state=...` URL must be cleaned only after `keycloak.init()`.
+- The backend must handle `OPTIONS /authentication`.
+- Do not configure `feathers.keycloak` in this model.

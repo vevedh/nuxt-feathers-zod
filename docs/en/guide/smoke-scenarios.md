@@ -3,7 +3,7 @@ editLink: false
 ---
 # Smoke scenarios
 
-This page replaces the former navigation-only placeholder with a practical developer reference for minimal runtime validation scenarios. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents minimal runtime validation scenarios, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

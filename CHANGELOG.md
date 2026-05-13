@@ -1,3 +1,11 @@
+## 6.5.30 - Remote Keycloak LDAP bridge documentation
+
+- Add complete FR/EN documentation for remote Keycloak SSO + LDAP/AD bridge.
+- Recommend the explicit remote strategy name `keycloak-ldap`.
+- Document why the browser must send `access_token` and never a trusted `authenticated: true` flag.
+- Add a full `SsoLdapStrategy` backend example using Keycloak JWKS validation and LDAP/AD lookup.
+- Add `examples/remote-keycloak-ldap/` with Nuxt remote config, backend strategy, auth registration and environment sample.
+
 ## 6.5.29 - Main Quasar UnoCSS Pinia starter documentation
 
 - Added the full French guide `docs/guide/starter-quasar-unocss-pinia.md`.

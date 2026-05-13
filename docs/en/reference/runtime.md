@@ -1,58 +1,68 @@
----
-editLink: false
----
 # Runtime API
 
-This page replaces the former navigation-only placeholder with a practical developer reference for auto-imported runtime composables. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+The runtime exposes the composables and helpers used by Nuxt applications.
 
-## Purpose
+## Main composables
 
-Auto-imported runtime composables helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
+| API | Usage |
+|---|---|
+| `useFeathers()` | Access the Feathers client configured by the module. |
+| `useService(path)` | Access a typed or direct Feathers service. |
+| `useRawService(path)` | Access the service without additional helper layers. |
+| `useAuth()` | Simple authentication API for login, logout and restore. |
+| `useAuthRuntime()` | Advanced authentication runtime with state and events. |
+| `useProtectedService(path)` | Access a service that requires a valid session. |
+| `useProtectedPage()` | Helper for protecting Nuxt pages. |
+| `useMongoManagementClient()` | Client for the MongoDB management surface. |
+| `useNfzAdminClient()` | Client for NFZ administration APIs. |
 
-## When to use this option
+## Service example
 
-Use this page when you need to:
+```vue
+<script setup lang="ts">
+const users = useService('users')
 
-- configure auto-imported runtime composables;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
-
-## Configuration example
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    client: true,
-  }
+const { data, refresh } = await useAsyncData('users', () => {
+  return users.find({ query: { $limit: 10 } })
 })
+</script>
+
+<template>
+  <button type="button" @click="refresh()">Reload</button>
+  <pre>{{ data }}</pre>
+</template>
 ```
 
-## CLI example
-
-```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod
-```
-
-## Runtime example
+## Auth example
 
 ```ts
-const config = useRuntimeConfig()
-const mode = config.public._feathers?.client?.mode
+const auth = useAuthRuntime()
 
-const { api } = useFeathers()
-const messages = api.service('messages')
-const result = await messages.find({ query: { $limit: 10 } })
+await auth.authenticate({
+  strategy: 'local',
+  email: 'admin@example.local',
+  password: 'change-me',
+})
+
+const snapshot = auth.getStateSnapshot()
 ```
 
-## Practical advice
+## Protected access
 
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
+```ts
+const articles = await useProtectedService('articles')
+await articles.find({ query: { $limit: 20 } })
+```
 
-<!-- release-version: 6.5.23 -->
+## Runtime events
+
+`useAuthRuntime()` stores diagnostic events that help track:
+
+- initialization;
+- session restoration;
+- authentication;
+- SSO bridge operations;
+- protected routes;
+- authentication failures.
+
+See [Events and hooks](/en/reference/events).

@@ -1,67 +1,82 @@
----
-editLink: false
----
 # Services
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle de les services Feathers scannés depuis `servicesDirs`. Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
+Les services sont le cœur du module. Ils exposent les méthodes Feathers et portent le contrat métier de l'application.
 
-## Objectif
-
-Cette option ou fonctionnalité permet de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
-
-## Quand utiliser cette option ?
-
-Utilise cette page lorsque tu veux :
-
-- configurer précisément les services Feathers scannés depuis `servicesDirs` ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
-
-## Exemple de configuration
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    servicesDirs: ['services'],
-  }
-})
-```
-
-## Exemple CLI
+## Création recommandée
 
 ```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod --force
-bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --schema zod --authAware true
+bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
 ```
 
-## Exemple d’utilisation
+La génération CLI crée une structure cohérente avec le scanner du module et met à jour le manifeste `.nfz`.
+
+## Méthodes standard
+
+Un service Feathers peut exposer :
+
+- `find` ;
+- `get` ;
+- `create` ;
+- `update` ;
+- `patch` ;
+- `remove`.
+
+Les méthodes réellement disponibles dépendent du service généré et des options choisies.
+
+## Méthodes personnalisées
+
+```bash
+bunx nuxt-feathers-zod add custom-service reports --methods find,run --customMethods run
+```
+
+Les méthodes custom doivent être déclarées côté service et côté client. Cela évite les erreurs de transport, en particulier entre SSR, REST et Socket.io.
+
+## Schémas
+
+Le mode recommandé est `zod` pour les services métier.
+
+```bash
+bunx nuxt-feathers-zod add service tasks --schema zod
+```
+
+Le module supporte aussi des modes plus légers selon les besoins :
+
+- `none` pour un service minimal ;
+- `json` pour une description orientée JSON ;
+- `zod` pour un contrat TypeScript et runtime plus robuste.
+
+## Hooks
+
+Les hooks Feathers doivent être utilisés pour :
+
+- l'authentification ;
+- les règles RBAC ;
+- la validation métier ;
+- l'enrichissement des données ;
+- l'audit ;
+- les événements métier.
 
 ```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+export default {
+  before: {
+    all: [],
+    find: [],
+    create: [],
   },
-})
+  after: {
+    all: [],
+  },
+  error: {
+    all: [],
+  },
+}
 ```
-
-## Points de vigilance
-
-- Les chemins exposés (`/feathers`, `/socket.io`, `/mongo`, `/api/nfz`) doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
 
 ## Bonnes pratiques
 
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
-
-<!-- release-version: 6.5.23 -->
+- Générer les services avec la CLI.
+- Garder les hooks proches du service.
+- Définir clairement les méthodes exposées.
+- Masquer les champs sensibles dans les resolvers externes.
+- Versionner le manifeste `.nfz`.
+- Préférer des composables ou stores métier pour les pages sensibles.

@@ -3,7 +3,7 @@ editLink: false
 ---
 # Remote mode
 
-This page replaces the former navigation-only placeholder with a practical developer reference for remote client mode against an external Feathers API. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents remote client mode against an external Feathers API, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

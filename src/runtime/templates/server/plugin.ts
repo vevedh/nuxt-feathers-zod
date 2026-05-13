@@ -83,7 +83,7 @@ export function getServerPluginContents(options: ResolvedOptions) {
     const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
     const auth = (authStrategies || []).length > 0
 
-    const keycloakEnabled = Boolean(options.keycloak)
+    const keycloakEnabled = Boolean(options.keycloak && options.keycloak.mode !== 'client-only')
     const keycloak = options.keycloak as any
 
     const restPath = (transports?.rest as RestOptions)?.path

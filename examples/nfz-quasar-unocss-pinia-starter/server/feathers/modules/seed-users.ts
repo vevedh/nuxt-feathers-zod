@@ -39,7 +39,6 @@ function getRuntimeConfig(app: Application): RuntimeConfigLike {
   }
 }
 
-
 function ensureSafeDemoPassword(runtimeConfig: RuntimeConfigLike, password: string): void {
   const env = String(runtimeConfig.app?.env || process.env.NODE_ENV || 'development').toLowerCase()
   const isProduction = env === 'production'

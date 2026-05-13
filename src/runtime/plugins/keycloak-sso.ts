@@ -1,7 +1,6 @@
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
 import Keycloak from 'keycloak-js'
 import { useAuthRuntime } from '../composables/useAuthRuntime'
-import { useKeycloakBridge } from '../composables/useKeycloakBridge'
 
 function cleanupOidcCallbackHash() {
   if (typeof window === 'undefined')
@@ -40,6 +39,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
   const serverUrl = kcPub.serverUrl ?? pub.KC_URL
   const realm = kcPub.realm ?? pub.KC_REALM
   const clientId = kcPub.clientId ?? pub.KC_CLIENT_ID
+  const authRuntime = useAuthRuntime()
 
   if (!serverUrl || !realm || !clientId) {
     nuxtApp.provide('keycloak', {
@@ -54,6 +54,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
       user: undefined,
       permissions: [],
     } as KeycloakProvide)
+    await authRuntime.setSsoSession({ token: null, user: null, authenticated: false }, 'keycloak-client')
     return
   }
 
@@ -66,6 +67,7 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
   const onLoad = kcPub?.onLoad === 'login-required' ? 'login-required' : 'check-sso'
   const initResult = await keycloak.init({
     onLoad,
+    pkceMethod: 'S256',
     checkLoginIframe: false,
     silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
   }).catch(() => ({ authenticated: false } as const))
@@ -74,11 +76,19 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
 
   const authenticated = keycloak.authenticated === true && (initResult as { authenticated?: boolean })?.authenticated !== false
   const userid = keycloak?.tokenParsed?.preferred_username
-  const authRuntime = useAuthRuntime()
-  const bridge = useKeycloakBridge()
 
   function buildSsoUser() {
     return keycloak.tokenParsed ? { ...keycloak.tokenParsed, userid } : (userid ? { userid } : null)
+  }
+
+  async function syncSsoSession(reason = 'keycloak-client') {
+    await authRuntime.synchronizeKeycloakSession(reason, {
+      token: keycloak.token,
+      user: buildSsoUser(),
+      tokenParsed: keycloak.tokenParsed,
+      permissions: [],
+      loginuser: userid ?? null,
+    })
   }
 
   const provided: KeycloakProvide = {
@@ -94,50 +104,36 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     },
     updateToken: async (minValidity = 30) => {
       const refreshed = await keycloak.updateToken(minValidity)
-      if (refreshed)
-        await authRuntime.synchronizeKeycloakSession('provided.updateToken(refreshed)', { token: keycloak.token, user: buildSsoUser(), tokenParsed: keycloak.tokenParsed })
+      if (refreshed) {
+        provided.tokenParsed = keycloak.tokenParsed as Record<string, any> | undefined
+        provided.user = buildSsoUser() ?? undefined
+        await syncSsoSession('keycloak.updateToken(refreshed)')
+      }
       return refreshed
     },
     user: buildSsoUser() ?? undefined,
     permissions: [],
-    whoami: async () => null,
-    ensureFeathersAuth: async () => false,
+    whoami: async () => {
+      if (!provided.authenticated)
+        return null
+      provided.user = authRuntime.ssoUser.value ?? provided.user
+      provided.permissions = authRuntime.permissions.value ?? []
+      return {
+        user: provided.user,
+        permissions: provided.permissions,
+      }
+    },
+    ensureFeathersAuth: async () => authRuntime.feathersAuthenticated.value,
   }
-
-  async function ensureFeathersAuth(reason = 'keycloak-init') {
-    if (!authenticated)
-      return false
-    return bridge.ensureSynchronized(reason)
-  }
-
-  async function whoami() {
-    if (!provided.authenticated)
-      return null
-    await ensureFeathersAuth('whoami')
-    provided.user = authRuntime.user.value ?? provided.user
-    provided.permissions = authRuntime.permissions.value ?? provided.permissions ?? []
-    return {
-      user: provided.user,
-      permissions: provided.permissions,
-    }
-  }
-
-  provided.ensureFeathersAuth = ensureFeathersAuth
-  provided.whoami = whoami
 
   nuxtApp.provide('keycloak', provided)
 
   if (authenticated) {
-    await ensureFeathersAuth('keycloak-init').catch(() => false)
-    await whoami().catch(() => null)
+    await syncSsoSession('keycloak-init').catch(() => false)
 
     const refreshTimer = window.setInterval(async () => {
       try {
-        const refreshed = await keycloak.updateToken(60)
-        if (refreshed) {
-          await bridge.refreshAndSynchronize(60, 'updateToken(refreshed)')
-          await whoami().catch(() => null)
-        }
+        await provided.updateToken(60)
       }
       catch (error) {
         console.warn('[nuxt-feathers-zod][keycloak-sso] updateToken failed:', error)
@@ -147,5 +143,8 @@ export default defineNuxtPlugin(async (nuxtApp: any) => {
     nuxtApp.hook('app:beforeUnmount', () => {
       window.clearInterval(refreshTimer)
     })
+  }
+  else {
+    await authRuntime.setSsoSession({ token: null, user: null, authenticated: false }, 'keycloak-client')
   }
 })

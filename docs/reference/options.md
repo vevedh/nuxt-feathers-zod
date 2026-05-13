@@ -97,6 +97,8 @@ client: {
 
 ## `remote.auth`
 
+`remote.auth` reste disponible pour les stratégies JWT/local remote classiques. Pour Keycloak + LDAP, privilégie le modèle SPA validé : Keycloak dans un plugin client Nuxt, `feathers.keycloak: false`, puis appel direct NFZ remote vers `api.service('authentication').create({ strategy: 'keycloak-ldap', ... })`.
+
 ```ts
 client: {
   mode: 'remote',
@@ -104,9 +106,9 @@ client: {
     url: 'https://api.example.com',
     auth: {
       enabled: true,
-      payloadMode: 'keycloak',
+      payloadMode: 'jwt',
       strategy: 'jwt',
-      tokenField: 'access_token',
+      tokenField: 'accessToken',
       servicePath: 'authentication',
       reauth: true,
       storageKey: 'feathers-jwt',

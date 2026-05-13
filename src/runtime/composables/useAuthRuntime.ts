@@ -1,23 +1,40 @@
 import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import { computed, reactive, toRefs } from 'vue'
-import { buildRemoteAuthPayload, getAccessTokenFromResult } from '../utils/auth'
+import { getAccessTokenFromResult } from '../utils/auth'
 import { shouldTreatReauthAsAnonymous } from '../utils/auth-runtime'
-import { getForcedAuthProvider, getPublicClientMode, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from '../utils/config'
+import {
+  getForcedAuthProvider,
+  getPublicClientMode,
+  getPublicRemoteAuthConfig,
+  hasPublicKeycloakConfig,
+  isPublicRemoteAuthEnabled,
+} from '../utils/config'
 
 export type AuthProvider = 'keycloak' | 'local' | 'remote' | 'none'
 export type AuthStatus = 'idle' | 'bootstrapping' | 'authenticated' | 'anonymous' | 'error'
-export type TokenSource = 'none' | 'storage' | 'authenticate' | 'reauth' | 'keycloak-bridge' | 'keycloak-fallback' | 'runtime'
+export type TokenSource =
+  | 'none'
+  | 'storage'
+  | 'authenticate'
+  | 'reauth'
+  | 'keycloak-client'
+  | 'keycloak-bridge'
+  | 'keycloak-fallback'
+  | 'runtime'
 export type AuthSyncState = 'idle' | 'ok' | 'missing' | 'error'
 export type AuthEventLevel = 'info' | 'warn' | 'error'
 export type AuthEventType =
   | 'ensure-start'
   | 'ensure-finish'
   | 'session-sync'
+  | 'sso-session-sync'
+  | 'feathers-session-sync'
   | 'authenticate'
   | 'reauth-skipped'
   | 'reauth-success'
   | 'reauth-failure'
   | 'logout'
+  | 'keycloak-client-session'
   | 'keycloak-bridge-success'
   | 'keycloak-bridge-fallback'
   | 'keycloak-bearer-validated'
@@ -39,6 +56,32 @@ export interface AuthRuntimeEvent {
   details?: Record<string, any>
 }
 
+export interface SetSsoSessionPayload {
+  provider?: 'keycloak' | string
+  token?: string | null
+  accessToken?: string | null
+  user?: any
+  authenticated?: boolean
+  permissions?: any[]
+  error?: any
+}
+
+export interface SetFeathersSessionPayload {
+  accessToken?: string | null
+  user?: any
+  authentication?: any
+  authenticated?: boolean
+  permissions?: any[]
+  error?: any
+}
+
+export interface BridgeSsoOptions {
+  servicePath?: string
+  strategy?: string
+  tokenField?: string
+  payload?: Record<string, any>
+}
+
 const AUTH_EVENT_LIMIT = 60
 
 const state = reactive({
@@ -47,8 +90,15 @@ const state = reactive({
   ready: false,
   bootstrapping: false,
   authenticated: false,
+  ssoAuthenticated: false,
+  feathersAuthenticated: false,
   accessToken: null as string | null,
   user: null as any,
+  ssoToken: null as string | null,
+  ssoUser: null as any,
+  feathersToken: null as string | null,
+  feathersUser: null as any,
+  authentication: null as any,
   permissions: [] as any[],
   tokenSource: 'none' as TokenSource,
   error: null as any,
@@ -203,6 +253,15 @@ function syncRuntimeClients(nuxtApp: any, token: string | null) {
   return report
 }
 
+function refreshDerivedSession() {
+  state.feathersAuthenticated = Boolean(state.feathersToken || state.feathersUser)
+  state.ssoAuthenticated = Boolean(state.ssoToken || state.ssoUser)
+  state.authenticated = state.feathersAuthenticated || state.ssoAuthenticated
+  state.accessToken = state.feathersToken || state.ssoToken || null
+  state.user = state.feathersUser || state.ssoUser || null
+  state.status = state.authenticated ? 'authenticated' : (state.error ? 'error' : 'anonymous')
+}
+
 function pushEvent(input: {
   type: AuthEventType
   level?: AuthEventLevel
@@ -236,26 +295,20 @@ export function useAuthRuntime() {
   const provider = computed<AuthProvider>(() => resolveProvider(pub))
   state.provider = provider.value
 
-  async function setSession(payload: {
-    user?: any
-    accessToken?: string | null
-    authenticated?: boolean
-    permissions?: any[]
-    error?: any
-  } = {}, source: TokenSource = 'runtime') {
+  async function setFeathersSession(payload: SetFeathersSessionPayload = {}, source: TokenSource = 'runtime') {
     if (import.meta.server)
       return
 
     const storageKey = getStorageKey(pub)
     const token = payload.accessToken ?? null
-    state.user = payload.user ?? null
+    state.feathersUser = payload.user ?? null
+    state.authentication = payload.authentication ?? null
+    state.feathersToken = token
     state.permissions = Array.isArray(payload.permissions) ? payload.permissions : []
-    state.accessToken = token
-    state.authenticated = payload.authenticated ?? Boolean(token || payload.user)
     state.error = payload.error ?? null
     state.tokenSource = source
-    state.status = state.authenticated ? 'authenticated' : (payload.error ? 'error' : 'anonymous')
     state.lastSyncAt = Date.now()
+    refreshDerivedSession()
 
     const jwt = useCookie<string | null>(storageKey)
     jwt.value = token
@@ -271,15 +324,44 @@ export function useAuthRuntime() {
     }
 
     pushEvent({
-      type: 'session-sync',
+      type: 'feathers-session-sync',
       reason: source,
       details: {
-        authenticated: state.authenticated,
         hasAccessToken: Boolean(token),
-        hasUser: Boolean(state.user),
+        hasUser: Boolean(state.feathersUser),
         clientSync: { ...state.clientSync },
       },
     })
+  }
+
+  async function setSsoSession(payload: SetSsoSessionPayload = {}, source: TokenSource = 'keycloak-client') {
+    if (import.meta.server)
+      return
+
+    const token = payload.token ?? payload.accessToken ?? null
+    state.ssoToken = token
+    state.ssoUser = payload.user ?? null
+    if (Array.isArray(payload.permissions) && !state.feathersAuthenticated)
+      state.permissions = payload.permissions
+    state.error = payload.error ?? null
+    state.tokenSource = source
+    state.lastSyncAt = Date.now()
+    refreshDerivedSession()
+
+    pushEvent({
+      type: 'sso-session-sync',
+      reason: source,
+      details: {
+        provider: payload.provider || 'keycloak',
+        hasSsoToken: Boolean(token),
+        hasSsoUser: Boolean(state.ssoUser),
+        feathersAuthenticated: state.feathersAuthenticated,
+      },
+    })
+  }
+
+  async function setSession(payload: SetFeathersSessionPayload = {}, source: TokenSource = 'runtime') {
+    await setFeathersSession(payload, source)
   }
 
   async function authenticate(payload: any) {
@@ -287,15 +369,23 @@ export function useAuthRuntime() {
     const result = await api.authenticate(payload)
     const accessToken = getAccessTokenFromResult(result) || await resolveAvailableAccessToken(api, pub)
     state.lastAuthenticateAt = Date.now()
-    await setSession({
+    await setFeathersSession({
       accessToken,
       user: result?.user ?? null,
+      authentication: result?.authentication ?? null,
       authenticated: true,
       permissions: result?.permissions ?? [],
       error: null,
     }, 'authenticate')
     state.ready = true
-    pushEvent({ type: 'authenticate', reason: payload?.strategy || provider.value, details: { strategy: payload?.strategy || null, hasAccessToken: Boolean(accessToken) } })
+    pushEvent({
+      type: 'authenticate',
+      reason: payload?.strategy || provider.value,
+      details: {
+        strategy: payload?.strategy || null,
+        hasAccessToken: Boolean(accessToken),
+      },
+    })
     return result
   }
 
@@ -305,7 +395,7 @@ export function useAuthRuntime() {
 
     if (!availableToken) {
       state.lastReAuthenticateAt = Date.now()
-      await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+      await setFeathersSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
       pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
       return null
     }
@@ -314,9 +404,10 @@ export function useAuthRuntime() {
       const result = await api.reAuthenticate()
       const accessToken = getAccessTokenFromResult(result) || await resolveAvailableAccessToken(api, pub)
       state.lastReAuthenticateAt = Date.now()
-      await setSession({
+      await setFeathersSession({
         accessToken,
         user: result?.user ?? null,
+        authentication: result?.authentication ?? null,
         authenticated: true,
         permissions: result?.permissions ?? [],
         error: null,
@@ -326,12 +417,12 @@ export function useAuthRuntime() {
     }
     catch (error: any) {
       if (shouldTreatReauthAsAnonymous(error, availableToken)) {
-        await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+        await setFeathersSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
         pushEvent({ type: 'reauth-skipped', reason: 'reauth', message: 'No access token available; staying anonymous' })
         return null
       }
 
-      await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error }, 'reauth')
+      await setFeathersSession({ accessToken: null, user: null, authenticated: false, permissions: [], error }, 'reauth')
       pushEvent({ type: 'reauth-failure', level: 'warn', reason: 'reauth', message: error?.message || 'reAuthenticate failed' })
       return null
     }
@@ -347,7 +438,18 @@ export function useAuthRuntime() {
       logoutError = error
       state.error = error
     }
-    await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: logoutError }, 'runtime')
+
+    state.ssoToken = null
+    state.ssoUser = null
+    await setFeathersSession({
+      accessToken: null,
+      user: null,
+      authentication: null,
+      authenticated: false,
+      permissions: [],
+      error: logoutError,
+    }, 'runtime')
+    refreshDerivedSession()
     state.ready = true
     pushEvent({ type: 'logout', level: logoutError ? 'warn' : 'info', message: logoutError?.message })
   }
@@ -362,93 +464,92 @@ export function useAuthRuntime() {
     if (import.meta.server)
       return false
 
+    const token = hint.token ?? getKeycloakToken(nuxtApp)
+    const keycloakUser = hint.user ?? hint.tokenParsed ?? getKeycloakUser(nuxtApp)
+
+    if (!token && !keycloakUser) {
+      await setSsoSession({ token: null, user: null, authenticated: false, permissions: [], error: null }, 'keycloak-fallback')
+      state.ready = true
+      pushEvent({ type: 'keycloak-bridge-fallback', level: 'warn', reason, message: 'No Keycloak token/user available' })
+      return false
+    }
+
+    await setSsoSession({
+      provider: 'keycloak',
+      token,
+      user: keycloakUser ?? null,
+      authenticated: Boolean(token || keycloakUser),
+      permissions: hint.permissions ?? [],
+      error: null,
+    }, 'keycloak-client')
+    state.ready = true
+    pushEvent({
+      type: 'keycloak-client-session',
+      reason,
+      details: {
+        hasSsoToken: Boolean(token),
+        hasSsoUser: Boolean(keycloakUser),
+        loginuser: hint.loginuser ?? keycloakUser?.preferred_username ?? keycloakUser?.userid ?? null,
+      },
+    })
+    return true
+  }
+
+  async function bridgeSso(options: BridgeSsoOptions = {}) {
+    if (import.meta.server)
+      return null
+
     const api: any = nuxtApp.$api
     if (!api)
-      return false
+      throw new Error('[nuxt-feathers-zod] Cannot bridge SSO: Feathers client is unavailable')
 
-    const token = hint.token ?? getKeycloakToken(nuxtApp)
-    const keycloakUser = hint.user ?? getKeycloakUser(nuxtApp)
-    if (!token) {
-      await setSession({ accessToken: null, user: keycloakUser ?? null, authenticated: false, permissions: [], error: null }, 'keycloak-fallback')
-      pushEvent({ type: 'keycloak-bridge-fallback', level: 'warn', reason, message: 'No Keycloak token available' })
-      return false
-    }
+    const token = state.ssoToken || getKeycloakToken(nuxtApp)
+    if (!token)
+      throw new Error('[nuxt-feathers-zod] Cannot bridge SSO: SSO token is unavailable')
 
-    const remoteAuth = getPublicRemoteAuthConfig(pub)
-    const clientMode = getPublicClientMode(pub)
-    const keycloakCfg = pub?._feathers?.keycloak ?? {}
-    const bridgePath = clientMode === 'remote' && remoteAuth?.enabled
-      ? (remoteAuth?.servicePath || 'authentication')
-      : (keycloakCfg?.authServicePath || '/_keycloak')
-    state.bridgePath = normalizeServicePath(bridgePath)
-
+    const servicePath = normalizeServicePath(options.servicePath || 'authentication')
+    const strategy = options.strategy || 'keycloak-ldap'
+    const tokenField = options.tokenField || 'access_token'
     const payload = {
-      ...buildRemoteAuthPayload(token, {
-        ...(remoteAuth || {}),
-        payloadMode: 'keycloak',
-      }),
-      accessToken: token,
-      access_token: token,
-      jwt: token,
-      token,
-      user: keycloakUser ?? undefined,
-      keycloakUser: keycloakUser ?? undefined,
-      tokenParsed: hint.tokenParsed ?? keycloakUser ?? undefined,
-      authenticated: true,
-      reason,
+      strategy,
+      [tokenField]: token,
+      ...(options.payload || {}),
     }
 
-    let result: any = null
-    try {
-      const servicePath = state.bridgePath || normalizeServicePath(bridgePath)
-      if (typeof api.service === 'function')
-        result = await api.service(servicePath).create(payload)
-      else if (typeof api.authenticate === 'function')
-        result = await api.authenticate(payload)
+    const result = typeof api.service === 'function'
+      ? await api.service(servicePath).create(payload)
+      : await api.authenticate?.(payload)
+    const accessToken = getAccessTokenFromResult(result)
 
-      await setSession({
-        accessToken: getAccessTokenFromResult(result) || token,
-        user: result?.user ?? keycloakUser ?? null,
-        authenticated: true,
-        permissions: result?.permissions ?? hint.permissions ?? [],
-        error: null,
-      }, 'keycloak-bridge')
-      state.lastBridgeAt = Date.now()
-      state.ready = true
-      pushEvent({
-        type: 'keycloak-bridge-success',
-        reason,
-        details: {
-          bridgePath: state.bridgePath,
-          validated: Boolean(result?.user ?? keycloakUser),
-        },
-      })
-      return true
-    }
-    catch (error: any) {
-      await setSession({
-        accessToken: token,
-        user: keycloakUser ?? null,
-        authenticated: true,
-        permissions: hint.permissions ?? [],
-        error,
-      }, 'keycloak-fallback')
-      state.ready = true
-      pushEvent({
-        type: 'keycloak-bridge-fallback',
-        level: 'warn',
-        reason,
-        message: error?.message || 'Keycloak bridge synchronization failed',
-        details: { bridgePath: state.bridgePath },
-      })
-      return false
-    }
+    await setFeathersSession({
+      accessToken,
+      user: result?.user ?? null,
+      authentication: result?.authentication ?? null,
+      authenticated: Boolean(accessToken || result?.user),
+      permissions: result?.permissions ?? [],
+      error: null,
+    }, 'keycloak-bridge')
+    state.bridgePath = servicePath
+    state.lastBridgeAt = Date.now()
+    state.ready = true
+    pushEvent({
+      type: 'keycloak-bridge-success',
+      reason: strategy,
+      details: {
+        bridgePath: servicePath,
+        hasFeathersToken: Boolean(accessToken),
+        hasFeathersUser: Boolean(result?.user),
+      },
+    })
+    return result
   }
 
   async function ensureValidatedBearer(reason = 'validate-bearer') {
     await ensureReady(reason)
-    if (!state.accessToken) {
-      pushEvent({ type: 'keycloak-bearer-missing', level: 'warn', reason, message: 'No access token available for protected call' })
+
+    const token = state.feathersToken || state.ssoToken
+    if (!token) {
+      pushEvent({ type: 'keycloak-bearer-missing', level: 'warn', reason, message: 'No token available for protected call' })
       return false
     }
 
@@ -465,8 +566,8 @@ export function useAuthRuntime() {
       }
     }
 
-    pushEvent({ type: 'keycloak-bearer-validated', reason, details: { provider: state.provider, hasAccessToken: Boolean(state.accessToken) } })
-    return Boolean(state.accessToken)
+    pushEvent({ type: 'keycloak-bearer-validated', reason, details: { provider: state.provider, hasToken: Boolean(token) } })
+    return Boolean(token)
   }
 
   async function ensureReady(reason = 'ensure-ready') {
@@ -501,11 +602,7 @@ export function useAuthRuntime() {
           })
         }
         else {
-          const persisted = getPersistedToken(pub)
-          if (persisted)
-            await setSession({ accessToken: persisted, user: state.user, authenticated: true, permissions: state.permissions, error: null }, 'storage')
-          else
-            await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'runtime')
+          await setSsoSession({ token: null, user: null, authenticated: false, permissions: [], error: null }, 'runtime')
           state.ready = true
         }
         return
@@ -515,9 +612,13 @@ export function useAuthRuntime() {
         const candidateToken = await resolveAvailableAccessToken(nuxtApp.$api, pub)
 
         if (!candidateToken) {
-          await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
+          await setFeathersSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'none')
           state.ready = true
-          pushEvent({ type: 'reauth-skipped', reason: reason, message: 'No access token available at startup; staying anonymous' })
+          pushEvent({
+            type: 'reauth-skipped',
+            reason: reason,
+            message: 'No access token available at startup; staying anonymous',
+          })
           return
         }
 
@@ -526,11 +627,20 @@ export function useAuthRuntime() {
         return
       }
 
-      await setSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'runtime')
+      await setFeathersSession({ accessToken: null, user: null, authenticated: false, permissions: [], error: null }, 'runtime')
       state.ready = true
     })().finally(() => {
       state.bootstrapping = false
-      pushEvent({ type: 'ensure-finish', reason: state.lastEnsureReason, details: { status: state.status, ready: state.ready, authenticated: state.authenticated } })
+      refreshDerivedSession()
+      pushEvent({
+        type: 'ensure-finish',
+        reason: state.lastEnsureReason,
+        details: {
+          status: state.status,
+          ready: state.ready,
+          authenticated: state.authenticated,
+        },
+      })
       ensurePromise = null
     })
 
@@ -540,20 +650,21 @@ export function useAuthRuntime() {
   async function getAuthorizationHeader() {
     await ensureReady('get-authorization-header')
 
-    if (!state.accessToken) {
+    if (!state.feathersToken && state.provider !== 'keycloak') {
       const token = await resolveAvailableAccessToken(nuxtApp.$api, pub)
       if (token) {
-        await setSession({
+        await setFeathersSession({
           accessToken: token,
-          user: state.user,
-          authenticated: state.authenticated || Boolean(state.user),
+          user: state.feathersUser,
+          authenticated: state.feathersAuthenticated || Boolean(state.feathersUser),
           permissions: state.permissions,
           error: null,
         }, state.tokenSource === 'none' ? 'storage' : state.tokenSource)
       }
     }
 
-    return state.accessToken ? `Bearer ${state.accessToken}` : null
+    const token = state.feathersToken || state.ssoToken
+    return token ? `Bearer ${token}` : null
   }
 
   function clearEvents() {
@@ -582,8 +693,15 @@ export function useAuthRuntime() {
       ready: state.ready,
       bootstrapping: state.bootstrapping,
       authenticated: state.authenticated,
+      ssoAuthenticated: state.ssoAuthenticated,
+      feathersAuthenticated: state.feathersAuthenticated,
       accessToken: state.accessToken,
       user: state.user,
+      ssoToken: state.ssoToken,
+      ssoUser: state.ssoUser,
+      feathersToken: state.feathersToken,
+      feathersUser: state.feathersUser,
+      authentication: state.authentication,
       permissions: state.permissions,
       tokenSource: state.tokenSource,
       error: state.error,
@@ -607,6 +725,9 @@ export function useAuthRuntime() {
     reAuthenticate,
     logout,
     setSession,
+    setSsoSession,
+    setFeathersSession,
+    bridgeSso,
     synchronizeKeycloakSession,
     ensureValidatedBearer,
     getAuthorizationHeader,

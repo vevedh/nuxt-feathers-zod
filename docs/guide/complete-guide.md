@@ -420,7 +420,7 @@ await logout()
 
 ### Keycloak SSO
 
-NFZ peut configurer un flux remote Keycloak en mode payload `keycloak`.
+Keycloak doit rester côté client Nuxt. NFZ reste le client Feathers remote ; le bridge LDAP éventuel appelle directement `api.service('authentication').create(...)`.
 
 ```bash
 bunx nuxt-feathers-zod remote auth keycloak \
@@ -439,14 +439,9 @@ export default defineNuxtConfig({
       remote: {
         url: 'https://api.example.com',
         transport: 'socketio',
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true,
-        },
+        services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
+        ],
       },
     },
 
@@ -455,6 +450,7 @@ export default defineNuxtConfig({
       realm: 'myrealm',
       clientId: 'my-nuxt-app',
       onLoad: 'check-sso',
+      mode: 'client-only',
     },
   },
 })
@@ -749,7 +745,7 @@ Commandes principales :
 | `mongo management` | Configure les routes MongoDB management |
 | `schema` | Inspecte ou modifie le schéma d’un service |
 | `auth service` | Active/désactive les hooks JWT d’un service |
-| `remote auth keycloak` | Configure l’auth remote Keycloak |
+| `remote auth keycloak` | Configure Keycloak SSO client-only |
 | `doctor` | Diagnostique la configuration projet |
 
 ### Exemples utiles

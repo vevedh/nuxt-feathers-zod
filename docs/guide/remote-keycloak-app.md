@@ -1,92 +1,83 @@
 ---
 editLink: false
 ---
-# Exemple Nuxt 4 remote + Keycloak
+# Exemple Nuxt 4 remote + Keycloak client-only
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle de l’authentification Keycloak côté Nuxt avec une API Feathers distante. Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
+Depuis NFZ `6.5.30`, l'exemple recommandé garde Keycloak **hors du runtime NFZ**. L'application Nuxt initialise Keycloak côté client, puis utilise NFZ comme client Feathers remote.
 
-## Objectif
-
-Cette option ou fonctionnalité permet de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
-
-## Quand utiliser cette option ?
-
-Utilise cette page lorsque tu veux :
-
-- configurer précisément l’authentification Keycloak côté Nuxt avec une API Feathers distante ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
-
-## Exemple de configuration
+## Configuration courte
 
 ```ts
-// nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+  ssr: false,
+
+  modules: [
+    '@pinia/nuxt',
+    'nuxt-feathers-zod',
+  ],
+
+  runtimeConfig: {
+    public: {
+      keycloak: {
+        serverUrl: 'https://keycloak.example.local',
+        realm: 'EXAMPLE',
+        clientId: 'nuxt-app',
+        onLoad: 'check-sso',
+      },
+    },
+  },
 
   feathers: {
     client: {
       mode: 'remote',
       remote: {
-        url: 'https://api.example.com',
+        url: 'https://api.example.local',
         transport: 'rest',
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true,
-        },
+        restPath: '',
         services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
           { path: 'users', methods: ['find', 'get'] },
         ],
       },
+      pinia: true,
     },
-    keycloak: {
-      serverUrl: 'https://sso.example.com',
-      realm: 'internal',
-      clientId: 'nuxt-app',
-      onLoad: 'check-sso',
-      authServicePath: '/_keycloak',
-    },
-    server: { enabled: false },
+
+    keycloak: false,
     auth: false,
-  }
-})
-```
-
-## Exemple CLI
-
-```bash
-bunx nuxt-feathers-zod remote auth keycloak --ssoUrl https://sso.example.com --realm internal --clientId nuxt-app
-```
-
-## Exemple d’utilisation
-
-```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+    server: { enabled: false },
   },
 })
 ```
 
+## Utilisation LDAP optionnelle
+
+```ts
+const { $api } = useNuxtApp()
+const sso = useSsoSessionStore()
+
+const result = await $api.service('authentication').create({
+  strategy: 'keycloak-ldap',
+  username: sso.username,
+  authenticated: true,
+  access_token: sso.token,
+  tokenParsed: sso.tokenParsed,
+  ssoUser: sso.tokenParsed,
+})
+```
+
+## Exemple complet
+
+Le modèle complet est fourni dans :
+
+```txt
+examples/nuxt4-keycloak-ldap-spa-ref/
+```
+
+Il contient Nuxt 4 SPA, Quasar, UnoCSS, Pinia, Keycloak client-only, NFZ `6.5.30` remote direct, auto-sync LDAP après `keycloak.init()` et bouton de synchronisation manuel.
+
 ## Points de vigilance
 
-- Les chemins exposés (`/feathers`, `/socket.io`, `/mongo`, `/api/nfz`) doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
-
-## Bonnes pratiques
-
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
-
-<!-- release-version: 6.5.23 -->
+- Keycloak doit être dans `app/plugins/keycloak.client.ts`.
+- L'URL `#state=...` doit être nettoyée seulement après `keycloak.init()`.
+- Le backend doit gérer `OPTIONS /authentication`.
+- Ne configure pas `feathers.keycloak` dans ce modèle.

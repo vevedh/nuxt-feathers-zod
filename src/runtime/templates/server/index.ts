@@ -81,7 +81,7 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
     })
   }
 
-  if (options.keycloak) {
+  if (options.keycloak && options.keycloak.mode !== 'client-only') {
     serverTemplates.push({
       filename: 'feathers/server/keycloak.ts',
       getContents: getServerKeycloakContents(options),

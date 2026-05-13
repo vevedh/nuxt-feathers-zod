@@ -1,67 +1,68 @@
----
-editLink: false
----
 # API runtime
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle de les composables runtime auto-importés. Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
+Le runtime expose les composables et helpers utilisés par les applications Nuxt.
 
-## Objectif
+## Composables principaux
 
-Cette option ou fonctionnalité permet de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
+| API | Usage |
+|---|---|
+| `useFeathers()` | Accès au client Feathers configuré par le module. |
+| `useService(path)` | Accès typé ou direct à un service Feathers. |
+| `useRawService(path)` | Accès au service sans couche d'aide supplémentaire. |
+| `useAuth()` | API d'authentification simple pour login, logout et restauration. |
+| `useAuthRuntime()` | Runtime d'authentification avancé avec état et événements. |
+| `useProtectedService(path)` | Accès à un service nécessitant une session valide. |
+| `useProtectedPage()` | Aide à la protection des pages Nuxt. |
+| `useMongoManagementClient()` | Client pour la surface MongoDB management. |
+| `useNfzAdminClient()` | Client pour les API d'administration NFZ. |
 
-## Quand utiliser cette option ?
+## Exemple service
 
-Utilise cette page lorsque tu veux :
+```vue
+<script setup lang="ts">
+const users = useService('users')
 
-- configurer précisément les composables runtime auto-importés ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
+const { data, refresh } = await useAsyncData('users', () => {
+  return users.find({ query: { $limit: 10 } })
+})
+</script>
 
-## Exemple de configuration
+<template>
+  <button type="button" @click="refresh()">Recharger</button>
+  <pre>{{ data }}</pre>
+</template>
+```
+
+## Exemple auth
 
 ```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+const auth = useAuthRuntime()
 
-  feathers: {
-    client: true,
-  }
+await auth.authenticate({
+  strategy: 'local',
+  email: 'admin@example.local',
+  password: 'change-me',
 })
+
+const snapshot = auth.getStateSnapshot()
 ```
 
-## Exemple CLI
-
-```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod
-```
-
-## Exemple d’utilisation
+## Accès protégé
 
 ```ts
-const { api } = useFeathers()
-const messages = api.service('messages')
-
-const result = await messages.find({
-  query: { $limit: 10 },
-})
-
-const config = useRuntimeConfig()
-const mode = config.public._feathers?.client?.mode
+const articles = await useProtectedService('articles')
+await articles.find({ query: { $limit: 20 } })
 ```
 
-## Points de vigilance
+## Événements runtime
 
-- Les chemins exposés (`/feathers`, `/socket.io`, `/mongo`, `/api/nfz`) doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
+`useAuthRuntime()` conserve des événements de diagnostic utiles pour suivre :
 
-## Bonnes pratiques
+- l'initialisation ;
+- la restauration de session ;
+- l'authentification ;
+- le bridge SSO ;
+- les routes protégées ;
+- les erreurs d'authentification.
 
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
-
-<!-- release-version: 6.5.23 -->
+Voir la page [Événements et hooks](/reference/events).

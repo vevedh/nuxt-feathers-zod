@@ -1,60 +1,28 @@
 ---
 editLink: false
 ---
-# Keycloak SSO (Keycloak-only)
+# Keycloak SSO client-only
 
-Ce guide décrit le mode **Keycloak-only** de `nuxt-feathers-zod` : l'application Nuxt utilise Keycloak comme source d'identité, sans formulaire d'authentification locale Feathers.
+Ce guide historique est conservé pour compatibilité documentaire. Depuis NFZ `6.5.30`, la règle est simple : **Keycloak reste côté client**.
 
-> Important : ne pas utiliser un bloc `auth` contenant un champ `provider: 'keycloak'` comme configuration principale. `provider` n'est pas une option stricte du bloc `auth`. Le runtime NFZ détecte Keycloak via le bloc `feathers.keycloak` et/ou via `feathers.client.remote.auth.payloadMode = 'keycloak'`.
-
-## Objectifs
-
-- Garder une application publique accessible sans login global.
-- Protéger seulement certaines routes, par exemple `/console/**`.
-- Utiliser le token Keycloak comme Bearer pour les appels HTTP protégés.
-- Laisser `useAuthRuntime()` synchroniser l'état d'authentification côté client.
-
-## Variante A — Keycloak-only avec bridge embedded
-
-Cette variante convient quand l'application Nuxt embarque NFZ et doit exposer un bridge Keycloak local, par défaut `/_keycloak`.
+NFZ initialise `keycloak-js` dans le navigateur, puis expose :
 
 ```ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+const auth = useAuth()
 
-  feathers: {
-    // Désactive l'auth locale Feathers générée par défaut.
-    // Keycloak devient la source d'identité côté navigateur.
-    auth: false,
-
-    keycloak: {
-      serverUrl: 'https://keycloak.example.com',
-      realm: 'MYREALM',
-      clientId: 'my-nuxt-app',
-
-      // Bridge NFZ utilisé par useKeycloakBridge().
-      authServicePath: '/_keycloak',
-
-      // Optionnel : résolution/création de l'utilisateur applicatif.
-      userService: 'users',
-      serviceIdField: 'keycloakId',
-
-      permissions: false,
-      onLoad: 'check-sso',
-    },
-  },
-})
+auth.ssoUser.value
+auth.ssoToken.value
+auth.feathersUser.value
+auth.feathersToken.value
 ```
 
-Dans ce mode, le plugin client `keycloak-sso` initialise `keycloak-js`, puis `useKeycloakBridge()` synchronise la session Keycloak vers `useAuthRuntime()`.
-
-## Variante B — Nuxt remote + API Feathers protégée par Keycloak
-
-Cette variante convient quand Nuxt consomme une API Feathers distante. Le client NFZ utilise le token Keycloak pour s'authentifier auprès du service distant d'authentification.
+## Configuration recommandée
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+  ssr: false,
+
+  modules: ['@pinia/nuxt', 'nuxt-feathers-zod'],
 
   feathers: {
     client: {
@@ -62,17 +30,11 @@ export default defineNuxtConfig({
       remote: {
         url: 'https://api.example.com',
         transport: 'rest',
-        restPath: '/feathers',
-
-        auth: {
-          enabled: true,
-          payloadMode: 'keycloak',
-          strategy: 'jwt',
-          tokenField: 'access_token',
-          servicePath: 'authentication',
-          reauth: true,
-          storageKey: 'feathers-jwt',
-        },
+        restPath: '',
+        services: [
+          { path: 'authentication', methods: ['create', 'remove'] },
+          { path: 'users', methods: ['find', 'get'] },
+        ],
       },
     },
 
@@ -81,12 +43,34 @@ export default defineNuxtConfig({
       realm: 'MYREALM',
       clientId: 'my-nuxt-app',
       onLoad: 'check-sso',
+      mode: 'client-only',
     },
+
+    auth: false,
+    server: { enabled: false },
   },
 })
 ```
 
-Avec `payloadMode: 'keycloak'`, le payload envoyé au backend contient `access_token`, mais aussi des alias de compatibilité comme `accessToken`, `token` et `jwt`.
+## Bridge backend explicite
+
+Si une API Feathers distante expose une stratégie `keycloak-ldap`, l'application appelle directement le service `authentication` via NFZ remote :
+
+```ts
+const { $api } = useNuxtApp()
+const sso = useSsoSessionStore()
+
+await $api.service('authentication').create({
+  strategy: 'keycloak-ldap',
+  username: sso.username,
+  authenticated: true,
+  access_token: sso.token,
+  tokenParsed: sso.tokenParsed,
+  ssoUser: sso.tokenParsed,
+})
+```
+
+Ne configure pas `remote.auth.payloadMode = 'keycloak'` et ne crée pas de proxy Nitro si le CORS backend est corrigé. Le modèle validé garde Keycloak hors du runtime NFZ avec `feathers.keycloak: false`.
 
 ## Fichier requis pour le silent SSO
 
@@ -108,103 +92,4 @@ Dans Keycloak, autoriser :
 - Redirect URIs : `https://ton-site/*` et `https://ton-site/silent-check-sso.html`
 - Web origins : `https://ton-site`
 
-## onLoad
-
-- `check-sso` : tente une session SSO silencieuse sans forcer le login global.
-- `login-required` : force un login Keycloak avant d'utiliser l'application.
-
-Pour une console admin ou un dashboard, préférer généralement `check-sso` + middleware de route ciblé.
-
-## Générer le middleware Nuxt
-
-```bash
-bunx nuxt-feathers-zod add middleware auth-keycloak --target route
-```
-
-Le générateur crée notamment :
-
-```txt
-app/middleware/auth-keycloak.ts
-public/silent-check-sso.html
-```
-
-Exemple simplifié pour protéger uniquement `/console/**` :
-
-```ts
-export default defineNuxtRouteMiddleware(async (to) => {
-  if (import.meta.server)
-    return
-
-  if (!to.path.startsWith('/console'))
-    return
-
-  const { $keycloak } = useNuxtApp()
-
-  if (!$keycloak?.authenticated) {
-    await $keycloak.login({
-      redirectUri: window.location.origin + to.fullPath,
-    })
-  }
-})
-```
-
-## Utilisation côté application
-
-Pour les pages critiques, éviter d'appeler directement `$api.service(...)` avant que l'auth soit prête. Utiliser la couche runtime NFZ :
-
-```ts
-const auth = useAuthRuntime()
-await auth.ensureReady()
-```
-
-Pour les appels HTTP protégés :
-
-```ts
-const request = useAuthenticatedRequest()
-
-const result = await request('/feathers/users', {
-  auth: 'required',
-})
-```
-
-Pour protéger une page :
-
-```ts
-const page = useProtectedPage({
-  auth: 'required',
-  validateBearer: true,
-  reason: 'admin-console',
-})
-
-onMounted(async () => {
-  await page.ensure()
-})
-```
-
-## Exemple complet Nuxt 4 remote
-
-Pour un exemple complet avec :
-
-- génération CLI du middleware `auth-keycloak`
-- route `/private` protégée
-- appel à un service Feathers distant
-
-voir :
-
-- [Exemple complet : app Nuxt 4 en mode remote + Keycloak + service distant](./remote-keycloak-app)
-
-## Résumé du flow
-
-```txt
-Keycloak navigateur
-  ↓
-plugin keycloak-sso
-  ↓
-useKeycloakBridge()
-  ↓
-useAuthRuntime()
-  ↓
-useAuthenticatedRequest() / useAuthBoundFetch()
-  ↓
-API Feathers protégée
-```
+Voir aussi : [Keycloak SSO client-only](/guide/keycloak-sso) et [Remote Keycloak SSO + bridge LDAP/AD](/guide/remote-keycloak-ldap).

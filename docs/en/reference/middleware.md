@@ -3,7 +3,7 @@ editLink: false
 ---
 # Middleware
 
-This page replaces the former navigation-only placeholder with a practical developer reference for middleware, hook and policy generation targets. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents middleware, hook and policy generation targets, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

@@ -83,4 +83,3 @@ curl http://localhost:3000/feathers/users \
 - `users` reste le service de référence pour l’auth embedded
 - générer `users` via la CLI
 - éviter d’activer `auth` sans service `users` détectable
-

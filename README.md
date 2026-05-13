@@ -1,154 +1,137 @@
 # nuxt-feathers-zod
 
-> Nuxt 4 module for FeathersJS v5 (Dove) with a CLI-first workflow and optional Zod-first service generation.
+`nuxt-feathers-zod` integrates FeathersJS v5 (Dove), Zod schemas and typed service access into Nuxt 4.
+It is designed for applications that need a real backend contract inside a Nuxt project, while keeping the option to connect to an external Feathers API.
 
-**Current stable release:** `6.5.29`
+Current reference version: **6.5.30**.
 
-- Documentation: `https://vevedh.github.io/nuxt-feathers-zod/`
-- Quick start: `docs/guide/getting-started.md`
-- Main starter: `docs/guide/starter-quasar-unocss-pinia.md`
-- CLI reference: `docs/reference/cli.md`
-- Community workflow: `docs/guide/community-workflow.md`
-- Release discipline: `RELEASE_CHECKLIST.md`
+## What the module provides
 
-## What it is
+- Embedded Feathers server mounted in Nuxt/Nitro.
+- Remote Feathers client mode for an existing backend.
+- Service generation through the CLI.
+- Zod-first schemas, resolvers, query validation and TypeScript types.
+- Local/JWT authentication and Keycloak-oriented remote authentication flows.
+- REST and Socket.io transports.
+- MongoDB support and optional MongoDB management endpoints.
+- Runtime composables for client, service, authentication and protected service access.
+- VitePress documentation in French and English.
 
-`nuxt-feathers-zod` helps you build or consume a FeathersJS backend from a Nuxt 4 application with a consistent module + CLI workflow.
-
-It supports two main modes:
-
-- **embedded** — a Feathers server runs inside Nuxt/Nitro
-- **remote** — a Nuxt app uses a typed Feathers client against an external API
-
-## What it is for
-
-Use NFZ when you want:
-
-- a **Nuxt-native backend-first architecture**
-- Feathers services generated through a **deterministic CLI**
-- shared types and optional **Zod-first** service schemas
-- **local/JWT auth** or a **Keycloak SSO** integration path
-- client-side helpers for **Pinia / store session**
-- an official **Quasar + UnoCSS + Pinia starter** with MongoDB, seeded auth and RBAC
-- a path toward **MongoDB management**, diagnostics and builder tooling
-
-## What the OSS module includes
-
-- Nuxt 4 + Nitro integration
-- embedded and remote modes
-- REST and Socket.IO transports
-- embedded server with Express or Koa
-- CLI bootstrap for embedded and remote projects
-- CLI generation for services, remote services, middleware and server modules
-- schema modes `none | zod | json`
-- local/JWT auth flows
-- Keycloak bridge for remote mode
-- optional legacy Swagger support
-- template overrides
-- optional MongoDB management surface via `database.mongo.management`
-- official starter template under `examples/nfz-quasar-unocss-pinia-starter`
-- release checks with build, typecheck, E2E and tarball smoke validation
-
-## Main application starter
-
-For a full Nuxt 4 application with Quasar 2, UnoCSS, Pinia, MongoDB, seeded local auth, route middleware, RBAC and an encapsulated Feathers access layer:
+## Installation
 
 ```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
-cd nfz-starter
+bun add nuxt-feathers-zod
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: { mode: 'embedded' },
+    servicesDirs: ['services'],
+    transports: {
+      rest: { enabled: true, path: '/feathers' },
+      websocket: { enabled: true },
+    },
+    auth: {
+      enabled: true,
+      strategies: ['local', 'jwt'],
+    },
+  },
+})
+```
+
+## Recommended initialization
+
+Use the official CLI instead of creating service folders manually.
+
+```bash
+bunx nuxt-feathers-zod init embedded --auth --database mongodb
+bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod
+bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
+bunx nuxt-feathers-zod doctor
+```
+
+The CLI writes a service manifest under `services/.nfz/manifest.json`, generates the service files and keeps the expected module conventions aligned with the runtime scanner.
+
+## Runtime usage
+
+```vue
+<script setup lang="ts">
+const articles = useService('articles')
+
+const { data } = await useAsyncData('articles', async () => {
+  return await articles.find({
+    query: { $limit: 20, $sort: { createdAt: -1 } },
+  })
+})
+</script>
+
+<template>
+  <pre>{{ data }}</pre>
+</template>
+```
+
+Authentication is exposed through `useAuth()` and `useAuthRuntime()`.
+
+```ts
+const auth = useAuth()
+
+await auth.authenticate({
+  strategy: 'local',
+  email: 'admin@example.local',
+  password: 'change-me',
+})
+```
+
+## Embedded and remote modes
+
+### Embedded mode
+
+Use embedded mode when the Nuxt application owns the backend.
+The Feathers application is created inside the Nuxt/Nitro server layer, services are scanned from `servicesDirs`, and the Nuxt app can expose both REST and Socket.io transports.
+
+### Remote mode
+
+Use remote mode when the backend is already hosted elsewhere.
+The Nuxt app initializes a Feathers client, connects to the configured backend URL and can still use the same composables for service access.
+
+```bash
+bunx nuxt-feathers-zod init remote --url https://api.example.com --transport socketio --auth
+```
+
+## Documentation
+
+The documentation is available in the `docs/` directory and is structured around:
+
+- developer onboarding;
+- CLI reference;
+- configuration reference;
+- runtime composables;
+- services and hooks;
+- authentication;
+- production readiness.
+
+Run it locally with:
+
+```bash
+cd docs
 bun install
-cp .env.example .env
-bun run db:up
-bun dev
+bun run dev
 ```
 
-The starter is documented in `docs/guide/starter-quasar-unocss-pinia.md` and maintained under `examples/nfz-quasar-unocss-pinia-starter`.
+## Production checklist
 
-## 5-minute embedded path
+Before publishing or deploying an application using this module:
 
-```bash
-bunx nuxi@latest init my-nfz-app
-cd my-nfz-app
-bun install
-bun add nuxt-feathers-zod @pinia/nuxt pinia
-bunx nuxt-feathers-zod init embedded --force
-bunx nuxt-feathers-zod add service users
-bun dev
-```
-
-## Recommended rules
-
-1. **Initialize the module first.**
-2. **Generate services through the CLI.**
-3. **Do not hand-create the first service files.**
-4. **Keep `feathers.servicesDirs = ['services']` unless you have a documented reason to change it.**
-
-Those four rules avoid the most common scan, auth entity and export mismatches.
-
-## Install
-
-```bash
-bun add nuxt-feathers-zod @pinia/nuxt pinia
-```
-
-Optional Swagger dependencies:
-
-```bash
-bun add feathers-swagger swagger-ui-dist
-```
-
-## Quick links
-
-- Embedded quick start: `docs/guide/getting-started.md`
-- Main Quasar + UnoCSS + Pinia starter: `docs/guide/starter-quasar-unocss-pinia.md`
-- Remote mode: `docs/guide/remote.md`
-- Local auth: `docs/guide/auth-local.md`
-- Keycloak SSO: `docs/guide/keycloak-sso.md`
-- File upload/download starter: `docs/guide/file-upload-download.md`
-- Troubleshooting: `docs/guide/troubleshooting.md`
-- Publishing workflow: `docs/guide/publishing.md`
-
-## Repository workflow
-
-The repository is now organized around public source code, docs, tests and release tooling.
-Historical maintainer notes were moved under `archives/`.
-
-Useful public root files:
-
-- `CONTRIBUTING.md`
-- `RELEASE_CHECKLIST.md`
-- `REPO_DEV.md`
-
-## Recommended release checks
-
-```bash
-bun run build
-bun run typecheck
-bun run test:e2e
-bun run smoke:tarball
-```
+1. Run `bunx nuxt-feathers-zod doctor`.
+2. Verify `feathers.servicesDirs` and the generated `services/.nfz/manifest.json`.
+3. Validate authentication strategy names and token fields.
+4. Disable destructive MongoDB management actions unless explicitly required.
+5. Configure runtime secrets through environment variables.
+6. Build the app and run at least one smoke scenario for authentication and one protected service.
 
 ## License
 
 MIT
-
-
-<!-- release-version: 6.5.11 -->
-
-
-<!-- release-version: 6.5.16 -->
-
-
-<!-- release-version: 6.5.18 -->
-
-
-<!-- release-version: 6.5.19 -->
-
-
-<!-- release-version: 6.5.21 -->
-
-
-<!-- release-version: 6.5.22 -->
-
-
-<!-- release-version: 6.5.29 -->

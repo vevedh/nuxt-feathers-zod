@@ -102,6 +102,7 @@ export interface FeathersPublicRuntimeConfig {
     clientId: string
     authServicePath: string
     onLoad: 'check-sso' | 'login-required'
+    mode: 'client-only'
   }
   database?: {
     mongo?: {
@@ -291,6 +292,7 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
           clientId: options.keycloak.clientId,
           authServicePath: options.keycloak.authServicePath,
           onLoad: options.keycloak.onLoad,
+          mode: options.keycloak.mode,
         }
       : undefined,
     database: options.database?.mongo

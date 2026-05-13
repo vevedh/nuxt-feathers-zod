@@ -2,7 +2,7 @@ import type { ResolvedOptions } from '../../options'
 
 export function getServerRbacContents(options: ResolvedOptions) {
   return async (): Promise<string> => {
-    const keycloakEnabled = !!options.keycloak
+    const keycloakEnabled = !!(options.keycloak && options.keycloak.mode !== 'client-only')
     const keycloak = options.keycloak as any
     const keycloakClientId = keycloakEnabled ? keycloak.clientId : ''
 

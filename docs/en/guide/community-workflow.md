@@ -3,7 +3,7 @@ editLink: false
 ---
 # Community workflow
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the `community-workflow` feature. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents the `community-workflow` feature, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

@@ -350,3 +350,82 @@ Known next step:
 - Documentation clarifiée : chaque exemple utilisant `--adapter mongodb` rappelle maintenant qu'une base MongoDB active est nécessaire, et qu'on peut générer rapidement un `docker-compose.yaml` avec `bunx nuxt-feathers-zod add mongodb-compose`.
 
 - Step 4 (E2E + tarball smoke): added @nuxt/test-utils Vitest config, embedded-basic and embedded-auth fixtures, and scripts/smoke-tarball-install.mjs for packed-install smoke validation.
+
+## 6.5.29-real-world-nuxt4-quasar-docs
+
+- Applied the real-world documentation patch directly to the stable 6.5.29 archive.
+- Added FR/EN guides for integrating NFZ in a full Nuxt 4 + Quasar + UnoCSS + Pinia business application.
+- Added FR/EN migration guides for moving an existing Nuxt 4 app from Pinia/localStorage seeds to NFZ services.
+- Added FR/EN real-world integration checklists.
+- Added a dedicated guide explaining the role of the Quasar + UnoCSS + Pinia starter as the recommended application path.
+- Added reusable snippets under `examples/real-world-nuxt4-quasar-nfz/snippets`.
+- Updated VitePress navigation and home pages in both French and English.
+- Updated root README files to surface the business application path.
+
+## 6.5.30 - Remote Keycloak LDAP bridge documentation
+
+- Version bump: `6.5.29` -> `6.5.30`.
+- Added the French guide `docs/guide/remote-keycloak-ldap.md`.
+- Added the English guide `docs/en/guide/remote-keycloak-ldap.md`.
+- Documented the recommended remote SSO bridge strategy name: `keycloak-ldap`.
+- Documented why the frontend must not send or trust `authenticated: true`.
+- Added a complete backend `SsoLdapStrategy` example using Keycloak JWKS verification and LDAP/AD lookup.
+- Added `examples/remote-keycloak-ldap/` with Nuxt remote configuration, silent SSO page, backend strategy, auth registration, backend config and `.env.example`.
+- Updated VitePress navigation/sidebar in French and English.
+- Linked the LDAP bridge guide from the existing Keycloak SSO guides.
+
+## 6.5.30-postfix.1 - Lint examples and docs dev warning
+
+- Fixed ESLint style errors in real-world Nuxt 4 + Quasar snippets.
+- Fixed ESLint style errors in the remote Keycloak LDAP example.
+- Fixed extra blank line in the starter seed module.
+- Replaced `env` markdown fences with `txt` to avoid VitePress Shiki language fallback warnings during docs dev.
+
+## 6.5.30-postfix.2 - Keycloak client-only SSO runtime
+
+- Reworked the Keycloak runtime to be client-only by default.
+- Stopped automatic Keycloak -> Feathers remote authentication when `remote.auth.payloadMode = 'keycloak'`.
+- Split the auth runtime state into `ssoUser` / `ssoToken` and `feathersUser` / `feathersToken`.
+- Added explicit `setSsoSession()`, `setFeathersSession()` and `bridgeSso()` helpers.
+- Updated the Keycloak plugin so it only initializes Keycloak, stores the SSO session, refreshes the SSO token and never calls the backend bridge automatically.
+- Updated `useKeycloakBridge()` to keep SSO synchronization client-only and expose an explicit `bridgeToFeathers()` helper.
+- Updated the FR/EN Keycloak docs and the remote Keycloak LDAP guide to document the explicit bridge pattern.
+- Updated the remote Keycloak LDAP example to remove automatic `remote.auth.payloadMode = 'keycloak'` configuration.
+## 2026-05-12 — Documentation modèle Nuxt 4 SPA + Keycloak client-only + LDAP backend
+
+- Ajout du guide simple `docs/guide/remote-keycloak-ldap.md` et de sa version anglaise.
+- Mise à jour des pages Keycloak pour refléter le modèle validé : Keycloak côté client Nuxt, NFZ remote direct, LDAP côté backend Feathers.
+- Remplacement des exemples `auth.bridgeSso()` par l'appel direct `api.service('authentication').create({ strategy: 'keycloak-ldap', ... })`.
+- Ajout de l'exemple complet `examples/nuxt4-keycloak-ldap-spa-ref/`.
+- Documentation du nettoyage de l'URL `#state=...` après `keycloak.init()`.
+- Documentation du CORS backend obligatoire pour `OPTIONS /authentication`.
+
+
+## 2026-05-12 — Documentation modèle Nuxt 4 SSR + Keycloak client-only + LDAP backend
+
+- Ajout du guide français `docs/guide/remote-keycloak-ldap-ssr.md`.
+- Ajout du guide anglais `docs/en/guide/remote-keycloak-ldap-ssr.md`.
+- Ajout de l'exemple complet `examples/nuxt4-keycloak-ldap-ssr-ref/`.
+- Mise à jour de la navigation VitePress FR/EN.
+- Mise à jour des pages d'accueil FR/EN avec le lien vers la variante SSR.
+- Mise à jour du README racine pour distinguer le modèle SPA et la variante SSR.
+- Conservation du modèle d'architecture : Keycloak côté client, NFZ 6.5.30 remote direct, LDAP/AD côté backend Feathers, sans proxy Nitro local.
+
+## 2026-05-13 — Production documentation audit
+
+- Reworked the root README files for npm/GitHub publication.
+- Added `PRODUCTION_AUDIT.md` with module structure, CLI contract, runtime surface and production recommendations.
+- Added FR/EN production readiness guides.
+- Rewrote FR/EN CLI, runtime, services and configuration references to match the current source tree.
+- Added FR/EN events and hooks references for `useAuthRuntime()` diagnostics and Feathers tracing.
+- Removed generic placeholder wording from public documentation pages.
+- Updated VitePress navigation and sidebars for production and events pages.
+- Removed a duplicated CLI help line for `--payloadMode`.
+- Removed a duplicated `accessToken` assignment in the auth runtime.
+
+## 2026-05-13 — Restore VitePress landing page hero
+
+- Restored the FR/EN VitePress home page as a real `layout: home` landing page.
+- Restored the hero block, action buttons and feather image reference.
+- Kept the production documentation links introduced during the audit pass.
+- Verified the referenced hero image exists under `docs/public/images/plume-dark.png`.

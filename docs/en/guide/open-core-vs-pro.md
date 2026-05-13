@@ -3,7 +3,7 @@ editLink: false
 ---
 # Open core vs Pro
 
-This page replaces the former navigation-only placeholder with a practical developer reference for the `open-core-vs-pro` feature. It explains the option, shows how to configure it in `nuxt.config.ts`, and gives a minimal usage example.
+This page documents the `open-core-vs-pro` feature, its configuration contract and the recommended usage pattern for application developers.
 
 ## Purpose
 

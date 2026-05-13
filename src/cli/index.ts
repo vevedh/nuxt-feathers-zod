@@ -295,20 +295,13 @@ async function handleRemoteAuthKeycloakCommand(cwd: string, args: CliContextArgs
     clientMode: 'remote',
     remote: {
       url: '',
-      auth: {
-        enabled: true,
-        payloadMode: 'keycloak',
-        strategy: 'jwt',
-        tokenField: 'access_token',
-        servicePath: 'authentication',
-        reauth: true,
-      },
     },
     keycloak: {
       serverUrl: ssoUrl,
       realm,
       clientId,
       onLoad: 'check-sso',
+      mode: 'client-only',
     },
   }, { dry })
 }
@@ -957,7 +950,7 @@ export function createCliCommand() {
   const remoteAuthKeycloakCommand = defineCommand({
     meta: {
       name: 'keycloak',
-      description: 'Configure remote auth payload mode for Keycloak',
+      description: 'Configure client-only Keycloak SSO',
     },
     args: {
       ssoUrl: { type: 'string', alias: 'url', required: true, description: 'Keycloak server URL' },
