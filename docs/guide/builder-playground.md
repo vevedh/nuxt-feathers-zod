@@ -57,4 +57,4 @@ export default defineNuxtConfig({
 
 Active `legacyNitroRoutes` seulement pour vérifier une migration depuis une version antérieure.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

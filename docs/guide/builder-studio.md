@@ -79,4 +79,4 @@ Le builder expose maintenant trois cartes d’entrée guidées pour choisir rapi
 ## 6.4.71 — License Center
 - documentation du License Center et des composants réutilisables de gestion de licence / feature gating pour les futures options premium de NFZ
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

@@ -35,4 +35,4 @@ bunx nuxt-feathers-zod capabilities --section all --json
 
 Legacy `/api/nfz/**` routes are optional 6.x compatibility facades. The canonical contracts are Feathers services.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

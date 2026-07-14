@@ -1,6 +1,6 @@
 # NFZ Quasar UnoCSS Pinia Starter
 
-Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.5.29** avec MongoDB local prêt à l’emploi.
+Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.5.43** avec MongoDB local prêt à l’emploi.
 
 Il fournit :
 
@@ -33,7 +33,7 @@ Ou en une seule commande après installation :
 bun run dev:db
 ```
 
-Compte seedé au démarrage :
+Compte de démonstration seedé par défaut en développement :
 
 ```txt
 admin / admin123
@@ -53,25 +53,25 @@ bun run db:logs    # affiche les logs MongoDB
 bun run db:down    # arrête MongoDB
 ```
 
-## Dépendance NFZ 6.5.29
+## Dépendance NFZ 6.5.43
 
 Le `package.json` cible :
 
 ```json
-"nuxt-feathers-zod": "6.5.29"
+"nuxt-feathers-zod": "6.5.43"
 ```
 
-Si la version 6.5.29 n’est pas encore publiée sur npm, utilise ton tarball local :
+Si la version 6.5.43 n’est pas encore publiée sur npm, utilise ton tarball local :
 
 ```bash
-# depuis le dépôt nuxt-feathers-zod 6.5.29
+# depuis le dépôt nuxt-feathers-zod 6.5.43
 bun install
 bun run build
 npm pack
 
 # dans ce starter
 bun remove nuxt-feathers-zod
-bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.5.29.tgz
+bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.5.43.tgz
 ```
 
 ## Architecture

@@ -235,9 +235,12 @@ Il effectue :
 
 Les identifiants peuvent être changés dans `.env` :
 
+Le compte de démonstration est activé par défaut uniquement hors production. En production, le seed reste désactivé tant que `NFZ_DEMO_ENABLED=true` n’est pas défini explicitement. Le mot de passe doit alors contenir au moins 12 caractères et ne pas utiliser une valeur de démonstration connue.
+
 ```txt
+NFZ_DEMO_ENABLED=true
 NFZ_DEMO_USER=admin
-NFZ_DEMO_PASSWORD=admin123
+NFZ_DEMO_PASSWORD=Correct-Horse-2026!
 NFZ_DEMO_ROLES=admin,user
 ```
 

@@ -6,12 +6,14 @@ Le module auto-importe les composables de `src/runtime/composables` dans l’app
 
 ### `useFeathers()`
 
-Retourne le client Feathers injecté dans Nuxt.
+Retourne les clients Feathers injectés dans Nuxt sous la forme `{ api, client, piniaClient }`. `api` est le client applicatif principal et `client` conserve l'accès au client de transport. `piniaClient` vaut `null` et reste présent uniquement pour ne pas casser un ancien destructuring.
 
 ```ts
-const app = useFeathers()
-const users = app.service('users')
+const { api } = useFeathers()
+const users = api.service('users')
 ```
+
+Pour une page ou un composable métier, préférez `useService('users')` lorsque le chemin est connu.
 
 ### `useService(path)`
 
@@ -136,4 +138,4 @@ Pour une opération métier :
 2. utilisez `useBuilderClient()` pour les services NFZ de Builder/RBAC ;
 3. utilisez les helpers de requête HTTP uniquement lorsque le contrat cible n’est pas un service Feathers.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

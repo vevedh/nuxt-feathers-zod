@@ -98,6 +98,17 @@ for (const name of NFZ_MODULE_CAPABILITIES.composables) {
     problems.push(`Capability matrix exposes missing composable ${name}`)
 }
 
+const runtimeContractDocs = [
+  ['docs/reference/runtime.md', await text('docs/reference/runtime.md')],
+  ['docs/en/reference/runtime.md', await text('docs/en/reference/runtime.md')],
+  ['docs/guide/feathers-pinia.md', await text('docs/guide/feathers-pinia.md')],
+  ['docs/en/guide/feathers-pinia.md', await text('docs/en/guide/feathers-pinia.md')],
+] as const
+for (const [relativePath, source] of runtimeContractDocs) {
+  if (/useService\([^)]*\)\.use(?:Find|Get|Create|Update|Patch|Remove)\s*(?:<|\()/.test(source))
+    problems.push(`${relativePath} documents a removed service-store method on useService()`)
+}
+
 const servicesFr = await text('docs/reference/services.md')
 const servicesEn = await text('docs/en/reference/services.md')
 for (const service of NFZ_MODULE_CAPABILITIES.consoleServices) {
@@ -131,6 +142,29 @@ for (const relativePath of [
   expectContains(source, 'useBuilderClient()', relativePath)
 }
 
+const playgroundPagesDir = resolve(root, 'playground/app/pages')
+const legacyServiceStoreMethod = /\.use(?:Find|Get|Create|Update|Patch|Remove)\s*(?:<|\()/
+
+async function collectVueFiles(directory: string): Promise<string[]> {
+  const files: string[] = []
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const absolute = resolve(directory, entry.name)
+    if (entry.isDirectory())
+      files.push(...await collectVueFiles(absolute))
+    else if (entry.isFile() && entry.name.endsWith('.vue'))
+      files.push(absolute)
+  }
+  return files
+}
+
+for (const absolute of await collectVueFiles(playgroundPagesDir)) {
+  const source = await readFile(absolute, 'utf8')
+  if (legacyServiceStoreMethod.test(source)) {
+    const relative = absolute.slice(root.length + 1)
+    problems.push(`${relative} uses a legacy service-store composable method; use the Feathers service methods directly`)
+  }
+}
+
 const runtimeConsolePages = resolve(root, 'src/runtime/console/pages')
 try {
   const files = await readdir(runtimeConsolePages)
@@ -139,6 +173,23 @@ try {
 }
 catch {
   // Expected: the dead legacy page source has been removed.
+}
+
+const testScript = packageJson.scripts?.test
+if (testScript !== 'bun run test:unit && bun run test:integration && bun run test:e2e')
+  problems.push('package.json test script must aggregate the three Vitest suites')
+
+if (packageJson.scripts?.['verify:test'] !== 'bun run test')
+  problems.push('package.json verify:test must delegate to bun run test')
+
+for (const relativePath of [
+  'docs/guide/dependency-maintenance.md',
+  'docs/guide/known-good-configurations.md',
+]) {
+  const source = await text(relativePath)
+  expectContains(source, 'bun run test', relativePath)
+  if (/(^|\n)bun test(?:\s|$)/.test(source))
+    problems.push(`${relativePath} must use the project Vitest runner through bun run test`)
 }
 
 const packageExports = packageJson.exports as Record<string, unknown>

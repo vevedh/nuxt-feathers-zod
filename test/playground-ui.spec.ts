@@ -42,6 +42,16 @@ describe('playground validation center', () => {
     expect(jsonPanel).toContain('Copier le JSON')
     expect(jsonPanel).toContain('JSON.stringify')
   })
+
+  it('keeps the mongos page on the direct Feathers service contract', () => {
+    const mongos = read('playground/app/pages/mongos.vue')
+
+    expect(mongos).toContain('useService(\'mongos\')')
+    expect(mongos).toMatch(/service\.find\(/)
+    expect(mongos).toContain('useNfzPinia()')
+    expect(mongos).not.toMatch(/\.use(?:Find|Get|Create|Update|Patch|Remove)\s*(?:<|\()/)
+  })
+
   it('keeps Builder and RBAC consoles on canonical Feathers NFZ services', () => {
     const builder = read('playground/app/pages/console/builder.vue')
     const rbac = read('playground/app/pages/console/rbac.vue')

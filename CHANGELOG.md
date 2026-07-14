@@ -1,3 +1,51 @@
+## 6.5.47 - 2026-07-14 - Tracked maintenance index cleanup
+
+- Keep `sanity:public-repository` strict when local maintenance artifacts are still tracked by Git.
+- Add `repo:clean-maintenance-index` to remove tracked maintenance artifacts from the Git index while preserving local files on disk.
+- Make the repository hygiene failure print the exact safe cleanup command.
+- Extend `doctor` with a tracked-maintenance diagnostic and remediation guidance.
+- Add Git-index migration coverage for stale `RELEASE_NOTES_*.md` files.
+
+## 6.5.46 - 2026-07-14 - Extracted workspace hygiene and deterministic test hooks
+
+- Keeps ignored local maintenance artifacts out of the public repository boundary even when a source ZIP is extracted without Git metadata.
+- Continues to reject maintenance files that are explicitly forced into the Git index.
+- Fixes Vitest hook ordering in the isolated starter security suite so ESLint remains green.
+- Preserves the validated 131 unit, 71 integration and 8 E2E scenarios from the Windows 6.5.45 validation.
+
+## 6.5.45 - 2026-07-14 - Isolated starter security tests and public release metadata
+
+- Runs the starter seed security tests from an isolated transpiled module so Vitest no longer depends on a generated `.nuxt/tsconfig.json` inside the example application.
+- Aligns CLI release metadata tests with the public repository contract by checking `CHANGELOG.md` and `PATCHLOG.md` instead of local-only release notes.
+- Moves historical `RELEASE_NOTES_*.md` files out of the public tree, ignores that pattern, and extends the repository hygiene guard so local release notes cannot be recommitted.
+- Aligns the `verify:test` script and current maintenance documentation on the Vitest aggregate command `bun run test`; direct `bun test` is not used for project validation.
+- Preserves the 6.5.43 secure demo seed defaults, native Windows path handling, and deterministic playground build introduced in 6.5.44.
+
+## 6.5.44 - 2026-07-14 - Windows path and playground build hardening
+
+- Preserve native filesystem separators when resolving absolute service schema directories, including Windows paths.
+- Generate the Nuxt playground build-directory `tsconfig.json` explicitly before the programmatic Vite build starts.
+- Extend Windows tooling and CLI regression checks to enforce type generation before `buildNuxt()`.
+- Fix the deterministic ESLint regressions introduced by the secure starter tests and imports.
+- Keep the 6.5.43 secure demo seed defaults and GitHub Pages `cleanUrls: false` behavior unchanged.
+
+## 6.5.43
+
+- désactive le seed du compte de démonstration par défaut en production ;
+- exige une activation explicite et un mot de passe robuste pour un seed de production ;
+- retire l’identifiant et le mot de passe des journaux de seed ;
+- conserve le seed de développement rétrocompatible ;
+- désactive `cleanUrls` dans VitePress pour stabiliser les routes et assets sur GitHub Pages ;
+- ajoute des tests de non-régression pour les règles de sécurité du starter.
+
+## 6.5.42 - 2026-07-14 - Playground mongos direct service contract
+
+- Fixed `/mongos`, which still called the removed service-store method `useFind()`.
+- The page now reads `mongos` through the canonical Feathers `find()` method returned by `useService()`.
+- Pinia availability is displayed separately through `useNfzPinia()` so the playground reflects the standard client runtime accurately.
+- Added a coherence guard that rejects legacy `useFind()`, `useGet()`, `useCreate()`, `usePatch()` and `useRemove()` service-store calls in playground pages.
+- Updated the French and English playground guides to document the direct Feathers service contract.
+
 ## 6.5.41 - 2026-07-14 - Public repository hygiene and documentation style
 
 - Move local maintenance notes and internal patch reports outside the publishable repository tree.

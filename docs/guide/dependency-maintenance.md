@@ -56,7 +56,7 @@ Cette commande regroupe :
 ```bash
 bun run build
 bun run typecheck
-bun test
+bun run test
 bun run cli:build
 bun run cli:smoke
 bun run cli:full-smoke

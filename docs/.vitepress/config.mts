@@ -272,7 +272,8 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/png', href: '/nuxt-feathers-zod/favicon.png' }],
     ['meta', { name: 'theme-color', content: '#0f766e' }],
   ],
-  cleanUrls: true,
+  // GitHub Pages serves generated .html files more reliably on project sites.
+  cleanUrls: false,
   lastUpdated: true,
   srcExclude: isProd ? internalGuideSrcExclude : [],
 

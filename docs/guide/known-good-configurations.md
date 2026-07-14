@@ -88,7 +88,7 @@ Depuis la racine du dépôt :
 bun install
 bun run module:build
 bunx nuxi@latest build
-bun test
+bun run test
 ```
 
 Pour les scénarios playground, utiliser les fichiers `playground/.env.*.example` puis valider aussi l’onglet **NFZ** dans DevTools.

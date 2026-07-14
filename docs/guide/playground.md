@@ -54,9 +54,18 @@ Le build désactive MongoDB mémoire par défaut afin de rester déterministe. L
 | Route | Validation |
 |---|---|
 | `/ldapusers` | service distant déclaré |
-| `/mongos` | lecture directe Pinia/Feathers |
+| `/mongos` | lecture directe d’un service Feathers et disponibilité de Pinia |
 | `/console/builder` | Console Builder Feathers-first |
 | `/console/rbac` | lecture et édition contrôlée des politiques RBAC |
+
+## Service `mongos`
+
+La page `/mongos` vérifie deux contrats séparés :
+
+- `useService('mongos')` retourne le service Feathers typé et les lectures utilisent directement `find()` ;
+- `useNfzPinia()` indique si l’instance Pinia de l’application est disponible pour les stores métier explicites.
+
+Le runtime client standard ne transforme pas les services Feathers en stores et n’expose pas `useFind()`, `useGet()` ou d’autres méthodes de store historiques.
 
 ## Console Builder
 
@@ -91,4 +100,4 @@ L’écriture passe par `nfz/rbac.patch('current', payload)` uniquement si la co
 
 Les pages du playground ne doivent pas appeler les anciennes façades `/api/nfz/**`. Ces routes Nitro restent uniquement une compatibilité 6.x facultative. Le playground valide l’API canonique Feathers `nfz/*`.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

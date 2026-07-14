@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, relative, resolve } from 'node:path'
 
 const rootDir = resolve(process.cwd())
@@ -27,12 +27,56 @@ const forbiddenFilePrefixes = [
   'ANALYSE_',
   'VALIDATIONS_',
   'INVENTAIRE_PATCH_',
+  'RELEASE_NOTES_',
   'PATCH_',
   'PROMPT_',
   'CONTEXT_',
 ]
 
 const problems = []
+
+function readGitIgnorePatterns() {
+  const gitIgnorePath = resolve(rootDir, '.gitignore')
+  if (!existsSync(gitIgnorePath))
+    return new Set()
+
+  return new Set(
+    readFileSync(gitIgnorePath, 'utf8')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#') && !line.startsWith('!')),
+  )
+}
+
+const gitIgnorePatterns = readGitIgnorePatterns()
+
+function isExplicitlyIgnoredMaintenancePath(repositoryPath) {
+  const segments = repositoryPath.split('/')
+  const fileName = basename(repositoryPath)
+
+  if (segments.includes('patch-memory') && gitIgnorePatterns.has('patch-memory/'))
+    return true
+
+  if (repositoryPath === 'AGENTS.md' && gitIgnorePatterns.has('AGENTS.md'))
+    return true
+
+  if (fileName.startsWith('ANALYSE_') && gitIgnorePatterns.has('ANALYSE_*.md'))
+    return true
+
+  if (fileName.startsWith('VALIDATIONS_') && gitIgnorePatterns.has('VALIDATIONS_*.md'))
+    return true
+
+  if (fileName.startsWith('INVENTAIRE_PATCH_') && gitIgnorePatterns.has('INVENTAIRE_PATCH_*.md'))
+    return true
+
+  if (fileName.startsWith('RELEASE_NOTES_') && gitIgnorePatterns.has('RELEASE_NOTES_*.md'))
+    return true
+
+  if (fileName.startsWith('PATCH_') && gitIgnorePatterns.has('**/PATCH_*.md'))
+    return true
+
+  return false
+}
 
 function normalizePath(path) {
   return path.split('\\').join('/')
@@ -57,8 +101,10 @@ function collectFilesystemFiles(directory, files = []) {
 }
 
 function collectPublicFiles() {
-  if (!existsSync(resolve(rootDir, '.git')))
+  if (!existsSync(resolve(rootDir, '.git'))) {
     return collectFilesystemFiles(rootDir)
+      .filter(repositoryPath => !isExplicitlyIgnoredMaintenancePath(repositoryPath))
+  }
 
   try {
     const output = execFileSync('git', ['ls-files', '-z'], {
@@ -96,7 +142,14 @@ if (problems.length) {
   console.error('[nuxt-feathers-zod] Public repository hygiene check failed:')
   for (const problem of [...new Set(problems)].slice(0, 100))
     console.error(`- ${problem}`)
+
+  if (existsSync(resolve(rootDir, '.git'))) {
+    console.error('[nuxt-feathers-zod] These paths are still tracked by Git.')
+    console.error('[nuxt-feathers-zod] Run: bun run repo:clean-maintenance-index')
+    console.error('[nuxt-feathers-zod] The cleanup removes matching paths from the Git index and keeps local files on disk.')
+  }
+
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Public repository tree contains only publishable project material.')
+console.log('[nuxt-feathers-zod] Public repository boundary contains only publishable project material.')

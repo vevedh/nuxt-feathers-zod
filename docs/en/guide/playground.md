@@ -50,9 +50,18 @@ bun run playground:build
 | Route | Validation |
 |---|---|
 | `/ldapusers` | declared remote service |
-| `/mongos` | direct Pinia/Feathers read |
+| `/mongos` | direct Feathers service read and Pinia availability |
 | `/console/builder` | Feathers-first Builder console |
 | `/console/rbac` | RBAC policy inspection and controlled editing |
+
+## `mongos` service
+
+The `/mongos` page checks two separate contracts:
+
+- `useService('mongos')` returns the typed Feathers service and reads use `find()` directly;
+- `useNfzPinia()` reports whether the application Pinia instance is available for explicit business stores.
+
+The standard client runtime does not convert Feathers services into stores and does not expose historical store methods such as `useFind()` or `useGet()`.
 
 ## Builder console
 
@@ -72,4 +81,4 @@ When `feathers.console.allowWrite` is `false`, write actions are disabled while 
 
 Playground pages must not call the deprecated `/api/nfz/**` facades. Those Nitro routes are optional 6.x compatibility adapters. The playground validates the canonical Feathers `nfz/*` API.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

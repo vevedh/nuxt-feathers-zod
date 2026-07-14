@@ -1,3 +1,35 @@
+## 2026-07-14 — v6.5.47 Nettoyage des artefacts de maintenance encore suivis par Git
+
+- le garde public reste strict lorsque des fichiers de maintenance sont réellement suivis dans l’index Git ;
+- ajout de `bun run repo:clean-maintenance-index` pour exécuter un `git rm --cached` ciblé sans supprimer les fichiers locaux ;
+- le diagnostic `doctor` signale les artefacts de maintenance encore suivis et indique la commande de correction ;
+- ajout d’un test de migration Git reproduisant le cas des anciennes `RELEASE_NOTES_*.md` ;
+- conservation des 211 tests fonctionnels et des builds playground/VitePress validés sur Windows en 6.5.46.
+
+## 2026-07-14 — v6.5.46 Hygiène des espaces extraits et ordre des hooks de test
+
+- le garde du dépôt public respecte les motifs de maintenance explicitement ignorés lorsqu'une archive source est utilisée sans métadonnées Git ;
+- les fichiers de maintenance forcés dans l'index Git restent refusés ;
+- le test de sécurité du starter place `afterEach` avant `afterAll`, conformément aux règles ESLint Vitest ;
+- aucune modification du runtime Feathers, du playground ou de la politique de seed 6.5.43.
+
+## 2026-07-14 — v6.5.45 Isolation des tests du starter et cohérence des métadonnées publiques
+
+- Le test de sécurité du seed charge désormais le fichier TypeScript réel dans un module temporaire transpilé, sans dépendre du `.nuxt/tsconfig.json` du starter.
+- Le test de version du CLI contrôle uniquement les fichiers publics versionnés ; les notes de maintenance locales restent hors Git.
+- Les anciennes `RELEASE_NOTES_*.md` sont déplacées dans l'espace local, le motif est ignoré par Git et refusé par le garde du dépôt public.
+- `verify:test` et les guides de maintenance utilisent `bun run test`, conformément aux suites Vitest du projet.
+- Les protections du seed 6.5.43, les chemins Windows natifs et le build playground 6.5.44 sont conservés.
+
+## 2026-07-14 — v6.5.44 Durcissement des validations Windows et du build playground
+
+- conservation des séparateurs natifs pour les chemins absolus de `servicesDirs` sous Windows ;
+- suppression de la normalisation involontaire en `/` dans `resolveSchemaFile()` ;
+- génération explicite de `.nuxt/tsconfig.json` avec `writeTypes()` avant le build Vite du playground ;
+- ajout d'un garde-fou Windows imposant `writeTypes()` avant `buildNuxt()` ;
+- correction des cinq erreurs ESLint détectées par la validation 6.5.43 ;
+- conservation sans modification des règles de sécurité du seed et de `cleanUrls: false`.
+
 ## 2026-07-14 — v6.5.40 Cohérence documentation, CLI et playground
 
 - correction des Consoles Builder et RBAC afin d'utiliser exclusivement les services Feathers `nfz/*` ;

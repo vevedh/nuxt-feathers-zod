@@ -28,16 +28,29 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as { version: string }
     const targets = [
       'README.md',
+      'CHANGELOG.md',
+      'PATCHLOG.md',
       'docs/guide/cli.md',
       'docs/en/guide/cli.md',
       'docs/reference/cli.md',
       'docs/en/reference/cli.md',
-      `RELEASE_NOTES_${pkg.version}.md`,
     ]
     for (const file of targets) {
       const text = await readFile(join(process.cwd(), file), 'utf8')
       expect(text).toContain(pkg.version)
     }
+  })
+
+  it('provides a safe Git-index cleanup for tracked local maintenance artifacts', async () => {
+    const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as { scripts?: Record<string, string> }
+    const cleanupScript = await readFile(join(process.cwd(), 'scripts/clean-tracked-maintenance.mjs'), 'utf8')
+    const doctorSource = await readFile(join(process.cwd(), 'src/cli/commands/doctor.ts'), 'utf8')
+
+    expect(pkg.scripts?.['repo:clean-maintenance-index']).toBe('node scripts/clean-tracked-maintenance.mjs')
+    expect(cleanupScript).toContain("['rm', '--cached', '--ignore-unmatch', '--', repositoryPath]")
+    expect(cleanupScript).not.toContain("['rm', '-f'")
+    expect(doctorSource).toContain('detectTrackedMaintenanceArtifacts')
+    expect(doctorSource).toContain('repo:clean-maintenance-index')
   })
 
   it('uses the Bun build API without spawning a PATH-dependent bun child process', async () => {
@@ -65,6 +78,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(runner).toContain("await import('./ensure-playground-self-link.mjs')")
     expect(runner).toContain("await import('@nuxt/kit')")
     expect(runner).toContain("process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB = 'false'")
+    expect(runner).toContain('await writeTypes(nuxt)')
     expect(runner).toContain('await buildNuxt(nuxt)')
     expect(runner).toContain('await nuxt.close()')
     expect(runner).not.toContain('node:child_process')

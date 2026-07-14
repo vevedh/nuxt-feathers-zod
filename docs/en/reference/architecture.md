@@ -44,4 +44,4 @@ MongoDB and Keycloak secrets are resolved at runtime and are not serialized into
 
 `console.legacyNitroRoutes: true` keeps deprecated `/api/nfz/**` facades. New applications should use `false` and consume Feathers `nfz/*` services.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

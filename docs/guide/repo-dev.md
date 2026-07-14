@@ -80,4 +80,17 @@ Avant publication, `bun run docs:build` doit passer sans lien mort. Les liens in
 - [Workflow communautaire](./community-workflow)
 - [Référence CLI](/reference/cli)
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->
+
+## Nettoyer un ancien index Git
+
+Après une migration depuis une ancienne version du dépôt, des fichiers de maintenance peuvent rester suivis même s'ils sont désormais présents dans `.gitignore`. Le garde `sanity:public-repository` les refuse volontairement.
+
+Exécutez :
+
+```bash
+bun run repo:clean-maintenance-index
+git status --short
+```
+
+La commande retire uniquement les chemins de maintenance de l'index Git avec `git rm --cached`. Les fichiers locaux restent sur le disque et demeurent ignorés par Git.

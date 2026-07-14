@@ -72,6 +72,7 @@ AGENTS.md
 ANALYSE_*.md
 VALIDATIONS_*.md
 INVENTAIRE_PATCH_*.md
+RELEASE_NOTES_*.md
 **/PATCH_*.md
 .local-notes/
 .private/

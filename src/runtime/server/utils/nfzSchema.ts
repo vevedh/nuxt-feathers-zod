@@ -103,17 +103,13 @@ export function resolveSchemaFile(
 
   for (const p of candidates) {
     if (existsSync(p)) {
-      const parts = p.split(/[/\\]/)
-      const idx = parts.lastIndexOf(kebab)
-      const svcDir = parts.slice(0, idx).join('/')
+      const svcDir = dirname(dirname(p))
       return { schemaFile: p, servicesDirResolved: svcDir }
     }
   }
   const scanned = shallowScanForSchema(projectRoot, kebab)
   if (scanned) {
-    const parts = scanned.split(/[/\\]/)
-    const idx = parts.lastIndexOf(kebab)
-    const svcDir = parts.slice(0, idx).join('/')
+    const svcDir = dirname(dirname(scanned))
     return { schemaFile: scanned, servicesDirResolved: svcDir }
   }
   // Default to first servicesDir

@@ -72,3 +72,7 @@ The public release workflow should keep these signals green:
 - `sanity:public-repository`
 - `sanity:package-exports`
 - `sanity:project-coherence`
+
+## Legacy tracked maintenance files
+
+If `sanity:public-repository` reports ignored maintenance files as tracked, run `bun run repo:clean-maintenance-index` and review `git status --short`. The cleanup uses `git rm --cached` for matching maintenance paths, so local files are preserved.

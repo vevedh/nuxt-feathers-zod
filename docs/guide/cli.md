@@ -75,4 +75,4 @@ bunx nuxt-feathers-zod doctor
 
 La commande `capabilities --json` expose les modes, transports, services NFZ, composables et événements d’authentification implémentés. Le contrôle de cohérence du dépôt compare cette matrice au runtime, au playground et à la documentation.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

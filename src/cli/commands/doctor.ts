@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
@@ -7,6 +8,39 @@ import consola from 'consola'
 import { getDefaultAuthStrategies, getAuthStaticDefaults } from '../../runtime/options/authentication'
 import { getAuthLocalDefaults } from '../../runtime/options/authentication/local'
 import { getMongoManagementRoutes, normalizeMongoManagementBasePath } from '../../runtime/options/database/mongodb'
+
+
+function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
+  if (!existsSync(resolve(projectRoot, '.git')))
+    return []
+
+  try {
+    const output = execFileSync('git', ['ls-files', '-z'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    const forbiddenExactPaths = new Set(['AGENTS.md', '.coderabbit.yaml', '.vscode/mcp.json'])
+    const forbiddenPrefixes = ['ANALYSE_', 'VALIDATIONS_', 'INVENTAIRE_PATCH_', 'RELEASE_NOTES_', 'PATCH_', 'PROMPT_', 'CONTEXT_']
+
+    return output
+      .split('\0')
+      .map(file => file.replace(/\\/g, '/'))
+      .filter(Boolean)
+      .filter((file) => {
+        const segments = file.split('/')
+        const fileName = segments.at(-1) || ''
+        return forbiddenExactPaths.has(file)
+          || segments.includes('patch-memory')
+          || forbiddenPrefixes.some(prefix => fileName.startsWith(prefix))
+      })
+      .sort()
+  }
+  catch {
+    return []
+  }
+}
 
 function relativeToCwd(filePath: string) {
   return filePath.replace(process.cwd().replace(/\\/g, '/'), '.').replace(/\\/g, '/')
@@ -665,6 +699,13 @@ export async function runDoctor(projectRoot: string) {
   consola.info('NFZ doctor')
   consola.info(`- projectRoot: ${projectRoot}`)
   consola.info(`- nuxt.config: ${nuxtConfigPath ? relativeToCwd(nuxtConfigPath) : '(not found)'}`)
+
+  const trackedMaintenanceArtifacts = detectTrackedMaintenanceArtifacts(projectRoot)
+  consola.info(`- tracked local maintenance artifacts: ${trackedMaintenanceArtifacts.length}`)
+  if (trackedMaintenanceArtifacts.length) {
+    consola.warn(`Tracked local maintenance artifacts detected: ${trackedMaintenanceArtifacts.slice(0, 10).join(', ')}`)
+    consola.warn('Run bun run repo:clean-maintenance-index from the repository root, then review git status --short.')
+  }
 
   if (!nuxtConfigPath) {
     consola.warn('No nuxt.config found. Nothing to diagnose.')

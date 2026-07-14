@@ -78,4 +78,4 @@ Ne place jamais de jeton npm en clair dans `.npmrc`, `.env`, un script ou une ar
 - Node.js doit respecter `^22.12.0 || ^24.11.0 || >=26.0.0` ;
 - le tag de publication doit correspondre exactement à la version de `package.json`.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

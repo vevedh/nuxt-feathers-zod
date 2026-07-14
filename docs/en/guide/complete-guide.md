@@ -54,4 +54,4 @@ bunx nuxt-feathers-zod doctor
 
 The CLI reference is generated from the command tree. A repository coherence gate also checks module options, NFZ services, composables, events, and playground routes.
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->

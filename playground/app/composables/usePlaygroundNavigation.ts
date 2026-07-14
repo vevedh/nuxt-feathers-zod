@@ -43,7 +43,7 @@ const groups: PlaygroundNavGroup[] = [
     label: 'Outils avancés',
     items: [
       { label: 'Service distant', description: 'Exemple ldapusers', to: '/ldapusers', icon: '↗', level: 'diagnostic' },
-      { label: 'Service mongos', description: 'Lecture Pinia/Feathers directe', to: '/mongos', icon: '◫', level: 'diagnostic' },
+      { label: 'Service mongos', description: 'Lecture Feathers et état Pinia', to: '/mongos', icon: '◫', level: 'diagnostic' },
       { label: 'Console Builder', description: 'Console de génération NFZ', to: '/console/builder', icon: '⌘', level: 'diagnostic' },
       { label: 'Console RBAC', description: 'Rôles et capacités', to: '/console/rbac', icon: '⚿', level: 'diagnostic' },
     ],

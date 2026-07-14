@@ -80,4 +80,17 @@ Before publishing, `bun run docs:build` must pass without dead links. Internal l
 - [Community workflow](./community-workflow)
 - [CLI reference](/en/reference/cli)
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->
+
+## Cleaning a legacy Git index
+
+After migrating from an older repository version, maintenance files may remain tracked even when `.gitignore` now excludes them. `sanity:public-repository` intentionally rejects those tracked paths.
+
+Run:
+
+```bash
+bun run repo:clean-maintenance-index
+git status --short
+```
+
+The command only removes maintenance paths from the Git index with `git rm --cached`. Local files stay on disk and remain ignored by Git.

@@ -235,9 +235,12 @@ It performs:
 
 Credentials can be changed in `.env`:
 
+The demo account is enabled by default only outside production. In production, the seed is disabled unless `NFZ_DEMO_ENABLED=true` is set explicitly. A production demo password must contain at least 12 characters and must not use a known demonstration password.
+
 ```txt
+NFZ_DEMO_ENABLED=true
 NFZ_DEMO_USER=admin
-NFZ_DEMO_PASSWORD=admin123
+NFZ_DEMO_PASSWORD=Correct-Horse-2026!
 NFZ_DEMO_ROLES=admin,user
 ```
 

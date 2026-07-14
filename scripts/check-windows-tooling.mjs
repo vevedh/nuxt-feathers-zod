@@ -50,6 +50,9 @@ if (!runPlayground.includes("await import('@nuxt/cli/cli')") || !runPlayground.i
 if (/spawn(?:Sync)?\s*\(/.test(runPlayground) || runPlayground.includes("node:child_process"))
   failures.push('run-playground.mjs must not spawn a child process')
 
+if (!runPlayground.includes('await writeTypes(nuxt)') || runPlayground.indexOf('await writeTypes(nuxt)') > runPlayground.indexOf('await buildNuxt(nuxt)'))
+  failures.push('run-playground.mjs must generate the playground tsconfig before buildNuxt')
+
 if (pkg.engines?.bun !== '>=1.3.6')
   failures.push('engines.bun must require Bun >=1.3.6')
 

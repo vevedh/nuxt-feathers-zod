@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.5.41",
+  "version": "6.5.47",
   "packageManager": "bun@1.3.6",
   "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
   "author": "Herve de CHAVIGNY",
@@ -240,7 +240,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:windows-tooling && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run build && bun run sanity:package-exports",
+    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:windows-tooling && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run build && bun run sanity:package-exports",
     "dev": "node scripts/run-playground.mjs dev",
     "dev:fresh": "bun install --frozen-lockfile && bun run clean:repo && bun run typecheck && node scripts/run-playground.mjs dev",
     "cleanup": "bun run clean:repo",
@@ -260,7 +260,7 @@
     "lint:fix": "eslint . --fix",
     "cli:smoke": "bun scripts/cli-smoke.ts",
     "publish:npm": "bun run release:prepare:publish && node scripts/publish-release.mjs",
-    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun pm pack --dry-run && bun run sanity:package-exports",
+    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun pm pack --dry-run && bun run sanity:package-exports",
     "release": "bunx release-it",
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
@@ -296,9 +296,9 @@
     "verify:install": "bun install --frozen-lockfile",
     "verify:build": "bun run build",
     "verify:typecheck": "bun run typecheck",
-    "verify:test": "bun test",
+    "verify:test": "bun run test",
     "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
-    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
+    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
     "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
     "verify:full": "bun run verify:install && bun run verify:all",
     "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
@@ -326,7 +326,9 @@
     "sanity:project-coherence": "bun scripts/check-project-coherence.ts",
     "docs:check-links": "node scripts/check-docs-links.mjs",
     "prepare:project": "bun run sync:release-meta && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link",
-    "sanity:public-repository": "node scripts/check-public-repository.mjs"
+    "sanity:public-repository": "node scripts/check-public-repository.mjs",
+    "sanity:starter-security": "node scripts/check-starter-security.mjs",
+    "repo:clean-maintenance-index": "node scripts/clean-tracked-maintenance.mjs"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0",

@@ -30,7 +30,7 @@ else {
     // The programmatic Nuxt API can close its hooks explicitly after a build.
     // This prevents lingering handles from mongodb-memory-server or Nitro and
     // keeps the command deterministic in CI and on Windows.
-    const { buildNuxt, loadNuxt } = await import('@nuxt/kit')
+    const { buildNuxt, loadNuxt, writeTypes } = await import('@nuxt/kit')
     const nuxt = await loadNuxt({
       cwd: playgroundDir,
       dev: false,
@@ -41,6 +41,10 @@ else {
       },
     })
     try {
+      // Vite's Vue plugin reads playground/tsconfig.json during the first
+      // transform. Generate buildDir/tsconfig.json explicitly before the
+      // builder starts so clean Windows workspaces do not race type creation.
+      await writeTypes(nuxt)
       await buildNuxt(nuxt)
     }
     finally {

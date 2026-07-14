@@ -92,4 +92,4 @@ Le teardown est idempotent :
 | `services/` | services du playground et échantillons de validation |
 | `playground/` | centre de validation fonctionnelle |
 
-<!-- release-version: 6.5.41 -->
+<!-- release-version: 6.5.47 -->
