@@ -1,0 +1,90 @@
+:root {
+  color-scheme: light;
+  --nfz-bg: #f8fafc;
+  --nfz-surface: #ffffff;
+  --nfz-surface-soft: #f1f5f9;
+  --nfz-border: rgba(148, 163, 184, 0.35);
+  --nfz-text: #0f172a;
+  --nfz-muted: #64748b;
+  --nfz-primary: #2563eb;
+  --nfz-secondary: #0f766e;
+}
+
+.body--dark,
+html.dark {
+  color-scheme: dark;
+  --nfz-bg: #020617;
+  --nfz-surface: #0f172a;
+  --nfz-surface-soft: #111827;
+  --nfz-border: rgba(100, 116, 139, 0.35);
+  --nfz-text: #e2e8f0;
+  --nfz-muted: #94a3b8;
+  --nfz-primary: #60a5fa;
+  --nfz-secondary: #2dd4bf;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+  background: var(--nfz-bg);
+  color: var(--nfz-text);
+}
+
+.nfz-shell {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.12), transparent 34rem), var(--nfz-bg);
+}
+
+.nfz-sidebar {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.94));
+  color: #e2e8f0;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.body--light .nfz-sidebar {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  color: #0f172a;
+  border-right: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.nfz-nav-item {
+  border-radius: 14px;
+  margin: 4px 10px;
+  min-height: 42px;
+}
+
+.nfz-nav-item.q-router-link--active,
+.nfz-nav-item.q-item--active {
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--nfz-primary);
+}
+
+.nfz-drawer-backdrop-safe .q-drawer__backdrop[aria-hidden='true'] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.q-drawer--standard.q-drawer--hidden ~ .q-page-container {
+  padding-left: 0 !important;
+}
+
+.nfz-card-hover {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.nfz-card-hover:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.nfz-auth-hero {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(15, 23, 42, 0.98)),
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.45), transparent 20rem);
+}

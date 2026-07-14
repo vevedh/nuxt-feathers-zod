@@ -1,0 +1,448 @@
+{
+  "name": "nuxt-feathers-zod",
+  "type": "module",
+  "version": "6.5.41",
+  "packageManager": "bun@1.3.6",
+  "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
+  "author": "Herve de CHAVIGNY",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vevedh/nuxt-feathers-zod.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
+    },
+    "./server": {
+      "types": "./dist/runtime/server.d.ts",
+      "import": "./dist/runtime/server.js"
+    },
+    "./server-bootstrap": {
+      "types": "./dist/runtime/server/bootstrap.d.ts",
+      "import": "./dist/runtime/server/bootstrap.js"
+    },
+    "./server-app-utils": {
+      "types": "./dist/runtime/server/app-utils.d.ts",
+      "import": "./dist/runtime/server/app-utils.js"
+    },
+    "./server-mongodb": {
+      "types": "./dist/runtime/server/mongodb.d.ts",
+      "import": "./dist/runtime/server/mongodb.js"
+    },
+    "./server-keycloak": {
+      "types": "./dist/runtime/server/keycloak.d.ts",
+      "import": "./dist/runtime/server/keycloak.js"
+    },
+    "./client": {
+      "types": "./dist/runtime/client.d.ts",
+      "import": "./dist/runtime/client.js"
+    },
+    "./client-runtime": {
+      "types": "./dist/runtime/client/defineNfzClientPlugin.d.ts",
+      "import": "./dist/runtime/client/defineNfzClientPlugin.js"
+    },
+    "./auth-utils": {
+      "types": "./dist/runtime/utils/auth.d.ts",
+      "import": "./dist/runtime/utils/auth.js"
+    },
+    "./config-utils": {
+      "types": "./dist/runtime/utils/config.d.ts",
+      "import": "./dist/runtime/utils/config.js"
+    },
+    "./options": {
+      "types": "./dist/runtime/options/index.d.ts",
+      "import": "./dist/runtime/options/index.js"
+    },
+    "./ofetch-adapter": {
+      "types": "./dist/runtime/adapters/ofetch.d.ts",
+      "import": "./dist/runtime/adapters/ofetch.js"
+    },
+    "./validators": {
+      "types": "./dist/runtime/zod/validators.d.ts",
+      "import": "./dist/runtime/zod/validators.js"
+    },
+    "./objectId": {
+      "types": "./dist/runtime/zod/objectId.d.ts",
+      "import": "./dist/runtime/zod/objectId.js"
+    },
+    "./query": {
+      "types": "./dist/runtime/zod/query.d.ts",
+      "import": "./dist/runtime/zod/query.js"
+    },
+    "./format": {
+      "types": "./dist/runtime/zod/format.d.ts",
+      "import": "./dist/runtime/zod/format.js"
+    },
+    "./zod": {
+      "types": "./dist/runtime/zod/index.d.ts",
+      "import": "./dist/runtime/zod/index.js"
+    },
+    "./server/modules/express/*": {
+      "types": "./dist/runtime/server/modules/express/*.d.ts",
+      "import": "./dist/runtime/server/modules/express/*.js"
+    },
+    "./server/modules/koa/*": {
+      "types": "./dist/runtime/server/modules/koa/*.d.ts",
+      "import": "./dist/runtime/server/modules/koa/*.js"
+    },
+    "./auth-runtime": {
+      "types": "./dist/runtime/composables/useAuthRuntime.d.ts",
+      "import": "./dist/runtime/composables/useAuthRuntime.js"
+    },
+    "./auth-bound-fetch": {
+      "types": "./dist/runtime/composables/useAuthBoundFetch.d.ts",
+      "import": "./dist/runtime/composables/useAuthBoundFetch.js"
+    },
+    "./protected-tool": {
+      "types": "./dist/runtime/composables/useProtectedTool.d.ts",
+      "import": "./dist/runtime/composables/useProtectedTool.js"
+    },
+    "./mongo-management-client": {
+      "types": "./dist/runtime/composables/useMongoManagementClient.d.ts",
+      "import": "./dist/runtime/composables/useMongoManagementClient.js"
+    },
+    "./keycloak-bridge": {
+      "types": "./dist/runtime/composables/useKeycloakBridge.d.ts",
+      "import": "./dist/runtime/composables/useKeycloakBridge.js"
+    },
+    "./protected-page": {
+      "types": "./dist/runtime/composables/useProtectedPage.d.ts",
+      "import": "./dist/runtime/composables/useProtectedPage.js"
+    },
+    "./auth-trace": {
+      "types": "./dist/runtime/composables/useAuthTrace.d.ts",
+      "import": "./dist/runtime/composables/useAuthTrace.js"
+    },
+    "./admin-client": {
+      "types": "./dist/runtime/composables/useNfzAdminClient.d.ts",
+      "import": "./dist/runtime/composables/useNfzAdminClient.js"
+    },
+    "./builder-client": {
+      "types": "./dist/runtime/composables/useBuilderClient.d.ts",
+      "import": "./dist/runtime/composables/useBuilderClient.js"
+    },
+    "./capabilities": {
+      "types": "./dist/runtime/capabilities.d.ts",
+      "import": "./dist/runtime/capabilities.js"
+    },
+    "./server-instance-registry": {
+      "types": "./dist/runtime/server/instance-registry.d.ts",
+      "import": "./dist/runtime/server/instance-registry.js"
+    },
+    "./server-console-services": {
+      "types": "./dist/runtime/server/console-services.d.ts",
+      "import": "./dist/runtime/server/console-services.js"
+    }
+  },
+  "main": "./dist/module.mjs",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ],
+      "server": [
+        "./dist/runtime/server.d.ts"
+      ],
+      "server-bootstrap": [
+        "./dist/runtime/server/bootstrap.d.ts"
+      ],
+      "server-app-utils": [
+        "./dist/runtime/server/app-utils.d.ts"
+      ],
+      "server-mongodb": [
+        "./dist/runtime/server/mongodb.d.ts"
+      ],
+      "server-keycloak": [
+        "./dist/runtime/server/keycloak.d.ts"
+      ],
+      "client": [
+        "./dist/runtime/client.d.ts"
+      ],
+      "client-runtime": [
+        "./dist/runtime/client/defineNfzClientPlugin.d.ts"
+      ],
+      "auth-utils": [
+        "./dist/runtime/utils/auth.d.ts"
+      ],
+      "config-utils": [
+        "./dist/runtime/utils/config.d.ts"
+      ],
+      "options": [
+        "./dist/runtime/options/index.d.ts"
+      ],
+      "ofetch-adapter": [
+        "./dist/runtime/adapters/ofetch.d.ts"
+      ],
+      "validators": [
+        "./dist/runtime/zod/validators.d.ts"
+      ],
+      "objectId": [
+        "./dist/runtime/zod/objectId.d.ts"
+      ],
+      "query": [
+        "./dist/runtime/zod/query.d.ts"
+      ],
+      "format": [
+        "./dist/runtime/zod/format.d.ts"
+      ],
+      "zod": [
+        "./dist/runtime/zod/index.d.ts"
+      ],
+      "server/modules/express/*": [
+        "./dist/runtime/server/modules/express/*.d.ts"
+      ],
+      "server/modules/koa/*": [
+        "./dist/runtime/server/modules/koa/*.d.ts"
+      ],
+      "auth-runtime": [
+        "./dist/runtime/composables/useAuthRuntime.d.ts"
+      ],
+      "auth-bound-fetch": [
+        "./dist/runtime/composables/useAuthBoundFetch.d.ts"
+      ],
+      "protected-tool": [
+        "./dist/runtime/composables/useProtectedTool.d.ts"
+      ],
+      "mongo-management-client": [
+        "./dist/runtime/composables/useMongoManagementClient.d.ts"
+      ],
+      "keycloak-bridge": [
+        "./dist/runtime/composables/useKeycloakBridge.d.ts"
+      ],
+      "protected-page": [
+        "./dist/runtime/composables/useProtectedPage.d.ts"
+      ],
+      "auth-trace": [
+        "./dist/runtime/composables/useAuthTrace.d.ts"
+      ],
+      "admin-client": [
+        "./dist/runtime/composables/useNfzAdminClient.d.ts"
+      ],
+      "builder-client": [
+        "./dist/runtime/composables/useBuilderClient.d.ts"
+      ],
+      "server-instance-registry": [
+        "./dist/runtime/server/instance-registry.d.ts"
+      ]
+    }
+  },
+  "bin": {
+    "nuxt-feathers-zod": "./bin/nuxt-feathers-zod",
+    "nfz": "./bin/nfz"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "examples/nfz-quasar-unocss-pinia-starter",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:windows-tooling && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run build && bun run sanity:package-exports",
+    "dev": "node scripts/run-playground.mjs dev",
+    "dev:fresh": "bun install --frozen-lockfile && bun run clean:repo && bun run typecheck && node scripts/run-playground.mjs dev",
+    "cleanup": "bun run clean:repo",
+    "playground:ensure-link": "node scripts/ensure-playground-self-link.mjs",
+    "playground:dev": "node scripts/run-playground.mjs dev",
+    "build": "bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run cli:bundle:check && bun run sanity:cli-dist-meta && bun run sanity:package-exports",
+    "playground:build": "node scripts/run-playground.mjs build",
+    "module:prepare": "nuxt-module-build prepare",
+    "module:build": "nuxt-module-build build",
+    "prepare": "bun scripts/run-prepare.ts",
+    "typecheck": "bunx tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "bun run test:unit && bun run test:integration && bun run test:e2e",
+    "test:e2e": "node scripts/run-e2e-tests.mjs",
+    "smoke:tarball": "node scripts/smoke-tarball-install.mjs",
+    "release:check:full": "bun run release:check && bun run test:e2e && bun run smoke:tarball",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "cli:smoke": "bun scripts/cli-smoke.ts",
+    "publish:npm": "bun run release:prepare:publish && node scripts/publish-release.mjs",
+    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun pm pack --dry-run && bun run sanity:package-exports",
+    "release": "bunx release-it",
+    "release:patch": "bunx release-it patch",
+    "release:minor": "bunx release-it minor",
+    "release:major": "bunx release-it major",
+    "docs:dev": "bun run docs:check-frontmatter && bun run docs:check-conflicts && cd docs && bun install && bunx vitepress dev . --host",
+    "docs:build": "bun run docs:check-frontmatter && bun run docs:check-conflicts && cd docs && bun install --frozen-lockfile && bunx vitepress build .",
+    "docs:preview": "cd docs && bun install && bunx vitepress preview .",
+    "sync:actions": "bunx nuxt-feathers-zod add service actions --custom --methods find --customMethods run --auth --docs --force",
+    "sync:golden": "bun run sync:actions",
+    "sanity:templates": "node scripts/template-safety-check.mjs",
+    "sanity:syntax": "node scripts/syntax-check-ts.cjs",
+    "sanity:internal-imports": "node scripts/check-internal-self-imports.mjs",
+    "cli:build": "bun scripts/build-cli.mjs",
+    "sanity:release-meta": "node scripts/check-release-metadata.mjs",
+    "sync:release-meta": "node scripts/sync-release-metadata.mjs",
+    "sanity:release-files": "node scripts/check-release-files.mjs",
+    "clean:repo": "node scripts/cleanup-safe.mjs",
+    "sanity:file-service-template": "node scripts/check-file-service-template.mjs",
+    "repo:doctor": "bun run clean:repo && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:file-service-template",
+    "sanity:cli-dist-meta": "node scripts/check-cli-dist-meta.mjs",
+    "repo:bootstrap": "bun install && bun run repo:doctor",
+    "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs",
+    "sanity:package-exports": "node scripts/check-package-exports.mjs",
+    "deps:check": "taze",
+    "deps:check:recursive": "taze -r",
+    "deps:update:patch": "taze patch -w",
+    "deps:update:minor": "taze minor -w",
+    "deps:update:latest": "taze latest -w",
+    "deps:update:major": "taze major -w",
+    "deps:update:safe": "bun run deps:update:patch && bun install && bun run verify:all",
+    "deps:update:minor:safe": "bun run deps:update:minor && bun install && bun run verify:all",
+    "deps:update:full-smoke": "bun run build && bun run cli:full-smoke && bun run verify:sanity",
+    "verify:install": "bun install --frozen-lockfile",
+    "verify:build": "bun run build",
+    "verify:typecheck": "bun run typecheck",
+    "verify:test": "bun test",
+    "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
+    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
+    "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
+    "verify:full": "bun run verify:install && bun run verify:all",
+    "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
+    "sanity:client-runtime-esm-interop": "node scripts/check-client-runtime-esm-interop.mjs",
+    "docs:check-conflicts": "node scripts/check-docs-conflicts.mjs",
+    "sanity:feathers-nitro": "node scripts/check-feathers-nitro-migration.mjs",
+    "release:check:registry": "node scripts/check-npm-version-availability.mjs",
+    "release:tag:check": "node scripts/check-release-tag.mjs",
+    "release:pack": "node scripts/pack-release.mjs",
+    "release:prepare:publish": "bun run release:check:registry && bun run release:check:full && bun run release:pack",
+    "publish:npm:dry-run": "bun run release:prepare:publish && node scripts/publish-release.mjs --dry-run",
+    "test:unit": "vitest run -c vitest.unit.config.mts --no-file-parallelism --maxWorkers=1",
+    "test:integration": "vitest run -c vitest.integration.config.mts --no-file-parallelism --maxWorkers=1",
+    "cli:bundle:check": "node scripts/check-cli-bundle-budget.mjs",
+    "cli:benchmark": "node scripts/benchmark-cli-startup.mjs",
+    "sanity:dependency-convergence": "node scripts/check-dependency-convergence.mjs",
+    "sanity:generated-secret-safety": "node scripts/check-generated-secret-safety.mjs",
+    "sanity:source-hygiene": "node scripts/check-source-hygiene.mjs",
+    "docs:check-human-style": "node scripts/check-docs-human-style.mjs",
+    "sanity:windows-tooling": "node scripts/check-windows-tooling.mjs",
+    "verify:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1",
+    "sanity:feathers-first-console": "node scripts/check-feathers-first-console.mjs",
+    "docs:check-branding": "node scripts/check-docs-branding.mjs",
+    "docs:sync-technical": "bun scripts/sync-technical-docs.ts",
+    "sanity:project-coherence": "bun scripts/check-project-coherence.ts",
+    "docs:check-links": "node scripts/check-docs-links.mjs",
+    "prepare:project": "bun run sync:release-meta && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link",
+    "sanity:public-repository": "node scripts/check-public-repository.mjs"
+  },
+  "peerDependencies": {
+    "nuxt": "^4.0.0",
+    "@pinia/nuxt": "^0.11.0",
+    "pinia": "^3.0.0"
+  },
+  "dependencies": {
+    "@feathersjs/adapter-commons": "5.0.46",
+    "@feathersjs/authentication": "5.0.46",
+    "@feathersjs/authentication-client": "5.0.46",
+    "@feathersjs/authentication-local": "5.0.46",
+    "@feathersjs/authentication-oauth": "5.0.46",
+    "@feathersjs/commons": "5.0.46",
+    "@feathersjs/configuration": "5.0.46",
+    "@feathersjs/errors": "5.0.46",
+    "@feathersjs/express": "5.0.46",
+    "@feathersjs/feathers": "5.0.46",
+    "@feathersjs/generators": "5.0.46",
+    "@feathersjs/koa": "5.0.46",
+    "@feathersjs/memory": "5.0.46",
+    "@feathersjs/mongodb": "5.0.46",
+    "@feathersjs/rest-client": "5.0.46",
+    "@feathersjs/schema": "5.0.46",
+    "@feathersjs/socketio": "5.0.46",
+    "@feathersjs/socketio-client": "5.0.46",
+    "@vevedh/feathers-nitro": "0.5.0",
+    "@koa/cors": "5.0.0",
+    "@nuxt/devtools-kit": "^3.2.3",
+    "@nuxt/kit": "4.4.2",
+    "@vueuse/core": "10.11.1",
+    "ajv-formats": "^3.0.1",
+    "change-case": "5.4.4",
+    "citty": "^0.2.1",
+    "compression": "^1.7.4",
+    "consola": "3.4.2",
+    "cors": "^2.8.5",
+    "defu": "6.1.4",
+    "feathers-mongodb-management-ts": "2.3.2",
+    "feathers-swagger": "^3.0.0",
+    "h3": "1.15.11",
+    "helmet": "^7.1.0",
+    "jose": "^5.10.0",
+    "js-sha256": "^0.11.1",
+    "keycloak-js": "^24.0.5",
+    "klona": "^2.0.6",
+    "koa-compress": "5.2.0",
+    "koa-helmet": "9.0.0",
+    "koa-static": "5.0.0",
+    "mongodb": "^6.21.0",
+    "nitropack": "2.13.4",
+    "ohash": "^2.0.11",
+    "pinia": "3.0.4",
+    "socket.io": "4.8.3",
+    "socket.io-client": "4.8.3",
+    "swagger-ui-dist": "^5.31.0",
+    "ufo": "^1.6.3",
+    "unimport": "^3.14.6",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@antfu/ni": "28.3.0",
+    "@gabortorma/antfu-eslint-config": "^1.7.4",
+    "@gabortorma/mwm": "0.9.3",
+    "@gabortorma/nuxt-eslint-layer": "1.0.0",
+    "@nuxt/devtools": "3.2.3",
+    "@nuxt/module-builder": "1.0.2",
+    "@nuxt/schema": "4.4.2",
+    "@nuxt/test-utils": "4.0.0",
+    "@pinia/nuxt": "^0.11.0",
+    "@playwright/test": "1.58.2",
+    "@types/node": "25.4.0",
+    "dotenv": "^16.4.5",
+    "dotenv-cli": "11.0.0",
+    "eslint": "^9.39.2",
+    "happy-dom": "^15.11.7",
+    "nuxt": "4.4.2",
+    "release-it": "19.2.4",
+    "taze": "^19.11.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18",
+    "vitest-mongodb": "1.0.3",
+    "vue": "3.5.30",
+    "vue-router": "4.5.1"
+  },
+  "homepage": "https://vevedh.github.io/nuxt-feathers-zod/",
+  "bugs": {
+    "url": "https://github.com/vevedh/nuxt-feathers-zod/issues"
+  },
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "feathers",
+    "feathersjs",
+    "zod",
+    "nitro",
+    "socket.io",
+    "auth",
+    "keycloak",
+    "mongodb",
+    "swagger",
+    "pinia",
+    "cli"
+  ],
+  "engines": {
+    "node": "^22.12.0 || ^24.11.0 || >=26.0.0",
+    "bun": ">=1.3.6"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependenciesMeta": {
+    "@pinia/nuxt": {
+      "optional": true
+    },
+    "pinia": {
+      "optional": true
+    }
+  }
+}

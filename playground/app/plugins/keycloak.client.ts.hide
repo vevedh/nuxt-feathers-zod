@@ -1,0 +1,47 @@
+import Keycloak from 'keycloak-js'
+
+type KeycloakProvide = {
+  instance: Keycloak
+  authenticated: boolean
+  userid?: string
+  tokenParsed?: Record<string, any>
+  token: () => string | undefined
+  login: (opts?: any) => Promise<void>
+  logout: (opts?: any) => Promise<void>
+  updateToken: (minValidity?: number) => Promise<boolean>
+}
+
+export default defineNuxtPlugin(async (nuxtApp) => {
+  const cfg = nuxtApp.$config.public
+
+  const keycloak = new Keycloak({
+    url: String(cfg.KC_URL),
+    realm: String(cfg.KC_REALM),
+    clientId: String(cfg.KC_CLIENT_ID),
+  })
+
+  // SSO silencieux : ne force PAS un redirect
+  const initResult = await keycloak
+    .init({
+      onLoad: 'check-sso',
+      checkLoginIframe: false,
+      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+    })
+    .catch(() => ({ authenticated: false } as const))
+
+  const authenticated = (keycloak.authenticated === true) && (initResult as any)?.authenticated !== false
+  const userid = keycloak?.tokenParsed?.preferred_username
+
+  const provided: KeycloakProvide = {
+    instance: keycloak,
+    authenticated,
+    userid,
+    tokenParsed: keycloak.tokenParsed as any,
+    token: () => keycloak.token,
+    login: async (opts?: any) => { await keycloak.login(opts) },
+    logout: async (opts?: any) => { await keycloak.logout(opts) },
+    updateToken: async (minValidity = 30) => await keycloak.updateToken(minValidity),
+  }
+
+  nuxtApp.provide('keycloak', provided)
+})

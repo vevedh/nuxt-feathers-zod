@@ -1,0 +1,96 @@
+# Dependencies
+node_modules
+
+*.zip
+*.rar
+*.tar.gz
+*.tgz
+
+# Logs
+*.log*
+
+# Temp directories
+.temp
+.tmp
+.cache
+.eslintcache
+
+# Yarn
+**/.yarn/cache
+**/.yarn/*state*
+
+# Generated dirs
+dist
+
+# Nuxt
+.nuxt
+.output
+.data
+.vercel_build_output
+.build-*
+.netlify
+
+# Env
+.env
+.env.*
+!.env.example
+!*.example
+
+# Testing
+reports
+coverage
+*.lcov
+.nyc_output
+test-results
+**/playwright/results
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Intellij idea
+*.iml
+.idea
+
+# OSX
+.DS_Store
+.AppleDouble
+.LSOverride
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Local workspace and maintenance notes
+patch-memory/
+AGENTS.md
+ANALYSE_*.md
+VALIDATIONS_*.md
+INVENTAIRE_PATCH_*.md
+**/PATCH_*.md
+.local-notes/
+.private/
+internal-notes/
+README_private.md
+
+# Local release / scratch artifacts
+release-artifacts/
+*.tgz
+out.js
+tmpfile
+tmp-check.mjs
+tmp-*.mjs
+
+# Local archival material
+archives/
+/NPM_PACKAGE_METADATA.md
+NFZ_BACKLOG_6.4.109-6.4.114.md
+CHANGELOG.md.bak
+CHANGELOG_v6.3.6.md
+NFZ_BACKLOG_6.4.115-6.4.118.md
+NUXT_MODULES_ISSUE_DRAFT.md

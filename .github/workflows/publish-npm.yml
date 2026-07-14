@@ -1,0 +1,62 @@
+name: Publish npm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NUXT_TELEMETRY_DISABLED: '1'
+  NODE_OPTIONS: --max-old-space-size=4096
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Validate and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.6
+
+      - name: Use an npm CLI supporting trusted publishing
+        run: npm install --global npm@^11.15.0
+
+      - name: Verify tag and package version
+        run: bun run release:tag:check
+
+      - name: Verify version is not already published
+        run: bun run release:check:registry
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run full release validation
+        run: bun run release:check:full
+
+      - name: Build the immutable release tarball
+        run: bun run release:pack
+
+      - name: Publish the validated tarball through npm trusted publishing
+        run: node scripts/publish-release.mjs

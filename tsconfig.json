@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.mts",
+    "src/**/*.cts",
+    "bin/**/*",
+    "scripts/**/*.ts",
+    "types/**/*.d.ts",
+    "test/**/*.ts",
+    "examples/**/*.ts",
+    "nuxt.config.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    ".nuxt",
+    "playground/.nuxt",
+    "playground",
+    "docs"
+  ]
+}
