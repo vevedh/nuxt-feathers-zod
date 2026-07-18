@@ -79,4 +79,4 @@ bunx nuxt-feathers-zod capabilities --section all --json
 
 The command exposes modes, transports, NFZ services, composables, and authentication events implemented by the installed package version.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

@@ -116,4 +116,4 @@ console: {
 
 Les routes de compatibilité peuvent être laissées actives pendant une migration, puis désactivées une fois tous les appels remplacés par `useBuilderClient()` ou `client.service(...)`.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

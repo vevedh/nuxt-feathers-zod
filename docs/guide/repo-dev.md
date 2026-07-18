@@ -80,7 +80,7 @@ Avant publication, `bun run docs:build` doit passer sans lien mort. Les liens in
 - [Workflow communautaire](./community-workflow)
 - [Référence CLI](/reference/cli)
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->
 
 ## Nettoyer un ancien index Git
 

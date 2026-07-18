@@ -61,4 +61,4 @@ La cohérence est contrôlée entre quatre surfaces :
 
 Les références CLI sont générées depuis l’arbre de commandes. Un contrôle de cohérence vérifie aussi les options du module, les services NFZ, les composables, les événements et les routes du playground.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

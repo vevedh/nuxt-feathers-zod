@@ -1,6 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ ssr: false })
-
 type CheckStatus = 'idle' | 'running' | 'success' | 'warning' | 'error' | 'skipped'
 type CheckId = 'client' | 'runtime' | 'services' | 'auth' | 'service' | 'mongo'
 
@@ -36,6 +34,9 @@ const flags = computed(() => (config.public as Record<string, any>)?.nfzPlaygrou
 const moduleVersion = computed(() => String(flags.value.moduleVersion || 'dev'))
 const authProvider = computed(() => auth.provider.value || 'none')
 const isAuthenticated = computed(() => auth.isAuthenticated.value)
+const sessionUiReady = ref(false)
+const displayAuthenticated = computed(() => sessionUiReady.value && isAuthenticated.value)
+const displayAuthProvider = computed(() => sessionUiReady.value ? authProvider.value : 'initialisation')
 const isLocal = computed(() => authProvider.value === 'local')
 const isKeycloak = computed(() => authProvider.value === 'keycloak')
 const localForm = reactive({ userId: 'test', password: '12345' })
@@ -221,8 +222,16 @@ async function logout() {
   }
 }
 
-onMounted(() => {
-  auth.init().catch(() => {})
+onMounted(async () => {
+  try {
+    await auth.init()
+  }
+  catch (error) {
+    authError.value = errorMessage(error)
+  }
+  finally {
+    sessionUiReady.value = true
+  }
 })
 </script>
 
@@ -254,8 +263,8 @@ onMounted(() => {
       </article>
       <article class="nfz-stat-card">
         <span>Session</span>
-        <strong>{{ isAuthenticated ? 'Authentifiée' : 'Anonyme' }}</strong>
-        <small>Fournisseur : {{ authProvider }}</small>
+        <strong>{{ !sessionUiReady ? 'Initialisation…' : (displayAuthenticated ? 'Authentifiée' : 'Anonyme') }}</strong>
+        <small>Fournisseur : {{ displayAuthProvider }}</small>
       </article>
     </div>
 
@@ -281,12 +290,22 @@ onMounted(() => {
         description="Utilisez la session locale de démonstration ou déclenchez le flux Keycloak configuré."
       >
         <div class="nfz-form-stack">
-          <div class="nfz-alert" :class="isAuthenticated ? 'nfz-alert--success' : ''">
-            <strong>{{ isAuthenticated ? 'Session active' : 'Session anonyme' }}</strong><br>
-            Provider : <code>{{ authProvider }}</code>
+          <div
+            v-if="!sessionUiReady"
+            class="nfz-alert"
+            aria-live="polite"
+          >
+            <strong>Initialisation de la session…</strong><br>
+            Synchronisation du runtime d’authentification.
           </div>
 
-          <form v-if="isLocal && !isAuthenticated" class="nfz-form-stack" @submit.prevent="loginLocal">
+          <template v-else>
+            <div class="nfz-alert" :class="displayAuthenticated ? 'nfz-alert--success' : ''">
+              <strong>{{ displayAuthenticated ? 'Session active' : 'Session anonyme' }}</strong><br>
+              Provider : <code>{{ displayAuthProvider }}</code>
+            </div>
+
+            <form v-if="isLocal && !displayAuthenticated" class="nfz-form-stack" @submit.prevent="loginLocal">
             <label>
               Identifiant
               <input v-model.trim="localForm.userId" autocomplete="username" required>
@@ -301,17 +320,18 @@ onMounted(() => {
             <small class="nfz-muted">Compte de démonstration : <code>test</code> / <code>12345</code></small>
           </form>
 
-          <div v-else-if="isKeycloak && !isAuthenticated" class="nfz-form-stack">
+          <div v-else-if="isKeycloak && !displayAuthenticated" class="nfz-form-stack">
             <p class="nfz-muted">Le flux SSO sera déclenché lors de l’ouverture d’une page protégée.</p>
             <NuxtLink to="/messages" class="nfz-button nfz-button--primary">Ouvrir une page protégée</NuxtLink>
           </div>
 
-          <div v-else-if="isAuthenticated" class="nfz-actions">
+          <div v-else-if="displayAuthenticated" class="nfz-actions">
             <NuxtLink to="/messages" class="nfz-button nfz-button--primary">Tester le CRUD protégé</NuxtLink>
             <button type="button" class="nfz-button nfz-button--danger" :disabled="authBusy" @click="logout">Se déconnecter</button>
           </div>
 
-          <p v-if="authError" class="nfz-alert nfz-alert--danger">{{ authError }}</p>
+            <p v-if="authError" class="nfz-alert nfz-alert--danger">{{ authError }}</p>
+          </template>
         </div>
       </PlaygroundPanel>
     </div>

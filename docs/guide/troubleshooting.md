@@ -94,4 +94,4 @@ const result = await service.find({
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

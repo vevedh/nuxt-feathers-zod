@@ -78,4 +78,4 @@ Never store an npm token in plain text in `.npmrc`, `.env`, a script or an archi
 - Node.js must satisfy `^22.12.0 || ^24.11.0 || >=26.0.0`;
 - the release tag must exactly match the version in `package.json`.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

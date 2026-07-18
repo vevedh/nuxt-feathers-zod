@@ -81,4 +81,4 @@ When `feathers.console.allowWrite` is `false`, write actions are disabled while 
 
 Playground pages must not call the deprecated `/api/nfz/**` facades. Those Nitro routes are optional 6.x compatibility adapters. The playground validates the canonical Feathers `nfz/*` API.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

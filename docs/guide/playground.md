@@ -100,4 +100,4 @@ L’écriture passe par `nfz/rbac.patch('current', payload)` uniquement si la co
 
 Les pages du playground ne doivent pas appeler les anciennes façades `/api/nfz/**`. Ces routes Nitro restent uniquement une compatibilité 6.x facultative. Le playground valide l’API canonique Feathers `nfz/*`.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

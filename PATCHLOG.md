@@ -1,3 +1,21 @@
+## 2026-07-14 — v6.5.49 Frontière d’hydratation auth compatible SSR
+
+- conservation du SSR du playground avec `ssr: true` ;
+- suppression du `routeRules['/'].ssr = false` redondant, le verrou local `sessionUiReady` garantissant déjà un premier rendu identique serveur/client ;
+- conservation de l’état neutre `Initialisation de la session…` jusqu’à la fin de `auth.init()` ;
+- remontée des erreurs d’initialisation auth dans `authError` au lieu d’un `catch {}` silencieux ;
+- renforcement du test de non-régression sur SSR, hydratation déterministe et visibilité des erreurs de bootstrap. ;
+- ajout du garde `sanity:auth-hydration` dans `prepack` et `release:check` ;
+- ciblage explicite du bloc `onMounted` dans le garde pour éviter qu’un handler de login ne masque une régression du bootstrap auth.
+
+## 2026-07-14 — v6.5.48 Hydratation déterministe de l’authentification du playground
+
+- le tableau de bord conserve une structure neutre pendant la restauration client de la session ;
+- l’état `Initialisation de la session…` est identique avant et pendant l’hydratation ;
+- les branches `Session active`, `Session anonyme`, formulaire local et actions protégées ne sont rendues qu’après disponibilité du runtime auth ;
+- la route `/` du playground utilise un vrai `routeRules['/'].ssr = false` au lieu de `definePageMeta({ ssr: false })` ;
+- ajout d’un test de non-régression sur la frontière d’hydratation.
+
 ## 2026-07-14 — v6.5.47 Nettoyage des artefacts de maintenance encore suivis par Git
 
 - le garde public reste strict lorsque des fichiers de maintenance sont réellement suivis dans l’index Git ;

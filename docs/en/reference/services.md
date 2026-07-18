@@ -52,4 +52,4 @@ Dangerous property names such as `__proto__`, `prototype`, and `constructor` are
 
 Deprecated `/api/nfz/**` routes are thin adapters to these Feathers services. They are not independent business APIs.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

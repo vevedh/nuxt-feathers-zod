@@ -80,7 +80,7 @@ Before publishing, `bun run docs:build` must pass without dead links. Internal l
 - [Community workflow](./community-workflow)
 - [CLI reference](/en/reference/cli)
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->
 
 ## Cleaning a legacy Git index
 

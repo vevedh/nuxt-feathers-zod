@@ -138,4 +138,4 @@ Pour une opération métier :
 2. utilisez `useBuilderClient()` pour les services NFZ de Builder/RBAC ;
 3. utilisez les helpers de requête HTTP uniquement lorsque le contrat cible n’est pas un service Feathers.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

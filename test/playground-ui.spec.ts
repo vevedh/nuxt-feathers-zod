@@ -35,6 +35,21 @@ describe('playground validation center', () => {
     expect(dashboard).toMatch(/client\.service\(['"]mongos['"]\)\.find/)
   })
 
+  it('keeps SSR and the auth dashboard deterministic during hydration', () => {
+    const config = read('playground/nuxt.config.ts')
+    const dashboard = read('playground/app/pages/index.vue')
+
+    expect(config).not.toMatch(/routeRules:\s*\{[\s\S]*['"]\/['"]:\s*\{\s*ssr:\s*false\s*\}/)
+    expect(config).toContain('ssr: true')
+    expect(dashboard).not.toContain('definePageMeta({ ssr: false })')
+    expect(dashboard).toContain('const sessionUiReady = ref(false)')
+    expect(dashboard).toContain('const displayAuthenticated = computed(() => sessionUiReady.value && isAuthenticated.value)')
+    expect(dashboard).toContain('v-if="!sessionUiReady"')
+    expect(dashboard).toContain('Initialisation de la session…')
+    expect(dashboard).toMatch(/onMounted\(async \(\) => \{[\s\S]*?await auth\.init\(\)[\s\S]*?catch \(error\) \{[\s\S]*?authError\.value = errorMessage\(error\)[\s\S]*?finally \{[\s\S]*?sessionUiReady\.value = true/)
+    expect(dashboard).toContain('displayAuthenticated ? \'Session active\' : \'Session anonyme\'')
+  })
+
   it('keeps technical payloads behind reusable JSON panels', () => {
     const testsPage = read('playground/app/pages/tests.vue')
     const jsonPanel = read('playground/app/components/PlaygroundJsonPanel.vue')

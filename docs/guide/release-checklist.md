@@ -71,4 +71,4 @@ Les guides FR/EN doivent décrire les mêmes contrats publics et les commandes C
 
 Voir [Publication npm & Git](./publishing).
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

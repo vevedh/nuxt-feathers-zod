@@ -57,4 +57,4 @@ New applications should disable the Nitro facades and use `useBuilderClient()` o
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

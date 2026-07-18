@@ -1,3 +1,19 @@
+## 6.5.49 - 2026-07-14 - SSR-preserving auth hydration boundary
+
+- Preserve SSR on the playground dashboard while keeping the auth UI structurally neutral until client session restoration completes.
+- Remove the redundant root `routeRules['/'].ssr = false` override introduced in 6.5.48.
+- Surface `auth.init()` failures through the existing authentication error panel instead of silently swallowing bootstrap errors.
+- Strengthen playground regression coverage for SSR retention, deterministic auth hydration and bootstrap error visibility.
+- Add `sanity:auth-hydration` to `prepack` and `release:check` so the SSR/auth boundary is enforced without requiring browser execution.
+- Scope the hydration guard to the dashboard `onMounted` bootstrap block so unrelated login error handlers cannot satisfy the invariant.
+
+## 6.5.48 - 2026-07-14 - Deterministic playground auth hydration
+
+- Keep the playground dashboard auth branch structurally stable until the client auth runtime has finished restoring the session.
+- Display a neutral session initialization state before exposing authenticated or anonymous UI.
+- Configure the dashboard route as client-rendered through Nuxt `routeRules` instead of relying on unsupported page metadata.
+- Add playground regression coverage for the hydration boundary and preserved Feathers auth behavior.
+
 ## 6.5.47 - 2026-07-14 - Tracked maintenance index cleanup
 
 - Keep `sanity:public-repository` strict when local maintenance artifacts are still tracked by Git.

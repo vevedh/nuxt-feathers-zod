@@ -68,4 +68,4 @@ Write methods also require `console.allowWrite: true`. Keep writes disabled in p
 
 The 6.x line can keep `/api/nfz/**` as deprecated compatibility facades. Those handlers only delegate to Feathers services. New applications should set `legacyNitroRoutes: false` and use `useBuilderClient()` or `client.service(...)`.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

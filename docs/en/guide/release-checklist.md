@@ -71,4 +71,4 @@ French and English guides must describe the same public contracts and the CLI co
 
 See [npm and GitHub publishing](./publishing).
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

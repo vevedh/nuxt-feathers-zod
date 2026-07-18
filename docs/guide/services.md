@@ -88,4 +88,4 @@ Aucune boucle HTTP vers la même application n’est nécessaire.
 - N’acceptez jamais un nom de service ou de champ non validé depuis une entrée utilisateur.
 - Exécutez `doctor` et `schema <service> --validate` avant une release.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

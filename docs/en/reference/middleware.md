@@ -58,4 +58,4 @@ export default defineNuxtRouteMiddleware(async () => {
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

@@ -44,4 +44,4 @@ These values are exported as `NFZ_AUTH_EVENT_TYPES` from `nuxt-feathers-zod/capa
 
 Use `useAuthTrace()` and `useAuthDiagnostics()` for safe diagnostics. The `/auth-runtime` playground page displays recent state without exposing full credentials or tokens.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->

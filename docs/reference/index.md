@@ -52,4 +52,4 @@ Nuxt 4
 
 Les routes Nitro métier ne sont pas le contrat principal du module. Les anciennes routes `/api/nfz/**` sont des façades de compatibilité désactivables avec `console.legacyNitroRoutes: false`.
 
-<!-- release-version: 6.5.47 -->
+<!-- release-version: 6.5.49 -->
