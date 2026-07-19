@@ -1,7 +1,14 @@
 import type { Application as FeathersBaseApplication, HookContext as FeathersBaseHookContext, NextFunction } from '@feathersjs/feathers'
 import type { NitroApp } from 'nitropack'
+import type { NfzPrincipal as NfzPrincipalType } from './auth/principal'
 
 export type { NextFunction }
+
+declare module '@feathersjs/feathers' {
+  interface Params {
+    principal?: NfzPrincipalType
+  }
+}
 
 export interface Configuration {
   framework?: 'express' | 'koa'
@@ -38,5 +45,6 @@ export function defineFeathersServerModule(def: FeathersServerModule): FeathersS
   return def
 }
 
+export type { NfzAuthenticationAssuranceLevel, NfzPrincipal } from './auth/principal'
 export { NFZ_CONSOLE_SERVICE_PATHS, registerNfzConsoleServices, resolveNfzConsoleServiceContext } from './server/console-services'
 export type { NfzConsoleRuntimeConfig, NfzConsoleServiceContext } from './server/console-services'

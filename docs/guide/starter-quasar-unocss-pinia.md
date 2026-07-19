@@ -7,10 +7,10 @@ Le starter `nfz-quasar-unocss-pinia-starter` est le modèle applicatif principal
 
 Il formalise un flux complet : **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + auth locale JWT + RBAC**.
 
-La référence fonctionnelle auditée est l’archive :
+La référence fonctionnelle auditée pour la release NFZ `6.6.0` est le dossier maintenu dans le dépôt :
 
 ```txt
-nfz-quasar-unocss-pinia-starter-6.5.26-mongodb-seed-fix-messages-auth.zip
+examples/nfz-quasar-unocss-pinia-starter
 ```
 
 Dans le dépôt du module, ce modèle est maintenu sous :

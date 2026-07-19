@@ -75,4 +75,4 @@ bunx nuxt-feathers-zod doctor
 
 Next: [Architecture](/en/reference/architecture), [Services](/en/reference/services), [Configuration](/en/reference/configuration), and [CLI](/en/reference/cli).
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

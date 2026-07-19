@@ -21,7 +21,16 @@ function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
 
-    const forbiddenExactPaths = new Set(['AGENTS.md', '.coderabbit.yaml', '.vscode/mcp.json'])
+    const forbiddenExactPaths = new Set([
+      'AGENTS.md',
+      'PATCHLOG.md',
+      'PRODUCTION_AUDIT.md',
+      'REPO_DEV.md',
+      'RELEASE_CHECKLIST.md',
+      'TODO.md',
+      '.coderabbit.yaml',
+      '.vscode/mcp.json',
+    ])
     const forbiddenPrefixes = ['ANALYSE_', 'VALIDATIONS_', 'INVENTAIRE_PATCH_', 'RELEASE_NOTES_', 'PATCH_', 'PROMPT_', 'CONTEXT_']
 
     return output
@@ -33,6 +42,7 @@ function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
         const fileName = segments.at(-1) || ''
         return forbiddenExactPaths.has(file)
           || segments.includes('patch-memory')
+          || segments.includes('docs-private')
           || forbiddenPrefixes.some(prefix => fileName.startsWith(prefix))
       })
       .sort()

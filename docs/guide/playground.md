@@ -1,103 +1,61 @@
----
-editLink: false
----
-# Playground de validation
+# Découvrir le module avec le playground
 
-Le dossier `playground/` est l’application de contrôle du dépôt. Il n’est pas distribué dans le tarball npm. Son rôle est de tester les fonctions essentielles du module contre le runtime réellement construit.
+Le playground est une application Nuxt complète qui montre les fonctions du module dans un navigateur. Utilisez-le pour comprendre un parcours avant de reproduire la configuration dans votre projet.
 
-## Démarrer le playground
+## Démarrer
 
-Sous Windows ou Linux :
+Depuis le dépôt source :
 
 ```bash
 bun install --frozen-lockfile
 bun run dev
 ```
 
-Build sans démarrage de MongoDB mémoire :
+Ouvrez ensuite l’adresse affichée par Nuxt.
 
-```bash
-bun run playground:build
-```
+## Tableau de bord
 
-Le build désactive MongoDB mémoire par défaut afin de rester déterministe. Le mode développement conserve le scénario mémoire.
+Le tableau de bord contrôle la configuration Nuxt, le client Feathers, un service public, l’authentification, un service protégé et l’hydratation SSR.
 
-## Parcours principal
+![Contrôles rapides du playground](/images/guides/playwright/playwright-dashboard.png)
 
-| Route | Validation |
-|---|---|
-| `/` | état général, client Feathers, runtime NFZ, services et MongoDB |
-| `/tests` | connexion, services et authentification |
-| `/validation` | matrice des scénarios embedded, remote, REST, Socket.IO et SSO |
+Le bouton **Lancer les contrôles rapides** ne modifie aucune donnée persistante.
 
-## Fonctions métier
+## Diagnostic de connexion et de session
 
-| Route | Validation |
-|---|---|
-| `/messages` | CRUD Feathers protégé |
-| `/actions` | méthode personnalisée `actions.run()` |
-| `/mongo` | client MongoDB Management |
-| `/builder` | découverte, schémas Zod, manifeste et preview Builder |
+La page **Tests essentiels** vérifie d’abord un service, puis une session locale. Elle affiche le résultat utile pour diagnostiquer un problème de transport ou d’authentification.
 
-## Runtime et transports
+![Diagnostic des services et de l’authentification](/images/guides/playwright/playwright-diagnostics.png)
 
-| Route | Validation |
-|---|---|
-| `/auth-runtime` | statut, trace et événements d’authentification |
-| `/embedded` | backend Feathers embarqué |
-| `/remote/rest` | accès REST distant |
-| `/remote/socketio` | accès Socket.IO, temps réel et reconnexion |
-| `/middleware` | ordre des modules, plugins, services et hooks |
+## Parcours utiles
 
-## Outils avancés
+Chaque route correspond à un écran réel du playground. Les pages de diagnostic restent accessibles sans session ; les pages métier protégées demandent une authentification lorsque leur scénario l’exige.
 
-| Route | Validation |
-|---|---|
-| `/ldapusers` | service distant déclaré |
-| `/mongos` | lecture directe d’un service Feathers et disponibilité de Pinia |
-| `/console/builder` | Console Builder Feathers-first |
-| `/console/rbac` | lecture et édition contrôlée des politiques RBAC |
+| Route | Page | Ce que vous pouvez tester |
+|---|---|---|
+| `/` | Tableau de bord | état général et contrôles rapides |
+| `/tests` | Tests essentiels | service, session locale et token |
+| `/validation` | Validation Zod | schémas et erreurs de validation |
+| `/messages` | Messages | CRUD Feathers protégé |
+| `/actions` | Actions | méthode personnalisée de service |
+| `/mongo` | MongoDB | diagnostic de connexion et administration lorsque MongoDB est activé |
+| `/builder` | Builder | aperçu des fonctions de génération |
+| `/auth-runtime` | Authentification | principal, événements et provider |
+| `/embedded` | Mode embedded | backend Feathers intégré à Nuxt |
+| `/remote/rest` | REST distant | connexion HTTP à une API distante |
+| `/remote/socketio` | Socket.IO distant | transport temps réel et reconnexion |
+| `/middleware` | Middleware serveur | ordre des modules, plugins et services |
+| `/ldapusers` | Service distant | exemple de service ldapusers |
+| `/mongos` | Service mongos | lecture Feathers et état Pinia |
+| `/console/builder` | Console Builder | console de génération NFZ |
+| `/console/rbac` | Console RBAC | rôles et capacités |
 
-## Service `mongos`
+## Captures fiables
 
-La page `/mongos` vérifie deux contrats séparés :
+Les images de cette documentation sont produites par les scénarios Playwright du playground. Une capture n’est mise à jour qu’après la réussite des assertions fonctionnelles associées.
 
-- `useService('mongos')` retourne le service Feathers typé et les lectures utilisent directement `find()` ;
-- `useNfzPinia()` indique si l’instance Pinia de l’application est disponible pour les stores métier explicites.
+## Données de démonstration
 
-Le runtime client standard ne transforme pas les services Feathers en stores et n’expose pas `useFind()`, `useGet()` ou d’autres méthodes de store historiques.
+Le playground utilise uniquement des identités et secrets de test. Ne recopiez jamais ces valeurs dans un environnement de production.
 
-## Console Builder
-
-La Console Builder utilise exclusivement `useBuilderClient()` :
-
-```ts
-const builder = useBuilderClient()
-
-const discovery = await builder.getServices()
-const schema = await builder.getSchema('users')
-const preview = await builder.preview({
-  service: 'users',
-  fields: schema.fields,
-})
-```
-
-Les services sont découverts via `nfz/services.find()`. La page normalise les entrées `{ name, source }`, sélectionne un service et charge son schéma avec `nfz/schemas.get()`.
-
-Lorsque `feathers.console.allowWrite` vaut `false`, les actions d’écriture sont désactivées. Les previews et diagnostics restent disponibles.
-
-## Console RBAC
-
-La page `/console/rbac` lit :
-
-- `nfz/status.find()` ;
-- `nfz/rbac.get('current')` ;
-- `nfz/services.find()`.
-
-L’écriture passe par `nfz/rbac.patch('current', payload)` uniquement si la console autorise les écritures.
-
-## Règle de cohérence
-
-Les pages du playground ne doivent pas appeler les anciennes façades `/api/nfz/**`. Ces routes Nitro restent uniquement une compatibilité 6.x facultative. Le playground valide l’API canonique Feathers `nfz/*`.
-
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

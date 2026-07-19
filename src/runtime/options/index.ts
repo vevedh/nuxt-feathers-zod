@@ -265,6 +265,22 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
   }
 }
 
+function toPublicAuthProviders(auth: ResolvedAuthOptions): PublicAuthOptions['providers'] {
+  return Object.fromEntries(Object.entries(auth.providers).map(([name, provider]) => {
+    const publicProvider = {
+      type: String(provider.type || name),
+      enabled: provider.enabled !== false,
+      parse: provider.parse ?? ['jwt', 'oidc', 'api-key'].includes(String(provider.type || name)),
+      issueAccessToken: provider.issueAccessToken ?? (provider.type !== 'api-key'),
+      assuranceLevel: provider.assuranceLevel,
+      ...('issuer' in provider && typeof provider.issuer === 'string' ? { issuer: provider.issuer } : {}),
+      ...('audience' in provider && provider.audience ? { audience: provider.audience } : {}),
+      ...('header' in provider && typeof provider.header === 'string' ? { header: provider.header } : {}),
+    }
+    return [name, publicProvider]
+  }))
+}
+
 export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPublicRuntimeConfig {
   const mongoManagement = options.database?.mongo?.management
   const mongoManagementPublic = mongoManagement
@@ -290,7 +306,9 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
     auth: options.auth
       ? {
           authStrategies: options.auth.authStrategies,
-          servicePath: options.auth.service,
+          parseStrategies: options.auth.parseStrategies,
+          providers: toPublicAuthProviders(options.auth),
+          servicePath: options.auth.authenticationService,
           entityKey: options.auth.entity,
           entityClass: options.auth.entityClass,
           client: options.auth.client || {},

@@ -75,4 +75,4 @@ bunx nuxt-feathers-zod doctor
 
 The `capabilities --json` command exposes implemented modes, transports, NFZ services, composables, and authentication events. The repository coherence gate compares this matrix with the runtime, playground, and documentation.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

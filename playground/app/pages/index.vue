@@ -92,6 +92,10 @@ async function runRuntimeCheck() {
     updateCheck('runtime', response?.ok ? 'success' : 'warning', `État serveur : ${response?.state || 'inconnu'}.`)
   }
   catch (error) {
+    if (isAccessError(error)) {
+      updateCheck('runtime', 'warning', 'Diagnostic serveur protégé : ouvrez une session pour afficher son état détaillé.')
+      return
+    }
     updateCheck('runtime', 'error', errorMessage(error))
   }
 }
@@ -104,6 +108,10 @@ async function runServicesCheck() {
     updateCheck('services', count > 0 ? 'success' : 'warning', `${count} service(s) découvert(s).`)
   }
   catch (error) {
+    if (isAccessError(error)) {
+      updateCheck('services', 'warning', 'Découverte des services protégée : authentification requise.')
+      return
+    }
     updateCheck('services', 'error', errorMessage(error))
   }
 }

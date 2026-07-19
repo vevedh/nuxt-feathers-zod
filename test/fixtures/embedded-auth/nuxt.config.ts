@@ -7,6 +7,11 @@ export default defineNuxtConfig({
   modules: [modulePath],
   devtools: { enabled: false },
   ssr: true,
+  nitro: {
+    externals: {
+      inline: ['zod'],
+    },
+  },
   feathers: {
     auth: {
       service: 'e2e-accounts',

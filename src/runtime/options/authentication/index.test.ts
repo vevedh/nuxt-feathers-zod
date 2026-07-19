@@ -1,7 +1,6 @@
 import type { Import } from 'unimport'
 import type { AuthStrategies } from './index'
 import { createResolver } from '@nuxt/kit'
-import { digest } from 'ohash'
 import { describe, expect, it } from 'vitest'
 import { getAuthClientDefaults } from './client'
 import { getAuthDefaults, resolveAuthOptions } from './index'
@@ -10,84 +9,122 @@ import { authLocalDefaults } from './local'
 
 describe('resolveAuthOptions', () => {
   const servicesDir = createResolver(import.meta.url).resolve('../../../../services')
-
   const servicesResolver = createResolver(servicesDir)
-
   const UserImport: Import = {
     as: 'User',
     from: servicesResolver.resolve('users', 'users.schema.ts'),
     name: 'User',
   }
-
   const appDir = import.meta.url
   const servicesImports = [UserImport]
-  const secret = digest(appDir)
 
-  it('should resolve authDefaults with client if auth and client are true', () => {
-    const auth = true
-
-    const result = resolveAuthOptions(auth, { client: true, mode: 'embedded' }, servicesImports, appDir)
+  it('resolves legacy defaults through the provider registry', () => {
+    const result = resolveAuthOptions(true, { client: true, mode: 'embedded' }, servicesImports, appDir)
     expect(result).toEqual({
       ...getAuthDefaults(appDir),
       entityImport: UserImport,
-      client: getAuthClientDefaults(['jwt']),
+      client: getAuthClientDefaults(['local', 'jwt']),
     })
+    expect(result && result.providers).toMatchObject({
+      local: { type: 'local', parse: false },
+      jwt: { type: 'jwt', parse: true },
+    })
+    expect(result && result.parseStrategies).toEqual(['jwt'])
+    expect(result && result.secret).toBeUndefined()
   })
 
-  it('should resolve authDefaults without client if auth is true and client is false', () => {
-    const auth = true
-
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
+  it('resolves auth defaults without client when client is disabled', () => {
+    const result = resolveAuthOptions(true, { client: false, mode: 'embedded' }, servicesImports, appDir)
     expect(result).toEqual({
       ...getAuthDefaults(appDir),
       entityImport: UserImport,
     })
   })
 
-  it('should resolve local if authStrategies has local', () => {
+  it('preserves legacy local-only configuration', () => {
     const authStrategies: AuthStrategies = ['local']
-    const auth = {
-      authStrategies,
-    }
-
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
+    const result = resolveAuthOptions({ authStrategies }, { client: false, mode: 'embedded' }, servicesImports, appDir)
     expect(result).toMatchObject({
       authStrategies,
+      parseStrategies: [],
       local: authLocalDefaults,
+      providers: { local: { type: 'local' } },
     })
   })
 
-  it('should resolve jwtOptions if authStrategies has jwt', () => {
+  it('preserves legacy jwt-only configuration', () => {
     const authStrategies: AuthStrategies = ['jwt']
-    const auth = {
-      authStrategies,
-    }
-
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
+    const result = resolveAuthOptions({ authStrategies }, { client: false, mode: 'embedded' }, servicesImports, appDir)
     expect(result).toMatchObject({
       authStrategies,
+      parseStrategies: ['jwt'],
       jwtOptions: authJwtDefaults,
+      providers: { jwt: { type: 'jwt' } },
     })
   })
 
-  it('should resolve false if auth is false', () => {
-    const auth = false
+  it('derives enabled strategies from declarative providers', () => {
+    const result = resolveAuthOptions({
+      providers: {
+        enterprise: {
+          type: 'oidc',
+          issuer: 'https://identity.example.test/realms/main',
+          audience: 'web',
+        },
+        automation: {
+          type: 'api-key',
+          keys: [],
+          issueAccessToken: false,
+        },
+      },
+    }, { client: false, mode: 'embedded' }, servicesImports, appDir)
 
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
-    expect(result).toEqual(false)
+    expect(result && result.authStrategies).toEqual(['enterprise', 'automation', 'jwt'])
+    expect(result && result.parseStrategies).toEqual(['enterprise', 'automation', 'jwt'])
+    expect(result && result.jwtOptions).toEqual(authJwtDefaults)
+    expect(result && result.local).toBeUndefined()
   })
 
-  it('should degrade to false during prepare/postinstall when embedded auth has no detected services', () => {
-    const auth = true
+  it('does not add a JWT verifier for an API-key-only provider that does not issue NFZ tokens', () => {
+    const result = resolveAuthOptions({
+      providers: {
+        automation: {
+          type: 'api-key',
+          keys: [],
+          issueAccessToken: false,
+        },
+      },
+    }, { client: false, mode: 'embedded' }, servicesImports, appDir)
+
+    expect(result && result.authStrategies).toEqual(['automation'])
+    expect(result && result.parseStrategies).toEqual(['automation'])
+    expect(result && result.jwtOptions).toBeUndefined()
+  })
+
+  it('keeps external providers before jwt in parse order', () => {
+    const result = resolveAuthOptions({
+      providers: {
+        jwt: { type: 'jwt' },
+        enterprise: {
+          type: 'oidc',
+          issuer: 'https://identity.example.test',
+          audience: 'web',
+        },
+      },
+    }, { client: false, mode: 'embedded' }, servicesImports, appDir)
+
+    expect(result && result.parseStrategies).toEqual(['enterprise', 'jwt'])
+  })
+
+  it('resolves false if auth is disabled', () => {
+    expect(resolveAuthOptions(false, { client: false, mode: 'embedded' }, servicesImports, appDir)).toEqual(false)
+  })
+
+  it('degrades to false during prepare when embedded auth has no detected services', () => {
     const previous = process.env.npm_lifecycle_event
     process.env.npm_lifecycle_event = 'postinstall'
     try {
-      const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, [], appDir)
-      expect(result).toEqual(false)
+      expect(resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toEqual(false)
     }
     finally {
       if (previous == null)
@@ -97,12 +134,11 @@ describe('resolveAuthOptions', () => {
     }
   })
 
-  it('should stay strict outside prepare/postinstall when embedded auth has no detected services', () => {
-    const auth = true
+  it('stays strict outside prepare when embedded auth has no detected services', () => {
     const previous = process.env.npm_lifecycle_event
     delete process.env.npm_lifecycle_event
     try {
-      expect(() => resolveAuthOptions(auth, { client: false, mode: 'embedded' }, [], appDir)).toThrow(/no service schemas were detected/i)
+      expect(() => resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toThrow(/no service schemas were detected/i)
     }
     finally {
       if (previous == null)
@@ -112,39 +148,17 @@ describe('resolveAuthOptions', () => {
     }
   })
 
-
-  it('preserves explicit authStrategies without reintroducing local defaults', () => {
-    const auth = {
-      authStrategies: ['jwt'] as AuthStrategies,
-      local: {
-        usernameField: 'userId',
-      },
-    }
-
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
-    expect(result).toMatchObject({
+  it('does not reintroduce local defaults when jwt is explicit', () => {
+    const result = resolveAuthOptions({
       authStrategies: ['jwt'],
-    })
-    expect((result as any)?.local).toBeUndefined()
+      local: { usernameField: 'userId' },
+    }, { client: false, mode: 'embedded' }, servicesImports, appDir)
+
+    expect(result).toMatchObject({ authStrategies: ['jwt'] })
+    expect(result && result.local).toBeUndefined()
   })
 
-
-  it('preserves explicit authStrategies without reintroducing jwt defaults', () => {
-    const auth = {
-      authStrategies: ['local'] as AuthStrategies,
-      secret,
-    }
-
-    const result = resolveAuthOptions(auth, { client: false, mode: 'embedded' }, servicesImports, appDir)
-
-    expect(result).toMatchObject({
-      authStrategies: ['local'],
-    })
-    expect((result as any)?.jwtOptions).toBeUndefined()
-  })
-
-  it('defaults local auth fields to userId/password for the current generated auth baseline', () => {
+  it('defaults local fields to userId/password', () => {
     expect(authLocalDefaults).toMatchObject({
       usernameField: 'userId',
       passwordField: 'password',
@@ -152,5 +166,4 @@ describe('resolveAuthOptions', () => {
       entityPasswordField: 'password',
     })
   })
-
 })

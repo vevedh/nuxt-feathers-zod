@@ -298,4 +298,69 @@ describe('resolvePublicRuntimeConfig', () => {
     expect(pub.builder?.routes).toEqual([])
   })
 
+
+  it('publishes provider metadata without exposing authentication secrets', () => {
+    const pub = resolvePublicRuntimeConfig({
+      auth: {
+        authStrategies: ['enterprise', 'automation', 'jwt'],
+        parseStrategies: ['enterprise', 'automation', 'jwt'],
+        authenticationService: 'authentication',
+        entity: 'user',
+        entityClass: 'User',
+        entityImport: { as: 'User', from: '/virtual/users.schema', name: 'User' },
+        providers: {
+          enterprise: {
+            type: 'oidc',
+            issuer: 'https://identity.example.test/realms/main',
+            audience: 'nfz-web',
+          },
+          automation: {
+            type: 'api-key',
+            pepper: 'server-only-pepper',
+            keys: [{
+              id: 'release-bot',
+              subject: 'service:release-bot',
+              hash: 'f'.repeat(43),
+            }],
+          },
+          jwt: { type: 'jwt' },
+        },
+        keys: {
+          mode: 'asymmetric',
+          privateKey: 'PRIVATE-KEY-MUST-NOT-LEAK',
+          publicKey: 'PUBLIC-KEY-MUST-NOT-LEAK',
+        },
+        client: {},
+      },
+      servicesDirs: [],
+      transports: { rest: false, websocket: false },
+      database: {},
+      server: serverDefaults,
+      keycloak: false,
+      client: false,
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      devtools: false,
+      console: false,
+    } as any)
+
+    expect(pub.auth?.providers.enterprise).toMatchObject({
+      type: 'oidc',
+      issuer: 'https://identity.example.test/realms/main',
+      audience: 'nfz-web',
+    })
+    expect(pub.auth?.providers.automation).toMatchObject({
+      type: 'api-key',
+      issueAccessToken: false,
+    })
+
+    const serialized = JSON.stringify(pub)
+    expect(serialized).not.toContain('PRIVATE-KEY-MUST-NOT-LEAK')
+    expect(serialized).not.toContain('PUBLIC-KEY-MUST-NOT-LEAK')
+    expect(serialized).not.toContain('server-only-pepper')
+    expect(serialized).not.toContain('service:release-bot')
+    expect(serialized).not.toContain('ffffffffffffffff')
+  })
+
 })

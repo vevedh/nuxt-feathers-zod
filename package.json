@@ -1,9 +1,9 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.5.49",
+  "version": "6.6.0",
   "packageManager": "bun@1.3.6",
-  "description": "Nuxt module for FeathersJS v5 with embedded or remote mode, typed services, auth helpers and CLI-first generation.",
+  "description": "Nuxt 4 module for FeathersJS v5 with embedded or remote mode, Zod-first services, extensible authentication providers and typed runtime helpers.",
   "author": "Herve de CHAVIGNY",
   "license": "MIT",
   "repository": {
@@ -34,6 +34,14 @@
     "./server-keycloak": {
       "types": "./dist/runtime/server/keycloak.d.ts",
       "import": "./dist/runtime/server/keycloak.js"
+    },
+    "./server-auth": {
+      "types": "./dist/runtime/server/authentication.d.ts",
+      "import": "./dist/runtime/server/authentication.js"
+    },
+    "./auth": {
+      "types": "./dist/runtime/auth/index.d.ts",
+      "import": "./dist/runtime/auth/index.js"
     },
     "./client": {
       "types": "./dist/runtime/client.d.ts",
@@ -157,6 +165,12 @@
       "server-keycloak": [
         "./dist/runtime/server/keycloak.d.ts"
       ],
+      "server-auth": [
+        "./dist/runtime/server/authentication.d.ts"
+      ],
+      "auth": [
+        "./dist/runtime/auth/index.d.ts"
+      ],
       "client": [
         "./dist/runtime/client.d.ts"
       ],
@@ -240,7 +254,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prepack": "bun run sync:release-meta && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:windows-tooling && bun run sanity:auth-hydration && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run build && bun run sanity:package-exports",
+    "prepack": "bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:windows-tooling && bun run sanity:playwright && bun run sanity:auth-hydration && bun run sanity:auth-security && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run build && bun run sanity:package-exports",
     "dev": "node scripts/run-playground.mjs dev",
     "dev:fresh": "bun install --frozen-lockfile && bun run clean:repo && bun run typecheck && node scripts/run-playground.mjs dev",
     "cleanup": "bun run clean:repo",
@@ -255,12 +269,12 @@
     "test": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:e2e": "node scripts/run-e2e-tests.mjs",
     "smoke:tarball": "node scripts/smoke-tarball-install.mjs",
-    "release:check:full": "bun run release:check && bun run test:e2e && bun run smoke:tarball",
+    "release:check:full": "bun run release:check && bun run test:playwright && bun run smoke:tarball",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "cli:smoke": "bun scripts/cli-smoke.ts",
     "publish:npm": "bun run release:prepare:publish && node scripts/publish-release.mjs",
-    "release:check": "bun run sync:release-meta && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:auth-hydration && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun pm pack --dry-run && bun run sanity:package-exports",
+    "release:check": "bun run sync:release-meta && bun run sanity:version-coherence && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:playwright && bun run sanity:auth-hydration && bun run sanity:auth-security && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun pm pack --dry-run && bun run sanity:package-exports",
     "release": "bunx release-it",
     "release:patch": "bunx release-it patch",
     "release:minor": "bunx release-it minor",
@@ -277,9 +291,9 @@
     "sanity:release-meta": "node scripts/check-release-metadata.mjs",
     "sync:release-meta": "node scripts/sync-release-metadata.mjs",
     "sanity:release-files": "node scripts/check-release-files.mjs",
-    "clean:repo": "node scripts/cleanup-safe.mjs",
+    "clean:repo": "node scripts/cleanup-safe.mjs && node scripts/clean-tracked-maintenance.mjs --if-git",
     "sanity:file-service-template": "node scripts/check-file-service-template.mjs",
-    "repo:doctor": "bun run clean:repo && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:file-service-template",
+    "repo:doctor": "bun run clean:repo && bun run sanity:version-coherence && bun run sanity:release-files && bun run sanity:internal-imports && bun run sanity:file-service-template && bun run sanity:playwright && bun run docs:check-boundary",
     "sanity:cli-dist-meta": "node scripts/check-cli-dist-meta.mjs",
     "repo:bootstrap": "bun install && bun run repo:doctor",
     "docs:check-frontmatter": "node scripts/check-docs-frontmatter.mjs",
@@ -298,7 +312,7 @@
     "verify:typecheck": "bun run typecheck",
     "verify:test": "bun run test",
     "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
-    "verify:sanity": "bun run sanity:release-meta && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
+    "verify:sanity": "bun run sanity:auth-security && bun run sanity:release-meta && bun run sanity:version-coherence && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:playwright && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
     "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
     "verify:full": "bun run verify:install && bun run verify:all",
     "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
@@ -325,11 +339,25 @@
     "docs:sync-technical": "bun scripts/sync-technical-docs.ts",
     "sanity:project-coherence": "bun scripts/check-project-coherence.ts",
     "docs:check-links": "node scripts/check-docs-links.mjs",
-    "prepare:project": "bun run sync:release-meta && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link",
+    "prepare:project": "bun run repo:clean-maintenance-index:if-git && bun run sanity:auth-security && bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run sanity:playwright && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link && bun run docs:check-boundary",
     "sanity:public-repository": "node scripts/check-public-repository.mjs",
     "sanity:starter-security": "node scripts/check-starter-security.mjs",
     "repo:clean-maintenance-index": "node scripts/clean-tracked-maintenance.mjs",
-    "sanity:auth-hydration": "node scripts/check-playground-auth-hydration.mjs"
+    "sanity:auth-hydration": "node scripts/check-playground-auth-hydration.mjs",
+    "sanity:version-coherence": "node scripts/check-version-coherence.mjs",
+    "sanity:auth-security": "node scripts/check-auth-security-foundation.mjs",
+    "test:playwright": "node scripts/run-playwright-tests.mjs",
+    "playwright:install": "node scripts/run-playwright-tests.mjs --install-browser",
+    "docs:screenshots": "node scripts/run-playwright-tests.mjs --update-doc-screenshots --grep @docs",
+    "verify:browser": "bun run test:playwright",
+    "sanity:playwright": "node scripts/check-playwright-foundation.mjs",
+    "playwright:install:ci": "node scripts/run-playwright-tests.mjs --install-browser --with-deps",
+    "docs:check-boundary": "node scripts/check-documentation-boundary.mjs",
+    "docs:private:dev": "cd docs-private && bun install && bunx vitepress dev . --host",
+    "docs:private:build": "cd docs-private && bun install --frozen-lockfile && bunx vitepress build .",
+    "docs:private:preview": "cd docs-private && bun install && bunx vitepress preview .",
+    "verify:private-docs": "node scripts/check-documentation-boundary.mjs --require-private && bun run docs:private:build",
+    "repo:clean-maintenance-index:if-git": "node scripts/clean-tracked-maintenance.mjs --if-git"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0",

@@ -8,8 +8,6 @@ const requiredFiles = [
   'README_fr.md',
   'CHANGELOG.md',
   'CONTRIBUTING.md',
-  'RELEASE_CHECKLIST.md',
-  'REPO_DEV.md',
   'docs/.vitepress/theme/index.ts',
   'docs/.vitepress/theme/style.css',
   'docs/.vitepress/theme/components/BrandTitle.vue',

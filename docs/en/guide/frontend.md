@@ -1,61 +1,93 @@
----
-editLink: false
----
-# Frontend usage
+# Use services from Vue
 
-This page documents the frontend composables (`useService`, `useFeathers`, `useProtectedService`, `useAuth`), its configuration contract and the recommended usage pattern for application developers.
+The module injects a Feathers client into your Nuxt application. You can call a service from a page, component, composable, or Pinia store.
 
-## Purpose
+## Read a list
 
-The frontend composables (`useservice`, `usefeathers`, `useprotectedservice`, `useauth`) helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
+```vue
+<script setup lang="ts">
+interface Message {
+  id: string
+  text: string
+  createdAt: string
+}
 
-## When to use this option
+const { $api } = useNuxtApp()
+const loading = ref(false)
+const messages = ref<Message[]>([])
 
-Use this page when you need to:
-
-- configure the frontend composables (`useService`, `useFeathers`, `useProtectedService`, `useAuth`);
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
-
-## Configuration example
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    client: { mode: 'embedded', pinia: true },
-    servicesDirs: ['services'],
+async function loadMessages(): Promise<void> {
+  loading.value = true
+  try {
+    const result = await $api.service('messages').find({
+      query: {
+        $limit: 20,
+        $sort: { createdAt: -1 },
+      },
+    })
+    messages.value = Array.isArray(result) ? result : result.data
   }
-})
+  finally {
+    loading.value = false
+  }
+}
+
+await loadMessages()
+</script>
+
+<template>
+  <p v-if="loading">Loading…</p>
+  <ul v-else>
+    <li v-for="message in messages" :key="message.id">
+      {{ message.text }}
+    </li>
+  </ul>
+</template>
 ```
 
-## CLI example
-
-```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod --force
-```
-
-## Runtime example
+## Create data
 
 ```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
-  },
+await $api.service('messages').create({
+  text: 'Hello from Nuxt',
 })
 ```
 
-## Practical advice
+The server validates the payload with the service schema. Browser form validation is not a security boundary.
 
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
+## Listen to events
 
-<!-- release-version: 6.5.49 -->
+```ts
+const service = $api.service('messages')
+
+function onCreated(message: Message): void {
+  messages.value.unshift(message)
+}
+
+onMounted(() => service.on('created', onCreated))
+onBeforeUnmount(() => service.off('created', onCreated))
+```
+
+## Use authentication
+
+```ts
+const auth = useAuth()
+
+await auth.login({
+  strategy: 'local',
+  email: 'developer@example.test',
+  password: 'test-password',
+})
+```
+
+Use the generated session middleware for protected pages, or check `auth.isAuthenticated` before rendering a sensitive action.
+
+## Good practices
+
+- Type the data returned by each service.
+- Bound queries with `$limit`, `$select`, and validated filters.
+- Remove Feathers listeners when a component unmounts.
+- Put repeated calls in a composable or Pinia store.
+- Show a simple user-facing error and keep technical diagnostics separate.
+
+<!-- release-version: 6.6.0 -->

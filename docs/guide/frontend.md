@@ -1,73 +1,43 @@
----
-editLink: false
----
-# Utilisation frontend
+# Utiliser les services dans Vue
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle des composables frontend (`useService`, `useFeathers`, `useProtectedService`, `useAuth`). Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
+Le module injecte un client Feathers dans l’application Nuxt. Vous pouvez appeler un service depuis une page, un composant, un composable ou un store Pinia.
 
-## Objectif
-
-Les composables frontend (`useService`, `useFeathers`, `useProtectedService`, `useAuth`) permettent de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
-
-## Quand utiliser cette option ?
-
-Utilise cette page lorsque tu veux :
-
-- configurer précisément les composables frontend (`useService`, `useFeathers`, `useProtectedService`, `useAuth`) ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
-
-## Exemple de configuration
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    client: { mode: 'embedded', pinia: true },
-    servicesDirs: ['services'],
-  }
-})
-```
-
-## Exemple CLI
-
-```bash
-bunx nuxt-feathers-zod add service messages --adapter memory --schema zod --force
-```
-
-## Exemple d’utilisation
+## Lire une liste
 
 ```vue
 <script setup lang="ts">
 interface Message {
-  id: string | number
+  id: string
   text: string
+  createdAt: string
 }
 
-const messagesService = useService('messages')
+const { $api } = useNuxtApp()
+const loading = ref(false)
 const messages = ref<Message[]>([])
 
-async function loadMessages() {
-  const result = await messagesService.find({
-    query: { $limit: 20, $sort: { createdAt: -1 } },
-  })
-  messages.value = Array.isArray(result) ? result : result.data
+async function loadMessages(): Promise<void> {
+  loading.value = true
+  try {
+    const result = await $api.service('messages').find({
+      query: {
+        $limit: 20,
+        $sort: { createdAt: -1 },
+      },
+    })
+    messages.value = Array.isArray(result) ? result : result.data
+  }
+  finally {
+    loading.value = false
+  }
 }
 
-async function createMessage() {
-  await messagesService.create({ text: 'Bonjour depuis NFZ' })
-  await loadMessages()
-}
-
-onMounted(loadMessages)
+await loadMessages()
 </script>
 
 <template>
-  <button @click="createMessage">Créer un message</button>
-  <ul>
+  <p v-if="loading">Chargement…</p>
+  <ul v-else>
     <li v-for="message in messages" :key="message.id">
       {{ message.text }}
     </li>
@@ -75,17 +45,49 @@ onMounted(loadMessages)
 </template>
 ```
 
-## Points de vigilance
+## Créer une donnée
 
-- Les chemins exposés (`/feathers`, `/feathers/nfz/*`, `/socket.io`, `/mongo`) et les éventuelles façades `/api/nfz/*` doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
+```ts
+await $api.service('messages').create({
+  text: 'Bonjour depuis Nuxt',
+})
+```
+
+Le serveur valide la donnée avec le schéma du service. Ne faites pas confiance à la seule validation du formulaire navigateur.
+
+## Écouter les événements
+
+```ts
+const service = $api.service('messages')
+
+function onCreated(message: Message): void {
+  messages.value.unshift(message)
+}
+
+onMounted(() => service.on('created', onCreated))
+onBeforeUnmount(() => service.off('created', onCreated))
+```
+
+## Utiliser l’authentification
+
+```ts
+const auth = useAuth()
+
+await auth.login({
+  strategy: 'local',
+  email: 'developer@example.test',
+  password: 'mot-de-passe-de-test',
+})
+```
+
+Pour protéger une page, utilisez le middleware de session généré ou contrôlez `auth.isAuthenticated` avant d’afficher une fonction sensible.
 
 ## Bonnes pratiques
 
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
+- Typpez les données retournées par chaque service.
+- Limitez les requêtes avec `$limit`, `$select` et des filtres validés.
+- Nettoyez les listeners Feathers quand le composant est démonté.
+- Centralisez les appels répétés dans un composable ou un store Pinia.
+- Affichez un message utilisateur simple et journalisez séparément le diagnostic technique.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

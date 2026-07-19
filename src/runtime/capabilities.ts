@@ -46,7 +46,7 @@ export const NFZ_MODULE_CAPABILITIES = {
   schemaModes: ['none', 'zod', 'json'],
   serviceKinds: ['adapter', 'custom', 'file', 'remote'],
   adapters: ['memory', 'mongodb'],
-  authProviders: ['local', 'remote', 'keycloak', 'none'],
+  authProviders: ['jwt', 'local', 'oauth', 'oidc', 'api-key', 'custom', 'keycloak-bridge', 'remote', 'none'],
   consoleServices: [
     { key: 'services', path: NFZ_CONSOLE_SERVICE_PATHS.services, methods: ['find'], purpose: 'service discovery' },
     { key: 'schemas', path: NFZ_CONSOLE_SERVICE_PATHS.schemas, methods: ['find', 'get', 'patch'], purpose: 'schema inspection and synchronization' },
@@ -78,6 +78,7 @@ export const NFZ_MODULE_CAPABILITIES = {
     'useNfzPinia',
   ],
   clientHelpers: ['hasNfzPinia'],
+  serverHooks: ['authenticateNfz'],
   serverLifecycle: [
     'infrastructure',
     'modules:pre',

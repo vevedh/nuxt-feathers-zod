@@ -89,7 +89,7 @@ Le même contrat fonctionne avec le transport REST ou Socket.IO. Côté serveur,
 
 ## Authentification et sécurité
 
-Lorsque l’authentification locale est active, les services `nfz/*` appliquent le hook `authenticate('jwt')`. Avec le pont Keycloak, une identité résolue est également requise pour les appels externes.
+Les services `nfz/*` utilisent `authenticateNfz()` et acceptent les stratégies actives résolues par le registre. Le JWT interne reste disponible pour les sessions NFZ, tandis que les providers OIDC, Keycloak ou clé API peuvent produire le même `params.principal` normalisé selon leur configuration.
 
 Les entrées sont validées avant toute lecture ou écriture :
 
@@ -116,4 +116,4 @@ console: {
 
 Les routes de compatibilité peuvent être laissées actives pendant une migration, puis désactivées une fois tous les appels remplacés par `useBuilderClient()` ou `client.service(...)`.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

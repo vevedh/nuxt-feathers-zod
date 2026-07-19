@@ -97,10 +97,15 @@ export function nfzAuthorizeHook(opts) {
       return context
     }
 
+    const principalRoles = Array.isArray(context.params?.principal?.roles)
+      ? context.params.principal.roles.map(String)
+      : []
     const user = context.params?.user
-    const roles = opts.provider === 'keycloak'
-      ? extractRolesKeycloak(user, opts.keycloakClientId || '${keycloakClientId}')
-      : extractRolesLocal(user)
+    const roles = principalRoles.length
+      ? principalRoles
+      : opts.provider === 'keycloak'
+        ? extractRolesKeycloak(user, opts.keycloakClientId || '${keycloakClientId}')
+        : extractRolesLocal(user)
 
     const allow = roles.some(r => required.includes(r))
     if (!allow) throw new Forbidden('Forbidden')

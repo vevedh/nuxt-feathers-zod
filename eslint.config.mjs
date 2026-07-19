@@ -16,6 +16,7 @@ export default withNuxt(
       '**/*.md',
       '**/*.mts',
       'docs/**',
+      'docs-private/**',
       'playground/**',
       'out.js',
       // Local scratch files generated during manual dist/runtime inspections.

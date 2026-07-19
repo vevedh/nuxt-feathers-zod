@@ -1,6 +1,9 @@
+import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { $fetch, setup } from '@nuxt/test-utils/e2e'
 import { describe, expect, it } from 'vitest'
+
+process.env.NFZ_AUTH_SECRET ||= randomBytes(48).toString('base64url')
 
 await setup({
   rootDir: fileURLToPath(new URL('../fixtures/embedded-auth', import.meta.url)),

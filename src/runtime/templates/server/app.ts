@@ -15,6 +15,7 @@ export function getServerAppContents(options: ResolvedOptions) {
     const sio = Boolean(transports?.websocket)
 
     const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
+    const parseStrategies = (options?.auth as DefaultAuthOptions)?.parseStrategies || authStrategies
     const auth = (authStrategies || []).length > 0
     const mongo = Boolean(options.database?.mongo)
 
@@ -65,7 +66,7 @@ ${put(options.loadFeathersConfig, `  app.configure(configuration())
 `)}  app.set('framework', '${framework}')
   app.configure(rest(${put(auth, `{
     authentication: {
-      strategies: ['${authStrategies?.join(`', '`)}'],
+      strategies: ${JSON.stringify(parseStrategies || [])},
     },
   }`)}))
 `)}

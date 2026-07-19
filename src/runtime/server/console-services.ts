@@ -4,9 +4,9 @@ import { spawn } from 'node:child_process'
 
 import { existsSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
-import { authenticate } from '@feathersjs/authentication'
 import { BadRequest, Forbidden, NotAuthenticated, NotFound } from '@feathersjs/errors'
 import { z } from 'zod'
+import { authenticateNfz } from '../auth/hook'
 import { NFZ_CONSOLE_SERVICE_PATHS } from '../capabilities'
 import { applyPlan, assertPresetId, computePlan, listPresets } from './presets'
 import { readRbacFile, writeRbacFile } from './rbac/rbacFile'
@@ -179,7 +179,7 @@ function assertWriteAllowed(context: NfzConsoleServiceContext): void {
 
 function requireResolvedUser() {
   return async (hook: any) => {
-    if (hook.params?.provider && !hook.params?.user)
+    if (hook.params?.provider && !hook.params?.principal && !hook.params?.user)
       throw new NotAuthenticated('Authentication is required for NFZ console services.')
     return hook
   }
@@ -192,9 +192,9 @@ function consoleAccessHooks(config: NfzConsoleRuntimeConfig): any[] {
 
   if (authEnabled) {
     const configured = config.auth && Array.isArray(config.auth.strategies)
-      ? config.auth.strategies.filter(strategy => strategy === 'jwt')
+      ? [...new Set(config.auth.strategies.map(strategy => String(strategy || '').trim()).filter(Boolean))]
       : []
-    hooks.push(authenticate(...((configured.length ? configured : ['jwt']) as [string, ...string[]])))
+    hooks.push(authenticateNfz(configured.length ? { strategies: configured } : {}))
   }
 
   if (keycloakEnabled)

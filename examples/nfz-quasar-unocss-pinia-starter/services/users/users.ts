@@ -1,6 +1,6 @@
 import type { Application } from 'nuxt-feathers-zod/server'
-import { authenticate } from '@feathersjs/authentication'
 import { hooks as schemaHooks } from '@feathersjs/schema'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { getOptions, UserService } from './users.class'
 import {
   userDataResolver,
@@ -29,12 +29,12 @@ export function user(app: Application) {
         schemaHooks.resolveExternal(userExternalResolver),
         schemaHooks.resolveResult(userResolver),
       ],
-      find: [authenticate('jwt')],
-      get: [authenticate('jwt')],
+      find: [authenticateNfz()],
+      get: [authenticateNfz()],
       create: [],
-      update: [authenticate('jwt')],
-      patch: [authenticate('jwt')],
-      remove: [authenticate('jwt')],
+      update: [authenticateNfz()],
+      patch: [authenticateNfz()],
+      remove: [authenticateNfz()],
     },
     before: {
       all: [

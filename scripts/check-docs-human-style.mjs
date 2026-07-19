@@ -9,8 +9,6 @@ const explicitFiles = [
   'README.md',
   'README_fr.md',
   'CONTRIBUTING.md',
-  'REPO_DEV.md',
-  'RELEASE_CHECKLIST.md',
 ].map(path => resolve(rootDir, path))
 const skippedDirs = new Set(['.git', '.vitepress/cache', '.nuxt', '.output', 'dist', 'node_modules'])
 const allowedExtensions = new Set(['.md', '.mdx'])

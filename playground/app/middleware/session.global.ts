@@ -1,17 +1,10 @@
-export default defineNuxtRouteMiddleware(async (to) => {
+export default defineNuxtRouteMiddleware(async () => {
   if (import.meta.server)
     return
 
+  // Restore an existing session without making the entire playground private.
+  // Pages that require authentication declare the dedicated `auth` middleware.
   const auth = useAuthStore()
-
-  if (!auth.authenticated) {
-    await auth.reAuthenticate()
-  }
-
-  const publicRoutes = ['/']
-
-  if (!auth.authenticated || !auth.user) {
-    if (!publicRoutes.includes(to.path))
-      return navigateTo('/')
-  }
+  if (!auth.ready)
+    await auth.reAuthenticate().catch(() => undefined)
 })

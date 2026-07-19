@@ -18,7 +18,7 @@ const current = useCurrentLdapUser()
           </p>
 
           <QBanner class="bg-blue-1 text-blue-10 q-mb-md" rounded>
-            Modèle de référence : aucun proxy Nitro local. NFZ 6.5.30 appelle directement
+            Modèle de référence : aucun proxy Nitro local. NFZ 6.6.0 appelle directement
             le backend Feathers remote <code>/authentication</code>. Le backend doit donc gérer
             correctement CORS et <code>OPTIONS</code>. Keycloak reste 100 % client-only.
           </QBanner>

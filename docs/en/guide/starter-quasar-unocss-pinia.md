@@ -7,10 +7,10 @@ The `nfz-quasar-unocss-pinia-starter` starter is the recommended main applicatio
 
 It formalizes a complete flow: **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + local JWT auth + RBAC**.
 
-The audited working reference is:
+The audited working reference for NFZ release `6.6.0` is the maintained repository directory:
 
 ```txt
-nfz-quasar-unocss-pinia-starter-6.5.26-mongodb-seed-fix-messages-auth.zip
+examples/nfz-quasar-unocss-pinia-starter
 ```
 
 In the module repository, the maintained model lives under:

@@ -1,57 +1,38 @@
-# Documentation plan
+# Choose the right guide
 
-`nuxt-feathers-zod` integrates Feathers into Nitro or connects Nuxt to a remote Feathers API. Its application contract is **Feathers-first**: services, methods, events, hooks, and authentication rules belong to Feathers. Nitro hosts the runtime and provides Nuxt/H3 integration.
+This public documentation is for developers who install and use `nuxt-feathers-zod` in a Nuxt 4 application.
 
-## 1. Understand the core
+## I am starting a new project
 
-1. [Overview](/en/reference/)
-2. [Architecture](/en/reference/architecture)
-3. [Module process](/en/reference/module)
-4. [Embedded and remote modes](/en/guide/modes)
+1. [Install the module](/en/guide/getting-started).
+2. [Choose embedded or remote](/en/guide/modes).
+3. [Create a Feathers and Zod service](/en/guide/services).
+4. [Use the service from Vue](/en/guide/frontend).
 
-## 2. Build an application
+## I am adding authentication
 
-1. [Quick start](/en/guide/getting-started)
-2. [Feathers and Zod services](/en/guide/services)
-3. [Frontend usage](/en/guide/frontend)
-4. [Configuration](/en/reference/configuration)
-5. [CLI reference](/en/reference/cli)
+- [Authentication providers](/en/guide/authentication-providers).
+- [Local authentication and JWT](/en/guide/auth-local).
+- [Keycloak and OIDC](/en/guide/keycloak-sso).
+- [Authentication runtime reference](/en/reference/authentication).
 
-## 3. Secure access
+## I want a complete example
 
-- [Authentication](/en/reference/authentication)
-- [Local JWT auth](/en/guide/auth-local)
-- [Keycloak SSO](/en/guide/keycloak-sso)
-- [Authentication events](/en/reference/events)
+- [Playground](/en/guide/playground).
+- [Quasar starter](/en/guide/starter-quasar-unocss-pinia).
+- [Nuxt + Quasar business application](/en/guide/real-world-nuxt4-quasar-app).
 
-## 4. Validate the runtime
+## I am preparing production
 
-The [playground](/en/guide/playground) validates Feathers services, Zod schemas, authentication, MongoDB, REST, Socket.IO, Builder, and RBAC.
+- [Production deployment](/en/guide/production).
+- [Compatibility](/en/guide/compatibility-matrix).
+- [Known limits](/en/guide/known-limits).
+- [Troubleshooting](/en/guide/troubleshooting).
 
-```bash
-bunx nuxt-feathers-zod capabilities --section all --json
-bunx nuxt-feathers-zod doctor
-```
+## I need an option or method
 
-`capabilities` exposes what the installed version implements. `doctor` inspects the current project.
+Use the [reference](/en/reference/) for module options, services, client APIs, composables, events, and CLI commands.
 
-## 5. Operate and publish
+Package maintenance procedures, patch journals, and roadmap decisions are intentionally absent from this public site.
 
-- [Production](/en/guide/production)
-- [Compatibility matrix](/en/guide/compatibility-matrix)
-- [Known limits](/en/guide/known-limits)
-- [Troubleshooting](/en/guide/troubleshooting)
-- [Publishing](/en/guide/publishing)
-
-## Repository sources of truth
-
-| Surface | Source |
-|---|---|
-| Module capabilities | `src/runtime/capabilities.ts` |
-| CLI commands and flags | `createCliCommand()` command tree |
-| Nuxt/Feathers runtime | `src/module.ts`, `src/setup/`, `src/runtime/` |
-| Validation workflows | `playground/app/composables/usePlaygroundNavigation.ts` |
-
-The CLI reference is generated from the command tree. A repository coherence gate also checks module options, NFZ services, composables, events, and playground routes.
-
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

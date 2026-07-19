@@ -54,15 +54,11 @@ If your patch changes public behavior, also update:
 - the relevant `docs/guide/*` and `docs/en/guide/*` pages
 - `CHANGELOG.md`
 
-If your patch changes release or packaging behavior, also review:
-
-- `RELEASE_CHECKLIST.md`
-- `docs/guide/publishing.md`
-- `docs/en/guide/publishing.md`
+If your patch changes release or packaging behavior, run the complete release gate and describe the impact in the pull request. Maintainer-only release procedures are kept outside the public repository.
 
 ## Repository hygiene
 
-The repository root should stay focused on the public module. Historical maintainer notes and patch-era files belong in `archives/`.
+The repository root should stay focused on the public module. Maintainer notes, patch memory and private VitePress documentation must remain ignored by Git.
 
 ## Preferred patch style
 

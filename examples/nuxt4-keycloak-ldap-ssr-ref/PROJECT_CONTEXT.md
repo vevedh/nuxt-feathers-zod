@@ -2,7 +2,7 @@
 
 ## Objectif
 
-Version SSR du modèle Nuxt 4 + Keycloak + LDAP + NFZ 6.5.30.
+Version SSR du modèle Nuxt 4 + Keycloak + LDAP + NFZ 6.6.0.
 
 ## Architecture validée
 
@@ -10,7 +10,7 @@ Version SSR du modèle Nuxt 4 + Keycloak + LDAP + NFZ 6.5.30.
 - Quasar 2 via `nuxt-quasar-ui`.
 - UnoCSS.
 - Pinia.
-- NFZ 6.5.30 en mode `remote` direct vers le backend Feathers.
+- NFZ 6.6.0 en mode `remote` direct vers le backend Feathers.
 - Keycloak strictement côté client via `keycloak-js`.
 - LDAP strictement côté backend Feathers via stratégie `keycloak-ldap` / `sso-ldap`.
 - Aucun proxy Nitro `/api/keycloak-ldap`.

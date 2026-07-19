@@ -84,4 +84,4 @@ export default defineNuxtConfig({
 
 The native Feathers client avoids fragile CommonJS/ESM interoperability in the browser, keeps Nuxt 4 and Vite debugging straightforward, and separates transport concerns from application state.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

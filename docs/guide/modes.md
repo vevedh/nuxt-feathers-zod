@@ -73,4 +73,4 @@ Les services NFZ du Builder suivent le même principe avec `useBuilderClient()`.
 
 Le transport est une question d’accès. Le contrat métier reste un service Feathers.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

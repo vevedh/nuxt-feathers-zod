@@ -60,7 +60,7 @@ The contract works over REST, Socket.IO and direct server-side service calls.
 
 ## Authentication and writes
 
-When local authentication is enabled, external calls pass through `authenticate('jwt')`. Keycloak bridge calls require a resolved user as well. All input is validated before filesystem access.
+The `nfz/*` services use `authenticateNfz()` and accept the active strategies resolved by the provider registry. Internal JWT sessions remain supported, while OIDC, Keycloak or API-key providers can produce the same normalized `params.principal` according to configuration. All input is validated before filesystem access.
 
 Write methods also require `console.allowWrite: true`. Keep writes disabled in production unless the administration workflow explicitly needs them.
 
@@ -68,4 +68,4 @@ Write methods also require `console.allowWrite: true`. Keep writes disabled in p
 
 The 6.x line can keep `/api/nfz/**` as deprecated compatibility facades. Those handlers only delegate to Feathers services. New applications should set `legacyNitroRoutes: false` and use `useBuilderClient()` or `client.service(...)`.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

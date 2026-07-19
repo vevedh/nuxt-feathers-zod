@@ -2,7 +2,7 @@
 
 import type { Application as FeathersApplication } from '@feathersjs/feathers'
 import type { Application } from 'nuxt-feathers-zod/server'
-import { authenticate } from '@feathersjs/authentication'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 
 import { getOptions, SwaggerTestsService } from './swagger-tests.class'
@@ -62,11 +62,11 @@ export function swaggerTests(app: Application) {
     },
     before: {
       all: [schemaHooks.validateQuery(swaggerTestsQueryValidator), schemaHooks.resolveQuery(swaggerTestsQueryResolver)],
-      find: [authenticate('jwt')],
-      get: [authenticate('jwt')],
+      find: [authenticateNfz()],
+      get: [authenticateNfz()],
       create: [schemaHooks.validateData(swaggerTestsDataValidator), schemaHooks.resolveData(swaggerTestsDataResolver)],
-      patch: [authenticate('jwt'), schemaHooks.validateData(swaggerTestsPatchValidator), schemaHooks.resolveData(swaggerTestsPatchResolver)],
-      remove: [authenticate('jwt')],
+      patch: [authenticateNfz(), schemaHooks.validateData(swaggerTestsPatchValidator), schemaHooks.resolveData(swaggerTestsPatchResolver)],
+      remove: [authenticateNfz()],
     },
     after: {
       all: [],

@@ -4,8 +4,8 @@ import { Forbidden } from '@feathersjs/errors'
 import { extractRolesKeycloak, extractRolesLocal } from './extractRoles'
 
 export interface RbacAuthorizeOptions {
-  /** 'local' or 'keycloak' */
-  provider: 'local' | 'keycloak'
+  /** Legacy provider hint; params.principal.roles is preferred when available. */
+  provider?: string
   /** Keycloak clientId for resource_access roles */
   keycloakClientId?: string
   /** deny by default if no policy matches */
@@ -41,12 +41,17 @@ export function createAuthorizeHook(getRbac: () => RbacFile, opts: RbacAuthorize
       return context
     }
 
+    const principalRoles: string[] = Array.isArray(context.params?.principal?.roles)
+      ? context.params.principal.roles.map(String)
+      : []
     const user = context.params?.user
-    const roles = opts.provider === 'keycloak'
-      ? extractRolesKeycloak(user, opts.keycloakClientId)
-      : extractRolesLocal(user)
+    const roles: string[] = principalRoles.length
+      ? principalRoles
+      : opts.provider === 'keycloak'
+        ? extractRolesKeycloak(user, opts.keycloakClientId)
+        : extractRolesLocal(user)
 
-    const allow = roles.some(r => required.includes(r))
+    const allow = roles.some((role: string) => required.includes(role))
     if (!allow)
       throw new Forbidden('Forbidden')
     return context

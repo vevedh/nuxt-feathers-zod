@@ -1,84 +1,61 @@
----
-editLink: false
----
-# Validation playground
+# Explore the module with the playground
 
-The `playground/` directory is the repository validation application. It is not shipped in the npm tarball. It tests core module features against the built runtime.
+The playground is a complete Nuxt application that demonstrates module features in a browser. Use it to understand a workflow before reproducing the configuration in your own project.
 
-## Run
+## Start it
+
+From the source repository:
 
 ```bash
 bun install --frozen-lockfile
 bun run dev
 ```
 
-A standard playground build does not start memory MongoDB:
+Then open the URL printed by Nuxt.
 
-```bash
-bun run playground:build
-```
+## Dashboard
 
-## Main workflow
+The dashboard checks Nuxt configuration, the Feathers client, a public service, authentication, a protected service, and SSR hydration.
 
-| Route | Validation |
-|---|---|
-| `/` | Feathers client, NFZ runtime, service discovery, MongoDB |
-| `/tests` | connection, services, authentication |
-| `/validation` | embedded, remote, REST, Socket.IO, and SSO scenarios |
+![Playground quick checks](/images/guides/playwright/playwright-dashboard.png)
 
-## Business features
+The **Run quick checks** action does not change persistent data.
 
-| Route | Validation |
-|---|---|
-| `/messages` | protected Feathers CRUD |
-| `/actions` | custom `actions.run()` method |
-| `/mongo` | MongoDB Management client |
-| `/builder` | discovery, Zod schemas, manifest, and Builder preview |
+## Connection and session diagnostics
 
-## Runtime and transports
+The **Essential tests** page checks a service first and then a local session. It displays useful details for diagnosing a transport or authentication issue.
 
-| Route | Validation |
-|---|---|
-| `/auth-runtime` | authentication status, trace, and events |
-| `/embedded` | embedded Feathers backend |
-| `/remote/rest` | remote REST access |
-| `/remote/socketio` | Socket.IO, real-time events, and reconnection |
-| `/middleware` | module, plugin, service, and hook order |
+![Service and authentication diagnostics](/images/guides/playwright/playwright-diagnostics.png)
 
-## Advanced tools
+## Useful workflows
 
-| Route | Validation |
-|---|---|
-| `/ldapusers` | declared remote service |
-| `/mongos` | direct Feathers service read and Pinia availability |
-| `/console/builder` | Feathers-first Builder console |
-| `/console/rbac` | RBAC policy inspection and controlled editing |
+Each route maps to a real playground screen. Diagnostic pages remain available without a session; protected business pages request authentication when their scenario requires it.
 
-## `mongos` service
+| Route | Page | What you can test |
+|---|---|---|
+| `/` | Dashboard | overall status and quick checks |
+| `/tests` | Essential tests | service, local session, and token |
+| `/validation` | Zod validation | schemas and validation errors |
+| `/messages` | Messages | protected Feathers CRUD |
+| `/actions` | Actions | custom service method |
+| `/mongo` | MongoDB | connection diagnostics and administration when MongoDB is enabled |
+| `/builder` | Builder | overview of generation features |
+| `/auth-runtime` | Authentication | principal, events, and provider |
+| `/embedded` | Embedded mode | Feathers backend integrated into Nuxt |
+| `/remote/rest` | Remote REST | HTTP connection to a remote API |
+| `/remote/socketio` | Remote Socket.IO | real-time transport and reconnection |
+| `/middleware` | Server middleware | module, plugin, and service ordering |
+| `/ldapusers` | Remote service | ldapusers service example |
+| `/mongos` | Mongos service | Feathers reads and Pinia state |
+| `/console/builder` | Builder console | NFZ generation console |
+| `/console/rbac` | RBAC console | roles and capabilities |
 
-The `/mongos` page checks two separate contracts:
+## Trustworthy screenshots
 
-- `useService('mongos')` returns the typed Feathers service and reads use `find()` directly;
-- `useNfzPinia()` reports whether the application Pinia instance is available for explicit business stores.
+Documentation images are produced by playground Playwright scenarios. A screenshot is updated only after the related functional assertions pass.
 
-The standard client runtime does not convert Feathers services into stores and does not expose historical store methods such as `useFind()` or `useGet()`.
+## Demo data
 
-## Builder console
+The playground uses test-only identities and secrets. Never copy those values into production.
 
-The Builder console only uses `useBuilderClient()` and the `nfz/*` Feathers services:
-
-```ts
-const builder = useBuilderClient()
-const discovery = await builder.getServices()
-const schema = await builder.getSchema('users')
-```
-
-Discovery returns service objects with `name` and `source`. The console normalizes this shape before selecting a service.
-
-When `feathers.console.allowWrite` is `false`, write actions are disabled while preview and diagnostics remain available.
-
-## Coherence rule
-
-Playground pages must not call the deprecated `/api/nfz/**` facades. Those Nitro routes are optional 6.x compatibility adapters. The playground validates the canonical Feathers `nfz/*` API.
-
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

@@ -127,4 +127,4 @@ For a business operation:
 2. use `useBuilderClient()` for NFZ Builder and RBAC services;
 3. use HTTP request helpers only when the target contract is not a Feathers service.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

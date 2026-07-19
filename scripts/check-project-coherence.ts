@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -182,10 +183,13 @@ if (testScript !== 'bun run test:unit && bun run test:integration && bun run tes
 if (packageJson.scripts?.['verify:test'] !== 'bun run test')
   problems.push('package.json verify:test must delegate to bun run test')
 
-for (const relativePath of [
-  'docs/guide/dependency-maintenance.md',
+const validationDocumentation = [
   'docs/guide/known-good-configurations.md',
-]) {
+]
+if (existsSync(resolve(root, 'docs-private/maintenance/dependencies.md')))
+  validationDocumentation.push('docs-private/maintenance/dependencies.md')
+
+for (const relativePath of validationDocumentation) {
   const source = await text(relativePath)
   expectContains(source, 'bun run test', relativePath)
   if (/(^|\n)bun test(?:\s|$)/.test(source))

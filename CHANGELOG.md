@@ -1,3 +1,45 @@
+## 6.6.0 - 2026-07-19 - Authentication Provider Registry and Security Foundation
+
+- Migrate stale private maintenance files out of the Git index automatically during source preparation and repository cleanup, while preserving the local files and cleanly skipping extracted archives without Git metadata.
+- Keep playground diagnostics and `/tests` accessible to anonymous developers while protecting only routes that explicitly opt into authentication.
+- Treat expected 401/403 responses from protected NFZ diagnostics as warnings in read-only dashboard checks, while preserving failures for real runtime errors.
+- Document all 16 playground routes in both French and English user guides.
+- Recheck the compiled module runtime before every isolated E2E fixture after repository cleanup.
+- Make production-mode authentication E2E fixtures portable across Bun environments with an ephemeral secret and inlined Zod dependency.
+- Separate the bilingual public user documentation from ignored maintainer documentation, preserving the NFZ logos and theme.
+- Simplify the public VitePress navigation around installation, services, frontend usage, authentication, playground examples and production.
+- Generate public playground screenshots only after their Playwright functional assertions pass.
+- Rebuild the module runtime before both Vitest E2E and Playwright after `clean:repo`, and scope browser selectors to stable page regions.
+- Complete the Windows release-gate follow-up by including `playwright.config.ts` in typed ESLint parsing and correcting the final authentication lint findings.
+- Make repository typechecking resolve maintained package subpaths from source, so `clean:repo` cannot break `server-auth`, `query` or `validators` imports before the module build.
+- Rebuild the module runtime automatically before Playwright starts a self-linked playground after cleanup, preventing missing `dist/runtime/server/instance-registry.js` failures.
+- Align the CLI generator integration test with the provider-aware `authenticateNfz()` contract instead of the legacy JWT-only hook.
+- Add typed OIDC service configuration handling and explicit RBAC role types detected by the complete Windows TypeScript gate.
+- Correct the complete ESLint regression set detected by the Windows release gate without weakening lint coverage.
+- Make `release:pack` resolve npm's JavaScript CLI and execute it through Node.js, avoiding direct `.cmd` spawning and `spawn EINVAL` on Windows.
+- Add Playwright desktop/mobile browser validation, CI installation, release gating and controlled VitePress screenshot generation.
+- Add `sanity:playwright` to enforce alignment between browser tests, CI, developer guides and tracked screenshot assets.
+- Add French and English developer guides for functional browser testing, traces, screenshots and stable accessible selectors.
+- Add a declarative authentication provider registry with built-in local, JWT, OIDC bearer-token and API-key strategies, plus a custom strategy extension point.
+- Normalize authenticated identities as `params.principal`, including provider, subject, tenant, organization, roles, permissions, scopes, authentication methods and assurance level.
+- Add `authenticateNfz()` so generated services accept the providers resolved from module configuration while legacy `authenticate('jwt')` hooks remain supported.
+- Add OIDC issuer discovery, exact issuer/audience verification and remote JWKS signature validation, with production rejection of insecure `failOpen` behavior.
+- Add high-entropy API-key authentication with SHA-256 base64url hashes, optional server-side pepper, expiry/revocation controls and timing-safe comparison; raw keys are never accepted as stored records.
+- Replace the deterministic project-path JWT secret with a production-safe key policy supporting strong symmetric secrets or asymmetric private/public key pairs and `kid` rotation metadata.
+- Restrict public runtime authentication metadata to non-secret provider fields and add a release guard that detects future security-foundation regressions.
+- Preserve `authStrategies`, `auth.local`, `jwtOptions`, Keycloak bridge behavior and current local/JWT applications through a backward-compatible option resolver.
+- Automatically register a JWT verification strategy whenever a declarative provider issues an NFZ access token, while keeping API-key-only deployments tokenless when `issueAccessToken: false`.
+- Enforce JWT algorithm/key-mode compatibility, matching asymmetric key pairs, RSA keys of at least 2048 bits, fixed verification algorithms and sanitized caller overrides.
+- Migrate the NFZ console, MongoDB management services and bundled starter to provider-aware hooks instead of hard-coded JWT-only protection.
+
+## 6.5.50 - 2026-07-18 - Canonical release version coherence
+
+- Align the package manifest, public README files, VitePress release markers, production audit and maintained first-party examples on `6.5.50`.
+- Update the bundled Quasar/UnoCSS/Pinia starter and both Keycloak/LDAP reference applications to consume `nuxt-feathers-zod@6.5.50`.
+- Replace the obsolete release-specific starter archive reference with the maintained repository path.
+- Add `sanity:version-coherence` to release, prepack, repository doctor and verification workflows so stale current-version references fail before publication.
+- Preserve historical version references in `CHANGELOG.md`, `PATCHLOG.md` and migration notes; no public runtime API behavior changes from `6.5.49`.
+
 ## 6.5.49 - 2026-07-14 - SSR-preserving auth hydration boundary
 
 - Preserve SSR on the playground dashboard while keeping the auth UI structurally neutral until client session restoration completes.

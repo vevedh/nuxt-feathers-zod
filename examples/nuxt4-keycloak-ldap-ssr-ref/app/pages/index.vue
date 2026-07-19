@@ -19,7 +19,7 @@ const current = useCurrentLdapUser()
           </p>
 
           <QBanner class="bg-blue-1 text-blue-10 q-mb-md" rounded>
-            Modèle SSR : aucun proxy Nitro local. NFZ 6.5.30 appelle directement le backend Feathers remote
+            Modèle SSR : aucun proxy Nitro local. NFZ 6.6.0 appelle directement le backend Feathers remote
             <code>/authentication</code>. Le backend doit gérer CORS et <code>OPTIONS</code>.
           </QBanner>
 

@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { createNfzPrincipal } from '../auth/principal'
 
 export interface NfzKeycloakConfig {
   serverUrl: string
@@ -86,7 +87,14 @@ export function createKeycloakAuthorizationHook(app: any, cfg: NfzKeycloakConfig
     const payload = verified.payload
     context.params.client = payload
     context.params.user = await resolveUser(app, cfg, payload)
-    context.params.permissions = []
+    context.params.principal = createNfzPrincipal({
+      provider: 'keycloak',
+      user: context.params.user,
+      payload,
+      claims: { clientId: cfg.clientId },
+      defaultAssuranceLevel: 'aal2',
+    })
+    context.params.permissions = context.params.principal?.permissions || []
 
     return context
   }
@@ -115,9 +123,18 @@ export function createKeycloakBridgeService(app: any, cfg: NfzKeycloakConfig) {
         ? { ...hintedUser, ...fakeCtx.params.user }
         : fakeCtx.params.user
 
+      const principal = createNfzPrincipal({
+        provider: 'keycloak',
+        user,
+        payload: fakeCtx.params.client,
+        claims: { clientId: cfg.clientId },
+        defaultAssuranceLevel: 'aal2',
+      })
+
       return {
         user,
-        permissions: fakeCtx.params.permissions,
+        principal,
+        permissions: principal?.permissions || fakeCtx.params.permissions,
         accessToken: token,
         authentication: { strategy: 'keycloak', accessToken: token },
         keycloakUser: fakeCtx.params.client || null,

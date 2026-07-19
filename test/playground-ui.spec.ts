@@ -33,6 +33,15 @@ describe('playground validation center', () => {
     expect(dashboard).toContain('builder.getStatus')
     expect(dashboard).toContain('builder.getServices')
     expect(dashboard).toMatch(/client\.service\(['"]mongos['"]\)\.find/)
+    expect(dashboard).toContain('Diagnostic serveur protégé')
+    expect(dashboard).toContain('Découverte des services protégée')
+  })
+
+  it('restores a session without making playground diagnostics private', () => {
+    const middleware = read('playground/app/middleware/session.global.ts')
+
+    expect(middleware).toContain('auth.reAuthenticate().catch')
+    expect(middleware).not.toContain('navigateTo(')
   })
 
   it('keeps SSR and the auth dashboard deterministic during hydration', () => {
@@ -87,11 +96,14 @@ describe('playground validation center', () => {
 
   it('documents every playground navigation route', () => {
     const navigation = read('playground/app/composables/usePlaygroundNavigation.ts')
-    const guide = read('docs/guide/playground.md')
+    const frenchGuide = read('docs/guide/playground.md')
+    const englishGuide = read('docs/en/guide/playground.md')
     const routes = Array.from(navigation.matchAll(/\bto:\s*'([^']+)'/g), match => match[1])
 
     expect(routes.length).toBeGreaterThan(10)
-    for (const route of routes)
-      expect(guide).toContain(`\`${route}\``)
+    for (const route of routes) {
+      expect(frenchGuide).toContain(`\`${route}\``)
+      expect(englishGuide).toContain(`\`${route}\``)
+    }
   })
 })

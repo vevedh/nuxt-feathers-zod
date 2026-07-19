@@ -16,7 +16,7 @@
     "js-sha256": "^0.11.1",
     "keycloak-js": "^26.0.0",
     "nuxt": "4.4.2",
-    "nuxt-feathers-zod": "6.5.30",
+    "nuxt-feathers-zod": "6.6.0",
     "nuxt-quasar-ui": "^3.0.0",
     "pinia": "^3.0.0",
     "pinia-plugin-persistedstate": "^4.7.1",

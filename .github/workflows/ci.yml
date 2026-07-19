@@ -51,6 +51,7 @@ jobs:
           bun run sanity:dependency-convergence
           bun run sanity:generated-secret-safety
           bun run sanity:source-hygiene
+          bun run sanity:playwright
           bun run docs:check-human-style
 
       - name: Typecheck
@@ -59,8 +60,14 @@ jobs:
       - name: Build package
         run: bun run build
 
-      - name: Test unit, integration and end-to-end suites
+      - name: Test unit, integration and runtime end-to-end suites
         run: bun run test
+
+      - name: Install Playwright Chromium
+        run: bun run playwright:install:ci
+
+      - name: Test browser functions with Playwright
+        run: bun run test:playwright
 
       - name: Build docs
         run: bun run docs:build

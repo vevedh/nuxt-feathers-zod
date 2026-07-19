@@ -3,7 +3,7 @@ editLink: false
 ---
 # Nuxt 4 SPA + Keycloak client-only + LDAP backend
 
-Ce guide est le modèle simple recommandé pour NFZ `6.5.30` lorsqu'une application Nuxt 4 doit utiliser Keycloak SSO et un utilisateur LDAP/Active Directory enrichi.
+Ce guide est le modèle simple recommandé pour NFZ `6.6.0` lorsqu'une application Nuxt 4 doit utiliser Keycloak SSO et un utilisateur LDAP/Active Directory enrichi.
 
 Le principe validé est volontairement strict :
 
@@ -485,7 +485,7 @@ L'archive du module contient un exemple complet dans :
 examples/nuxt4-keycloak-ldap-spa-ref/
 ```
 
-Cet exemple reprend le modèle validé : Nuxt 4 SPA, Quasar, UnoCSS, Pinia, Keycloak client-only, NFZ `6.5.30` remote direct et synchronisation LDAP automatique après `keycloak.init()`.
+Cet exemple reprend le modèle validé : Nuxt 4 SPA, Quasar, UnoCSS, Pinia, Keycloak client-only, NFZ `6.6.0` remote direct et synchronisation LDAP automatique après `keycloak.init()`.
 
 ## Règles à retenir
 

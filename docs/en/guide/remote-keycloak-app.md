@@ -73,7 +73,7 @@ The complete model is provided in:
 examples/nuxt4-keycloak-ldap-spa-ref/
 ```
 
-It includes Nuxt 4 SPA, Quasar, UnoCSS, Pinia, client-only Keycloak, direct NFZ `6.5.30` remote mode, LDAP auto-sync after `keycloak.init()` and a manual synchronization button.
+It includes Nuxt 4 SPA, Quasar, UnoCSS, Pinia, client-only Keycloak, direct NFZ `6.6.0` remote mode, LDAP auto-sync after `keycloak.init()` and a manual synchronization button.
 
 ## Watch points
 

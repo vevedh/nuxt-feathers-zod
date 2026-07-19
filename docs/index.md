@@ -3,62 +3,38 @@ layout: home
 
 hero:
   name: "nuxt-feathers-zod"
-  text: "FeathersJS v5 + Zod for Nuxt 4"
-  tagline: "Un module Nuxt Feathers-first pour exécuter Feathers dans Nitro ou connecter Nuxt à une API distante, avec génération CLI, validation Zod et outils de diagnostic cohérents."
+  text: "Le backend Feathers pour Nuxt 4"
+  tagline: "Créez des services full-stack typés, validés par Zod et utilisables depuis Vue en mode embedded ou remote."
   image:
     src: /images/nfz-feather.webp
     alt: Logo plume nuxt-feathers-zod
   actions:
     - theme: brand
-      text: Démarrage rapide
+      text: Commencer en 5 minutes
       link: /guide/getting-started
     - theme: alt
-      text: Plan technique
-      link: /guide/complete-guide
+      text: Voir le playground
+      link: /guide/playground
     - theme: alt
-      text: Configuration
-      link: /reference/configuration
-    - theme: alt
-      text: Référence CLI
-      link: /reference/cli
+      text: Référence API
+      link: /reference/
 
 features:
-  - title: "API Feathers-first"
-    details: "Services, méthodes, hooks et événements restent dans Feathers. Nitro héberge le runtime et l'infrastructure Nuxt."
+  - title: "Nuxt 4 + FeathersJS"
+    details: "Conservez la simplicité de Nuxt tout en structurant le backend avec des services, hooks, événements et transports Feathers."
+  - title: "Validation Zod"
+    details: "Validez les données, les patchs et les requêtes côté serveur avec des schémas TypeScript réutilisables."
   - title: "Embedded ou remote"
-    details: "Exécutez Feathers dans Nitro ou connectez le même modèle client à une API Feathers distante."
-  - title: "CLI synchronisée"
-    details: "Initialisation, services, schémas, auth, MongoDB, templates et modules sont documentés depuis l'arbre de commandes réel."
-  - title: "Zod selon le service"
-    details: "Choisissez un schéma Zod, JSON ou aucun schéma selon le contrat et le niveau de validation attendu."
-  - title: "Auth et SSO"
-    details: "Auth locale/JWT, runtime de session, Keycloak client ou bridge et diagnostics d'authentification."
-  - title: "Services NFZ"
-    details: "Builder, schémas, manifeste, statut, RBAC, presets et initialisation sont exposés comme services Feathers."
-  - title: "Playground de validation"
-    details: "Un centre de validation couvre services, Zod, auth, MongoDB, REST, Socket.IO, Builder et RBAC."
-  - title: "Production et sécurité"
-    details: "Readiness déterministe, secrets résolus au runtime, teardown idempotent et contrôles de release."
-  - title: "Référence vérifiée"
-    details: "Options, composables, événements, services, CLI et routes du playground sont contrôlés contre le code source."
+    details: "Exécutez Feathers dans Nitro ou connectez votre application à une API Feathers existante."
+  - title: "Authentification modulaire"
+    details: "Utilisez local/JWT, OIDC, Keycloak ou des clés API derrière un principal normalisé."
+  - title: "CLI orientée projet"
+    details: "Initialisez l'intégration, générez des services et contrôlez la configuration sans recopier une architecture entière."
+  - title: "Playground vérifiable"
+    details: "Testez le runtime, les services et l'authentification dans une interface documentée par des scénarios Playwright."
 ---
 
-## Projet
-
-- [Voir le package sur npm](https://www.npmjs.com/package/nuxt-feathers-zod)
-- [Consulter le dépôt GitHub](https://github.com/vevedh/nuxt-feathers-zod)
-
-## Parcours conseillé
-
-1. [Comprendre l’architecture](/reference/architecture).
-2. [Installer et démarrer](/guide/getting-started).
-3. [Configurer le module](/reference/configuration).
-4. [Créer les services](/guide/services).
-5. [Utiliser l’API client](/reference/runtime).
-6. [Valider avec le playground](/guide/playground).
-7. [Préparer la production](/guide/production).
-
-## Exemple minimal
+## Un premier service en quelques commandes
 
 ```bash
 bunx nuxi@latest init my-nfz-app
@@ -67,16 +43,39 @@ bun install
 bun add nuxt-feathers-zod
 bunx nuxt-feathers-zod init embedded --auth
 bunx nuxt-feathers-zod add service messages --adapter memory --schema zod
-bunx nuxt-feathers-zod doctor
 bun dev
 ```
 
-## Vérifier les capacités de la version installée
+Puis utilisez le service dans un composant Vue :
 
-```bash
-bunx nuxt-feathers-zod capabilities --section all --json
+```vue
+<script setup lang="ts">
+const { $api } = useNuxtApp()
+
+const messages = await $api.service('messages').find({
+  query: {
+    $limit: 20,
+    $sort: { createdAt: -1 },
+  },
+})
+</script>
+
+<template>
+  <pre>{{ messages }}</pre>
+</template>
 ```
 
-Cette commande expose les modes, transports, services NFZ, composables et événements implémentés par la version du package.
+## Le playground montre le résultat réel
 
-<!-- release-version: 6.5.49 -->
+Les captures sont générées depuis le playground après réussite des assertions Playwright. Elles servent à comprendre le module, pas à documenter le processus interne de développement.
+
+![Tableau de bord du playground nuxt-feathers-zod](/images/guides/playwright/playwright-dashboard.png)
+
+[Installer le module](/guide/getting-started) · [Choisir un mode](/guide/modes) · [Créer un service](/guide/services)
+
+## Projet
+
+- [Package npm](https://www.npmjs.com/package/nuxt-feathers-zod)
+- [Dépôt GitHub](https://github.com/vevedh/nuxt-feathers-zod)
+
+<!-- release-version: 6.6.0 -->

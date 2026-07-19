@@ -15,12 +15,18 @@ const skippedDirectories = new Set([
 
 const forbiddenExactPaths = new Set([
   'AGENTS.md',
+  'PATCHLOG.md',
+  'PRODUCTION_AUDIT.md',
+  'REPO_DEV.md',
+  'RELEASE_CHECKLIST.md',
+  'TODO.md',
   '.coderabbit.yaml',
   '.vscode/mcp.json',
 ])
 
 const forbiddenDirectoryNames = new Set([
   'patch-memory',
+  'docs-private',
 ])
 
 const forbiddenFilePrefixes = [
@@ -57,7 +63,13 @@ function isExplicitlyIgnoredMaintenancePath(repositoryPath) {
   if (segments.includes('patch-memory') && gitIgnorePatterns.has('patch-memory/'))
     return true
 
+  if (segments.includes('docs-private') && gitIgnorePatterns.has('docs-private/'))
+    return true
+
   if (repositoryPath === 'AGENTS.md' && gitIgnorePatterns.has('AGENTS.md'))
+    return true
+
+  if (forbiddenExactPaths.has(repositoryPath) && gitIgnorePatterns.has(repositoryPath))
     return true
 
   if (fileName.startsWith('ANALYSE_') && gitIgnorePatterns.has('ANALYSE_*.md'))

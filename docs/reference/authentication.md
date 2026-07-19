@@ -3,73 +3,102 @@ editLink: false
 ---
 # Authentification
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle de l’option `auth` pour Feathers local/JWT ou les stratégies client. Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
+Le runtime embedded repose sur `AuthenticationService` de Feathers et ajoute, depuis `6.6.0`, un registre de providers ainsi qu’un principal normalisé.
 
-## Objectif
-
-Cette option ou fonctionnalité permet de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
-
-## Quand utiliser cette option ?
-
-Utilise cette page lorsque tu veux :
-
-- configurer précisément l’option `auth` pour Feathers local/JWT ou les stratégies client ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
-
-## Exemple de configuration
+## Contrat de configuration
 
 ```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+interface AuthOptions {
+  service?: string
+  entity?: string
+  entityClass?: string
+  authenticationService?: string
 
-  feathers: {
-    auth: {
-      service: 'users',
-      entity: 'user',
-      entityClass: 'User',
-      authStrategies: ['local', 'jwt'],
-      local: {
-        usernameField: 'email',
-        passwordField: 'password',
-      },
-    },
+  providers?: Record<string, AuthenticationProviderOptions>
+  authStrategies?: string[]
+  parseStrategies?: string[]
+
+  keys?: {
+    mode?: 'symmetric' | 'asymmetric'
+    algorithm?: string
+    secret?: string
+    privateKey?: string
+    publicKey?: string
+    keyId?: string
   }
-})
+
+  local?: AuthLocalOptions
+  jwtOptions?: AuthJwtOptions
+  client?: AuthClientOptions
+}
 ```
 
-## Exemple CLI
+`providers` déclare les mécanismes disponibles. `authStrategies` reste accepté pour les configurations historiques et pour contrôler les stratégies autorisées lors de la création d’un access token. `parseStrategies` contrôle l’ordre d’extraction des credentials depuis les requêtes HTTP. Lorsqu’un provider déclaratif émet un token NFZ, un provider JWT de vérification est ajouté automatiquement s’il manque.
 
-```bash
-bunx nuxt-feathers-zod add service users --adapter mongodb --collection users --schema zod --authAware true
-```
+## Providers intégrés
 
-## Exemple d’utilisation
+| Type | Usage | Extraction HTTP par défaut | Access token NFZ |
+| --- | --- | --- | --- |
+| `local` | identifiant et mot de passe | non | oui |
+| `jwt` | access token NFZ | bearer | jeton existant |
+| `oidc` | bearer JWT d’un issuer externe | bearer | oui par défaut |
+| `api-key` | compte technique | `x-api-key` | non par défaut |
+| `oauth` | stratégies Feathers OAuth existantes | selon stratégie | oui |
+| `custom` | stratégie applicative | explicite | configurable |
+
+Le guide [Registre des fournisseurs d’authentification](/guide/authentication-providers) décrit les configurations OIDC, API key, clés asymétriques et stratégies personnalisées.
+
+## Principal normalisé
+
+Une authentification réussie ajoute :
 
 ```ts
-const service = useService('messages')
+context.params.principal
+```
 
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
+Le principal contient au minimum `subject`, `provider`, `roles`, `permissions`, `scopes`, `authenticationMethods` et `assuranceLevel`. Les champs de tenant, organisation, session, nom d’utilisateur et e-mail sont optionnels.
+
+Les services ne doivent pas accepter un principal fourni par le client. Seule une stratégie enregistrée peut le produire après validation du credential.
+
+## Hook provider-aware
+
+```ts
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
+
+app.service('messages').hooks({
+  around: {
+    all: [authenticateNfz()],
   },
 })
 ```
 
-## Points de vigilance
+Sans argument, le hook utilise la liste résolue dans la configuration. Une liste peut être imposée localement :
 
-- Les chemins exposés (`/feathers`, `/feathers/nfz/*`, `/socket.io`, `/mongo`) et les éventuelles façades `/api/nfz/*` doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
+```ts
+authenticateNfz({ strategies: ['enterprise', 'jwt'] })
+```
 
-## Bonnes pratiques
+Les anciens hooks `authenticate('jwt')` restent fonctionnels.
 
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
+## Clés JWT
 
-<!-- release-version: 6.5.49 -->
+En production, l’authentification embedded exige soit :
+
+- `NFZ_AUTH_SECRET`, avec au moins 32 octets ;
+- une paire `NFZ_AUTH_PRIVATE_KEY` / `NFZ_AUTH_PUBLIC_KEY`.
+
+Les secrets faibles, de démonstration ou dérivés du chemin de l’application sont refusés. Sans secret en développement, une clé aléatoire éphémère est générée. Les algorithmes sont limités à une liste connue, les paires asymétriques doivent correspondre et les clés RSA doivent utiliser au minimum 2 048 bits.
+
+## Runtime public
+
+`runtimeConfig.public._feathers.auth` expose uniquement les métadonnées nécessaires au client :
+
+- noms et types des providers ;
+- ordre des stratégies ;
+- issuer/audience OIDC publics ;
+- champs de login local ;
+- chemin du service d’authentification.
+
+Les secrets, clés privées, peppers, empreintes de clés API et identités techniques ne sont jamais copiés dans la configuration publique.
+
+<!-- release-version: 6.6.0 -->

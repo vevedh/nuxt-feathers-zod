@@ -68,4 +68,4 @@ export default function requestLogger(app: any) {
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

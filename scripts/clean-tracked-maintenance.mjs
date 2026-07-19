@@ -3,15 +3,22 @@ import { existsSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 
 const rootDir = resolve(process.cwd())
+const allowMissingGit = process.argv.includes('--if-git')
 
 const forbiddenExactPaths = new Set([
   'AGENTS.md',
+  'PATCHLOG.md',
+  'PRODUCTION_AUDIT.md',
+  'REPO_DEV.md',
+  'RELEASE_CHECKLIST.md',
+  'TODO.md',
   '.coderabbit.yaml',
   '.vscode/mcp.json',
 ])
 
 const forbiddenDirectoryNames = new Set([
   'patch-memory',
+  'docs-private',
 ])
 
 const forbiddenFilePrefixes = [
@@ -39,6 +46,11 @@ function isMaintenanceArtifact(repositoryPath) {
 }
 
 if (!existsSync(resolve(rootDir, '.git'))) {
+  if (allowMissingGit) {
+    console.log('[nuxt-feathers-zod] Git metadata was not found; maintenance-index cleanup skipped.')
+    process.exit(0)
+  }
+
   console.error('[nuxt-feathers-zod] Git metadata was not found. This cleanup only applies to a Git working tree.')
   process.exit(1)
 }

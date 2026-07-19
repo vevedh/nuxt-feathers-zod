@@ -88,4 +88,4 @@ L’écriture est refusée lorsque `console.allowWrite` vaut `false`.
 
 Les routes `/api/nfz/**` ne sont pas des services métier indépendants. Lorsqu’elles sont activées, elles délèguent aux services ci-dessus et ajoutent des en-têtes de dépréciation.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

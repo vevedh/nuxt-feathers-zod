@@ -1,7 +1,7 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 
 import type { Application } from 'nuxt-feathers-zod/server'
-import { authenticate } from '@feathersjs/authentication'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 import { userDataResolver, userDataValidator, userExternalResolver, userPatchResolver, userPatchValidator, userQueryResolver, userQueryValidator, userResolver } from './users'
 import { getOptions, UserService } from './users.class'
@@ -23,12 +23,12 @@ export function user(app: Application) {
   app.service(userPath).hooks({
     around: {
       all: [schemaHooks.resolveExternal(userExternalResolver), schemaHooks.resolveResult(userResolver)], //
-      find: [authenticate('jwt')], //
-      get: [authenticate('jwt')], //
+      find: [authenticateNfz()], //
+      get: [authenticateNfz()], //
       create: [],
-      update: [authenticate('jwt')],
-      patch: [authenticate('jwt')],
-      remove: [authenticate('jwt')],
+      update: [authenticateNfz()],
+      patch: [authenticateNfz()],
+      remove: [authenticateNfz()],
     },
     before: {
       all: [schemaHooks.validateQuery(userQueryValidator), schemaHooks.resolveQuery(userQueryResolver)],

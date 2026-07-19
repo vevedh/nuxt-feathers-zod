@@ -1,7 +1,7 @@
 import type { MongoClientOptions } from 'mongodb'
 
-import { authenticate } from '@feathersjs/authentication'
 import { MongoClient } from 'mongodb'
+import { authenticateNfz } from '../auth/hook'
 import {
   aggregate,
   collections,
@@ -94,18 +94,16 @@ function hasService(app: any, path: string): boolean {
 
 function resolveMongoAdminUser(management: NfzMongoManagementConfig, params: any): any {
   const userProperty = management.auth?.userProperty || 'user'
-  return params?.[userProperty]
+  return params?.[userProperty] || params?.principal
 }
 
 function normalizeAuthStrategies(value: unknown): string[] {
   if (!Array.isArray(value))
-    return ['jwt']
+    return []
 
-  const strategies = value
+  return [...new Set(value
     .map(item => String(item || '').trim())
-    .filter(Boolean)
-
-  return strategies.length ? strategies : ['jwt']
+    .filter(Boolean))]
 }
 
 function createMongoAdminBeforeHooks(authOptions?: NfzMongoAuthOptions): Array<(context: any) => unknown> {
@@ -116,10 +114,15 @@ function createMongoAdminBeforeHooks(authOptions?: NfzMongoAuthOptions): Array<(
 
   if (authOptions.authenticate !== false) {
     const strategies = normalizeAuthStrategies(authOptions.authStrategies)
-    const authHook = authenticate(...(strategies as [string, ...string[]]))
-    hooks.push(authHook)
+    hooks.push(authenticateNfz(strategies.length ? { strategies } : {}))
   }
 
+  hooks.push((context: any) => {
+    const userProperty = authOptions.userProperty || 'user'
+    if (!context.params?.[userProperty] && context.params?.principal)
+      context.params[userProperty] = context.params.principal
+    return context
+  })
   hooks.push(requireMongoAdmin(authOptions))
   return hooks
 }

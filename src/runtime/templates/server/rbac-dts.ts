@@ -19,7 +19,7 @@ export type RbacFile = {
 export type NfzAuthorizeHookOptions = {
   projectRoot?: string
   servicesDirs?: string[]
-  provider: 'local' | 'keycloak'
+  provider?: string
   keycloakClientId?: string
   skipPaths?: string[]
 }

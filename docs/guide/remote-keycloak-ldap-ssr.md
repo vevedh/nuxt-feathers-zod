@@ -3,13 +3,13 @@ editLink: false
 ---
 # Nuxt 4 SSR + Keycloak client-only + LDAP backend
 
-Ce guide décrit le modèle SSR recommandé pour une application Nuxt 4 qui utilise Keycloak SSO côté navigateur, un backend Feathers distant exposé via NFZ `6.5.30`, et une stratégie backend `keycloak-ldap` pour résoudre l'utilisateur LDAP/Active Directory.
+Ce guide décrit le modèle SSR recommandé pour une application Nuxt 4 qui utilise Keycloak SSO côté navigateur, un backend Feathers distant exposé via NFZ `6.6.0`, et une stratégie backend `keycloak-ldap` pour résoudre l'utilisateur LDAP/Active Directory.
 
 Le modèle est volontairement séparé en trois responsabilités :
 
 ```txt
 Keycloak = uniquement côté client Nuxt
-NFZ 6.5.30 = client Feathers remote direct
+NFZ 6.6.0 = client Feathers remote direct
 LDAP/AD = uniquement côté backend Feathers
 ```
 
@@ -445,7 +445,7 @@ Le dépôt contient un exemple complet :
 examples/nuxt4-keycloak-ldap-ssr-ref/
 ```
 
-Cet exemple reprend la structure Nuxt 4 SSR, Quasar 2, UnoCSS, Pinia, NFZ `6.5.30` remote direct, Keycloak client-only et synchronisation LDAP automatique.
+Cet exemple reprend la structure Nuxt 4 SSR, Quasar 2, UnoCSS, Pinia, NFZ `6.6.0` remote direct, Keycloak client-only et synchronisation LDAP automatique.
 
 ## Règles de production
 

@@ -49,4 +49,4 @@ When `console.enabled` is active, `nfz/services`, `nfz/schemas`, `nfz/manifest`,
 
 Teardown is idempotent: the runtime closes Feathers, closes the owned `MongoClient`, unregisters the instance, and remains safe when called again.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

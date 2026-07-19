@@ -14,4 +14,4 @@ await session.login({ strategy: 'local', userId, password })
 
 Ne pas utiliser `feathers-pinia` comme runtime client standard. Les mappings Feathers-Pinia restent optionnels et séparés.
 
-<!-- release-version: 6.5.49 -->
+<!-- release-version: 6.6.0 -->

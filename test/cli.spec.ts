@@ -29,7 +29,6 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const targets = [
       'README.md',
       'CHANGELOG.md',
-      'PATCHLOG.md',
       'docs/guide/cli.md',
       'docs/en/guide/cli.md',
       'docs/reference/cli.md',
@@ -47,8 +46,16 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const doctorSource = await readFile(join(process.cwd(), 'src/cli/commands/doctor.ts'), 'utf8')
 
     expect(pkg.scripts?.['repo:clean-maintenance-index']).toBe('node scripts/clean-tracked-maintenance.mjs')
+    expect(pkg.scripts?.['repo:clean-maintenance-index:if-git']).toBe(
+      'node scripts/clean-tracked-maintenance.mjs --if-git',
+    )
+    expect(pkg.scripts?.['clean:repo']).toContain('clean-tracked-maintenance.mjs --if-git')
+    expect(pkg.scripts?.['prepare:project']).toMatch(/^bun run repo:clean-maintenance-index:if-git && /)
+    expect(cleanupScript).toContain("process.argv.includes('--if-git')")
     expect(cleanupScript).toContain("['rm', '--cached', '--ignore-unmatch', '--', repositoryPath]")
     expect(cleanupScript).not.toContain("['rm', '-f'")
+    expect(cleanupScript).toContain("  'docs-private'")
+    expect(doctorSource).toContain("segments.includes('docs-private')")
     expect(doctorSource).toContain('detectTrackedMaintenanceArtifacts')
     expect(doctorSource).toContain('repo:clean-maintenance-index')
   })
@@ -177,7 +184,9 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(existsSync(sharedFile)).toBe(true)
     expect(existsSync(svcFile)).toBe(true)
     const svc = await readFile(svcFile, 'utf8')
-    expect(svc).toContain('authenticate(\'jwt\')')
+    expect(svc).toContain("import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'")
+    expect(svc).toContain('authenticateNfz()')
+    expect(svc).not.toContain('authenticate(\'jwt\')')
     expect(svc).toContain('export function post')
   })
   it('supports --path, --idField, --docs and --collection', { timeout: LONG_TIMEOUT }, async () => {
@@ -286,7 +295,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(shared).toContain("download(data: AssetDownloadData")
 
     const svc = await readFile(svcFile, 'utf8')
-    expect(svc).toContain("authenticate('jwt')")
+    expect(svc).toContain("authenticateNfz()")
     expect(svc).toContain("methods: assetMethods as unknown as string[]")
 
     const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { services?: Record<string, any> }
@@ -354,7 +363,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(existsSync(join(base, 'media.ts'))).toBe(true)
 
     const service = await readFile(join(base, 'media.ts'), 'utf8')
-    expect(service).toContain("authenticate('jwt')")
+    expect(service).toContain("authenticateNfz()")
     expect(service).toContain("description: 'media local file upload/download service'")
 
     await expectGeneratedTsSyntaxOk([
@@ -397,12 +406,12 @@ describe('nuxt-feathers-zod CLI generators', () => {
       const serviceFile = await readFile(join(base, `${name}.ts`), 'utf8')
       if (combo.schema === 'none') {
         const hooksFile = await readFile(join(base, `${name}.hooks.ts`), 'utf8')
-        expect(hooksFile).toContain("authenticate('jwt')")
+        expect(hooksFile).toContain("authenticateNfz()")
         expect(hooksFile).toContain("passwordHash({ strategy: 'local' })")
         expect(hooksFile).toContain('stripPassword')
         return
       }
-      expect(serviceFile).toContain("authenticate('jwt')")
+      expect(serviceFile).toContain("authenticateNfz()")
       const schemaFile = await readFile(join(base, `${name}.schema.ts`), 'utf8')
       expect(schemaFile).toContain("passwordHash({ strategy: 'local' })")
       expect(schemaFile).toContain('password: async () => undefined')
@@ -634,7 +643,7 @@ it('dispatches init remote through the citty CLI entrypoint', async () => {
     })
     await runCli(['auth', 'service', 'posts', '--enabled'], { cwd: root, throwOnError: true })
     const hooks = await readFile(join(servicesDir, 'posts', 'posts.hooks.ts'), 'utf8')
-    expect(hooks).toContain("authenticate('jwt')")
+    expect(hooks).toContain("authenticateNfz()")
   })
   it('dispatches plugins add through the citty CLI entrypoint', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))

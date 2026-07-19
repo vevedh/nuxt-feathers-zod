@@ -16,6 +16,7 @@ async function createRepository(): Promise<string> {
     join(directory, '.gitignore'),
     [
       'patch-memory/',
+      'docs-private/',
       'AGENTS.md',
       'ANALYSE_*.md',
       'VALIDATIONS_*.md',
@@ -52,6 +53,8 @@ describe('public repository hygiene guard', () => {
     await mkdir(join(directory, 'patch-memory', 'entries'), { recursive: true })
     await writeFile(join(directory, 'patch-memory', 'entries', 'local.md'), '# Local note\n')
     await writeFile(join(directory, 'AGENTS.md'), '# Local maintenance\n')
+    await mkdir(join(directory, 'docs-private'), { recursive: true })
+    await writeFile(join(directory, 'docs-private', 'index.md'), '# Private docs\n')
 
     const result = runChecker(directory)
 
@@ -65,12 +68,14 @@ describe('public repository hygiene guard', () => {
 
     await writeFile(
       join(directory, '.gitignore'),
-      ['RELEASE_NOTES_*.md', 'patch-memory/', 'AGENTS.md', ''].join('\n'),
+      ['RELEASE_NOTES_*.md', 'patch-memory/', 'docs-private/', 'AGENTS.md', ''].join('\n'),
     )
     await writeFile(join(directory, 'README.md'), '# Extracted project\n')
     await writeFile(join(directory, 'RELEASE_NOTES_6.5.32.md'), '# Local release note\n')
     await mkdir(join(directory, 'patch-memory'), { recursive: true })
     await writeFile(join(directory, 'patch-memory', '000-index.md'), '# Local maintenance\n')
+    await mkdir(join(directory, 'docs-private'), { recursive: true })
+    await writeFile(join(directory, 'docs-private', 'index.md'), '# Private docs\n')
 
     const result = runChecker(directory)
 
@@ -88,6 +93,49 @@ describe('public repository hygiene guard', () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('AGENTS.md must stay outside the public repository')
     expect(result.stderr).toContain('bun run repo:clean-maintenance-index')
+  })
+
+  it('allows best-effort cleanup in an extracted workspace without Git metadata', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'nfz-maintenance-cleanup-workspace-'))
+    temporaryDirectories.push(directory)
+
+    const cleanup = spawnSync(process.execPath, [cleanupPath, '--if-git'], {
+      cwd: directory,
+      encoding: 'utf8',
+    })
+
+    expect(cleanup.status).toBe(0)
+    expect(cleanup.stdout).toContain('maintenance-index cleanup skipped')
+  })
+
+  it('removes deleted legacy maintenance files that remain tracked in Git', async () => {
+    const directory = await createRepository()
+    const legacyFiles = [
+      'PATCHLOG.md',
+      'PRODUCTION_AUDIT.md',
+      'RELEASE_CHECKLIST.md',
+      'REPO_DEV.md',
+      'TODO.md',
+    ]
+
+    for (const file of legacyFiles) {
+      await writeFile(join(directory, file), `# ${file}\n`)
+      execFileSync('git', ['add', '-f', file], { cwd: directory })
+      await rm(join(directory, file), { force: true })
+    }
+
+    const cleanup = spawnSync(process.execPath, [cleanupPath, '--if-git'], {
+      cwd: directory,
+      encoding: 'utf8',
+    })
+
+    expect(cleanup.status).toBe(0)
+    expect(cleanup.stdout).toContain('Removed 5 maintenance artifact(s) from the Git index')
+    for (const file of legacyFiles)
+      expect(
+        execFileSync('git', ['ls-files', file], { cwd: directory, encoding: 'utf8' }),
+      ).toBe('')
+    expect(runChecker(directory).status).toBe(0)
   })
 
   it('removes tracked maintenance artifacts from the Git index without deleting local files', async () => {

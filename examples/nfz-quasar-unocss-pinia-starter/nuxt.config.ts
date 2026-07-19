@@ -62,12 +62,17 @@ export default defineNuxtConfig({
 
   feathers: {
     auth: {
-      authStrategies: ['local', 'jwt'],
-      local: {
-        usernameField: 'userId',
-        passwordField: 'password',
-        entityUsernameField: 'userId',
-        entityPasswordField: 'password',
+      providers: {
+        local: {
+          type: 'local',
+          usernameField: 'userId',
+          passwordField: 'password',
+          entityUsernameField: 'userId',
+          entityPasswordField: 'password',
+        },
+        jwt: {
+          type: 'jwt',
+        },
       },
     },
     servicesDirs: ['services'],

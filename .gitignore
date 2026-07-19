@@ -42,6 +42,7 @@ coverage
 *.lcov
 .nyc_output
 test-results
+playwright-report
 **/playwright/results
 
 # VSCode
@@ -68,8 +69,16 @@ Temporary Items
 
 # Local workspace and maintenance notes
 patch-memory/
+docs-private/
+PATCHLOG.md
+PRODUCTION_AUDIT.md
+REPO_DEV.md
+RELEASE_CHECKLIST.md
+TODO.md
 AGENTS.md
 ANALYSE_*.md
+PROMPT_*.md
+CONTEXT_*.md
 VALIDATIONS_*.md
 INVENTAIRE_PATCH_*.md
 RELEASE_NOTES_*.md

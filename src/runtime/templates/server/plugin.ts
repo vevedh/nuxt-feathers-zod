@@ -66,7 +66,9 @@ export function getServerPluginContents(options: ResolvedOptions) {
     const koa = framework === 'koa'
     const sio = Boolean(transports?.websocket)
 
-    const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
+    const authOptions = options?.auth as DefaultAuthOptions
+    const authStrategies = authOptions?.authStrategies
+    const parseStrategies = authOptions?.parseStrategies || authStrategies
     const auth = (authStrategies || []).length > 0
 
     const keycloakEnabled = Boolean(options.keycloak && options.keycloak.mode === 'bridge')
@@ -123,7 +125,7 @@ export function getServerPluginContents(options: ResolvedOptions) {
         websocket: sio ? { enabled: true, ...(websocketOptions || {}), path: websocketPath ?? '/socket.io' } : false,
       },
       loadFeathersConfig: Boolean(options.loadFeathersConfig),
-      auth: { enabled: auth, strategies: authStrategies || [] },
+      auth: { enabled: auth, strategies: parseStrategies || [] },
       server: {
         secureDefaults: (options.server as any)?.secureDefaults,
         secure: (options.server as any)?.secure,

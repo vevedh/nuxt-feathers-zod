@@ -1,8 +1,10 @@
 import { readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
+import { ensurePlaywrightRuntime } from './lib/ensure-playwright-runtime.mjs'
 
 const root = process.cwd()
+ensurePlaywrightRuntime(root)
 const e2eDir = resolve(root, 'test/e2e')
 const vitestBin = resolve(root, 'node_modules/vitest/vitest.mjs')
 const files = readdirSync(e2eDir)
@@ -16,6 +18,7 @@ if (!files.length) {
 }
 
 for (const file of files) {
+  ensurePlaywrightRuntime(root)
   console.log(`[nuxt-feathers-zod] E2E ${file}`)
   const result = spawnSync(process.execPath, [
     vitestBin,

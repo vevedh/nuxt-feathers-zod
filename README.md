@@ -3,9 +3,9 @@
 `nuxt-feathers-zod` integrates FeathersJS v5 (Dove), Zod schemas and typed service access into Nuxt 4.
 It is designed for applications that need a real backend contract inside a Nuxt project, while keeping the option to connect to an external Feathers API.
 
-Current reference version: **6.5.49**.
+Current reference version: **6.6.0**.
 
-Runtime baseline for `6.5.38`: Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6`.
+Runtime baseline for `6.6.0`: Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6`.
 The embedded Nitro bridge now uses `@vevedh/feathers-nitro@0.5.0`; this release preserves the existing single-instance behavior while preparing a future opt-in multi-instance configuration.
 
 
@@ -15,7 +15,7 @@ The embedded Nitro bridge now uses `@vevedh/feathers-nitro@0.5.0`; this release 
 - Remote Feathers client mode for an existing backend.
 - Service generation through the CLI.
 - Zod-first schemas, resolvers, query validation and TypeScript types.
-- Local/JWT authentication and Keycloak-oriented remote authentication flows.
+- Extensible local, JWT, OIDC, API-key and custom authentication provider registry, plus Keycloak-oriented remote flows.
 - REST and Socket.io transports.
 - MongoDB support and optional MongoDB management endpoints.
 - Feathers-first Builder and diagnostic services under `nfz/*`.
@@ -40,8 +40,14 @@ export default defineNuxtConfig({
       websocket: { enabled: true },
     },
     auth: {
-      enabled: true,
-      strategies: ['local', 'jwt'],
+      providers: {
+        local: {
+          type: 'local',
+          usernameField: 'email',
+          passwordField: 'password',
+        },
+        jwt: { type: 'jwt' },
+      },
     },
   },
 })
@@ -86,7 +92,7 @@ const auth = useAuth()
 await auth.authenticate({
   strategy: 'local',
   email: 'admin@example.local',
-  password: 'change-me',
+  password: '<user-password>',
 })
 ```
 
@@ -153,9 +159,9 @@ Before publishing or deploying an application using this module:
 
 1. Run `bunx nuxt-feathers-zod doctor`.
 2. Verify `feathers.servicesDirs` and the generated `services/.nfz/manifest.json`.
-3. Validate authentication strategy names and token fields.
-4. Disable destructive MongoDB management actions unless explicitly required.
-5. Configure runtime secrets through environment variables.
+3. Validate provider names, OIDC issuer/audience values and API-key scopes.
+4. Configure `NFZ_AUTH_SECRET` or asymmetric signing keys; production startup rejects unsafe defaults.
+5. Disable destructive MongoDB management actions unless explicitly required.
 6. Build the app and run at least one smoke scenario for authentication and one protected service.
 
 ## License

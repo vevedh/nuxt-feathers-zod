@@ -1,5 +1,11 @@
 import type { Import } from 'unimport'
 import type { ModuleOptions } from '..'
+import type { NfzPrincipalClaimsOptions } from '../../auth/principal'
+import type { NfzJwtKeyOptions } from '../../auth/security'
+import type {
+  NfzAuthenticationProviderOptions,
+  NfzAuthenticationProviders,
+} from '../../auth/types'
 import type { AuthClientOptions } from './client'
 import type { AuthJwtOptions } from './jwt'
 import type { AuthLocalOptions } from './local'
@@ -7,25 +13,32 @@ import { capitalCase } from 'change-case'
 import defu from 'defu'
 import { klona } from 'klona'
 import consola from 'consola'
-import { digest } from 'ohash'
 import { NuxtFeathersError } from '../../errors'
 import { resolveAuthClientOptions } from './client'
 import { getAuthJwtDefaults } from './jwt'
 import { getAuthLocalDefaults } from './local'
 
-export type AuthStrategy = 'jwt' | 'local' | 'oauth'
-
+export type AuthStrategy = string
 export type AuthStrategies = AuthStrategy[]
 
 export interface StaticAuthOptions {
   service: string
   entity: string
   entityClass: string
+  authenticationService: string
+}
+
+export interface AuthPrincipalOptions {
+  claims?: NfzPrincipalClaimsOptions
 }
 
 export interface DefaultAuthOptions extends StaticAuthOptions {
   authStrategies: AuthStrategies
-  secret: string
+  parseStrategies: AuthStrategies
+  providers: NfzAuthenticationProviders
+  secret?: string
+  keys?: NfzJwtKeyOptions
+  principal?: AuthPrincipalOptions
   entityImport?: Import
 }
 
@@ -42,11 +55,23 @@ export interface ResolvedAuthOptions extends DefaultAuthOptions, AdditionalAuthO
 }
 
 export type ResolvedAuthOptionsOrDisabled = ResolvedAuthOptions | false
-
 export type ResolvedAuthOptionsWithOutEntityImport = Omit<ResolvedAuthOptions, 'entityImport'>
+
+export interface PublicAuthProviderOptions {
+  type: string
+  enabled: boolean
+  parse: boolean
+  issueAccessToken: boolean
+  assuranceLevel?: string
+  issuer?: string
+  audience?: string | string[]
+  header?: string
+}
 
 export interface PublicAuthOptions {
   authStrategies: AuthStrategies
+  parseStrategies: AuthStrategies
+  providers: Record<string, PublicAuthProviderOptions>
   servicePath: string
   entityKey: string
   entityClass: string
@@ -64,6 +89,7 @@ export const authStaticDefaults: StaticAuthOptions = {
   entity: 'user',
   entityClass: 'User',
   service: 'users',
+  authenticationService: 'authentication',
 }
 
 export function getAuthStaticDefaults(): StaticAuthOptions {
@@ -76,16 +102,96 @@ export function getDefaultAuthStrategies(): AuthStrategies {
   return klona(defaultAuthStrategies)
 }
 
-export function getAuthDefaults(appDir: string, authStrategies?: AuthStrategies): ResolvedAuthOptionsWithOutEntityImport {
-  authStrategies ||= getDefaultAuthStrategies()
+function inferProviderType(name: string): string {
+  return name === 'jwt' || name === 'local' || name === 'oauth' ? name : 'custom'
+}
+
+function providerDefaults(name: string): NfzAuthenticationProviderOptions {
+  if (name === 'local')
+    return { type: 'local', ...getAuthLocalDefaults(), parse: false, issueAccessToken: true }
+  if (name === 'jwt')
+    return { type: 'jwt', parse: true, issueAccessToken: true }
+  if (name === 'oauth')
+    return { type: 'oauth', parse: false, issueAccessToken: true }
+  return { type: inferProviderType(name), parse: false, issueAccessToken: true }
+}
+
+function defaultProviderParse(provider: NfzAuthenticationProviderOptions): boolean {
+  return provider.type === 'jwt' || provider.type === 'oidc' || provider.type === 'api-key'
+}
+
+function ensureJwtVerificationProvider(
+  providers: NfzAuthenticationProviders,
+  declarativeProvidersConfigured: boolean,
+): void {
+  if (!declarativeProvidersConfigured)
+    return
+
+  const enabled = Object.values(providers).filter(provider => provider.enabled !== false)
+  const issuesNfzTokens = enabled.some(provider => provider.type !== 'jwt' && provider.issueAccessToken !== false)
+  const hasJwt = enabled.some(provider => provider.type === 'jwt')
+  if (issuesNfzTokens && !hasJwt)
+    providers.jwt = providerDefaults('jwt')
+}
+
+function resolveProviders(input: AuthOptions, strategies: AuthStrategies): NfzAuthenticationProviders {
+  const providers: NfzAuthenticationProviders = {}
+  for (const strategy of strategies)
+    providers[strategy] = providerDefaults(strategy)
+
+  for (const [name, configured] of Object.entries(input.providers || {})) {
+    const base = providers[name] || providerDefaults(name)
+    const resolved = defu(configured, base) as NfzAuthenticationProviderOptions
+    if (!resolved.type)
+      resolved.type = inferProviderType(name)
+    if (!Object.hasOwn(configured, 'parse'))
+      resolved.parse = defaultProviderParse(resolved)
+    if (!Object.hasOwn(configured, 'issueAccessToken'))
+      resolved.issueAccessToken = resolved.type !== 'api-key'
+    providers[name] = resolved
+  }
+
+  if (input.local && providers.local)
+    providers.local = defu(input.local, providers.local) as NfzAuthenticationProviderOptions
+
+  ensureJwtVerificationProvider(providers, Boolean(input.providers && Object.keys(input.providers).length))
+  return providers
+}
+
+function enabledProviderNames(providers: NfzAuthenticationProviders): string[] {
+  return Object.entries(providers)
+    .filter(([, provider]) => provider.enabled !== false)
+    .map(([name]) => name)
+}
+
+function resolveParseStrategies(
+  input: AuthOptions,
+  providers: NfzAuthenticationProviders,
+): AuthStrategies {
+  if (input.parseStrategies?.length)
+    return [...input.parseStrategies]
+
+  return Object.entries(providers)
+    .filter(([, provider]) => provider.enabled !== false && (provider.parse ?? defaultProviderParse(provider)))
+    .sort(([, left], [, right]) => {
+      const priority = (provider: NfzAuthenticationProviderOptions) => provider.type === 'jwt' ? 1 : 0
+      return priority(left) - priority(right)
+    })
+    .map(([name]) => name)
+}
+
+export function getAuthDefaults(_appDir: string, authStrategies?: AuthStrategies): ResolvedAuthOptionsWithOutEntityImport {
+  const strategies = authStrategies?.length ? [...authStrategies] : getDefaultAuthStrategies()
+  const providers = resolveProviders({ authStrategies: strategies }, strategies)
   const authOptions: ResolvedAuthOptionsWithOutEntityImport = {
     ...getAuthStaticDefaults(),
-    secret: digest(appDir),
-    authStrategies,
+    authStrategies: strategies,
+    parseStrategies: resolveParseStrategies({}, providers),
+    providers,
   }
-  if (authStrategies.includes('jwt'))
+  if (strategies.includes('jwt'))
     authOptions.jwtOptions = getAuthJwtDefaults()
-  if (authStrategies.includes('local'))
+  if (strategies.includes('local'))
     authOptions.local = getAuthLocalDefaults()
 
   return authOptions
@@ -128,6 +234,33 @@ function warnPrepareSafeEmbeddedAuth(details: string): void {
   )
 }
 
+function resolveConfiguredAuth(input: AuthOptions, appDir: string): ResolvedAuthOptionsWithOutEntityImport {
+  const explicitProviders = input.providers && Object.keys(input.providers).length > 0
+  const strategies = input.authStrategies?.length
+    ? [...input.authStrategies]
+    : explicitProviders
+      ? enabledProviderNames(input.providers || {})
+      : getDefaultAuthStrategies()
+  const defaults = getAuthDefaults(appDir, strategies)
+  const providers = resolveProviders(input, strategies)
+  const resolved = defu(input, defaults) as ResolvedAuthOptionsWithOutEntityImport
+
+  resolved.authStrategies = enabledProviderNames(providers)
+  resolved.parseStrategies = resolveParseStrategies(input, providers)
+  resolved.providers = providers
+
+  const hasJwtProvider = Object.values(providers).some(provider => provider.enabled !== false && provider.type === 'jwt')
+  const hasLocalProvider = Object.values(providers).some(provider => provider.enabled !== false && provider.type === 'local')
+  if (hasJwtProvider)
+    resolved.jwtOptions ||= getAuthJwtDefaults()
+  else
+    delete resolved.jwtOptions
+  if (!hasLocalProvider)
+    delete resolved.local
+
+  return resolved
+}
+
 export function resolveAuthOptions(
   auth: ModuleOptions['auth'],
   ctx: ResolveAuthContext,
@@ -137,36 +270,17 @@ export function resolveAuthOptions(
   if (auth === false)
     return false
 
-  let authOptions: ResolvedAuthOptionsWithOutEntityImport
-
-  const authDefaults = getAuthDefaults(appDir, (auth as AuthOptions)?.authStrategies)
-
-  if (auth === true || auth == null) {
-    authOptions = authDefaults
-  }
-  else {
-    authOptions = defu(auth, authDefaults) as ResolvedAuthOptionsWithOutEntityImport
-    if ((auth as AuthOptions)?.authStrategies?.length)
-      authOptions.authStrategies = [...(auth as AuthOptions).authStrategies!]
-    else
-      authOptions.authStrategies = authDefaults.authStrategies
-    if (!authOptions.authStrategies?.includes('jwt'))
-      delete authOptions.jwtOptions
-    if (!authOptions.authStrategies?.includes('local'))
-      delete authOptions.local
-  }
+  const input = auth === true || auth == null ? {} : auth as AuthOptions
+  const authOptions = resolveConfiguredAuth(input, appDir)
 
   if (ctx.client)
     authOptions.client = resolveAuthClientOptions(authOptions.client, authOptions.authStrategies)
   else
     delete authOptions.client
 
-  const entityClass = getEntityClass(auth as AuthOptions)
+  const entityClass = getEntityClass(input)
 
-  // Embedded mode expects local service schema imports so we can type the auth entity.
   if (ctx.mode === 'embedded') {
-    // DX guard: if auth is enabled but we didn't detect any local service schemas, fail fast with
-    // a clear, actionable message (instead of the confusing "Entity class User not found").
     if (!servicesImports.length) {
       if (shouldDegradeEmbeddedAuthForMissingEntity()) {
         warnPrepareSafeEmbeddedAuth(
@@ -176,21 +290,12 @@ export function resolveAuthOptions(
         return false
       }
       throw new NuxtFeathersError(
-        `[nuxt-feathers-zod] Auth is enabled but no service schemas were detected.
-
-`
-        + `Embedded auth requires a local users service/schema so the module can import the auth entity class (${entityClass}).
-
-`
-        + `Fix:
-`
-        + `  1) Ensure you have: feathers: { servicesDirs: ['services'] } (or your custom dir)
-`
-        + `  2) Generate the users service: bunx nuxt-feathers-zod add service users --auth
-`
-        + `
-Or disable auth in nuxt.config: feathers: { auth: false }
-`,
+        `[nuxt-feathers-zod] Auth is enabled but no service schemas were detected.\n\n`
+        + `Embedded auth requires a local users service/schema so the module can import the auth entity class (${entityClass}).\n\n`
+        + `Fix:\n`
+        + `  1) Ensure you have: feathers: { servicesDirs: ['services'] } (or your custom dir)\n`
+        + `  2) Generate the users service: bunx nuxt-feathers-zod add service users --auth\n`
+        + `\nOr disable auth in nuxt.config: feathers: { auth: false }\n`,
       )
     }
     const entityImport = servicesImports.find(i => i.as === entityClass)
@@ -206,25 +311,20 @@ Or disable auth in nuxt.config: feathers: { auth: false }
     }
 
     entityImport.from = entityImport.from.replace(/\.ts$/, '')
-    const resolvedAuth: ResolvedAuthOptions = {
+    return {
       ...authOptions,
       entityClass,
       entityImport,
     }
-    return resolvedAuth
   }
 
-  // Remote mode: do not require local schema imports.
-  // If the user provided an entityImport explicitly, keep it (best-effort).
-  const explicit = (auth as any)?.entityImport as Import | undefined
+  const explicit = input.entityImport as Import | undefined
   if (explicit?.from)
     explicit.from = explicit.from.replace(/\.ts$/, '')
 
-  const resolvedRemote: ResolvedAuthOptions = {
+  return {
     ...authOptions,
     entityClass,
-    entityImport: explicit as any,
+    entityImport: explicit as Import,
   }
-
-  return resolvedRemote
 }

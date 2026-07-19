@@ -1,5 +1,5 @@
 import type { Application } from 'nuxt-feathers-zod/server'
-import { authenticate } from '@feathersjs/authentication'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 
 import { ActionsService } from './actions.class'
@@ -25,7 +25,7 @@ export function actions(app: Application) {
     around: {
       all: [],
       find: [],
-      run: [authenticate('jwt'), schemaHooks.resolveResult(actionRunResultResolver)],
+      run: [authenticateNfz(), schemaHooks.resolveResult(actionRunResultResolver)],
     },
     before: {
       all: [],

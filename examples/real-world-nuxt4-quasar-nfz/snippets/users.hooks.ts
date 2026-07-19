@@ -1,8 +1,8 @@
 import type { HookContext } from '@feathersjs/feathers'
-import { authenticate } from '@feathersjs/authentication'
 import { Forbidden, NotAuthenticated } from '@feathersjs/errors'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 
-const authenticateJwt = authenticate('jwt')
+const authenticateProvider = authenticateNfz()
 
 interface UserLike {
   _id?: string
@@ -11,6 +11,10 @@ interface UserLike {
   roles?: string[]
   groups?: string[]
   isAdmin?: boolean
+}
+
+function resolveIdentity(context: HookContext): UserLike | undefined {
+  return (context.params.principal || context.params.user) as UserLike | undefined
 }
 
 function isAdmin(user: UserLike | undefined): boolean {
@@ -33,7 +37,7 @@ async function authenticateExternal(context: HookContext): Promise<HookContext> 
     return context
   }
 
-  return await authenticateJwt(context) as HookContext
+  return authenticateProvider(context) as Promise<HookContext>
 }
 
 function requireAdmin(context: HookContext): HookContext {
@@ -41,7 +45,7 @@ function requireAdmin(context: HookContext): HookContext {
     return context
   }
 
-  if (!isAdmin(context.params.user as UserLike | undefined)) {
+  if (!isAdmin(resolveIdentity(context))) {
     throw new Forbidden('Accès admin requis')
   }
 
@@ -53,7 +57,7 @@ function allowSelfOrAdmin(context: HookContext): HookContext {
     return context
   }
 
-  const user = context.params.user as UserLike | undefined
+  const user = resolveIdentity(context)
 
   if (!user) {
     throw new NotAuthenticated('Authentification requise')

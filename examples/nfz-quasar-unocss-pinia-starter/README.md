@@ -1,6 +1,6 @@
 # NFZ Quasar UnoCSS Pinia Starter
 
-Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.5.43** avec MongoDB local prêt à l’emploi.
+Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.6.0** avec MongoDB local prêt à l’emploi.
 
 Il fournit :
 
@@ -42,7 +42,7 @@ admin / admin123
 MongoDB local :
 
 ```txt
-mongodb://root:changeMe@127.0.0.1:27037/nfz_starter?authSource=admin
+mongodb://root:changeMe@6.6.0.1:27037/nfz_starter?authSource=admin
 ```
 
 ## Commandes MongoDB
@@ -53,25 +53,25 @@ bun run db:logs    # affiche les logs MongoDB
 bun run db:down    # arrête MongoDB
 ```
 
-## Dépendance NFZ 6.5.43
+## Dépendance NFZ 6.6.0
 
 Le `package.json` cible :
 
 ```json
-"nuxt-feathers-zod": "6.5.43"
+"nuxt-feathers-zod": "6.6.0"
 ```
 
-Si la version 6.5.43 n’est pas encore publiée sur npm, utilise ton tarball local :
+Si la version 6.6.0 n’est pas encore publiée sur npm, utilise ton tarball local :
 
 ```bash
-# depuis le dépôt nuxt-feathers-zod 6.5.43
+# depuis le dépôt nuxt-feathers-zod 6.6.0
 bun install
 bun run build
 npm pack
 
 # dans ce starter
 bun remove nuxt-feathers-zod
-bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.5.43.tgz
+bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.6.0.tgz
 ```
 
 ## Architecture
@@ -123,7 +123,7 @@ feathers: {
   servicesDirs: ['services'],
   database: {
     mongo: {
-      url: process.env.MONGODB_URL || 'mongodb://root:changeMe@127.0.0.1:27037/nfz_starter?authSource=admin',
+      url: process.env.MONGODB_URL || 'mongodb://root:changeMe@6.6.0.1:27037/nfz_starter?authSource=admin',
       management: {
         enabled: true,
         basePath: '/mongo-admin',
@@ -245,11 +245,11 @@ bun lint:fix
 bun build
 ```
 
-## Correctif `/messages` 0.1.2
+## Correctif `/messages` 6.6.0
 
 La page `/messages` utilise volontairement une couche d'accès centralisée (`useAdminFeathers`) plutôt que des appels directs `$api.service(...)` dans la page.
 
-Depuis `0.1.2`, cette couche injecte explicitement le JWT dans les appels Feathers protégés :
+Depuis `6.6.0`, cette couche injecte explicitement le JWT dans les appels Feathers protégés :
 
 ```ts
 headers: {
@@ -263,7 +263,7 @@ authentication: {
 
 Cela évite le cas où l'UI affiche une session active mais où l'appel REST Feathers reçoit une requête sans authentification exploitable. Les erreurs Feathers sont aussi normalisées pour éviter l'affichage `[object Object]`.
 
-## Patch 0.1.3 - Hydration / Quasar ripple cleanup
+## Patch 6.6.0 - Hydration / Quasar ripple cleanup
 
 - Ajout de `routeRules` `ssr:false` pour les pages privées `/dashboard`, `/messages` et `/session` afin d'éviter le mismatch SSR/client lors des redirections d'authentification côté session.
 - Désactivation globale du ripple Quasar (`quasar.config.ripple=false`) pour réduire les warnings navigateur `touchstart` non-passive liés aux effets tactiles.

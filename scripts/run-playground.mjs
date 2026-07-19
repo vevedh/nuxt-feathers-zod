@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process'
+import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
@@ -24,6 +25,15 @@ else {
   if (command === 'build' && process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB === undefined) {
     process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB = 'false'
     console.info('[nuxt-feathers-zod] playground build: embedded MongoDB disabled (set NFZ_PLAYGROUND_EMBEDDED_MONGODB=true to override)')
+  }
+
+
+  // The repository playground is compiled in production mode during release checks.
+  // Give that isolated build a fresh random signing secret without weakening the
+  // module's production startup guard for consumer applications.
+  if (command === 'build' && !process.env.NFZ_AUTH_SECRET) {
+    process.env.NFZ_AUTH_SECRET = randomBytes(48).toString('base64url')
+    console.info('[nuxt-feathers-zod] playground build: generated an ephemeral release-check authentication secret')
   }
 
   if (command === 'build') {

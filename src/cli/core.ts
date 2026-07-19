@@ -1362,7 +1362,7 @@ async function inferServiceManifest(projectRoot: string, servicesDir: string, na
     name: serviceNameKebab,
     path,
     adapter,
-    auth: serviceSource.includes("authenticate('jwt')"),
+    auth: serviceSource.includes('authenticateNfz()') || serviceSource.includes("authenticate('jwt')"),
     custom,
     idField,
     ...(collectionName ? { collectionName } : {}),
@@ -2308,29 +2308,31 @@ export async function generateMongoCompose(opts: GenerateMongoComposeOptions) {
 }
 
 function withAuthImport(content: string, enabled: boolean) {
-  const importLine = "import { authenticate } from '@feathersjs/authentication'\n"
-  const hasImport = content.includes(importLine)
+  const importLine = "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n"
+  const legacyImportLine = "import { authenticate } from '@feathersjs/authentication'\n"
+  let out = content.replace(legacyImportLine, '')
+  const hasImport = out.includes(importLine)
 
   if (enabled && !hasImport) {
-    if (/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/.test(content))
-      return content.replace(/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/, `${importLine}import type { Application } from 'nuxt-feathers-zod/server'\n`)
-    return `${importLine}${content}`
+    if (/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/.test(out))
+      return out.replace(/import type \{ Application \} from 'nuxt-feathers-zod\/server'\n/, `${importLine}import type { Application } from 'nuxt-feathers-zod/server'\n`)
+    return `${importLine}${out}`
   }
 
   if (!enabled && hasImport)
-    return content.replace(importLine, '')
+    out = out.replace(importLine, '')
 
-  return content
+  return out
 }
 
 function withMethodAuthBlocks(content: string, enabled: boolean) {
   const replacements = {
-    find: enabled ? "find: [authenticate('jwt')]" : 'find: []',
-    get: enabled ? "get: [authenticate('jwt')]" : 'get: []',
+    find: enabled ? "find: [authenticateNfz()]" : 'find: []',
+    get: enabled ? "get: [authenticateNfz()]" : 'get: []',
     create: 'create: []',
-    patch: enabled ? "patch: [authenticate('jwt')]" : 'patch: []',
-    remove: enabled ? "remove: [authenticate('jwt')]" : 'remove: []',
-    update: enabled ? "update: [authenticate('jwt')]" : 'update: []',
+    patch: enabled ? "patch: [authenticateNfz()]" : 'patch: []',
+    remove: enabled ? "remove: [authenticateNfz()]" : 'remove: []',
+    update: enabled ? "update: [authenticateNfz()]" : 'update: []',
   }
 
   let out = content
@@ -2341,7 +2343,7 @@ function withMethodAuthBlocks(content: string, enabled: boolean) {
   }
 
   if (/before:\s*\{[\s\S]*?all:\s*\[(?:[^\]]*)\]/m.test(out)) {
-    out = out.replace(/(^\s*)all:\s*\[(?:[^\]]*)\]/m, (_m, indent) => `${indent}all: ${enabled ? "[authenticate('jwt')]" : '[]'}`)
+    out = out.replace(/(^\s*)all:\s*\[(?:[^\]]*)\]/m, (_m, indent) => `${indent}all: ${enabled ? "[authenticateNfz()]" : '[]'}`)
   }
 
   return out
@@ -3203,7 +3205,7 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, 
     return renderServiceNoSchema(ids, auth, docs, authAware)
   }
 
-  const authImports = auth ? 'import { authenticate } from \'@feathersjs/authentication\'\n' : ''
+  const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
 
   const swaggerImports = ''
 
@@ -3235,11 +3237,11 @@ ${auth
 
   const authAround = auth
     ? `
-      find: [authenticate('jwt')],
-      get: [authenticate('jwt')],
+      find: [authenticateNfz()],
+      get: [authenticateNfz()],
       create: [],
-      patch: [authenticate('jwt')],
-      remove: [authenticate('jwt')],
+      patch: [authenticateNfz()],
+      remove: [authenticateNfz()],
 `
     : `
       find: [],
@@ -3311,7 +3313,7 @@ function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: b
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
-  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
 
   const docsBlock = docs
     ? `
@@ -3354,7 +3356,7 @@ function renderHooksNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boo
   const base = ids.baseCamel
   const Base = ids.basePascal
   const Service = `${Base}Service`
-  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
   const authAwareUsers = isAuthUsersService(ids, auth, authAware)
   const passwordImports = authAwareUsers ? "import { passwordHash } from '@feathersjs/authentication-local'\n" : ''
   const helperBlock = authAwareUsers
@@ -3373,11 +3375,11 @@ const stripPassword = (value: unknown) => {
 
   const authAround = auth
     ? `
-    find: [authenticate('jwt')],
-    get: [authenticate('jwt')],
+    find: [authenticateNfz()],
+    get: [authenticateNfz()],
     create: [],
-    patch: [authenticate('jwt')],
-    remove: [authenticate('jwt')],
+    patch: [authenticateNfz()],
+    remove: [authenticateNfz()],
 `
     : `
     find: [],
@@ -3675,9 +3677,9 @@ function renderFileService(ids: ReturnType<typeof createServiceIds>, servicePath
   const base = ids.baseCamel
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
-  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
   const docsBlock = docs ? `\n    docs: {\n      description: '${serviceName} local file upload/download service',\n    },` : ''
-  const hookBefore = auth ? `      all: [authenticate('jwt')],\n` : ''
+  const hookBefore = auth ? `      all: [authenticateNfz()],\n` : ''
   return `// ! Generated by nuxt-feathers-zod - local file upload/download service template
 import type { Application } from 'nuxt-feathers-zod/server'
 ${authImports}import { schemaHooks } from '@feathersjs/schema'
@@ -4007,13 +4009,13 @@ function renderCustomService(
   const useSchema = schemaKind === 'zod'
   const serviceClass = `${Base}Service`
 
-  const authImports = auth ? "import { authenticate } from '@feathersjs/authentication'\n" : ''
+  const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
 
   const allMethods = uniq([...stdMethods, ...customMethods])
   const methodsConst = `${base}Methods`
 
   const hookBefore = auth
-    ? `      all: [authenticate('jwt')],\n`
+    ? `      all: [authenticateNfz()],\n`
     : ''
 
   const schemaHookImports = useSchema && customMethods.length

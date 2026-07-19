@@ -1,6 +1,6 @@
 import type { Application } from 'nuxt-feathers-zod/server'
-import { authenticate } from '@feathersjs/authentication'
 import { hooks as schemaHooks } from '@feathersjs/schema'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { getOptions, MessageService } from './messages.class'
 import {
   messageDataResolver,
@@ -26,7 +26,7 @@ export function message(app: Application) {
   app.service(messagePath).hooks({
     around: {
       all: [
-        authenticate('jwt'),
+        authenticateNfz(),
         schemaHooks.resolveExternal(messageExternalResolver),
         schemaHooks.resolveResult(messageResolver),
       ],
