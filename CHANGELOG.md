@@ -1,5 +1,7 @@
 ## 6.6.0 - 2026-07-19 - Authentication Provider Registry and Security Foundation
 
+- Make the tarball consumer smoke deterministic on Windows by preferring npm over Bun shared-cache installs, while preserving an explicit isolated-cache Bun validation path.
+- Correct the final `antfu/curly` lint regression in the Git-index migration test without weakening repository lint rules.
 - Migrate stale private maintenance files out of the Git index automatically during source preparation and repository cleanup, while preserving the local files and cleanly skipping extracted archives without Git metadata.
 - Keep playground diagnostics and `/tests` accessible to anonymous developers while protecting only routes that explicitly opt into authentication.
 - Treat expected 401/403 responses from protected NFZ diagnostics as warnings in read-only dashboard checks, while preserving failures for real runtime errors.

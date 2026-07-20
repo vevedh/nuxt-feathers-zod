@@ -131,10 +131,11 @@ describe('public repository hygiene guard', () => {
 
     expect(cleanup.status).toBe(0)
     expect(cleanup.stdout).toContain('Removed 5 maintenance artifact(s) from the Git index')
-    for (const file of legacyFiles)
+    for (const file of legacyFiles) {
       expect(
         execFileSync('git', ['ls-files', file], { cwd: directory, encoding: 'utf8' }),
       ).toBe('')
+    }
     expect(runChecker(directory).status).toBe(0)
   })
 

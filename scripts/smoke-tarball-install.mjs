@@ -6,18 +6,20 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 const rootDir = resolve(__dirname, '..')
 const keepTemp = process.env.NFZ_SMOKE_KEEP_TEMP === 'true'
 const fullBuild = process.env.NFZ_TARBALL_SMOKE_BUILD === 'true'
 
-function run(cmd, args, cwd) {
+function run(cmd, args, cwd, options = {}) {
   console.log(`[nuxt-feathers-zod] $ ${cmd} ${args.join(' ')}`)
   const result = spawnSync(cmd, args, {
     cwd,
     stdio: 'pipe',
     encoding: 'utf8',
     shell: process.platform === 'win32' && ['npx', 'bunx', 'npm', 'bun'].includes(cmd),
+    env: options.env || process.env,
   })
 
   if (result.error) {
@@ -48,29 +50,76 @@ function hasCommand(cmd, args = ['--version']) {
   return result.status === 0
 }
 
-function detectPackageManager() {
-  if (process.env.NFZ_SMOKE_PM)
-    return process.env.NFZ_SMOKE_PM
+export function selectSmokePackageManager({
+  platform,
+  forced,
+  runningWithBun,
+  bunAvailable,
+  npmAvailable,
+}) {
+  if (forced) {
+    if (!['bun', 'npm'].includes(forced))
+      throw new Error(`[nuxt-feathers-zod] Unsupported NFZ_SMOKE_PM value: ${forced}`)
+    return forced
+  }
 
-  const execPath = String(process.env.npm_execpath || process.env.npm_config_user_agent || '')
-  if (process.versions?.bun || /\bbun\b/i.test(execPath))
-    return 'bun'
-  if (/\bnpm\b/i.test(execPath))
+  // Bun 1.3.x may fail while moving freshly extracted packages into its
+  // shared cache on Windows (NtSetInformationFile/EPERM). The smoke test
+  // validates the published npm tarball, so npm is the deterministic default
+  // consumer installer on Windows. Set NFZ_SMOKE_PM=bun to test Bun explicitly.
+  if (platform === 'win32' && npmAvailable)
     return 'npm'
 
-  if (hasCommand('bun', ['--version']) && hasCommand('bunx', ['--version']))
+  if (runningWithBun && bunAvailable)
     return 'bun'
-  if (hasCommand('npm', ['--version']) && hasCommand('npx', ['--version']))
+  if (npmAvailable)
     return 'npm'
+  if (bunAvailable)
+    return 'bun'
 
   throw new Error('[nuxt-feathers-zod] No supported package manager found (bun or npm required). Set NFZ_SMOKE_PM=bun or NFZ_SMOKE_PM=npm to force a package manager.')
 }
 
-function install(pm, cwd) {
-  if (pm === 'bun')
-    run('bun', ['install'], cwd)
-  else
-    run('npm', ['install', '--no-fund', '--no-audit'], cwd)
+export function createBunInstallArguments(cacheDir) {
+  return [
+    'install',
+    '--backend=copyfile',
+    '--linker=hoisted',
+    '--concurrent-scripts=1',
+    '--network-concurrency=8',
+    '--cache-dir',
+    cacheDir,
+    '--no-progress',
+  ]
+}
+
+function detectPackageManager() {
+  const execPath = String(process.env.npm_execpath || process.env.npm_config_user_agent || '')
+  const bunAvailable = hasCommand('bun', ['--version']) && hasCommand('bunx', ['--version'])
+  const npmAvailable = hasCommand('npm', ['--version']) && hasCommand('npx', ['--version'])
+
+  return selectSmokePackageManager({
+    platform: process.platform,
+    forced: process.env.NFZ_SMOKE_PM,
+    runningWithBun: Boolean(process.versions?.bun || /\bbun\b/i.test(execPath)),
+    bunAvailable,
+    npmAvailable,
+  })
+}
+
+function install(pm, cwd, workDir) {
+  if (pm === 'bun') {
+    const cacheDir = join(workDir, '.bun-cache')
+    run('bun', createBunInstallArguments(cacheDir), cwd, {
+      env: {
+        ...process.env,
+        BUN_INSTALL_CACHE_DIR: cacheDir,
+      },
+    })
+    return
+  }
+
+  run('npm', ['install', '--no-fund', '--no-audit'], cwd)
 }
 
 function detectPackTool(pm) {
@@ -106,6 +155,8 @@ async function main() {
 
   console.log(`[nuxt-feathers-zod] Smoke workspace: ${workDir}`)
   console.log(`[nuxt-feathers-zod] Using package manager: ${pm}`)
+  if (process.platform === 'win32' && pm === 'npm' && !process.env.NFZ_SMOKE_PM)
+    console.log('[nuxt-feathers-zod] Windows consumer install uses npm by default to avoid Bun shared-cache EPERM failures. Set NFZ_SMOKE_PM=bun to force the isolated-cache Bun path.')
 
   const packPm = detectPackTool(pm)
   console.log(`[nuxt-feathers-zod] Using pack tool: ${packPm}`)
@@ -141,14 +192,14 @@ async function main() {
   }
 
   await writeFile(join(consumerDir, 'package.json'), `${JSON.stringify(consumerPkg, null, 2)}\n`, 'utf8')
-  install(pm, consumerDir)
+  install(pm, consumerDir, workDir)
   execPackageBin(pm, consumerDir, ['nuxi', 'prepare'])
 
   const verifyFile = join(consumerDir, 'verify-package.mjs')
   await writeFile(verifyFile, `
 import { readFile, access } from 'node:fs/promises'
 import { constants } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 const targets = [
   '.',
@@ -213,7 +264,9 @@ console.log(JSON.stringify(resolved, null, 2))
     await rm(workDir, { recursive: true, force: true })
 }
 
-main().catch(async (error) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})
+if (resolve(process.argv[1] || '') === __filename) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 1
+  })
+}

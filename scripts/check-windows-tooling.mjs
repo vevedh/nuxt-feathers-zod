@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { resolveNpmCliPath } from './lib/npm-cli.mjs'
+import { createBunInstallArguments, selectSmokePackageManager } from './smoke-tarball-install.mjs'
 
 const rootDir = resolve(process.cwd())
 const pkg = JSON.parse(readFileSync(resolve(rootDir, 'package.json'), 'utf8'))
@@ -15,6 +16,7 @@ const packRelease = readFileSync(resolve(rootDir, 'scripts/pack-release.mjs'), '
 const npmCliResolver = readFileSync(resolve(rootDir, 'scripts/lib/npm-cli.mjs'), 'utf8')
 const playwrightRunner = readFileSync(resolve(rootDir, 'scripts/run-playwright-tests.mjs'), 'utf8')
 const playwrightRuntime = readFileSync(resolve(rootDir, 'scripts/lib/ensure-playwright-runtime.mjs'), 'utf8')
+const tarballSmoke = readFileSync(resolve(rootDir, 'scripts/smoke-tarball-install.mjs'), 'utf8')
 
 const failures = []
 
@@ -106,6 +108,49 @@ if (
   || !playwrightRuntime.includes("runBunScript('module:build', rootDir)")
 ) {
   failures.push('Playwright runtime preparation must rebuild missing dist files with the Bun executable on Windows')
+}
+
+
+if (scripts['smoke:tarball'] !== 'node scripts/smoke-tarball-install.mjs')
+  failures.push('smoke:tarball must use the cross-platform tarball consumer runner')
+
+const windowsSmokeManager = selectSmokePackageManager({
+  platform: 'win32',
+  forced: undefined,
+  runningWithBun: true,
+  bunAvailable: true,
+  npmAvailable: true,
+})
+if (windowsSmokeManager !== 'npm')
+  failures.push('Windows tarball smoke must prefer npm unless NFZ_SMOKE_PM explicitly forces Bun')
+
+const forcedWindowsBun = selectSmokePackageManager({
+  platform: 'win32',
+  forced: 'bun',
+  runningWithBun: true,
+  bunAvailable: true,
+  npmAvailable: true,
+})
+if (forcedWindowsBun !== 'bun')
+  failures.push('NFZ_SMOKE_PM=bun must keep the explicit Bun tarball-smoke path')
+
+const bunSmokeArgs = createBunInstallArguments(resolve(rootDir, '.tmp-smoke-cache'))
+for (const requiredArgument of [
+  '--backend=copyfile',
+  '--linker=hoisted',
+  '--concurrent-scripts=1',
+  '--cache-dir',
+]) {
+  if (!bunSmokeArgs.includes(requiredArgument))
+    failures.push(`forced Bun tarball smoke is missing ${requiredArgument}`)
+}
+
+if (
+  !tarballSmoke.includes('Windows consumer install uses npm by default')
+  || !tarballSmoke.includes('BUN_INSTALL_CACHE_DIR')
+  || !tarballSmoke.includes("'--backend=copyfile'")
+) {
+  failures.push('tarball smoke must document the Windows npm default and isolate forced Bun installs')
 }
 
 if (scripts['test:playwright'] !== 'node scripts/run-playwright-tests.mjs')
