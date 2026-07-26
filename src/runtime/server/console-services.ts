@@ -8,6 +8,7 @@ import { BadRequest, Forbidden, NotAuthenticated, NotFound } from '@feathersjs/e
 import { z } from 'zod'
 import { authenticateNfz } from '../auth/hook'
 import { NFZ_CONSOLE_SERVICE_PATHS } from '../capabilities'
+import { checkNfzDatabaseConnection, getNfzDatabaseDiagnostics, getNfzDatabaseRegistry } from './database-registry'
 import { applyPlan, assertPresetId, computePlan, listPresets } from './presets'
 import { readRbacFile, writeRbacFile } from './rbac/rbacFile'
 import { getNfzDir } from './utils/nfzPaths'
@@ -109,7 +110,7 @@ const presetCommandSchema = z.object({
 
 const initCommandSchema = z.object({
   action: z.literal('add-users'),
-  adapter: z.enum(['mongodb', 'memory']).default('mongodb'),
+  adapter: z.enum(['mongodb', 'memory', 'knex']).default('mongodb'),
 }).strict()
 
 function assertSafeObjectGraph(value: unknown): void {
@@ -371,7 +372,11 @@ class NfzBuilderService {
 }
 
 class NfzStatusService {
-  constructor(private readonly context: NfzConsoleServiceContext, private readonly config: NfzConsoleRuntimeConfig) {}
+  constructor(
+    private readonly context: NfzConsoleServiceContext,
+    private readonly config: NfzConsoleRuntimeConfig,
+    private readonly app: any,
+  ) {}
 
   async find(_params?: Params) {
     const servicesDirsAbs = this.context.servicesDirs.map(dir => (
@@ -399,6 +404,9 @@ class NfzStatusService {
             ? 'ready'
             : 'unknown'
     const rbacFile = readRbacFile(this.context.projectRoot, this.context.servicesDirs)
+    const skippedRegistrars = this.app?.get?.('nfzSkippedRegistrars')
+    const serviceRegistrations = this.app?.get?.('nfzServiceRegistrations')
+    const duplicateServiceRegistrations = this.app?.get?.('nfzDuplicateServiceRegistrations')
 
     return {
       ok: true,
@@ -410,6 +418,11 @@ class NfzStatusService {
       consoleEnabled: true,
       allowWrite: this.context.allowWrite,
       hasUsers,
+      runtime: {
+        skippedRegistrars: Array.isArray(skippedRegistrars) ? skippedRegistrars : [],
+        serviceRegistrations: Array.isArray(serviceRegistrations) ? serviceRegistrations : [],
+        duplicateServiceRegistrations: Array.isArray(duplicateServiceRegistrations) ? duplicateServiceRegistrations : [],
+      },
       rbac: {
         enabled: Boolean(rbacFile.enabled),
         mode: authProvider === 'keycloak' ? 'keycloak' : 'local',
@@ -517,6 +530,35 @@ class NfzInitService {
   }
 }
 
+class NfzDatabaseConnectionsService {
+  constructor(private readonly app: any) {}
+
+  async find(_params?: Params) {
+    const registry = this.app?.get?.('databaseRegistry')
+    if (!registry) {
+      return {
+        ok: true,
+        default: null,
+        connections: [],
+      }
+    }
+    return {
+      ok: true,
+      default: getNfzDatabaseRegistry(this.app).defaultConnection || null,
+      connections: getNfzDatabaseDiagnostics(this.app),
+    }
+  }
+
+  async get(id: Id, _params?: Params) {
+    const name = String(id || '').trim()
+    if (!name)
+      throw new BadRequest('A database connection name is required.')
+    if (!this.app?.get?.('databaseRegistry'))
+      throw new NotFound('No database registry is configured.')
+    return { ok: true, connection: await checkNfzDatabaseConnection(this.app, name) }
+  }
+}
+
 function registerService(app: any, path: string, service: object, methods: string[], accessHooks: any[]): void {
   app.use(path, service, { methods, events: [] })
   if (accessHooks.length) {
@@ -546,10 +588,11 @@ export function registerNfzConsoleServices(app: any, config: NfzConsoleRuntimeCo
     [NFZ_CONSOLE_SERVICE_PATHS.schemas, new NfzSchemasService(context), ['find', 'get', 'patch']],
     [NFZ_CONSOLE_SERVICE_PATHS.manifest, new NfzManifestService(context), ['get', 'patch']],
     [NFZ_CONSOLE_SERVICE_PATHS.builder, new NfzBuilderService(context), ['create']],
-    [NFZ_CONSOLE_SERVICE_PATHS.status, new NfzStatusService(context, config), ['find']],
+    [NFZ_CONSOLE_SERVICE_PATHS.status, new NfzStatusService(context, config, app), ['find']],
     [NFZ_CONSOLE_SERVICE_PATHS.rbac, new NfzRbacService(context), ['get', 'patch']],
     [NFZ_CONSOLE_SERVICE_PATHS.presets, new NfzPresetsService(context), ['find', 'create']],
     [NFZ_CONSOLE_SERVICE_PATHS.init, new NfzInitService(context), ['create']],
+    [NFZ_CONSOLE_SERVICE_PATHS.databaseConnections, new NfzDatabaseConnectionsService(app), ['find', 'get']],
   ]
 
   for (const [path, service, methods] of registrations) {

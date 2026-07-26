@@ -1,3 +1,305 @@
+## 6.7.37 - 2026-07-25 - Packaged starter child-process declaration order correction
+
+- preserve the 6.7.36 observable packaged-starter E2E evidence while declaring the child-process binding before the readiness helper that reads exit and signal state;
+- assign the spawned Nitro process at the existing lifecycle point so server startup, fail-fast behavior and cleanup remain unchanged;
+- strengthen `sanity:starter-release-runtime` so the `no-use-before-define` regression fails before the installed ESLint gate and expensive candidate lifecycle.
+
+## 6.7.36 - 2026-07-25 - Packaged starter observable E2E evidence correction
+
+- make successful health, local authentication, protected Feathers REST CRUD, dashboard access and a still-running server process the authoritative packaged-starter production E2E evidence;
+- keep fail-fast rejection for unconditional `status=failed` bootstrap output and premature child-process exit, while removing the false requirement for one optional `status=ready` console diagnostic;
+- add executable runtime-evidence coverage and strengthen `sanity:starter-release-runtime` so build-time Nuxt diagnostics can no longer be mistaken for a runtime-only environment switch.
+
+## 6.7.35 - 2026-07-25 - Internal local-authentication result preservation
+
+- preserve Feathers' exact internal local-authentication result object when `params.provider` is absent, without an entity re-read or ObjectId-normalized copy;
+- keep cross-driver BSON ObjectId normalization restricted to external authentication where the strategy reloads the entity through the MongoDB service;
+- strengthen `sanity:auth-mongodb-id` so provider ordering and exact-reference regression coverage fail before lint, TypeScript and the expensive candidate lifecycle.
+
+## 6.7.34 - 2026-07-25 - Cross-driver MongoDB authentication lint correction
+
+- preserve the 6.7.33 cross-driver BSON ObjectId normalization while expressing the narrowed `toHexString()` contract with the repository-required TypeScript method syntax;
+- align the focused local-authentication tests with lowercase suite titles and remove redundant `Params` assertions without changing the exercised external or internal strategy paths;
+- strengthen `sanity:auth-mongodb-id` so these exact lint regressions fail before the installed ESLint gate and expensive candidate lifecycle.
+
+## 6.7.33 - 2026-07-25 - Cross-driver MongoDB authentication entity ID correction
+
+- normalize BSON ObjectIds structurally before the external local-authentication entity re-read so Nitro bundles containing more than one MongoDB driver copy do not fail Feathers adapter ID validation;
+- preserve primitive IDs and unrelated objects unchanged, delegate to the upstream Feathers local strategy and keep MongoDB adapter validation fail-closed;
+- add focused strategy tests and an early `sanity:auth-mongodb-id` release guard before the expensive exact-candidate lifecycle.
+
+## 6.7.32 - 2026-07-25 - Packaged starter mounted health route correction
+
+- derive the packaged starter health URL from the external Feathers REST mount and the internal Express healthcheck path instead of probing an unmounted Nitro root path;
+- add normalized mounted-route coverage for prefixed, trailing-slash and root-mounted configurations;
+- strengthen the early starter-runtime guard so a direct `/api/health` request cannot re-enter the expensive exact-candidate lifecycle.
+
+## 6.7.31 - 2026-07-25 - Autonomous packaged starter MongoDB validation
+
+- make the exact packaged-starter production gate probe a configured MongoDB and fall back to an isolated `mongodb-memory-server` instance when the URL is absent or unreachable;
+- preserve a strict `external` mode for maintainers who require validation against a real database, while keeping normal production database connections fail-closed;
+- cache the isolated MongoDB binary per user, inject only its ephemeral URL into the temporary starter lifecycle and always stop the process during cleanup.
+
+## 6.7.30 - 2026-07-25 - Packaged starter production E2E authentication correction
+
+- keep production authentication fail-closed while giving the packaged starter release harness a fresh 48-byte in-memory JWT secret for each isolated server launch;
+- override inherited authentication secrets only in the spawned production server environment and never persist or log the generated key material;
+- add an early starter-runtime guard and fail-fast bootstrap diagnostics so missing release-test prerequisites are reported before the long HTTP readiness timeout.
+
+## 6.7.29 - 2026-07-25 - Nitro Zod runtime bundling correction
+
+- inline the application-shared Zod runtime in every NFZ Nitro server bundle so nested Zod 4 dependencies cannot replace the starter's required Zod 3 runtime during output externalization;
+- preserve existing Nitro `externals.inline` entries and make the packaged starter's production bundling contract explicit;
+- extend the early Zod boundary and Windows release-order guards so the exact `.output` runtime dependency defect fails before tests, documentation and candidate creation.
+
+## 6.7.28 - 2026-07-25 - Packaged starter Nitro REST bridge parsing correction
+
+- emit the generated Express REST transport bridge as parseable `rest-bridge.mjs` instead of handing TypeScript-only syntax directly to Nitro/Rollup;
+- retain strict static checking through `// @ts-check` and JSDoc contracts while preserving runtime initialization, failure, 404 and legacy Mongo alias behavior;
+- validate the generated handler with `node --check` and strict `checkJs` before lint, tests, documentation and immutable candidate creation.
+
+## 6.7.27 - 2026-07-25 - Packaged starter Nuxt client inference correction
+
+- normalize the starter's injected Nuxt `$api` value to `unknown` before returning it as the public `ClientApplication` type;
+- validate the injected client structurally through its Feathers `service()` method so clean consumer `vue-tsc` runs no longer infer and return `{}`;
+- extend the early packaged-starter type guard and integration contract test to reject the unnormalized inference pattern before immutable candidate validation.
+
+## 6.7.26 - 2026-07-25 - Feathers hook test TypeScript correction
+
+- correct the strict TypeScript test invocation for the hybrid `authenticateNfz()` hook by binding the before-hook `this` context to its Feathers service;
+- use separate immutable `before` and `around` hook contexts instead of assigning to the read-only `HookContext.type` property;
+- add `sanity:release-typecheck-regressions` immediately before the full TypeScript gate so these exact contract regressions fail early.
+
+## 6.7.25 - 2026-07-25 - Windows release lint gate correction
+
+- correct the four ESLint findings exposed by the complete Windows release gate in the packaged starter client, authentication hook and published-type contract test;
+- remove the redundant Nuxt client assertion while preserving the explicit `ClientApplication` return contract and runtime availability guard;
+- execute `sanity:release-lint-regressions` immediately before ESLint in the Windows verifier and extend the dependency-free guard to reject these exact regressions earlier.
+
+## 6.7.24 - 2026-07-25 - Packaged starter TypeScript contracts
+
+- expose the embedded MongoDB client alias through the public `nuxt-feathers-zod/server` configuration type so packaged MongoDB services can call `app.get('mongodbClient')` under strict TypeScript;
+- type `authenticateNfz()` as a compatible Feathers before/around hook instead of returning `Promise<unknown>`, preserving the same runtime authentication behavior;
+- keep the packaged Quasar/UnoCSS/Pinia starter strict by typing its Nuxt `$api` client and authenticated `params.user` entity explicitly;
+- add an early dependency-free starter type contract guard so these package-boundary failures are detected before candidate creation and the expensive starter installation gate.
+
+## 6.7.23 - 2026-07-24 - Playwright disabled-Mongo registrar alignment
+
+- keep the repository playground fail-closed when embedded MongoDB is enabled while allowing its Mongo-backed demonstration registrar to be skipped when Playwright deliberately disables MongoDB;
+- let the anonymous browser fixture reach the NFZ `ready` state so runtime, service-discovery and representative Feathers checks report their real status instead of cascading from an unavailable optional database;
+- add integration and dependency-free guards that require the conditional `allowMissingDatabaseServices: !embeddedMongoEnabled` contract and forbid an unconditional compatibility escape hatch.
+
+## 6.7.22 - 2026-07-24 - Publication contract lint correction
+
+- replace the double-quoted publication-guard assertion with the repository-approved template literal so the complete Windows ESLint gate can continue;
+- extend the dependency-free release lint regression guard to reject the exact double-quoted assertion before the expensive installed-workspace gates;
+- preserve the lightweight `prepack` and immutable single-artifact publication contract introduced in 6.7.20 and aligned in 6.7.21.
+
+## 6.7.21 - 2026-07-24 - Publication gate contract alignment
+
+- align the public-command integration test with the immutable single-artifact pipeline introduced in 6.7.20;
+- require documentation command audits in pre-artifact documentation and release gates while keeping `prepack` as the lightweight readiness check;
+- assert that `prepack` does not rebuild, retest or rerun documentation and that finalization remains the last release operation;
+- synchronize `AGENTS.md`, private workflow rules and the NFZ patch skill with the current npm lifecycle contract.
+
+## 6.7.20 - 2026-07-24 - Immutable single-artifact publication pipeline
+
+- separate source/runtime validation from npm artifact creation and generate one release candidate only after tests, builds, documentation and Playwright pass;
+- make starter and clean-consumer smokes validate the same candidate SHA-256 instead of rebuilding or repacking the workspace;
+- promote the validated candidate atomically into `release-artifacts/` with a manifest and SHA-256, then publish only that exact tarball with lifecycle scripts disabled;
+- reduce `prepack` to a lightweight readiness check, block accidental direct folder publication and remove unsupported pnpm-only options from `.npmrc`;
+- pack the candidate from a sanitized staging directory containing only `package.json#files`, with source pack/publish hooks removed so candidate creation cannot rerun Bun, tests or builds even when npm ignores `--ignore-scripts`;
+- add explicit version alignment, publication-pipeline and artifact-lifecycle guards for local Windows validation and GitHub Trusted Publishing.
+
+## 6.7.19 - 2026-07-24 - Resilient starter tarball installation
+
+- hardened `test:starter:release` against Windows Bun cache locks with a reusable user cache, adaptive 8 → 2 → 1 retries and one isolated `--no-cache` rescue;
+- disabled dependency lifecycle scripts during starter extraction and added an explicit `prepare` gate before typecheck, build, doctor and production REST E2E;
+- added a deterministic starter-install resilience guard covering three `NtSetInformationFile` failures, isolated rescue and frozen-lockfile verification.
+
+## 6.7.18 - 2026-07-24 - Deterministic retry timing and isolated documentation scenarios
+
+- Add a maintainer-only `--retry-delay-ms` override to the documentation runner so controlled cache-lock fixtures do not wait for production 2-second and 5-second retry delays.
+- Record fake-Bun install calls as append-only events and require the fourth event to contain the isolated `--no-cache` rescue contract.
+- Run the hung VitePress lifecycle check in a separate temporary workspace so setup, reuse and timeout scenarios cannot contaminate each other.
+- Increase only the outer smoke watchdogs while preserving the short internal timeout that proves PowerShell regains control.
+
+## 6.7.17 - 2026-07-24 - Deterministic documentation resilience harness
+
+- Add a maintainer-only `--bun-version` override to the documentation runner so fake-Bun fixtures never depend on Windows Node startup time for a one-second version probe.
+- Make timed-out documentation children settle after a finite termination grace even when `taskkill` does not report completion, while still terminating the direct child and process tree.
+- Stop reuse and hung-build smoke scenarios after a failed primary rescue setup so one causal failure no longer produces misleading follow-on diagnostics.
+
+## 6.7.16 - 2026-07-24 - Cross-platform fake Bun invocation contract
+
+- Pass the fake Bun command and its script prefix to the documentation runner through explicit command-line options instead of relying on Windows environment propagation.
+- Log the complete executable invocation, including prefix arguments, so a fixture cannot silently execute `node install ...` as if Node were Bun.
+- Extend `sanity:docs-build-resilience` to assert the fake Bun script is present in every install command before accepting retry, isolated-rescue and verified-reuse results.
+
+## 6.7.15 - 2026-07-24 - Static VitePress install verification
+
+- Stop executing `vitepress --version` during documentation dependency verification on Windows.
+- Verify the installed VitePress package, semantic version, CLI bin and exact `bun.lock` version statically before reuse or build.
+- Keep the actual Node.js VitePress build as the authoritative runtime validation, with the existing heartbeat, timeout and child-tree termination guarantees.
+- Extend the documentation resilience smoke to fail if the VitePress CLI is invoked during install verification.
+
+## 6.7.14 — Bounded VitePress process lifecycle
+
+- Run the verified VitePress CLI with Node.js, matching its published executable contract, instead of executing it through Bun.
+- Bound Bun/VitePress probes and documentation builds with explicit timeouts so a stuck child process cannot retain the PowerShell release prompt indefinitely.
+- Emit a periodic documentation-build heartbeat and terminate the complete Windows child-process tree when the configured build deadline is exceeded.
+- Extend `sanity:docs-build-resilience` with a deliberately hung VitePress fixture that must time out and return control promptly.
+
+## 6.7.13 — Cross-platform documentation resilience smoke
+
+- Make the documentation resilience fixture invoke its fake Bun process through Node with explicit JSON prefix arguments instead of a Windows `.cmd` wrapper that cannot be executed with `shell: false`.
+- Copy the real documentation `package.json` and `bun.lock` into the temporary fixture so Bun 1.3.14 never sees a synthetic invalid frozen lockfile.
+- Preserve the controlled three-lock, isolated-rescue and verified-reuse coverage on Windows, Linux and macOS.
+
+## 6.7.12 — Resilient documentation dependency builds
+
+- Reuse a user-level Bun cache for public and private VitePress workspaces instead of deleting a project-local cache before every build.
+- Install documentation dependencies with lifecycle scripts disabled, adaptive Windows lock retries and a final isolated `--no-cache` rescue attempt.
+- Fingerprint and reuse verified VitePress dependency trees, then execute the installed CLI directly instead of relying on a network-capable `bunx` fallback.
+- Add `sanity:docs-build-resilience` with a controlled three-lock-plus-rescue smoke and verified-tree reuse check.
+
+## 6.7.11 — Generated file-service runtime configuration keys
+
+- Resolve generated file-service configuration from the documented full service name (`attachmentsMaxBytes`, `attachmentsStorageDir`, `attachmentsAllowedMimeTypes`) before the legacy singularized aliases.
+- Preserve compatibility with previously generated singular configuration keys while making runtime configuration changes effective immediately.
+- Extend file-service and integration guards with the exact dynamic `maxBytes` regression exposed by the complete Windows gate.
+
+## 6.7.10 — Nuxt 4/Feathers architecture and Windows install rescue
+
+- Harden Windows dependency installation by skipping lifecycle scripts during package extraction, reusing a user-level cache across extracted versions and adding an isolated low-concurrency rescue attempt after persistent cache locks.
+- Formalize the Nuxt 4 module boundary and NFZ-first Feathers service architecture in the private maintainer contract.
+- Add private Nuxt and FeathersJS MCP documentation sources for architecture verification.
+
+## 6.7.9 — Integration release gate stabilization
+
+- Align the generated server-plugin test with the JSON-serialized private server configuration.
+- Use the singular generated `AttachmentService` class name in file-service security integration tests.
+- Make `test:integration` rebuild the compiled CLI before documentation examples execute the packaged bin after `clean:repo`.
+- Add `sanity:integration-gate-regressions` to prevent cleanup-order, generated-class and serialized-template assertion regressions.
+
+## 6.7.8 — Final release lint and metadata safety
+
+- Resolve the remaining `antfu/curly` and `ts/unbound-method` findings in the embedded bootstrap and database registry without weakening lint coverage.
+- Preserve method receiver context through explicit adapter closures for the Express error handler and database connector close/health methods.
+- Scope release metadata synchronization to NFZ-labelled versions so IPv4 addresses and independent Nuxt/Vite versions are never rewritten.
+- Restore the starter MongoDB loopback URI and the Nuxt 4.4.2 reference application metadata.
+- Add `.env.release.example` and automatic `.env.release.local` loading for the full Windows release gate, while keeping process variables authoritative.
+- Add `sanity:release-finalization` to guard the final lint fixes, release metadata safety and local release environment contract.
+
+## 6.7.7 — Release lint baseline
+
+- Correct all 53 ESLint errors and 9 reported style warnings exposed by the complete Windows release gate after the dependency installation succeeded.
+- Align starter E2E imports, arrow parameters and quoted HTTP headers with the repository lint contract.
+- Normalize database and plugin regular expressions without changing accepted connection names or Windows path semantics.
+- Convert runtime interfaces to method shorthand, preserve MaybePromise handling without awaiting non-thenable values, and remove unnecessary assertions.
+- Reformat bootstrap and database registry control flow so strict linting remains enabled on security-critical runtime files.
+- Add `sanity:release-lint-regressions` to the dependency-free, prepare, prepack and release validation paths.
+
+## 6.7.6 — Windows post-install verification fix
+
+- Replace fragile `package/package.json` resolution with public ESM runtime probes for ESLint, Nuxt Kit and TypeScript.
+- Treat Bun exit code `0` as successful when those public entry points load, including their critical transitive dependencies.
+- Report the exact probe or transitive import failure when post-install verification fails instead of emitting the contradictory `Bun install exited with status 0`.
+- Retry a genuine post-install runtime-probe failure with the reusable Windows cache.
+- Add `sanity:windows-install-verification` and integrate it into Windows CI, release gates and the private NFZ patch workflow.
+
+## 6.7.5 — PowerShell release-gate parser fix
+
+- Fix `scripts/verify-windows.ps1` so a failed Bun command is formatted with PowerShell's `-f` operator instead of the invalid `$LASTEXITCODE:` interpolation.
+- Preserve the external command exit code in a local variable before raising the release-gate error.
+- Add `sanity:powershell-interpolation` to reject ambiguous unbraced variable/colon sequences in maintainer PowerShell scripts.
+- Extend the private NFZ patch skill and Windows tooling guard with this parser regression.
+
+## 6.7.4 - 2026-07-23 - Adaptive Windows install recovery
+
+- Reuse one configurable Bun package cache across Windows install retries instead of redownloading the dependency graph into a fresh cache for every attempt.
+- Detect `NtSetInformationFile`, `EPERM` and transient network failures, preserve successful downloads, clean only incomplete `node_modules` and transient cache entries, and reduce network concurrency from 8 to 2 to 1 across retries.
+- Persist a lockfile-, manifest- and Bun-version fingerprint after a verified install so repeated release gates skip redundant installation automatically.
+- Add `--check`, `--force`, `NFZ_WINDOWS_CACHE_DIR` and adaptive retry controls to the Windows installer.
+- Add explicit quick/full and skip-install PowerShell gates while preserving `verify:release:windows` as the canonical full release command.
+- Resolve the Bun executable in PowerShell through the shared Node resolver rather than a bare `bun` PATH lookup.
+- Extend Windows tooling, release-regression and private NFZ skill guards with the reusable-cache retry policy.
+
+## 6.7.3 - 2026-07-23 - Windows release gate stabilization
+
+- Add a resilient Windows dependency installer that removes partial `node_modules`, retries with isolated Bun caches, uses the `copyfile` backend and verifies critical transitive packages before continuing.
+- Resolve the active Bun executable from `bun run`, `NFZ_BUN_EXECUTABLE`, `BUN_INSTALL` or `PATH` for starter release and Playwright runtime preparation.
+- Make public and private VitePress builds use isolated Bun caches so documentation installation cannot corrupt or depend on the shared Windows cache.
+- Add a single fail-fast `verify:release:windows` gate and document why PowerShell `;` must not be used for release validation chains.
+- Correct strict optional access in the public Builder metadata test and keep public runtime database projection defensive for legacy partial fixtures.
+- Preserve the `failed` state of a required database connection after rollback instead of rewriting it to `closed`.
+- Parse generated declaration templates as TypeScript source rather than passing `.d.ts` input to `transpileModule`, which can trigger an internal TypeScript debug failure.
+- Revalidate the project and Windows CI against Bun 1.3.14 while retaining the declared minimum Bun version of 1.3.6.
+
+## 6.7.2 - 2026-07-23 - Embedded runtime reliability and Zod boundary
+
+- Generate the Express REST bridge as strict TypeScript, clean up response listeners, restore request URLs and return explicit Feathers JSON for initializing, failed and missing-service states.
+- Make embedded bootstrap atomic and idempotent per `instanceId`; concurrent calls share one initialization promise and ready instances are never configured twice.
+- Preserve failed runtime state with a safe correlation identifier so REST diagnostics do not fall through to Nuxt HTML errors.
+- Canonicalize plugin sources across real paths, Windows separators, casing and TypeScript/JavaScript module extensions before deduplication.
+- Add `server.duplicateServicePolicy` with fail-closed source-aware diagnostics by default and an explicit observable `skip` compatibility mode.
+- Keep deterministic `servicesDirs` discovery as the primary business registration source and make `doctor` reject load orders or manual plugin aggregators that bypass it.
+- Declare Zod 3 as a shared peer runtime, pin the tested starter/development runtime to 3.25.76 and diagnose incompatible or distinct active Zod runtimes.
+- Validate generated `.nuxt/feathers/server/rest-bridge.ts` under `strict` and `noImplicitAny` without excluding generated files or applying post-prepare patches.
+- Add production Nitro validation of the packed Quasar, UnoCSS, Pinia and MongoDB starter, covering health, authentication, dashboard and Feathers REST CRUD.
+- Extend Linux and Windows CI with embedded runtime, generated-template and Zod boundary regression gates.
+
+## 6.7.1 - 2026-07-23 - Security and release coherence baseline
+
+- Harden generated local file services with UUID-only identifiers, post-resolution storage confinement, canonical Base64 validation and encoded-size checks before decoding.
+- Keep runtime byte limits and MIME allowlists, while rejecting malformed or oversized upload payloads before filesystem writes.
+- Make persistent service registration fail-closed by default when required database infrastructure is unavailable.
+- Add the explicit `server.allowMissingDatabaseServices` compatibility escape hatch for deliberately optional services and expose skipped registrars through `nfz/status`.
+- Align all Feathers dependencies in the bundled Quasar/UnoCSS/Pinia starter with the root `5.0.46` baseline and extend the convergence guard to the starter manifest.
+- Add the MIT `LICENSE` file to the repository and npm package contract.
+- Restore ESLint coverage for the security-critical server bootstrap and runtime types, with a dedicated regression guard.
+- Add a Windows CI release-smoke job covering frozen installation, dependency/security guards, typecheck, build, bootstrap tests, packaged CLI smoke and tarball consumer installation.
+
+## 6.7.0 - 2026-07-22 - Multi-Database Registry
+
+- Add a typed named-connection registry for simultaneous MongoDB, PostgreSQL, MySQL, MariaDB and SQLite resources.
+- Preserve `database.mongo` by mapping it to the legacy-compatible `default` connection and retaining `mongodbClient`, `mongodbDb`, `mongodbConnection`, `currentDatabase` and `mongodb_ok` aliases.
+- Add ordered startup, initial health checks, reverse-order shutdown, required/optional connection policy and startup rollback when a required resource fails.
+- Keep connection strings and credentials server-only; public runtime metadata and `nfz/database-connections` expose redacted names, types, state, latency and health information only.
+- Add the optional `@feathersjs/knex`/Knex path with consumer-provided PostgreSQL, MySQL/MariaDB or SQLite drivers.
+- Extend `add service` with `--adapter knex`, `--connection`, `--table` and `--schemaName`, while allowing MongoDB services to select a named connection with `--connection`.
+- Generate persistent services against `getNfzMongoDatabase()` or `getNfzKnexClient()` instead of creating independent database clients.
+- Export the server registry through `nuxt-feathers-zod/server-database` and guard its package exports, type mappings and optional peers.
+- Add the ninth NFZ console service, `nfz/database-connections`, plus `useBuilderClient().getDatabaseConnections()` and `checkDatabaseConnection()` helpers.
+- Reject ambiguous legacy/default configuration and duplicate enabled MongoDB management paths before runtime startup.
+- Add bilingual multi-database configuration, service-generation, lifecycle, diagnostics, compatibility and limitation documentation.
+- Keep migrations, cross-connection distributed transactions and MikroORM outside 6.7.0; MikroORM remains scheduled for 6.8.0.
+- Rebase the release on the corrected 6.6.2 source so generated client plugin service and plugin arrays remain mutable under `nuxt typecheck`.
+
+## 6.6.2 - 2026-07-22 - Mutable generated client plugin configuration
+
+- Stop emitting the generated `nfzClientPluginConfig` object with a whole-object `as const` assertion.
+- Preserve mutable `services` and `plugins` arrays so the generated Nuxt client plugin satisfies `NfzClientPluginConfig` under `nuxt typecheck`.
+- Remove the need for downstream applications to patch `.nuxt/feathers/client/plugin.ts` after `nuxt prepare`.
+- Add a regression gate that rejects a future whole-object readonly assertion in the generated client plugin template.
+- Align all executable starter commands in the bilingual public documentation with `nuxt-feathers-zod@6.6.2`, keeping the command audit green before publication.
+
+## 6.6.1 - 2026-07-20 - Installed starter preset resolution
+
+- Execute documented help commands through the packaged `bin/nuxt-feathers-zod` entry and compiled `dist/cli` artifact, avoiding both Windows `bun` PATH lookup failures and direct Node.js execution of TypeScript source files.
+- Keep the public command audit scoped to first-party documentation by excluding generated VitePress output, caches and dependency trees.
+- Execute documented Citty help commands through the real packaged CLI subprocess so their intentional zero exit is validated without being converted into a Vitest failure.
+- Derive the Playwright dashboard version assertion from `package.json` so patch releases cannot leave stale browser gates or screenshot runs.
+- Align the new command-audit and tarball-smoke tests with the repository ESLint rules.
+- Audit every shell command in the bilingual public documentation against the generated CLI contract and the applicable package scripts.
+- Add `docs:check-commands` to documentation, preparation, verification, prepack and release gates.
+- Normalize documented boolean flags and replace the undefined `mongo:up` helper with a self-contained Docker Compose command.
+- Resolve bundled starter assets from the package root when the CLI runs from source, `dist/cli/chunks`, npm, or `bunx`.
+- Filter copied starter files relative to the template root so an installed parent `node_modules` directory cannot reject the entire preset.
+- Validate `init starter --preset quasar-unocss-pinia-auth` against the exact packed tarball and verify the generated Nuxt starter files.
+- Guard package metadata so `examples/nfz-quasar-unocss-pinia-starter` cannot disappear from future npm releases.
+- Pin the public bilingual starter command to `nuxt-feathers-zod@6.6.1` for deterministic generation.
+
 ## 6.6.0 - 2026-07-19 - Authentication Provider Registry and Security Foundation
 
 - Make the tarball consumer smoke deterministic on Windows by preferring npm over Bun shared-cache installs, while preserving an explicit isolated-cache Bun validation path.

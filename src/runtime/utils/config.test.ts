@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildLocalAuthPayload, getAccessTokenFromResult } from './auth'
-import { getForcedAuthProvider, getPublicClientMode, getPublicLocalAuthPasswordField, getPublicLocalAuthUsernameField, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from './config'
+import { getForcedAuthProvider, getPublicBuilderServices, getPublicClientMode, getPublicLocalAuthPasswordField, getPublicLocalAuthUsernameField, getPublicRemoteAuthConfig, hasPublicKeycloakConfig, isPublicRemoteAuthEnabled } from './config'
 
 describe('runtime public config helpers', () => {
   it('defaults client mode to embedded', () => {
@@ -32,6 +32,17 @@ describe('runtime public config helpers', () => {
     const pub = { FEATHERS_AUTH_PROVIDER: 'Keycloak', _feathers: { keycloak: { realm: 'demo' } } } as any
     expect(getForcedAuthProvider(pub)).toBe('keycloak')
     expect(hasPublicKeycloakConfig(pub)).toBe(true)
+  })
+
+  it('exposes the database diagnostics service with a stable fallback', () => {
+    expect(getPublicBuilderServices(undefined as any).databaseConnections).toBe('nfz/database-connections')
+    expect(getPublicBuilderServices({
+      _feathers: {
+        builder: {
+          services: { databaseConnections: 'internal/database-health' },
+        },
+      },
+    } as any).databaseConnections).toBe('internal/database-health')
   })
 
   it('exposes embedded local auth field helpers safely', () => {

@@ -23,6 +23,9 @@
       ],
       "nuxt-feathers-zod/validators": [
         "src/runtime/zod/validators.ts"
+      ],
+      "nuxt-feathers-zod/server-database": [
+        "src/runtime/server/database-registry.ts"
       ]
     },
     "resolveJsonModule": true,

@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       strict: true,
       allow: [
         'server/**/*.ts',
+        'server/*.mjs',
         'client/**/*.ts',
         'types/**/*.d.ts',
       ],
@@ -38,6 +39,10 @@ export default defineNuxtConfig({
   }
 })
 ```
+
+## Generated REST bridge format
+
+The Express transport bridge is generated under the `server/rest-bridge.mjs` key. An override for this file must remain an ESM JavaScript module that Nitro can parse directly; keep `server/*.mjs` in the allow-list when replacing this bridge.
 
 ## CLI example
 
@@ -66,4 +71,4 @@ const result = await service.find({
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

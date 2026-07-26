@@ -149,3 +149,76 @@ export default defineNuxtConfig({
     expect(warns.some(line => line.includes('Mongo management is enabled but database.mongo.url is missing.'))).toBe(true)
   })
 })
+
+
+describe('nfz doctor embedded architecture diagnostics', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('reports deterministic service sources and accepts the standard services phase', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-services-'))
+    await mkdir(join(root, 'services', 'messages'), { recursive: true })
+    await writeFile(join(root, 'services', 'messages', 'messages.ts'), 'export default () => undefined\n')
+    await writeFile(join(root, 'package.json'), JSON.stringify({ dependencies: { zod: '3.25.76' } }))
+    await writeFile(join(root, 'nuxt.config.ts'), `
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    servicesDirs: ['services'],
+    server: { loadOrder: ['modules:pre', 'plugins', 'services', 'modules:post'] },
+  },
+})
+`)
+    const infos: string[] = []
+    vi.spyOn(consola, 'info').mockImplementation((msg?: any) => { infos.push(String(msg ?? '')) })
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    vi.spyOn(consola, 'error').mockImplementation(() => {})
+
+    const result = await runDoctor(root)
+
+    expect(result.ok).toBe(true)
+    expect(infos.some(line => line.includes('- services discovered: 1'))).toBe(true)
+    expect(infos.some(line => line.includes('service messages: services/messages/messages.ts'))).toBe(true)
+  })
+
+  it('fails when discovered services are removed from loadOrder and manually aggregated', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-duplicate-architecture-'))
+    await mkdir(join(root, 'services', 'application-catalog'), { recursive: true })
+    await mkdir(join(root, 'server', 'feathers', 'plugins'), { recursive: true })
+    await writeFile(join(root, 'services', 'application-catalog', 'application-catalog.ts'), 'export default () => undefined\n')
+    await writeFile(join(root, 'server', 'feathers', 'plugins', 'traefik-services.ts'), "import catalog from '../../../services/application-catalog/application-catalog'\nexport default catalog\n")
+    await writeFile(join(root, 'nuxt.config.ts'), `
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    servicesDirs: ['services'],
+    server: { loadOrder: ['modules:pre', 'plugins', 'modules:post'] },
+  },
+})
+`)
+    vi.spyOn(consola, 'info').mockImplementation(() => {})
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    vi.spyOn(consola, 'error').mockImplementation(() => {})
+
+    const result = await runDoctor(root)
+
+    expect(result.ok).toBe(false)
+    expect(result.errors.some(line => line.includes('loadOrder omits the services phase'))).toBe(true)
+    expect(result.errors.some(line => line.includes('manually imported by server/feathers/plugins/traefik-services.ts'))).toBe(true)
+  })
+
+  it('fails on an explicitly incompatible Zod 4 application boundary', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-zod4-'))
+    await writeFile(join(root, 'package.json'), JSON.stringify({ dependencies: { zod: '^4.0.0' } }))
+    await writeFile(join(root, 'nuxt.config.ts'), `export default defineNuxtConfig({ modules: ['nuxt-feathers-zod'] })\n`)
+    vi.spyOn(consola, 'info').mockImplementation(() => {})
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    vi.spyOn(consola, 'error').mockImplementation(() => {})
+
+    const result = await runDoctor(root)
+
+    expect(result.ok).toBe(false)
+    expect(result.errors.some(line => line.includes('requires Zod 3'))).toBe(true)
+  })
+})

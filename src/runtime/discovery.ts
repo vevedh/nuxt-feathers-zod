@@ -22,12 +22,20 @@ function cloneImports(imports: Import[]): Import[] {
   })
 }
 
+function sortImports(imports: Import[]): Import[] {
+  return [...imports].sort((left, right) => {
+    const leftKey = `${String(left.from || '').replace(/\\/g, '/')}#${left.name || ''}#${left.as || ''}`
+    const rightKey = `${String(right.from || '').replace(/\\/g, '/')}#${right.name || ''}#${right.as || ''}`
+    return leftKey.localeCompare(rightKey)
+  })
+}
+
 async function scan(kind: DiscoveryKind, servicesDirs: ServicesDirs): Promise<Import[]> {
   if (kind === 'schemas') {
     const exports = await scanDirExports(servicesDirs, {
       filePatterns: ['**/*.schema.ts'],
     })
-    return exports.filter(({ type }) => type)
+    return sortImports(exports.filter(({ type }) => type))
   }
 
   if (kind === 'client-services') {
@@ -36,16 +44,16 @@ async function scan(kind: DiscoveryKind, servicesDirs: ServicesDirs): Promise<Im
       fileFilter: file => /\.shared\.ts$/.test(file),
       types: false,
     })
-    return services.filter(({ name }) => /Client|default$/.test(name))
+    return sortImports(services.filter(({ name }) => /Client|default$/.test(name)))
   }
 
   const services = await scanDirExports(servicesDirs, {
     filePatterns: ['**/*.ts'],
     types: false,
   })
-  return services
+  return sortImports(services
     .filter(({ from }) => !/\w+\.\w+\.ts$/.test(from))
-    .filter(filterExports)
+    .filter(filterExports))
 }
 
 async function discover(kind: DiscoveryKind, servicesDirs: ServicesDirs): Promise<Import[]> {

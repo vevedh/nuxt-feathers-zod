@@ -152,6 +152,47 @@ describe('resolvePublicRuntimeConfig', () => {
     expect(pub.database?.mongo?.management?.routes?.some(route => route.path === '/mongo-admin/databases')).toBe(true)
   })
 
+  it('exposes only redacted named database metadata to public runtime config', async () => {
+    const resolved = await resolveOptions({
+      transports: { rest: { framework: 'express', path: '/feathers' }, websocket: false },
+      database: {
+        default: 'reporting',
+        connections: {
+          reporting: {
+            type: 'postgresql',
+            connection: 'postgresql://reporter:top-secret@localhost/reporting',
+          },
+          archive: {
+            type: 'mongodb',
+            url: 'mongodb://archive:top-secret@localhost/archive',
+            management: { enabled: false },
+          },
+        },
+      },
+      servicesDirs: [],
+      server: serverDefaults,
+      auth: false,
+      keycloak: false,
+      client: false,
+      validator: { formats: [], extendDefaults: true },
+      loadFeathersConfig: false,
+      swagger: false,
+      templates: undefined,
+      devtools: false,
+    } as any, nuxtMock)
+
+    const pub = resolvePublicRuntimeConfig(resolved)
+    expect(pub.database?.default).toBe('reporting')
+    expect(pub.builder?.services?.databaseConnections).toBe('nfz/database-connections')
+    expect(pub.database?.connections).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'reporting', type: 'postgresql', default: true, enabled: true }),
+      expect.objectContaining({ name: 'archive', type: 'mongodb', default: false }),
+    ]))
+    expect(JSON.stringify(pub)).not.toContain('top-secret')
+    expect(JSON.stringify(pub)).not.toContain('postgresql://')
+    expect(JSON.stringify(pub)).not.toContain('mongodb://archive')
+  })
+
   it('prefixes the embedded mongo management path with the rest path in public runtime helpers', async () => {
     const { getPublicMongoManagementBasePath } = await import('../utils/config')
 

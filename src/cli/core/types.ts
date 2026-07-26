@@ -1,4 +1,4 @@
-export type Adapter = 'mongodb' | 'memory'
+export type Adapter = 'mongodb' | 'memory' | 'knex'
 export type SchemaKind = 'none' | 'zod' | 'json'
 export type MiddlewareTarget = 'nitro' | 'route' | 'feathers' | 'server-module' | 'module' | 'client-module' | 'hook' | 'policy'
 export type IdField = 'id' | '_id'
@@ -25,6 +25,9 @@ export interface ServiceManifest {
   authAware?: boolean
   idField?: IdField
   collectionName?: string
+  tableName?: string
+  schemaName?: string
+  connectionName?: string
   methods?: string[]
   customMethods?: string[]
   schema: {

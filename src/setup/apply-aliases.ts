@@ -5,6 +5,7 @@ import type { AliasEntry, AliasInput } from '../runtime/options/types'
 import { createResolver } from '@nuxt/kit'
 import defu from 'defu'
 
+import { ensureNitroDependencyInline } from './internals/ensure-nitro-inline'
 import { resolveRuntimePath } from './runtime-path'
 import { dedupeStrings } from './utils'
 
@@ -82,5 +83,6 @@ export function applyAliases(options: ResolvedOptions, nuxt: Nuxt): void {
 
   nuxt.hook('nitro:config' as any, (nitroConfig: any) => {
     nitroConfig.alias = defu(nitroConfig.alias, aliases)
+    ensureNitroDependencyInline(nitroConfig, 'zod')
   })
 }

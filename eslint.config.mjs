@@ -24,8 +24,8 @@ export default withNuxt(
       'tmp-*.mjs',
       '**/tmp-check.mjs',
       '**/tmp-*.mjs',
-      // Transitional release-readiness exclusions: legacy monolithic CLI/templates
-      // remain build-tested, but are temporarily excluded from strict style linting.
+      // Remaining legacy exclusions are intentionally limited to monolithic or generated areas.
+      // Security-critical runtime bootstrap and database registry files must stay linted.
       'src/cli/core.ts',
       'src/cli/commands/doctor.ts',
       'src/cli/index.ts',
@@ -52,9 +52,8 @@ export default withNuxt(
       'uno.config.ts',
       'package.json',
       'tsconfig.syntax.json',
-      // Transitional release cleanup for 6.5.0: keep CI green while
-      // preserving runtime/build coverage. These files remain covered by
-      // typecheck, E2E, smoke tarball, docs build, or packaging checks.
+      // Remaining compatibility exclusions must be reduced incrementally.
+      // They stay covered by typecheck, runtime tests, smoke tarball or packaging checks.
       'scripts/**',
       'src/runtime/client/createFeathersClient.ts',
       'src/runtime/client/defineNfzClientPlugin.ts',
@@ -70,9 +69,7 @@ export default withNuxt(
       'src/runtime/composables/useProtectedService.ts',
       'src/runtime/composables/useProtectedTool.ts',
       'src/runtime/options/**/*.test.ts',
-      'src/runtime/server/bootstrap.ts',
       'src/runtime/server/mongodb.ts',
-      'src/runtime/server/types.ts',
       'src/runtime/templates/**/*.test.ts',
       'src/runtime/templates/server/plugin.ts',
       'src/runtime/utils/auth.ts',

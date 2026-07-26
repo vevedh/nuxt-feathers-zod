@@ -10,7 +10,7 @@
 | Transports | REST, Socket.IO |
 | Serveur REST embedded | Express ou Koa |
 | Services | adapter, custom, file, remote |
-| Adapters générés | memory, MongoDB |
+| Adapters générés | memory, MongoDB, Knex |
 | Schémas | none, Zod, JSON |
 | Auth | locale/JWT, remote, Keycloak |
 | Outils NFZ | services, schemas, manifest, builder, status, RBAC, presets, init |
@@ -52,4 +52,4 @@ Nuxt 4
 
 Les routes Nitro métier ne sont pas le contrat principal du module. Les anciennes routes `/api/nfz/**` sont des façades de compatibilité désactivables avec `console.legacyNitroRoutes: false`.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

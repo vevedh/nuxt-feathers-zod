@@ -44,7 +44,7 @@ export default defineNuxtConfig({
 
 ```bash
 bun add feathers-swagger swagger-ui-dist
-bunx nuxt-feathers-zod init embedded --swagger true --force
+bunx nuxt-feathers-zod init embedded --swagger --force
 ```
 
 ## Exemple d’utilisation
@@ -73,4 +73,4 @@ const result = await service.find({
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

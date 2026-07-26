@@ -36,6 +36,11 @@ describe('feathers-first NFZ console services', () => {
   it('registers the canonical service surface and resolves schemas directly', async () => {
     const fixture = createFixture()
     const app = feathers()
+    app.set('nfzSkippedRegistrars', [{
+      label: 'service optional-reports',
+      phase: 'services',
+      reason: 'database-infrastructure-unavailable',
+    }])
     registerNfzConsoleServices(app, {
       console: { enabled: true, allowWrite: false, servicesDirs: [fixture.servicesDir] },
       auth: false,
@@ -58,6 +63,13 @@ describe('feathers-first NFZ console services', () => {
     })
     expect(preview.ok).toBe(true)
     expect(preview.after.fields.label).toBeTruthy()
+
+    const status = await app.service(NFZ_CONSOLE_SERVICE_PATHS.status).find()
+    expect(status.runtime.skippedRegistrars).toEqual([{
+      label: 'service optional-reports',
+      phase: 'services',
+      reason: 'database-infrastructure-unavailable',
+    }])
   })
 
   it('rejects unsafe identifiers and write operations in read-only mode', async () => {

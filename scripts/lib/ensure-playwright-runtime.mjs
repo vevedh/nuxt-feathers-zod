@@ -1,16 +1,10 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { basename, resolve } from 'node:path'
-
-function resolveBunExecutable(env = process.env) {
-  const npmExecPath = String(env.npm_execpath || '').trim()
-  if (npmExecPath && /^bun(?:\.exe)?$/i.test(basename(npmExecPath)))
-    return npmExecPath
-  return process.platform === 'win32' ? 'bun.exe' : 'bun'
-}
+import { resolve } from 'node:path'
+import { requireBunExecutable } from './bun-executable.mjs'
 
 function runBunScript(script, rootDir) {
-  const command = resolveBunExecutable()
+  const command = requireBunExecutable()
   const result = spawnSync(command, ['run', script], {
     cwd: rootDir,
     env: process.env,

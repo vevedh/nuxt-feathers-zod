@@ -7,7 +7,7 @@ The `nfz-quasar-unocss-pinia-starter` starter is the recommended main applicatio
 
 It formalizes a complete flow: **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + local JWT auth + RBAC**.
 
-The audited working reference for NFZ release `6.6.0` is the maintained repository directory:
+The audited working reference for NFZ release `6.7.37` is the maintained repository directory:
 
 ```txt
 examples/nfz-quasar-unocss-pinia-starter
@@ -22,13 +22,15 @@ examples/nfz-quasar-unocss-pinia-starter
 The CLI can copy it with:
 
 ```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.7.37 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env
 bun run db:up
 bun dev
 ```
+
+Since `6.6.1`, the command resolves the template directly from the installed package root, including when it is launched with `bunx`.
 
 Seeded account:
 
@@ -189,6 +191,17 @@ export default defineNuxtConfig({
 ```
 
 MongoDB is provided by NFZ. Services do not create a parallel Nitro connection.
+
+## Strict TypeScript contracts
+
+The published starter is validated with `vue-tsc --noEmit` after installing the exact tarball. Package-boundary types are explicit:
+
+- `$api` is treated as an NFZ `ClientApplication`;
+- `app.get('mongodbClient')` is declared by the public server configuration;
+- `params.user` is declared as the starter authentication entity;
+- `authenticateNfz()` is compatible with Feathers `before` and `around` hooks.
+
+These declarations keep application services strict without falling back to generic casts.
 
 ## Feathers MongoDB services
 

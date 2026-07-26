@@ -28,6 +28,8 @@ features:
     details: "Run Feathers inside Nitro or connect your Nuxt application to an existing Feathers API."
   - title: "Modular authentication"
     details: "Use local/JWT, OIDC, Keycloak, or API keys behind one normalized principal."
+  - title: "Multi-database registry"
+    details: "Name several MongoDB or Knex connections, select one per service, and inspect health without exposing credentials."
   - title: "Project-oriented CLI"
     details: "Initialize the integration, generate services, and inspect configuration without copying a complete architecture."
   - title: "Verifiable playground"
@@ -78,4 +80,4 @@ Screenshots are generated from the playground only after the related Playwright 
 - [npm package](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [GitHub repository](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

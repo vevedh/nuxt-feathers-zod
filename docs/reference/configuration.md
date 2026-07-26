@@ -19,7 +19,7 @@ Les clés ci-dessous correspondent à `ModuleOptions` dans le code du module.
 | Option | Type fonctionnel | Rôle |
 |---|---|---|
 | `transports` | objet | REST et Socket.IO |
-| `database` | objet | MongoDB et MongoDB Management |
+| `database` | objet | registre de connexions MongoDB et SQL |
 | `servicesDirs` | chaîne ou liste | dossiers de découverte des services |
 | `server` | objet | serveur Feathers embedded, modules et sécurité |
 | `auth` | booléen ou objet | authentification locale/JWT |
@@ -128,32 +128,68 @@ feathers: {
 
 ## `database`
 
+La configuration recommandée utilise un registre de connexions nommées :
+
 ```ts
 feathers: {
   database: {
-    mongo: {
-      url: process.env.MONGODB_URL,
-      management: {
-        enabled: true,
-        basePath: '/mongo',
-        auth: {
+    default: 'primary',
+    connections: {
+      primary: {
+        type: 'mongodb',
+        url: process.env.MONGODB_URL,
+        database: 'application',
+        management: {
           enabled: true,
-          authenticate: true,
+          basePath: '/mongo/primary',
+          auth: {
+            enabled: true,
+            authenticate: true,
+          },
         },
-        showSystemDatabases: false,
-        allowCreateCollection: false,
-        allowDropCollection: false,
-        allowInsertDocuments: false,
-        allowPatchDocuments: false,
-        allowReplaceDocuments: false,
-        allowRemoveDocuments: false,
+      },
+      reporting: {
+        type: 'postgresql',
+        connection: process.env.REPORTING_DATABASE_URL,
+        pool: { min: 1, max: 10 },
+      },
+      localCache: {
+        type: 'sqlite',
+        connection: { filename: './data/cache.sqlite' },
+        useNullAsDefault: true,
+        required: false,
       },
     },
   },
 }
 ```
 
-Les opérations d’administration destructrices sont désactivées par défaut.
+Types pris en charge : `mongodb`, `postgresql`, `mysql`, `mariadb` et `sqlite`.
+
+Options communes à chaque connexion :
+
+| Option | Défaut | Rôle |
+|---|---:|---|
+| `enabled` | `true` | active la connexion |
+| `required` | `true` | bloque le démarrage en cas d’échec |
+| `healthCheck` | `true` | vérifie la connexion après ouverture |
+| `label` | — | libellé non sensible pour les diagnostics |
+
+Pour MongoDB, `url`, `database` et `management` restent disponibles. Pour SQL, utilisez `connection`, `client`, `pool`, `acquireConnectionTimeout`, `useNullAsDefault` et `searchPath`.
+
+La forme historique reste compatible :
+
+```ts
+feathers: {
+  database: {
+    mongo: {
+      url: process.env.MONGODB_URL,
+    },
+  },
+}
+```
+
+Elle devient une connexion nommée `default`. Ne combinez pas `database.mongo` et `database.connections.default`. Les opérations d’administration MongoDB destructrices restent désactivées par défaut. Voir [Registre multi-base](/guide/multi-database).
 
 ## `auth`
 
@@ -220,7 +256,7 @@ feathers: {
   templates: {
     dirs: ['feathers/templates'],
     strict: true,
-    allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts'],
+    allow: ['server/*.ts', 'server/*.mjs', 'client/*.ts', 'types/*.d.ts'],
   },
 }
 ```
@@ -254,4 +290,4 @@ Le module sépare :
 
 Ne dupliquez jamais une URL MongoDB avec identifiants ou un secret Keycloak dans `runtimeConfig.public`.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

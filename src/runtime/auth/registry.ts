@@ -7,11 +7,11 @@ import type {
   NfzAuthenticationProviders,
 } from './types'
 import { JWTStrategy } from '@feathersjs/authentication'
-import { LocalStrategy } from '@feathersjs/authentication-local'
 import { oauth } from '@feathersjs/authentication-oauth'
 import { resolveNfzJwtKeys } from './security'
 import { NfzAuthenticationService } from './service'
 import { NfzApiKeyStrategy } from './strategies/api-key'
+import { NfzLocalStrategy } from './strategies/local'
 import { NfzOidcStrategy } from './strategies/oidc'
 
 export interface ConfigureNfzAuthenticationOptions {
@@ -77,7 +77,7 @@ export class NfzAuthenticationProviderRegistry {
 
   constructor(readonly app: any) {
     this.registerFactory('jwt', () => new JWTStrategy())
-    this.registerFactory('local', () => new LocalStrategy())
+    this.registerFactory('local', () => new NfzLocalStrategy())
     this.registerFactory('oidc', () => new NfzOidcStrategy())
     this.registerFactory('api-key', () => new NfzApiKeyStrategy())
   }

@@ -4,6 +4,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-04-28',
   ssr: true,
 
+  nitro: {
+    externals: {
+      inline: ['zod'],
+    },
+  },
+
   routeRules: {
     '/dashboard': { ssr: false },
     '/messages': { ssr: false },
@@ -109,11 +115,18 @@ export default defineNuxtConfig({
       moduleDirs: [],
       modules: [
         {
+          src: 'healthcheck',
+          phase: 'pre',
+          options: { path: '/api/health', payload: { status: 'ok', runtime: 'nfz' } },
+        },
+        {
           src: 'server/feathers/modules/seed-users.ts',
           phase: 'post',
         },
       ],
       secureDefaults: true,
+      duplicateServicePolicy: 'error',
+      bootstrapDiagnostics: process.env.NFZ_BOOTSTRAP_DIAGNOSTICS === 'true',
       secure: {
         cors: true,
         compression: true,

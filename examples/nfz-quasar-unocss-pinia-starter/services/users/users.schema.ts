@@ -17,6 +17,13 @@ export const userSchema = z.object({
 })
 
 export type User = z.infer<typeof userSchema>
+
+declare module '@feathersjs/feathers' {
+  interface Params {
+    user?: User
+  }
+}
+
 export const userValidator = getZodValidator(userSchema, { kind: 'data' })
 export const userResolver = resolve<User, HookContext<UserService>>({})
 

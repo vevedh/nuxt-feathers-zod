@@ -11,6 +11,17 @@ const filesList = pkg.files || []
 
 const problems = []
 
+const requiredExports = [
+  './server-database',
+]
+
+for (const subpath of requiredExports) {
+  if (!exportsMap[subpath])
+    problems.push(`package.json exports must include ${subpath}`)
+  if (!typesVersions[subpath.slice(2)])
+    problems.push(`package.json typesVersions must include ${subpath.slice(2)}`)
+}
+
 function checkFile(rel, label) {
   const abs = resolve(rootDir, rel)
   if (!existsSync(abs) || !statSync(abs).isFile())
@@ -56,6 +67,10 @@ for (const [name, rel] of Object.entries(binMap)) {
 
 if (!filesList.includes('dist')) problems.push('package.json files must include dist')
 if (!filesList.includes('bin')) problems.push('package.json files must include bin')
+if (!filesList.includes('examples/nfz-quasar-unocss-pinia-starter'))
+  problems.push('package.json files must include the Quasar/UnoCSS/Pinia starter')
+if (!existsSync(resolve(rootDir, 'examples/nfz-quasar-unocss-pinia-starter/package.json')))
+  problems.push('starter package root is missing examples/nfz-quasar-unocss-pinia-starter/package.json')
 
 if (problems.length) {
   console.error('[nuxt-feathers-zod] Package export sanity failed:')

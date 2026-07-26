@@ -51,6 +51,21 @@ export interface ServerOptions extends PluginOptions {
   secureDefaults?: boolean
 
   /**
+   * Compatibility escape hatch. Persistent services are fail-closed by default.
+   * Set true only when services backed by unavailable databases are intentionally optional.
+   */
+  allowMissingDatabaseServices?: boolean
+
+  /**
+   * Duplicate Feathers service path policy. `error` is fail-closed and reports
+   * both registrar sources; `skip` keeps the first registration.
+   */
+  duplicateServicePolicy?: 'error' | 'skip'
+
+  /** Enable structured, non-sensitive embedded bootstrap diagnostics. */
+  bootstrapDiagnostics?: boolean
+
+  /**
    * Fine-grained secure defaults configuration (Express only for now).
    * Set `secureDefaults: false` to disable the preset entirely.
    */
@@ -73,6 +88,16 @@ export interface ResolvedServerOptions extends ResolvedPluginOptions {
   enabled?: boolean
   loadOrder?: Array<'modules:pre' | 'plugins' | 'services' | 'modules:post'>
   secureDefaults?: boolean
+  allowMissingDatabaseServices?: boolean
+
+  /**
+   * Duplicate Feathers service path policy. `error` is fail-closed and reports
+   * both registrar sources; `skip` keeps the first registration.
+   */
+  duplicateServicePolicy?: 'error' | 'skip'
+
+  /** Enable structured, non-sensitive embedded bootstrap diagnostics. */
+  bootstrapDiagnostics?: boolean
   secure?: ServerOptions['secure']
   modules: ResolvedServerModule[]
 }
@@ -85,6 +110,9 @@ export const serverDefaults: ServerOptions = {
   modules: [],
   loadOrder: ['modules:pre', 'plugins', 'services', 'modules:post'],
   secureDefaults: true,
+  allowMissingDatabaseServices: false,
+  duplicateServicePolicy: 'error',
+  bootstrapDiagnostics: false,
   secure: {
     cors: true,
     compression: true,
@@ -307,6 +335,11 @@ export async function resolveServerOptions(
       ? forceArray((server as any)?.loadOrder) as any
       : serverDefaults.loadOrder,
     secureDefaults: (server as any)?.secureDefaults ?? serverDefaults.secureDefaults,
+    allowMissingDatabaseServices:
+      (server as any)?.allowMissingDatabaseServices
+      ?? serverDefaults.allowMissingDatabaseServices,
+    duplicateServicePolicy: (server as any)?.duplicateServicePolicy === 'skip' ? 'skip' : 'error',
+    bootstrapDiagnostics: (server as any)?.bootstrapDiagnostics === true,
     secure: (server as any)?.secure ?? serverDefaults.secure,
     modules: [
       ...(resolvedModulesFromDirs.plugins as ResolvedServerModule[]),

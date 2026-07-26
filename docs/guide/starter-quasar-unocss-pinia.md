@@ -7,7 +7,7 @@ Le starter `nfz-quasar-unocss-pinia-starter` est le modèle applicatif principal
 
 Il formalise un flux complet : **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + auth locale JWT + RBAC**.
 
-La référence fonctionnelle auditée pour la release NFZ `6.6.0` est le dossier maintenu dans le dépôt :
+La référence fonctionnelle auditée pour la release NFZ `6.7.37` est le dossier maintenu dans le dépôt :
 
 ```txt
 examples/nfz-quasar-unocss-pinia-starter
@@ -22,13 +22,15 @@ examples/nfz-quasar-unocss-pinia-starter
 La CLI peut le copier avec :
 
 ```bash
-bunx nuxt-feathers-zod init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.7.37 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env
 bun run db:up
 bun dev
 ```
+
+Depuis `6.6.1`, la commande résout le modèle directement depuis la racine du package installé, y compris lorsqu’elle est lancée avec `bunx`.
 
 Compte créé automatiquement au démarrage :
 
@@ -189,6 +191,17 @@ export default defineNuxtConfig({
 ```
 
 Point important : la connexion MongoDB est fournie par NFZ. Les services ne créent pas de connexion Nitro parallèle.
+
+## Contrats TypeScript stricts
+
+Le starter publié est validé avec `vue-tsc --noEmit` après installation du tarball exact. Les types utilisés aux frontières du package sont explicites :
+
+- `$api` est traité comme un `ClientApplication` NFZ ;
+- `app.get('mongodbClient')` est déclaré dans la configuration serveur publique ;
+- `params.user` est déclaré comme entité d’authentification du starter ;
+- `authenticateNfz()` est compatible avec les hooks Feathers `before` et `around`.
+
+Ces déclarations évitent les casts génériques dans les services métier tout en conservant le mode strict.
 
 ## Services Feathers MongoDB
 
@@ -513,7 +526,7 @@ routeRules: {
 5. Normaliser les erreurs Feathers avant affichage.
 6. Normaliser `_id` MongoDB vers `id` avant de l’utiliser dans les composants Quasar.
 7. Utiliser des stores métier Pinia inspirés de Feathers-Pinia sans forcer `feathers-pinia` côté navigateur.
-8. Garder MongoDB via `feathers.database.mongo`, pas via une connexion parallèle.
+8. Pour un projet mono-base, conserver `feathers.database.mongo`; pour plusieurs bases, migrer explicitement vers `feathers.database.connections` et nommer chaque connexion.
 9. Documenter les credentials de seed uniquement pour le développement local.
 
 ## Quand utiliser ce modèle

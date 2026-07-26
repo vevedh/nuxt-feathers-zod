@@ -89,6 +89,8 @@ await builder.getSchema('users')
 await builder.getManifest()
 await builder.preview({ service: 'users', fields: {} })
 await builder.getStatus()
+await builder.getDatabaseConnections()
+await builder.checkDatabaseConnection('reporting')
 await builder.getRbac()
 await builder.getPresets()
 ```
@@ -127,4 +129,8 @@ For a business operation:
 2. use `useBuilderClient()` for NFZ Builder and RBAC services;
 3. use HTTP request helpers only when the target contract is not a Feathers service.
 
-<!-- release-version: 6.6.0 -->
+## Database registry server helpers
+
+Server services and modules can import `getNfzDatabaseRegistry`, `getNfzDatabaseConnection`, `getNfzMongoDatabase`, `getNfzKnexClient`, `getNfzDatabaseDiagnostics`, and `checkNfzDatabaseConnection` from `nuxt-feathers-zod/server-database`. These helpers require a ready connection and avoid direct access to configuration secrets.
+
+<!-- release-version: 6.7.37 -->

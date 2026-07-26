@@ -23,6 +23,7 @@ bun run clean:repo
 bun run build
 bun run typecheck
 bun run test
+bun run release:candidate
 bun run smoke:tarball
 ```
 
@@ -44,6 +45,7 @@ Please make sure the following pass locally:
 bun run build
 bun run typecheck
 bun run test:e2e
+bun run release:candidate
 bun run smoke:tarball
 ```
 
@@ -54,7 +56,7 @@ If your patch changes public behavior, also update:
 - the relevant `docs/guide/*` and `docs/en/guide/*` pages
 - `CHANGELOG.md`
 
-If your patch changes release or packaging behavior, run the complete release gate and describe the impact in the pull request. Maintainer-only release procedures are kept outside the public repository.
+If your patch changes release or packaging behavior, create one candidate with `bun run release:candidate`, validate that exact tarball, and describe the impact in the pull request. The final publish workflow remains maintainer-only and is kept outside the public repository.
 
 ## Repository hygiene
 

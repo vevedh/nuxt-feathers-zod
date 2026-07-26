@@ -1,4 +1,4 @@
-import type { HookContext, NextFunction } from '@feathersjs/feathers'
+import type { AroundHookFunction, HookContext, HookFunction, NextFunction } from '@feathersjs/feathers'
 import { NotAuthenticated } from '@feathersjs/errors'
 import { createNfzPrincipal } from './principal'
 
@@ -7,9 +7,18 @@ export interface AuthenticateNfzOptions {
   strategies?: string[]
 }
 
-export function authenticateNfz(options: AuthenticateNfzOptions = {}) {
-  return async (context: HookContext, next?: NextFunction): Promise<unknown> => {
-    const proceed = typeof next === 'function' ? next : async () => context
+export type AuthenticateNfzHook = AroundHookFunction & HookFunction
+
+export function authenticateNfz(options: AuthenticateNfzOptions = {}): AuthenticateNfzHook {
+  const hook = async (context: HookContext, next?: NextFunction): Promise<void | HookContext> => {
+    const proceed = async (): Promise<void | HookContext> => {
+      if (typeof next === 'function') {
+        await next()
+        return
+      }
+
+      return context
+    }
     if (context.type && context.type !== 'before' && context.type !== 'around')
       throw new NotAuthenticated('[nuxt-feathers-zod] authenticateNfz must be used as a before or around hook.')
 
@@ -55,4 +64,6 @@ export function authenticateNfz(options: AuthenticateNfzOptions = {}) {
 
     return proceed()
   }
+
+  return hook as AuthenticateNfzHook
 }

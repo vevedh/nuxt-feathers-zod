@@ -206,6 +206,7 @@ export function getPublicBuilderServices(publicConfig?: PublicFeathersRuntimeLik
     rbac: String(configured.rbac || 'nfz/rbac'),
     presets: String(configured.presets || 'nfz/presets'),
     init: String(configured.init || 'nfz/init'),
+    databaseConnections: String(configured.databaseConnections || 'nfz/database-connections'),
   }
 }
 

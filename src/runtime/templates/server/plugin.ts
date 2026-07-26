@@ -11,14 +11,14 @@ function toNamedRegistrars(imports: any[], kind: 'service' | 'plugin'): string {
   if (!imports.length)
     return '[]'
 
-  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`${kind} ${item.name || item.as || item.meta.importId}`)} }`).join(',\n')}\n]`
+  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`${kind} ${item.name || item.as || item.meta.importId}`)}, source: ${JSON.stringify(item.from || item.meta?.import || 'generated')} }`).join(',\n')}\n]`
 }
 
 function toNamedModules(imports: any[]): string {
   if (!imports.length)
     return '[]'
 
-  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`module ${item.name || item.as || item.meta.importId}`)}, moduleOptions: ${JSON.stringify(item.options ?? null)} }`).join(',\n')}\n]`
+  return `[\n${imports.map(item => `  { handler: ${item.meta.importId}, label: ${JSON.stringify(`module ${item.name || item.as || item.meta.importId}`)}, source: ${JSON.stringify(item.from || item.meta?.import || 'generated')}, moduleOptions: ${JSON.stringify(item.options ?? null)} }`).join(',\n')}\n]`
 }
 
 function normalizePath(value: string): string {
@@ -128,10 +128,24 @@ export function getServerPluginContents(options: ResolvedOptions) {
       auth: { enabled: auth, strategies: parseStrategies || [] },
       server: {
         secureDefaults: (options.server as any)?.secureDefaults,
+        allowMissingDatabaseServices: (options.server as any)?.allowMissingDatabaseServices,
+        duplicateServicePolicy: (options.server as any)?.duplicateServicePolicy,
+        bootstrapDiagnostics: (options.server as any)?.bootstrapDiagnostics,
         secure: (options.server as any)?.secure,
       },
       database: {
-        mongo: options.database?.mongo ? { enabled: true } : false,
+        default: options.database?.default,
+        connections: Object.fromEntries(Object.values(options.database?.connections || {}).map(connection => [
+          connection.name,
+          {
+            name: connection.name,
+            type: connection.type,
+            enabled: connection.enabled,
+            required: connection.required,
+            healthCheck: connection.healthCheck,
+            legacy: connection.legacy,
+          },
+        ])),
       },
       keycloak: keycloakEnabled ? { enabled: true, mode: 'bridge' } : false,
       console: options.console ? {
@@ -171,7 +185,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
   const nfzRuntimeServices = [
     ...nfzServices,
-${put(Boolean(options.console?.enabled), `    { handler: app => registerNfzConsoleServices(app, nfzServerConfig), label: 'NFZ console services' },`)}
+${put(Boolean(options.console?.enabled), `    { handler: app => registerNfzConsoleServices(app, nfzServerConfig), label: 'NFZ console services', source: 'nuxt-feathers-zod/server-console-services' },`)}
   ]
 
   await createServerBootstrap({

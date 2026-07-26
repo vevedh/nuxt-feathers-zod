@@ -38,6 +38,8 @@ export const templatesDefaults: ResolvedTemplatesOptions = {
     // Allow overriding any nested server/client templates (modules, helpers, etc.)
     // while still keeping the key-space constrained under "server/" and "client/".
     'server/**/*.ts',
+    'server/*.mjs',
+    'server/**/*.mjs',
     'client/**/*.ts',
     // Allow overriding generated type helpers when needed.
     'types/**/*.d.ts',

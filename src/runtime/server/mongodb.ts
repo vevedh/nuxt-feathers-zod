@@ -172,6 +172,73 @@ function inferDatabaseName(connection: string): string {
   }
 }
 
+export async function registerMongoManagementServices(app: any, db: any, management: NfzMongoManagementConfig = {}): Promise<void> {
+  if (!management.enabled)
+    return
+
+  const mongoPath = ensureLeadingSlash(management.basePath || '/mongo')
+  const baseOptions = {
+    db,
+    whitelistDatabases: Array.isArray(management.whitelistDatabases) && management.whitelistDatabases.length ? management.whitelistDatabases : undefined,
+    blacklistDatabases: Array.isArray(management.blacklistDatabases) && management.blacklistDatabases.length
+      ? management.blacklistDatabases
+      : management.showSystemDatabases === true
+        ? undefined
+        : ['admin', 'config', 'local'],
+    whitelistCollections: Array.isArray(management.whitelistCollections) && management.whitelistCollections.length ? management.whitelistCollections : undefined,
+    blacklistCollections: Array.isArray(management.blacklistCollections) && management.blacklistCollections.length ? management.blacklistCollections : ['system.profile'],
+    allowCreateDatabase: management.allowCreateDatabase === true,
+    allowDropDatabase: management.allowDropDatabase === true,
+    allowCreateCollection: management.allowCreateCollection === true,
+    allowDropCollection: management.allowDropCollection === true,
+    allowInsertDocuments: management.allowInsertDocuments === true,
+    allowPatchDocuments: management.allowPatchDocuments === true,
+    allowReplaceDocuments: management.allowReplaceDocuments === true,
+    allowRemoveDocuments: management.allowRemoveDocuments === true,
+    audit: createAuditLogger(management),
+    auth: createAuthOptions(management),
+  }
+
+  const mount = (path: string, factory: (options: any) => (app: any) => unknown, specificOptions: Record<string, unknown> = {}) => {
+    if (hasService(app, path))
+      return
+
+    const serviceOptions = { ...baseOptions, ...specificOptions, serviceName: path }
+    app.configure(factory(serviceOptions))
+
+    const beforeAllHooks = createMongoAdminBeforeHooks(serviceOptions.auth)
+    if (beforeAllHooks.length > 0) {
+      try {
+        app.service(path).hooks({ before: { all: beforeAllHooks } })
+      }
+      catch {
+        // ignore late service adapters
+      }
+    }
+  }
+
+  if (management.exposeDatabasesService)
+    mount(normalizePath(mongoPath, 'databases'), database)
+
+  if (management.exposeCollectionsService)
+    mount(normalizePath(mongoPath, ':db', 'collections'), collections)
+
+  if (management.exposeUsersService)
+    mount(normalizePath(mongoPath, 'users'), users, { hasUserInfosCommand: true })
+
+  if (management.exposeCollectionCrud) {
+    mount(normalizePath(mongoPath, ':db', 'stats'), stats)
+    mount(normalizePath(mongoPath, ':db', ':collection', 'indexes'), indexes)
+    mount(normalizePath(mongoPath, ':db', ':collection', 'count'), count)
+    mount(normalizePath(mongoPath, ':db', ':collection', 'schema'), schema, { sampleSize: 50 })
+    mount(normalizePath(mongoPath, ':db', ':collection', 'documents'), documents)
+    mount(normalizePath(mongoPath, ':db', ':collection', 'aggregate'), aggregate, {
+      maxPipelineStages: 20,
+      maxResultSize: 100,
+    })
+  }
+}
+
 export function createMongoInfrastructure(config: NfzMongoInfrastructureConfig) {
   const mongodbConnection = config.mongodbConnection
   const mongodbOptions = config.mongodbOptions || {}
@@ -179,13 +246,6 @@ export function createMongoInfrastructure(config: NfzMongoInfrastructureConfig) 
 
   return async function mongodb(app: any): Promise<void> {
     const connection = app.get('mongodb') || mongodbConnection
-    const defaultMongoPath = ensureLeadingSlash(management.basePath || '/mongo')
-    const configuredMongoPath = app.get('mongoPath')
-    const mongoPath = ensureLeadingSlash(configuredMongoPath || defaultMongoPath)
-
-    if (!configuredMongoPath)
-      app.set('mongoPath', mongoPath)
-
     if (!connection || typeof connection !== 'string')
       throw new Error('Missing MongoDB connection string in app.get("mongodb")')
 
@@ -199,68 +259,6 @@ export function createMongoInfrastructure(config: NfzMongoInfrastructureConfig) 
     app.set('currentDatabase', databaseName)
     app.set('mongodb_ok', true)
 
-    if (!management.enabled)
-      return
-
-    const baseOptions = {
-      db,
-      whitelistDatabases: Array.isArray(management.whitelistDatabases) && management.whitelistDatabases.length ? management.whitelistDatabases : undefined,
-      blacklistDatabases: Array.isArray(management.blacklistDatabases) && management.blacklistDatabases.length
-        ? management.blacklistDatabases
-        : management.showSystemDatabases === true
-          ? undefined
-          : ['admin', 'config', 'local'],
-      whitelistCollections: Array.isArray(management.whitelistCollections) && management.whitelistCollections.length ? management.whitelistCollections : undefined,
-      blacklistCollections: Array.isArray(management.blacklistCollections) && management.blacklistCollections.length ? management.blacklistCollections : ['system.profile'],
-      allowCreateDatabase: management.allowCreateDatabase === true,
-      allowDropDatabase: management.allowDropDatabase === true,
-      allowCreateCollection: management.allowCreateCollection === true,
-      allowDropCollection: management.allowDropCollection === true,
-      allowInsertDocuments: management.allowInsertDocuments === true,
-      allowPatchDocuments: management.allowPatchDocuments === true,
-      allowReplaceDocuments: management.allowReplaceDocuments === true,
-      allowRemoveDocuments: management.allowRemoveDocuments === true,
-      audit: createAuditLogger(management),
-      auth: createAuthOptions(management),
-    }
-
-    const mount = (path: string, factory: (options: any) => (app: any) => unknown, specificOptions: Record<string, unknown> = {}) => {
-      if (hasService(app, path))
-        return
-
-      const serviceOptions = { ...baseOptions, ...specificOptions, serviceName: path }
-      app.configure(factory(serviceOptions))
-
-      const beforeAllHooks = createMongoAdminBeforeHooks(serviceOptions.auth)
-      if (beforeAllHooks.length > 0) {
-        try {
-          app.service(path).hooks({ before: { all: beforeAllHooks } })
-        }
-        catch {
-          // ignore late service adapters
-        }
-      }
-    }
-
-    if (management.exposeDatabasesService)
-      mount(normalizePath(mongoPath, 'databases'), database)
-
-    if (management.exposeCollectionsService)
-      mount(normalizePath(mongoPath, ':db', 'collections'), collections)
-
-    if (management.exposeUsersService)
-      mount(normalizePath(mongoPath, 'users'), users, { hasUserInfosCommand: true })
-
-    if (management.exposeCollectionCrud) {
-      mount(normalizePath(mongoPath, ':db', 'stats'), stats)
-      mount(normalizePath(mongoPath, ':db', ':collection', 'indexes'), indexes)
-      mount(normalizePath(mongoPath, ':db', ':collection', 'count'), count)
-      mount(normalizePath(mongoPath, ':db', ':collection', 'schema'), schema, { sampleSize: 50 })
-      mount(normalizePath(mongoPath, ':db', ':collection', 'documents'), documents)
-      mount(normalizePath(mongoPath, ':db', ':collection', 'aggregate'), aggregate, {
-        maxPipelineStages: 20,
-        maxResultSize: 100,
-      })
-    }
+    await registerMongoManagementServices(app, db, management)
   }
 }

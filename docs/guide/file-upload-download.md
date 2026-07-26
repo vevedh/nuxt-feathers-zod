@@ -47,10 +47,12 @@ await api.service('api/v1/assets').upload({
 ### Download
 
 ```ts
-await api.service('api/v1/assets').download({ id: '...' })
+await api.service('api/v1/assets').download({ id: '8d42d7d5-b6a5-4d1e-a6f1-62096a55b7ab' })
 ```
 
 Le résultat renvoie les métadonnées du fichier et `dataBase64`.
+
+Les identifiants autres que des UUID sont rejetés avant toute résolution de chemin. Le fichier `.bin` et son descripteur `.json` doivent rester des enfants directs du dossier de stockage configuré.
 
 ## Options utiles
 
@@ -58,8 +60,8 @@ Le résultat renvoie les métadonnées du fichier et `dataBase64`.
 bunx nuxt-feathers-zod add file-service assets \
   --path api/v1/assets \
   --storageDir storage/assets \
-  --auth true \
-  --docs true
+  --auth \
+  --docs
 ```
 
 - `--path` : path Feathers du service
@@ -74,7 +76,12 @@ Le starter généré reste volontairement **local et simple**. Dans `*.class.ts`
 
 - un contrôle de **taille maximale** configurable (`<serviceName>MaxBytes` ou `nfzFileMaxBytes`)
 - une **allowlist MIME** configurable (`<serviceName>AllowedMimeTypes` ou `nfzFileAllowedMimeTypes`)
+- une validation stricte des identifiants UUID pour `get`, `remove` et `download`
+- un contrôle de confinement du chemin final après `resolve()`
+- une limite sur la longueur Base64 avant décodage, puis une validation Base64 canonique
 - une normalisation du nom de fichier avant écriture disque
+
+Les clés utilisent le **nom complet du service**. Pour `attachments`, configure donc `attachmentsMaxBytes`. Les anciennes clés singulières comme `attachmentMaxBytes` restent reconnues uniquement comme fallback de compatibilité. La valeur est relue à chaque opération.
 
 Exemple d'usage côté app :
 
@@ -112,3 +119,5 @@ bun install
 ```
 
 et évite `bun run clean:repo` avant installation, qui suppose déjà `@nuxt/kit` présent localement.
+
+<!-- release-version: 6.7.37 -->

@@ -1,6 +1,6 @@
 import { createResolver } from '@nuxt/kit'
 import { describe, expect, it } from 'vitest'
-import { resolvePluginDirs, resolvePlugins, resolvePluginsFromPluginDirs, resolvePluginsOptions } from './plugins'
+import { normalizePluginSourceForComparison, resolvePluginDirs, resolvePlugins, resolvePluginsFromPluginDirs, resolvePluginsOptions } from './plugins'
 import { getImportId } from './utils'
 
 describe('resolvePluginDirs', () => {
@@ -20,6 +20,13 @@ describe('resolvePluginDirs', () => {
     const result = resolvePluginDirs(undefined, rootDir, 'default')
     expect(result).toEqual(['/root/default'])
   })
+
+  it('normalizes Windows separators, casing, and module extensions', () => {
+    const left = normalizePluginSourceForComparison('C:\\Project\\server\\plugin.ts', 'C:\\Project', 'win32')
+    const right = normalizePluginSourceForComparison('c:/project/server/plugin.mjs', 'C:\\Project', 'win32')
+    expect(left).toBe(right)
+  })
+
 })
 
 export const testRootDir = createResolver(import.meta.url).resolve('../../../test')
@@ -127,6 +134,15 @@ describe('resolvePluginsOptions', () => {
     expect(result.plugins).toEqual(expect.arrayContaining([
       resolvedChannelsPlugin,
     ]))
+  })
+
+  it('deduplicates a plugin declared explicitly and discovered through pluginDirs', async () => {
+    const result = await resolvePluginsOptions({
+      pluginDirs: ['plugins'],
+      plugins: ['plugins/channels.ts'],
+    }, testRootDir, 'defaultDir-not-used')
+
+    expect(result.plugins.filter(plugin => plugin.from === channelsFrom)).toHaveLength(1)
   })
 
   it('should remove duplicated plugins', async () => {

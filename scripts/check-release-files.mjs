@@ -6,6 +6,7 @@ const targetDir = resolve(process.argv[2] || process.cwd())
 const requiredFiles = [
   'README.md',
   'README_fr.md',
+  'LICENSE',
   'CHANGELOG.md',
   'CONTRIBUTING.md',
   'docs/.vitepress/theme/index.ts',

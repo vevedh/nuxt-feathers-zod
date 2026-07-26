@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       strict: true,
       allow: [
         'server/**/*.ts',
+        'server/*.mjs',
         'client/**/*.ts',
         'types/**/*.d.ts',
       ],
@@ -38,6 +39,10 @@ export default defineNuxtConfig({
   }
 })
 ```
+
+## Format du bridge REST généré
+
+Le bridge de transport Express est généré sous la clé `server/rest-bridge.mjs`. Un override de ce fichier doit rester un module ESM JavaScript analysable directement par Nitro ; conserve `server/*.mjs` dans l’allow-list lorsque tu remplaces ce bridge.
 
 ## Exemple CLI
 
@@ -72,4 +77,4 @@ const result = await service.find({
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

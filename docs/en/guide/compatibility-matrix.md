@@ -3,59 +3,56 @@ editLink: false
 ---
 # Compatibility matrix
 
-This page documents the `compatibility-matrix` feature, its configuration contract and the recommended usage pattern for application developers.
+This matrix describes the validated target perimeter of the open-source core.
 
-## Purpose
+## Target versions
 
-The `compatibility-matrix` feature helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
+- **Bun**: 1.3.x
+- **Nuxt**: 4.x
+- **Nitro**: 2.x through Nuxt 4
+- **Vue**: 3.5.x through Nuxt 4
+- **FeathersJS**: v5 (Dove)
+- **TypeScript**: 5.x
 
-## When to use this option
+## Supported core scenarios
 
-Use this page when you need to:
+| Scenario | Target status | Notes |
+| --- | --- | --- |
+| Nuxt 4 + embedded + memory | Stable | Recommended minimal entry point |
+| Nuxt 4 + embedded + MongoDB | Stable | CLI generation recommended |
+| Nuxt 4 + embedded + PostgreSQL through Knex | Stable optional path | Requires `@feathersjs/knex`, `knex`, and `pg` |
+| Nuxt 4 + embedded + MySQL/MariaDB through Knex | Stable optional path | Requires `mysql2` |
+| Nuxt 4 + embedded + SQLite through Knex | Stable optional path | Requires `better-sqlite3` |
+| Several named MongoDB/SQL connections | Stable in 6.7.0 | Every persistent service may select `--connection` |
+| Nuxt 4 + embedded + local/JWT auth | Stable | Generate the `users` service through the CLI |
+| Nuxt 4 + remote REST | Stable | Declare remote services explicitly |
+| Nuxt 4 + remote Socket.IO | Stable | Uses the same declared-service model |
+| Keycloak SSO bridge | Stable with correct configuration | Validate against the real identity environment |
+| Legacy Swagger | Stable optional path | Requires `feathers-swagger` and `swagger-ui-dist` |
 
-- configure the `compatibility-matrix` feature;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
+## Priority validation platforms
 
-## Configuration example
+- Windows 11 + Bun
+- Linux + Bun
 
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+## Preserved invariants
 
-  feathers: {
-    servicesDirs: ['services'],
-    client: true,
-  }
-})
-```
+- `servicesDirs: ['services']` remains the recommended public convention;
+- CLI-first initialization and service generation;
+- `memory` remains the default adapter;
+- `--schema none` remains the default schema mode;
+- named connection diagnostics never expose credentials;
+- legacy aliases remain supported but are not promoted as the primary architecture.
 
-## CLI example
+## Recommended smoke sequence
 
 ```bash
-bunx nuxt-feathers-zod doctor
+bun install
+bun run sanity:templates
+bun run sanity:syntax
+bun run sanity:database-registry
+bun run build
+bun run docs:build
 ```
 
-## Runtime example
-
-```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
-  },
-})
-```
-
-## Practical advice
-
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
-
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

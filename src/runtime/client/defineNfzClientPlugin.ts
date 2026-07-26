@@ -1,5 +1,6 @@
 import type { NuxtApp } from '#app'
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
+import type { ClientApplication } from '../client'
 import type { NfzClientPluginConfig } from './types'
 
 import { createFeathersClient } from './createFeathersClient'
@@ -24,7 +25,7 @@ export function defineNfzClientPlugin(config: NfzClientPluginConfig) {
       }
     }
 
-    const api = wrapApiServices(feathersClient as any)
+    const api = wrapApiServices(feathersClient as any) as ClientApplication
 
     if (import.meta.dev && mode === 'remote') {
       try {

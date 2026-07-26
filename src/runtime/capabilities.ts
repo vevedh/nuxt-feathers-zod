@@ -7,6 +7,7 @@ export const NFZ_CONSOLE_SERVICE_PATHS = {
   rbac: 'nfz/rbac',
   presets: 'nfz/presets',
   init: 'nfz/init',
+  databaseConnections: 'nfz/database-connections',
 } as const
 
 export const NFZ_AUTH_EVENT_TYPES = [
@@ -45,7 +46,7 @@ export const NFZ_MODULE_CAPABILITIES = {
   restFrameworks: ['express', 'koa'],
   schemaModes: ['none', 'zod', 'json'],
   serviceKinds: ['adapter', 'custom', 'file', 'remote'],
-  adapters: ['memory', 'mongodb'],
+  adapters: ['memory', 'mongodb', 'knex'],
   authProviders: ['jwt', 'local', 'oauth', 'oidc', 'api-key', 'custom', 'keycloak-bridge', 'remote', 'none'],
   consoleServices: [
     { key: 'services', path: NFZ_CONSOLE_SERVICE_PATHS.services, methods: ['find'], purpose: 'service discovery' },
@@ -56,6 +57,7 @@ export const NFZ_MODULE_CAPABILITIES = {
     { key: 'rbac', path: NFZ_CONSOLE_SERVICE_PATHS.rbac, methods: ['get', 'patch'], purpose: 'RBAC policy management' },
     { key: 'presets', path: NFZ_CONSOLE_SERVICE_PATHS.presets, methods: ['find', 'create'], purpose: 'builder preset preview and apply' },
     { key: 'init', path: NFZ_CONSOLE_SERVICE_PATHS.init, methods: ['create'], purpose: 'guided initialization operations' },
+    { key: 'databaseConnections', path: NFZ_CONSOLE_SERVICE_PATHS.databaseConnections, methods: ['find', 'get'], purpose: 'redacted database connection diagnostics and health checks' },
   ],
   composables: [
     'useFeathers',

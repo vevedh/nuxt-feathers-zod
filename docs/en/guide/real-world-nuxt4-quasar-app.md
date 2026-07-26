@@ -373,7 +373,7 @@ services/
 
 ```bash
 bun install
-bun run mongo:up
+docker compose up -d mongodb
 bun dev
 ```
 

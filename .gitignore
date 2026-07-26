@@ -13,6 +13,7 @@ node_modules
 .temp
 .tmp
 .cache
+.bun-cache
 .eslintcache
 
 # Yarn
@@ -70,6 +71,7 @@ Temporary Items
 # Local workspace and maintenance notes
 patch-memory/
 docs-private/
+skills/
 PATCHLOG.md
 PRODUCTION_AUDIT.md
 REPO_DEV.md
@@ -104,3 +106,5 @@ CHANGELOG.md.bak
 CHANGELOG_v6.3.6.md
 NFZ_BACKLOG_6.4.115-6.4.118.md
 NUXT_MODULES_ISSUE_DRAFT.md
+
+.release-work/

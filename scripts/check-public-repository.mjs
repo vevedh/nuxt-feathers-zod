@@ -27,6 +27,7 @@ const forbiddenExactPaths = new Set([
 const forbiddenDirectoryNames = new Set([
   'patch-memory',
   'docs-private',
+  'skills',
 ])
 
 const forbiddenFilePrefixes = [
@@ -66,7 +67,13 @@ function isExplicitlyIgnoredMaintenancePath(repositoryPath) {
   if (segments.includes('docs-private') && gitIgnorePatterns.has('docs-private/'))
     return true
 
+  if (segments.includes('skills') && gitIgnorePatterns.has('skills/'))
+    return true
+
   if (repositoryPath === 'AGENTS.md' && gitIgnorePatterns.has('AGENTS.md'))
+    return true
+
+  if (repositoryPath === '.vscode/mcp.json' && gitIgnorePatterns.has('.vscode/*'))
     return true
 
   if (forbiddenExactPaths.has(repositoryPath) && gitIgnorePatterns.has(repositoryPath))

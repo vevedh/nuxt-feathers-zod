@@ -44,7 +44,7 @@ export default defineNuxtConfig({
 
 ```bash
 bun add feathers-swagger swagger-ui-dist
-bunx nuxt-feathers-zod init embedded --swagger true --force
+bunx nuxt-feathers-zod init embedded --swagger --force
 ```
 
 ## Runtime example
@@ -67,4 +67,4 @@ const result = await service.find({
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

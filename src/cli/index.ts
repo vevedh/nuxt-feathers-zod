@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { cp, readdir } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defineCommand, runMain } from 'citty'
@@ -211,9 +211,25 @@ function resolveStarterPresetSource(preset: string): string {
     )
   }
 
-  return resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    '../../examples/nfz-quasar-unocss-pinia-starter',
+  const moduleDir = dirname(fileURLToPath(import.meta.url))
+  let currentDir = moduleDir
+
+  while (true) {
+    const candidate = resolve(
+      currentDir,
+      'examples/nfz-quasar-unocss-pinia-starter',
+    )
+    if (existsSync(candidate))
+      return candidate
+
+    const parentDir = dirname(currentDir)
+    if (parentDir === currentDir)
+      break
+    currentDir = parentDir
+  }
+
+  throw new Error(
+    `Starter preset source not found from ${moduleDir}. Ensure package files include examples/nfz-quasar-unocss-pinia-starter at the package root.`,
   )
 }
 
@@ -253,8 +269,8 @@ async function handleInitStarterCommand(cwd: string, args: CliContextArgs) {
     recursive: true,
     force: true,
     filter: (src) => {
-      const normalized = src.replace(/\\/g, '/')
-      return !/\/(node_modules|\.nuxt|\.output|dist)\b/.test(normalized)
+      const normalized = relative(sourceDir, src).replace(/\\/g, '/')
+      return !/(^|\/)(node_modules|\.nuxt|\.output|dist)(\/|$)/.test(normalized)
     },
   })
 
@@ -273,6 +289,9 @@ function hasDefinedFlag(args: Record<string, unknown>, key: string) {
 
 export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolean, adapter: Adapter) {
   const hasCollection = typeof args.collection === 'string' && String(args.collection).trim().length > 0
+  const hasTable = typeof args.table === 'string' && String(args.table).trim().length > 0
+  const hasSchemaName = typeof args.schemaName === 'string' && String(args.schemaName).trim().length > 0
+  const hasConnection = typeof args.connection === 'string' && String(args.connection).trim().length > 0
   const hasMethods = typeof args.methods === 'string' && String(args.methods).trim().length > 0
   const hasCustomMethods = typeof args.customMethods === 'string' && String(args.customMethods).trim().length > 0
   const hasIdField = hasDefinedFlag(args, 'idField')
@@ -280,8 +299,8 @@ export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolea
   if (custom) {
     if (adapter !== 'memory')
       throw new Error('Invalid flags for `add service --custom`: --adapter is not supported for adapter-less custom services.')
-    if (hasCollection)
-      throw new Error('Invalid flags for `add service --custom`: --collection is only valid with --adapter mongodb.')
+    if (hasCollection || hasTable || hasSchemaName || hasConnection)
+      throw new Error('Invalid flags for `add service --custom`: database selection flags are only valid for adapter services.')
     if (hasIdField)
       throw new Error('Invalid flags for `add service --custom`: --idField is not used by adapter-less custom services.')
     return
@@ -294,6 +313,12 @@ export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolea
   if (hasCollection && adapter !== 'mongodb') {
     throw new Error('Invalid flags for `add service`: --collection requires --adapter mongodb.')
   }
+
+  if ((hasTable || hasSchemaName) && adapter !== 'knex')
+    throw new Error('Invalid flags for `add service`: --table and --schemaName require --adapter knex.')
+
+  if (hasConnection && adapter === 'memory')
+    throw new Error('Invalid flags for `add service`: --connection requires --adapter mongodb or knex.')
 }
 
 export function assertInitRemoteArgs(args: CliContextArgs, transport: 'auto' | 'rest' | 'socketio', authEnabled: boolean) {
@@ -340,7 +365,9 @@ async function withProjectRoot(cwd: string) {
 async function handleDoctorCommand(cwd: string) {
   const projectRoot = await withProjectRoot(cwd)
   const { runDoctor } = await loadDoctorCommand()
-  await runDoctor(projectRoot)
+  const result = await runDoctor(projectRoot)
+  if (!result.ok)
+    throw new Error(`NFZ doctor found ${result.errors.length} blocking configuration error(s).`)
 }
 
 async function handleRemoteAuthKeycloakCommand(cwd: string, args: CliContextArgs) {
@@ -535,6 +562,9 @@ async function handleAddServiceCommand(cwd: string, args: CliContextArgs, compat
   const idField = (args.idField as IdField | undefined) ?? (adapter === 'mongodb' ? '_id' : 'id')
   const servicePath = typeof args.path === 'string' ? String(args.path) : undefined
   const collectionName = typeof args.collection === 'string' ? String(args.collection) : undefined
+  const tableName = typeof args.table === 'string' ? String(args.table) : undefined
+  const schemaName = typeof args.schemaName === 'string' ? String(args.schemaName) : undefined
+  const connectionName = typeof args.connection === 'string' ? String(args.connection) : undefined
   const methods = typeof args.methods === 'string' ? String(args.methods) : undefined
   const customMethods = typeof args.customMethods === 'string' ? String(args.customMethods) : undefined
   const docs = parseBooleanFlag(args.docs as string | boolean | undefined, false)
@@ -559,6 +589,9 @@ async function handleAddServiceCommand(cwd: string, args: CliContextArgs, compat
     idField,
     servicePath,
     collectionName,
+    tableName,
+    schemaName,
+    connectionName,
     docs,
     authAware,
     schema,
@@ -1080,13 +1113,16 @@ export function createCliCommand() {
       name: { type: 'positional', required: true, description: 'Service name' },
       custom: { type: 'boolean', description: 'Generate an adapter-less custom service' },
       type: { type: 'enum', options: ['adapter', 'custom'], description: 'Service kind' },
-      adapter: { type: 'enum', options: ['memory', 'mongodb'], description: 'Service adapter' },
+      adapter: { type: 'enum', options: ['memory', 'mongodb', 'knex'], description: 'Service adapter' },
       schema: { type: 'enum', options: ['none', 'zod', 'json'], description: 'Schema generation mode' },
       auth: { type: 'boolean', description: 'Enable JWT auth hooks' },
       authAware: { type: 'boolean', description: 'Enable auth-aware password hashing/masking for users service' },
       idField: { type: 'enum', options: ['id', '_id'], description: 'Service id field' },
       path: { type: 'string', description: 'Service path' },
       collection: { type: 'string', description: 'MongoDB collection name' },
+      table: { type: 'string', description: 'Knex table name' },
+      schemaName: { type: 'string', description: 'Optional SQL schema name' },
+      connection: { type: 'string', description: 'Named database connection' },
       methods: { type: 'string', description: 'Comma-separated standard methods' },
       customMethods: { type: 'string', description: 'Comma-separated custom methods' },
       docs: { type: 'boolean', description: 'Enable swagger legacy docs metadata' },

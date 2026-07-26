@@ -86,13 +86,18 @@ const currentExampleTextTargets = [
   'examples/nuxt4-keycloak-ldap-ssr-ref/app/pages/index.vue',
 ]
 
+const currentExampleNfzReferencePattern
+  = /(?:nuxt-feathers-zod(?:@|\s+|\/nuxt-feathers-zod-)|NFZ\s+`?|Depuis\s+`|Patch\s+|Si la version\s+|Correctif\s+`\/messages`\s+)(\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?)/gi
+
 for (const relativePath of currentExampleTextTargets) {
   const text = read(relativePath)
-  const references = text.match(/\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/gi) || []
+  const references = [...text.matchAll(currentExampleNfzReferencePattern)]
+    .map(match => match[1])
+    .filter(Boolean)
 
   for (const reference of references) {
     if (reference !== version)
-      errors.push(`${relativePath} contains stale current-version reference ${reference}; expected ${version}`)
+      errors.push(`${relativePath} contains stale NFZ reference ${reference}; expected ${version}`)
   }
 
   if (references.length === 0)

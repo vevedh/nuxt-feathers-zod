@@ -4,6 +4,8 @@ import { resolve } from 'node:path'
 const rootDir = resolve(process.cwd())
 const pkg = JSON.parse(readFileSync(resolve(rootDir, 'package.json'), 'utf8'))
 const lock = readFileSync(resolve(rootDir, 'bun.lock'), 'utf8')
+const starterPackagePath = resolve(rootDir, 'examples/nfz-quasar-unocss-pinia-starter/package.json')
+const starter = JSON.parse(readFileSync(starterPackagePath, 'utf8'))
 const problems = []
 
 const expected = {
@@ -38,6 +40,34 @@ for (const [name, version] of Object.entries(expected)) {
     problems.push(`${name}: ${version} is missing from bun.lock`)
 }
 
+
+const starterDependencies = starter.dependencies || {}
+for (const [name, actual] of Object.entries(starterDependencies)) {
+  if (!name.startsWith('@feathersjs/'))
+    continue
+  const expectedVersion = expected[name]
+  if (!expectedVersion) {
+    problems.push(`starter ${name}: no canonical root version is defined`)
+    continue
+  }
+  if (actual !== expectedVersion)
+    problems.push(`starter ${name}: expected ${expectedVersion}, found ${actual}`)
+}
+
+for (const requiredStarterDependency of [
+  '@feathersjs/authentication',
+  '@feathersjs/authentication-local',
+  '@feathersjs/errors',
+  '@feathersjs/mongodb',
+  '@feathersjs/schema',
+]) {
+  if (starterDependencies[requiredStarterDependency] !== expected[requiredStarterDependency]) {
+    problems.push(
+      `starter ${requiredStarterDependency}: expected exact root version ${expected[requiredStarterDependency]}, found ${starterDependencies[requiredStarterDependency] ?? 'missing'}`,
+    )
+  }
+}
+
 for (const [name, version] of Object.entries({ '@nuxt/schema': '4.4.2', nuxt: '4.4.2' })) {
   const actual = pkg.devDependencies?.[name]
   if (actual !== version)
@@ -53,4 +83,4 @@ if (problems.length) {
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Feathers, Nitro, H3 and Nuxt dependency versions are converged.')
+console.log('[nuxt-feathers-zod] Root and starter Feathers, Nitro, H3 and Nuxt dependency versions are converged.')

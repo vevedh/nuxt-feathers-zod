@@ -1,4 +1,5 @@
 import type { Application as FeathersBaseApplication, HookContext as FeathersBaseHookContext, NextFunction } from '@feathersjs/feathers'
+import type { Db } from 'mongodb'
 import type { NitroApp } from 'nitropack'
 import type { NfzPrincipal as NfzPrincipalType } from './auth/principal'
 
@@ -13,6 +14,7 @@ declare module '@feathersjs/feathers' {
 export interface Configuration {
   framework?: 'express' | 'koa'
   websocket?: boolean
+  mongodbClient?: Promise<Db>
 }
 
 export interface ServiceTypes {}

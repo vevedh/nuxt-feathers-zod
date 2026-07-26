@@ -36,7 +36,7 @@ const nfzClientPluginConfig = {
     ${plugins.map(plugin => plugin.meta.importId).join(',\n    ')}
   ],
   debug: ${JSON.stringify(true)},
-} as const
+}
 
 export default defineNfzClientPlugin(nfzClientPluginConfig)
 `

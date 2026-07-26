@@ -35,4 +35,4 @@ Consultez la [référence](/reference/) pour les options du module, les services
 
 Les procédures de maintenance du package, les journaux de patch et les décisions de roadmap ne font pas partie de ce site public.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

@@ -17,7 +17,7 @@ export function getServerAppContents(options: ResolvedOptions) {
     const authStrategies = (options?.auth as DefaultAuthOptions)?.authStrategies
     const parseStrategies = (options?.auth as DefaultAuthOptions)?.parseStrategies || authStrategies
     const auth = (authStrategies || []).length > 0
-    const mongo = Boolean(options.database?.mongo)
+    const database = Object.keys(options.database?.connections || {}).length > 0
 
     const websocketOptions = (transports?.websocket as WebsocketOptions) || undefined
     const websocketPath = JSON.stringify(websocketOptions?.path ?? '/socket.io')
@@ -42,7 +42,7 @@ ${puts([
 ])}
 ${put(koa, `import { koaErrorHandler } from '@vevedh/feathers-nitro/handlers'`)}
 ${put(auth, `import authentication from './authentication'`)}
-${put(mongo, `import mongodb from './mongodb'`)}
+${put(database, `import database from './database'`)}
 
 export async function createFeathersApp(nitroApp, config) {
   const app = ${puts([
@@ -82,7 +82,7 @@ ${websocketConnectTimeout}${websocketTransports}${websocketCors}  }))
 export async function configureFeathersInfrastructure(app, config) {
   await configureNfzInfrastructure(app, config, {
     authentication: ${auth ? 'authentication' : 'undefined'},
-    mongodb: ${mongo ? 'mongodb' : 'undefined'},
+    database: ${database ? 'database' : 'undefined'},
   })
 }
 `

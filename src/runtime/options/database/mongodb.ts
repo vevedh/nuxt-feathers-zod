@@ -233,8 +233,8 @@ export function getMongoManagementRoutes(management: Pick<ResolvedMongoManagemen
   return routes
 }
 
-export function resolveMongoOptions(mongodb: MongoOptions): ResolvedMongoOptions {
-  const basePath = normalizeMongoManagementBasePath(mongodb.management?.basePath || '/mongo')
+export function resolveMongoOptions(mongodb: MongoOptions, defaultBasePath = '/mongo'): ResolvedMongoOptions {
+  const basePath = normalizeMongoManagementBasePath(mongodb.management?.basePath || defaultBasePath)
   return {
     ...mongodb,
     management: {

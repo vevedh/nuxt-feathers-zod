@@ -68,9 +68,7 @@ export interface FeathersRuntimeConfig {
   console?: ResolvedConsoleOptions
   auth?: ResolvedAuthOptions
   keycloak?: Partial<ResolvedKeycloakOptions>
-  database?: {
-    mongo?: ResolvedDataBaseOptions['mongo'] & { enabled: true }
-  }
+  database?: ResolvedDataBaseOptions
 }
 
 export interface FeathersPublicRuntimeConfig {
@@ -108,6 +106,26 @@ export interface FeathersPublicRuntimeConfig {
     mode: 'client-only' | 'bridge'
   }
   database?: {
+    default?: string
+    connections?: Array<{
+      name: string
+      type: 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'
+      default: boolean
+      enabled: boolean
+      legacy: boolean
+      label?: string
+      required: boolean
+      healthCheck: boolean
+      management?: {
+        enabled?: boolean
+        basePath?: string
+        auth?: {
+          enabled?: boolean
+          authenticate?: boolean
+        }
+        routes?: MongoManagementRouteSpec[]
+      }
+    }>
     mongo?: {
       enabled?: boolean
       management?: {
@@ -138,6 +156,7 @@ export interface FeathersPublicRuntimeConfig {
       rbac: string
       presets: string
       init: string
+      databaseConnections: string
     }
     legacyNitro?: {
       enabled: boolean
@@ -176,7 +195,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const templateDir = createResolver(nuxt.options.buildDir).resolve('feathers')
   const transports = resolveTransportsOptions(options.transports, nuxt.options.ssr !== false)
   const database = resolveDataBaseOptions(options.database)
-  const client = await resolveClientOptions(options.client, Boolean(database.mongo), rootDir, srcDir)
+  const client = await resolveClientOptions(options.client, Object.keys(database.connections).length > 0, rootDir, srcDir)
   const serverFramework = transports.rest && typeof transports.rest === 'object' ? transports.rest.framework : 'express'
   const explicitServer = typeof options.server === 'object' && options.server !== null ? options.server : undefined
   const serverInput = getResolvedClientMode(client) === 'remote' && explicitServer?.enabled === undefined
@@ -259,8 +278,8 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
     console: options.console,
     auth: options.auth || undefined,
     keycloak: options.keycloak || undefined,
-    database: options.database?.mongo
-      ? { mongo: { ...options.database.mongo, enabled: true } }
+    database: Object.keys(options.database.connections).length > 0
+      ? options.database
       : undefined,
   }
 }
@@ -282,18 +301,35 @@ function toPublicAuthProviders(auth: ResolvedAuthOptions): PublicAuthOptions['pr
 }
 
 export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPublicRuntimeConfig {
-  const mongoManagement = options.database?.mongo?.management
-  const mongoManagementPublic = mongoManagement
-    ? {
-        enabled: mongoManagement.enabled,
-        basePath: mongoManagement.basePath,
-        auth: {
-          enabled: mongoManagement.auth?.enabled,
-          authenticate: mongoManagement.auth?.authenticate,
-        },
-        routes: getMongoManagementRoutes(mongoManagement),
-      }
-    : undefined
+  const database = options.database
+  const publicConnections = Object.values(database?.connections ?? {}).map((connection) => {
+    const management = connection.type === 'mongodb' ? connection.management : undefined
+    return {
+      name: connection.name,
+      type: connection.type,
+      default: connection.name === database?.default,
+      enabled: connection.enabled,
+      legacy: connection.legacy,
+      ...(connection.label ? { label: connection.label } : {}),
+      required: connection.required,
+      healthCheck: connection.healthCheck,
+      ...(management
+        ? {
+            management: {
+              enabled: management.enabled,
+              basePath: management.basePath,
+              auth: {
+                enabled: management.auth?.enabled,
+                authenticate: management.auth?.authenticate,
+              },
+              routes: getMongoManagementRoutes(management),
+            },
+          }
+        : {}),
+    }
+  })
+  const legacyMongo = database?.mongo
+  const legacyMongoManagement = legacyMongo?.management
 
   return {
     transports: getResolvedClientMode(options.client) === 'embedded' ? options.transports : undefined,
@@ -334,12 +370,28 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
           mode: options.keycloak.mode,
         }
       : undefined,
-    database: options.database?.mongo
+    database: publicConnections.length
       ? {
-          mongo: {
-            enabled: true,
-            management: mongoManagementPublic,
-          },
+          default: database?.default,
+          connections: publicConnections,
+          ...(legacyMongo
+            ? {
+                mongo: {
+                  enabled: true,
+                  management: legacyMongoManagement
+                    ? {
+                        enabled: legacyMongoManagement.enabled,
+                        basePath: legacyMongoManagement.basePath,
+                        auth: {
+                          enabled: legacyMongoManagement.auth?.enabled,
+                          authenticate: legacyMongoManagement.auth?.authenticate,
+                        },
+                        routes: getMongoManagementRoutes(legacyMongoManagement),
+                      }
+                    : undefined,
+                },
+              }
+            : {}),
         }
       : undefined,
     builder: {
@@ -359,6 +411,7 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
         rbac: 'nfz/rbac',
         presets: 'nfz/presets',
         init: 'nfz/init',
+        databaseConnections: 'nfz/database-connections',
       },
       legacyNitro: {
         enabled: Boolean(options.console?.enabled && options.console.legacyNitroRoutes !== false),

@@ -3,59 +3,40 @@ editLink: false
 ---
 # Known limits
 
-This page documents the `known-limits` feature, its configuration contract and the recommended usage pattern for application developers.
+This page documents the deliberate limits of the current open-source core.
 
-## Purpose
+## Functional limits
 
-The `known-limits` feature helps keep the Nuxt module configuration, Feathers runtime, generated services, TypeScript client and CLI workflow aligned.
+- the **advanced console** is not frozen as a final public core contract;
+- the **visual builder** is not part of the stable public contract;
+- advanced business presets are not yet contractual;
+- enriched remote discovery is not a frozen standard workflow;
+- `database.mongo.management` is optional and does not replace application service design;
+- the 6.7.0 registry does not create Knex migrations, SQL tables, or distributed transactions across connections;
+- MikroORM entities and Unit of Work support remain reserved for a later release.
 
-## When to use this option
+## Method limits
 
-Use this page when you need to:
+- manual service creation remains possible, but it is not the recommended starting path;
+- some `init` commands patch `nuxt.config.ts` most reliably when the file keeps a conventional structure;
+- advanced authentication scenarios still require end-to-end validation;
+- advanced CLI commands must be revalidated after changes to templates or TypeScript generation;
+- SQL drivers are optional consumer dependencies and must be installed for the selected database.
 
-- configure the `known-limits` feature;
-- document the decision in a starter or application;
-- validate the setup with a CLI command;
-- avoid drift between configuration, generated files and runtime behavior.
+## Documentation limits
 
-## Configuration example
+- the public documentation intentionally focuses on the standard core;
+- capabilities still being stabilized must stay outside quick-start paths;
+- a capability not documented in VitePress must not be presented as a contractual OSS core feature.
 
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
+## Stability rule
 
-  feathers: {
-    servicesDirs: ['services'],
-    client: true,
-  }
-})
-```
+A capability must not be presented as a core pillar until it has:
 
-## CLI example
+- a clear CLI workflow;
+- a reproducible example;
+- tested behavior;
+- aligned documentation;
+- and stable Bun CLI parsing.
 
-```bash
-bunx nuxt-feathers-zod doctor
-```
-
-## Runtime example
-
-```ts
-const service = useService('messages')
-
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
-  },
-})
-```
-
-## Practical advice
-
-- Keep runtime-affecting options explicit in `nuxt.config.ts`.
-- Prefer CLI-generated services so manifests and generated types stay synchronized.
-- Run `bunx nuxt-feathers-zod doctor` after structural changes.
-- Use `--dry` before write operations on an existing project.
-
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

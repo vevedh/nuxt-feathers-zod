@@ -27,6 +27,15 @@ describe('playground validation center', () => {
     expect(navigation).toContain('Runtime et transports')
   })
 
+  it('keeps database-backed playground services optional only when MongoDB is deliberately disabled', () => {
+    const config = read('playground/nuxt.config.ts')
+    const runner = read('scripts/run-playwright-server.mjs')
+
+    expect(runner).toContain(`process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB = 'false'`)
+    expect(config).toContain('allowMissingDatabaseServices: !embeddedMongoEnabled')
+    expect(config).not.toContain('allowMissingDatabaseServices: true')
+  })
+
   it('offers non-destructive quick checks from the dashboard', () => {
     const dashboard = read('playground/app/pages/index.vue')
     expect(dashboard).toContain('runQuickChecks')

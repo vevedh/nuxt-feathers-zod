@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   createBunInstallArguments,
@@ -33,5 +35,15 @@ describe('tarball smoke package-manager selection', () => {
     expect(args).toContain('--cache-dir')
     expect(args).toContain('C:/temp/nfz-smoke-cache')
     expect(args).toContain('--concurrent-scripts=1')
+  })
+
+  it('runs the installed CLI starter generator inside the tarball smoke', async () => {
+    const source = await readFile(join(process.cwd(), 'scripts/smoke-tarball-install.mjs'), 'utf8')
+
+    expect(source).toContain(`'init',`)
+    expect(source).toContain(`'starter',`)
+    expect(source).toContain(`'quasar-unocss-pinia-auth',`)
+    expect(source).toContain(`const starterTarget = 'generated-starter'`)
+    expect(source).toContain(`'app/app.vue'`)
   })
 })

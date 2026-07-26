@@ -34,6 +34,10 @@ export default defineNuxtConfig({
 })
 ```
 
+## REST handler format
+
+The Express REST transport uses the generated `server/rest-bridge.mjs` template. It must remain an ESM JavaScript module directly parseable by Nitro/Rollup; maintainer types are carried by JSDoc and checked before the build.
+
 ## CLI example
 
 ```bash
@@ -60,4 +64,4 @@ const result = await service.find({
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

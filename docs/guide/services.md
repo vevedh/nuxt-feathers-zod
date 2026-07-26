@@ -14,7 +14,19 @@ bunx nuxt-feathers-zod add service articles \
 Adapters pris en charge par la CLI :
 
 - `memory` ;
-- `mongodb`.
+- `mongodb` ;
+- `knex` pour PostgreSQL, MySQL, MariaDB et SQLite.
+
+Un service persistant peut sélectionner une connexion nommée avec `--connection`. Pour Knex, utilisez aussi `--table` et, si nécessaire, `--schemaName`.
+
+```bash
+bunx nuxt-feathers-zod@6.7.37 add service audit-events \
+  --adapter knex \
+  --connection reporting \
+  --table audit_events \
+  --schemaName reporting \
+  --schema zod
+```
 
 Modes de schéma :
 
@@ -48,7 +60,7 @@ Le manifeste et le schéma doivent rester cohérents. La Console Builder du play
 ## Services protégés
 
 ```bash
-bunx nuxt-feathers-zod auth service articles --enabled true
+bunx nuxt-feathers-zod auth service articles --enabled
 ```
 
 Le contrôle d’accès doit rester dans les hooks Feathers. Évitez de dupliquer la logique d’authentification dans des routes Nitro métier.
@@ -88,4 +100,4 @@ Aucune boucle HTTP vers la même application n’est nécessaire.
 - N’acceptez jamais un nom de service ou de champ non validé depuis une entrée utilisateur.
 - Exécutez `doctor` et `schema <service> --validate` avant une release.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

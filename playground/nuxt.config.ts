@@ -192,6 +192,7 @@ export default defineNuxtConfig({
     servicesDirs: '../services',
     server: {
       pluginDirs: ['server/feathers'],
+      allowMissingDatabaseServices: !embeddedMongoEnabled,
     },
     ...(remoteMode ? {} : {
       transports: {

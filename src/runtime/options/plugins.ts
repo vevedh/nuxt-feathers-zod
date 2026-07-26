@@ -2,6 +2,8 @@ import type { Import } from 'unimport'
 import type { ModuleImport } from './utils'
 
 import { existsSync } from 'node:fs'
+import { realpath } from 'node:fs/promises'
+import { isAbsolute, resolve } from 'node:path'
 import { createResolver } from '@nuxt/kit'
 import { consola } from 'consola'
 import { scanDirExports, scanExports } from 'unimport'
@@ -102,10 +104,57 @@ export async function resolvePlugins(plugins: Plugin | Plugins | undefined, root
   return resolvedPlugins
 }
 
-function removeDuplicates(plugins: ResolvedPlugins): ResolvedPlugins {
-  return plugins.filter((plugin, index, self) =>
-    index === self.findIndex(p => p.from === plugin.from),
-  )
+const moduleExtensionPattern = /\.[cm]?[jt]sx?$/i
+
+function isPathLike(value: string): boolean {
+  return isAbsolute(value)
+    || /^[a-z]:[\\/]/i.test(value)
+    || value.startsWith('./')
+    || value.startsWith('../')
+    || value.startsWith('\\\\')
+}
+
+export function normalizePluginSourceForComparison(
+  value: string,
+  rootDir: string,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (!isPathLike(value))
+    return value.replace(moduleExtensionPattern, '')
+
+  const normalizedValue = value.replace(/\\/g, '/')
+  const normalizedRoot = rootDir.replace(/\\/g, '/').replace(/\/$/, '')
+  const isWindowsAbsolute = /^[a-z]:\//i.test(normalizedValue) || normalizedValue.startsWith('//')
+  const absolute = platform === 'win32'
+    ? (isWindowsAbsolute ? normalizedValue : `${normalizedRoot}/${normalizedValue.replace(/^\.\//, '')}`)
+    : resolve(rootDir, value).replace(/\\/g, '/')
+  const normalized = absolute.replace(/\/\.\//g, '/').replace(/\/+/g, '/').replace(moduleExtensionPattern, '')
+  return platform === 'win32' ? normalized.toLowerCase() : normalized
+}
+
+async function canonicalPluginSource(plugin: ResolvedPlugins[number], rootDir: string): Promise<string> {
+  const source = plugin.from || ''
+  if (!isPathLike(source))
+    return normalizePluginSourceForComparison(source, rootDir)
+
+  const absolute = resolve(rootDir, source)
+  const canonical = await realpath(absolute).catch(() => absolute)
+  return normalizePluginSourceForComparison(canonical, rootDir)
+}
+
+async function removeDuplicates(plugins: ResolvedPlugins, rootDir: string): Promise<ResolvedPlugins> {
+  const seen = new Set<string>()
+  const unique: ResolvedPlugins = []
+
+  for (const plugin of plugins) {
+    const key = await canonicalPluginSource(plugin, rootDir)
+    if (seen.has(key))
+      continue
+    seen.add(key)
+    unique.push(plugin)
+  }
+
+  return unique
 }
 
 export async function resolvePluginsOptions(pluginOptions: PluginOptions, rootDir: string, defaultDir: string): Promise<ResolvedPluginOptions> {
@@ -117,7 +166,7 @@ export async function resolvePluginsOptions(pluginOptions: PluginOptions, rootDi
   ]
 
   const resolvedPluginOptions: ResolvedPluginOptions = {
-    plugins: removeDuplicates(resolvedPlugins),
+    plugins: await removeDuplicates(resolvedPlugins, rootDir),
   }
 
   return resolvedPluginOptions

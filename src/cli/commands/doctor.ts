@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { readdir, readFile, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { readdir, readFile, realpath, stat } from 'node:fs/promises'
+import { dirname, join, relative, resolve } from 'node:path'
 
 import consola from 'consola'
 
@@ -43,6 +44,7 @@ function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
         return forbiddenExactPaths.has(file)
           || segments.includes('patch-memory')
           || segments.includes('docs-private')
+          || segments.includes('skills')
           || forbiddenPrefixes.some(prefix => fileName.startsWith(prefix))
       })
       .sort()
@@ -86,6 +88,11 @@ function parseMode(cfg: string) {
 
 function parseRestPath(cfg: string) {
   return cfg.match(/rest\s*:\s*\{[\s\S]*?path\s*:\s*['"]([^'"]+)['"]/)?.[1] ?? '/feathers'
+}
+
+function parseLoadOrder(cfg: string): string[] {
+  const raw = cfg.match(/loadOrder\s*:\s*\[([^\]]*)\]/)?.[1]
+  return raw ? parseStringArray(raw) : ['modules:pre', 'plugins', 'services', 'modules:post']
 }
 
 function parseServicesDirs(cfg: string, projectRoot: string, mode: string) {
@@ -609,30 +616,191 @@ function parseEmbeddedAuthConfig(cfg: string): ParsedEmbeddedAuthConfig {
   }
 }
 
-async function detectEmbeddedServices(absServicesDirs: string[]) {
-  const serviceNames: string[] = []
+interface EmbeddedServiceSource {
+  name: string
+  source: string
+}
+
+async function detectEmbeddedServiceSources(absServicesDirs: string[]): Promise<EmbeddedServiceSource[]> {
+  const found = new Map<string, EmbeddedServiceSource>()
   for (const dir of absServicesDirs) {
     if (!existsSync(dir))
       continue
 
     const entries = await readdir(dir).catch(() => [])
-    for (const entry of entries) {
-      const filePath = join(dir, entry)
-      const fileStat = await stat(filePath).catch(() => null)
+    for (const entry of entries.sort()) {
+      const serviceDir = join(dir, entry)
+      const fileStat = await stat(serviceDir).catch(() => null)
       if (!fileStat?.isDirectory())
         continue
 
-      const files = await readdir(filePath).catch(() => [])
-      if (files.some(file => file.endsWith('.ts')))
-        serviceNames.push(entry)
+      const files = (await readdir(serviceDir).catch(() => []))
+        .filter(file => /\.(?:ts|mts|js|mjs)$/.test(file))
+        .sort()
+      const preferred = files.find(file => file === `${entry}.ts`)
+        || files.find(file => file === `${entry}.mts`)
+        || files[0]
+      if (!preferred)
+        continue
+
+      const source = join(serviceDir, preferred)
+      const key = `${entry}:${source.replace(/\\/g, '/').toLowerCase()}`
+      found.set(key, { name: entry, source })
     }
   }
 
-  return Array.from(new Set(serviceNames)).sort()
+  return [...found.values()].sort((left, right) => left.source.localeCompare(right.source))
+}
+
+async function detectEmbeddedServices(absServicesDirs: string[]) {
+  const sources = await detectEmbeddedServiceSources(absServicesDirs)
+  return [...new Set(sources.map(item => item.name))].sort()
+}
+
+async function detectFeathersPluginSources(projectRoot: string): Promise<string[]> {
+  const roots = [
+    resolve(projectRoot, 'server/feathers/plugins'),
+    resolve(projectRoot, 'feathers/server/plugins'),
+    resolve(projectRoot, 'server/feathers'),
+  ]
+  const found = new Set<string>()
+  for (const root of roots) {
+    if (!existsSync(root))
+      continue
+    for (const entry of (await readdir(root).catch(() => [])).sort()) {
+      const filePath = join(root, entry)
+      const fileStat = await stat(filePath).catch(() => null)
+      if (fileStat?.isFile() && /\.(?:ts|mts|js|mjs)$/.test(entry))
+        found.add(filePath)
+    }
+  }
+  return [...found].sort()
+}
+
+async function detectManualServiceImports(pluginSources: string[], services: EmbeddedServiceSource[]) {
+  const matches: Array<{ plugin: string, service: EmbeddedServiceSource }> = []
+  for (const plugin of pluginSources) {
+    const source = await readFile(plugin, 'utf8').catch(() => '')
+    const normalized = source.replace(/\\/g, '/')
+    for (const service of services) {
+      const markers = [
+        `/services/${service.name}/`,
+        `services/${service.name}/`,
+        service.source.replace(/\\/g, '/').replace(/\.(?:ts|mts|js|mjs)$/, ''),
+      ]
+      if (markers.some(marker => normalized.includes(marker)))
+        matches.push({ plugin, service })
+    }
+  }
+  return matches
+}
+
+interface ZodRuntimeDiagnostic {
+  declaredRange: string | null
+  application: { version: string, path: string } | null
+  nfz: { version: string, path: string } | null
+  copies: Array<{ version: string, path: string }>
+  compatible: boolean | null
+  errors: string[]
+}
+
+function majorOf(version: string): number | null {
+  const match = version.match(/^(\d+)/)
+  return match ? Number(match[1]) : null
+}
+
+async function readPackageVersion(packageJsonPath: string): Promise<string> {
+  const payload = JSON.parse(await readFile(packageJsonPath, 'utf8')) as { version?: unknown }
+  return typeof payload.version === 'string' ? payload.version : 'unknown'
+}
+
+async function resolveZodPackage(from: string): Promise<{ version: string, path: string } | null> {
+  try {
+    const request = createRequire(resolve(from, 'package.json'))
+    const packagePath = request.resolve('zod/package.json')
+    return { version: await readPackageVersion(packagePath), path: await realpath(packagePath).catch(() => packagePath) }
+  }
+  catch {
+    return null
+  }
+}
+
+async function findInstalledZodCopies(projectRoot: string): Promise<Array<{ version: string, path: string }>> {
+  const rootNodeModules = resolve(projectRoot, 'node_modules')
+  if (!existsSync(rootNodeModules))
+    return []
+
+  const queue = [rootNodeModules]
+  const visited = new Set<string>()
+  const packageFiles = new Set<string>()
+  while (queue.length && visited.size < 5000) {
+    const current = queue.shift()
+    if (!current || visited.has(current))
+      continue
+    visited.add(current)
+
+    const zodPackage = join(current, 'zod', 'package.json')
+    if (existsSync(zodPackage))
+      packageFiles.add(await realpath(zodPackage).catch(() => zodPackage))
+
+    const entries = await readdir(current, { withFileTypes: true }).catch(() => [])
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name === '.bin')
+        continue
+      const packageDir = join(current, entry.name)
+      if (entry.name.startsWith('@')) {
+        const scoped = await readdir(packageDir, { withFileTypes: true }).catch(() => [])
+        for (const child of scoped) {
+          if (child.isDirectory()) {
+            const nested = join(packageDir, child.name, 'node_modules')
+            if (existsSync(nested))
+              queue.push(nested)
+          }
+        }
+      }
+      else {
+        const nested = join(packageDir, 'node_modules')
+        if (existsSync(nested))
+          queue.push(nested)
+      }
+    }
+  }
+
+  return Promise.all([...packageFiles].sort().map(async path => ({ version: await readPackageVersion(path), path })))
+}
+
+async function diagnoseZodRuntime(projectRoot: string): Promise<ZodRuntimeDiagnostic> {
+  const projectPackagePath = resolve(projectRoot, 'package.json')
+  const projectPackage = existsSync(projectPackagePath)
+    ? JSON.parse(await readFile(projectPackagePath, 'utf8')) as Record<string, any>
+    : {}
+  const declaredRange = projectPackage.dependencies?.zod
+    || projectPackage.peerDependencies?.zod
+    || projectPackage.devDependencies?.zod
+    || null
+  const application = await resolveZodPackage(projectRoot)
+  const nfzPackageRoot = resolve(dirname(new URL(import.meta.url).pathname), '../../..')
+  const nfz = await resolveZodPackage(nfzPackageRoot)
+  const copies = await findInstalledZodCopies(projectRoot)
+  const errors: string[] = []
+  const declaredMajor = typeof declaredRange === 'string' ? majorOf(declaredRange.replace(/^[^0-9]*/, '')) : null
+  if (declaredMajor !== null && declaredMajor !== 3)
+    errors.push(`Application declares incompatible Zod range ${declaredRange}; NFZ 6.7.x requires Zod 3.`)
+  if (application && majorOf(application.version) !== 3)
+    errors.push(`Application resolves incompatible Zod ${application.version} at ${application.path}.`)
+  if (nfz && majorOf(nfz.version) !== 3)
+    errors.push(`NFZ validators resolve incompatible Zod ${nfz.version} at ${nfz.path}.`)
+  if (application && nfz && application.path !== nfz.path)
+    errors.push('Application schemas and NFZ validators resolve different active Zod runtimes.')
+
+  const compatible = application && nfz
+    ? errors.length === 0
+    : declaredMajor === null ? null : declaredMajor === 3 && errors.length === 0
+  return { declaredRange, application, nfz, copies, compatible, errors }
 }
 
 export async function detectFeathersPlugins(projectRoot: string) {
-  const roots = [resolve(projectRoot, 'server/feathers'), resolve(projectRoot, 'feathers/server/plugins')]
+  const roots = [resolve(projectRoot, 'server/feathers/plugins'), resolve(projectRoot, 'feathers/server/plugins'), resolve(projectRoot, 'server/feathers')]
   const found = new Set<string>()
   for (const root of roots) {
     if (!existsSync(root))
@@ -704,7 +872,13 @@ async function detectMongoSignals(projectRoot: string, absServicesDirs: string[]
   return false
 }
 
-export async function runDoctor(projectRoot: string) {
+export interface NfzDoctorResult {
+  ok: boolean
+  errors: string[]
+}
+
+export async function runDoctor(projectRoot: string): Promise<NfzDoctorResult> {
+  const errors: string[] = []
   const nuxtConfigPath = findNuxtConfigPath(projectRoot)
   consola.info('NFZ doctor')
   consola.info(`- projectRoot: ${projectRoot}`)
@@ -719,7 +893,7 @@ export async function runDoctor(projectRoot: string) {
 
   if (!nuxtConfigPath) {
     consola.warn('No nuxt.config found. Nothing to diagnose.')
-    return
+    return { ok: true, errors }
   }
 
   const cfg = await readFile(nuxtConfigPath, 'utf8')
@@ -776,8 +950,27 @@ export async function runDoctor(projectRoot: string) {
     }
   }
   else {
-    const services = await detectEmbeddedServices(absServicesDirs)
-    consola.info(`- embedded services detected: ${services.length ? services.join(', ') : '(none)'}`)
+    const serviceSources = await detectEmbeddedServiceSources(absServicesDirs)
+    const services = [...new Set(serviceSources.map(item => item.name))].sort()
+    consola.info(`- services discovered: ${services.length}`)
+    for (const service of serviceSources)
+      consola.info(`  - service ${service.name}: ${relative(projectRoot, service.source).replace(/\\/g, '/')}`)
+
+    const loadOrder = parseLoadOrder(cfg)
+    consola.info(`- server.loadOrder: ${loadOrder.join(' -> ')}`)
+    if (serviceSources.length && !loadOrder.includes('services')) {
+      const message = 'servicesDirs contains discovered services but server.loadOrder omits the services phase.'
+      errors.push(message)
+      consola.error(message)
+    }
+
+    const pluginSources = await detectFeathersPluginSources(projectRoot)
+    const manualImports = await detectManualServiceImports(pluginSources, serviceSources)
+    for (const match of manualImports) {
+      const message = `Service ${match.service.name} is discovered through servicesDirs and manually imported by ${relative(projectRoot, match.plugin).replace(/\\/g, '/')}.`
+      errors.push(message)
+      consola.error(message)
+    }
 
     const auth = parseEmbeddedAuthConfig(cfg)
     consola.info(`- auth.enabled: ${auth.enabled}`)
@@ -810,6 +1003,17 @@ export async function runDoctor(projectRoot: string) {
     }
   }
 
+  const zod = await diagnoseZodRuntime(projectRoot)
+  consola.info(`- zod declared range: ${zod.declaredRange || '(not declared)'}`)
+  consola.info(`- zod installed copies: ${zod.copies.length}`)
+  consola.info(`- zod application runtime: ${zod.application ? `${zod.application.version} (${zod.application.path})` : '(not resolved)'}`)
+  consola.info(`- zod NFZ validator runtime: ${zod.nfz ? `${zod.nfz.version} (${zod.nfz.path})` : '(not resolved)'}`)
+  consola.info(`- zod compatibility: ${zod.compatible === null ? 'not-verifiable' : zod.compatible ? 'compatible' : 'incompatible'}`)
+  for (const message of zod.errors) {
+    errors.push(message)
+    consola.error(message)
+  }
+
   const mongo = parseMongoManagement(cfg)
   if (mongo.url || mongo.enabled) {
     consola.info(`- database.mongo.url: ${mongo.url ? redactMongoUrl(mongo.url) : '(missing)'}`)
@@ -823,13 +1027,20 @@ export async function runDoctor(projectRoot: string) {
   }
 
   const plugins = await detectFeathersPlugins(projectRoot)
-  if (plugins.length)
-    consola.info(`- feathers server plugins: ${plugins.join(', ')}`)
+  consola.info(`- plugins discovered: ${plugins.length}`)
+  for (const plugin of plugins)
+    consola.info(`  - plugin: ${plugin}`)
 
   const serverModules = await detectServerModules(projectRoot)
-  if (serverModules.length)
-    consola.info(`- server modules: ${serverModules.join(', ')}`)
+  const configuredPreModules = [...cfg.matchAll(/phase\s*:\s*['"]pre['"]/g)].length
+  const configuredPostModules = [...cfg.matchAll(/phase\s*:\s*['"]post['"]/g)].length
+  consola.info(`- modules pre configured: ${configuredPreModules}`)
+  consola.info(`- modules post configured: ${configuredPostModules}`)
+  consola.info(`- module files discovered: ${serverModules.length}`)
+  for (const module of serverModules)
+    consola.info(`  - module: ${module}`)
 
   const mongoDetected = await detectMongoSignals(projectRoot, absServicesDirs)
   consola.info(`- mongodb signals detected: ${mongoDetected ? 'yes' : 'no'}`)
+  return { ok: errors.length === 0, errors }
 }

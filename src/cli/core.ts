@@ -499,7 +499,7 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     templates: {
       dirs: ['${templatesDir}'],
       strict: true,
-      allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts']
+      allow: ['server/*.ts', 'server/*.mjs', 'client/*.ts', 'types/*.d.ts']
     },`
     : ''
 
@@ -665,7 +665,7 @@ function patchFeathersObjectLiteral(feathersObj: string, patch: NuxtConfigPatch)
 
   if (patch.templatesDir) {
     const dirs = Array.from(new Set([...(existingTemplates.dirs ?? []), patch.templatesDir]))
-    const allow = existingTemplates.allow?.length ? existingTemplates.allow : ['server/*.ts', 'client/*.ts', 'types/*.d.ts']
+    const allow = existingTemplates.allow?.length ? existingTemplates.allow : ['server/*.ts', 'server/*.mjs', 'client/*.ts', 'types/*.d.ts']
     setObjectProp(entries, 'templates', renderInlineObject([
       `dirs: ${renderStringArray(dirs)}`,
       `strict: ${existingTemplates.strict ?? true}`,
@@ -925,7 +925,7 @@ function ensureNestedTemplatesDirs(objLiteral: string, value: string): string {
   if (/\bdirs\s*:/.test(patched)) patched = replaceArrayContains(patched, 'dirs', value)
   else patched = insertProp(patched, `dirs: ['${value}']`)
   if (!/\bstrict\s*:/.test(patched)) patched = insertProp(patched, `strict: true`)
-  if (!/\ballow\s*:/.test(patched)) patched = insertProp(patched, `allow: ['server/*.ts', 'client/*.ts', 'types/*.d.ts']`)
+  if (!/\ballow\s*:/.test(patched)) patched = insertProp(patched, `allow: ['server/*.ts', 'server/*.mjs', 'client/*.ts', 'types/*.d.ts']`)
   return before + patched + after
 }
 
@@ -994,6 +994,8 @@ export interface InitTemplatesOptions {
 const TEMPLATE_KEYS = [
   'server/server.ts',
   'server/plugin.ts',
+  'server/rest-bridge.mjs',
+  'server/database.ts',
   'server/mongodb.ts',
   'server/authentication.ts',
   'server/keycloak.ts',
@@ -1075,7 +1077,7 @@ export default defineNuxtConfig({
     templates: {
       dirs: ['feathers/templates'],
       strict: true,
-      allow: ['server/*.ts', 'client/*.ts'],
+      allow: ['server/*.ts', 'server/*.mjs', 'client/*.ts'],
     },
   },
 })
@@ -1092,7 +1094,7 @@ export default defineNuxtConfig({
 }
 
 function renderTemplatePlaceholder(key: string) {
-  // Keep placeholders as valid TS modules.
+  // Keep placeholders as valid ESM/TypeScript modules.
   // They are not used unless overrides are enabled in nuxt.config.ts.
   return `// Template override: ${key}
   //
@@ -1347,15 +1349,26 @@ async function inferServiceManifest(projectRoot: string, servicesDir: string, na
   const serviceSource = await readFile(servicePathFile, 'utf8')
   const schemaSource = existsSync(schemaPath) ? await readFile(schemaPath, 'utf8') : ''
 
-  const adapter: Adapter = classSource.includes('@feathersjs/mongodb') || classSource.includes('MongoDBService') ? 'mongodb' : 'memory'
-  const custom = !(classSource.includes('MemoryService') || classSource.includes('MongoDBService'))
+  const adapter: Adapter = classSource.includes('@feathersjs/mongodb') || classSource.includes('MongoDBService')
+    ? 'mongodb'
+    : classSource.includes('@feathersjs/knex') || classSource.includes('KnexService')
+      ? 'knex'
+      : 'memory'
+  const custom = !(classSource.includes('MemoryService') || classSource.includes('MongoDBService') || classSource.includes('KnexService'))
   const schemaMode: SchemaKind = !schemaSource ? 'none' : (schemaSource.includes("from 'zod'") || schemaSource.includes('zodQuerySyntax')) ? 'zod' : 'json'
   const methods = parseMethodsFromShared(sharedSource, ids)
   const fields = schemaMode === 'zod' ? parseZodFields(schemaSource) : schemaMode === 'json' ? parseJsonFields(schemaSource) : {}
   const path = parseSharedServicePath(sharedSource, ids)
   const collectionName = adapter === 'mongodb'
-    ? (classSource.match(/collection\('([^']+)'\)/)?.[1] || classSource.match(/Service \\\'([^']+)\\\'/)?.[1] || serviceNameKebab)
+    ? (classSource.match(/collection\(["']([^"']+)["']\)/)?.[1] || classSource.match(/Service \'([^']+)\'/)?.[1] || serviceNameKebab)
     : undefined
+  const tableName = adapter === 'knex'
+    ? (classSource.match(/\bname\s*:\s*["']([^"']+)["']/)?.[1] || serviceNameKebab)
+    : undefined
+  const schemaName = adapter === 'knex'
+    ? classSource.match(/\bschema\s*:\s*["']([^"']+)["']/)?.[1]
+    : undefined
+  const connectionName = classSource.match(/getNfz(?:MongoDatabase|KnexClient)\(app\s*,\s*["']([^"']+)["']\)/)?.[1]
   const idField: IdField = schemaSource.includes('_id') || classSource.includes('_id') ? '_id' : 'id'
 
   return {
@@ -1366,6 +1379,9 @@ async function inferServiceManifest(projectRoot: string, servicesDir: string, na
     custom,
     idField,
     ...(collectionName ? { collectionName } : {}),
+    ...(tableName ? { tableName } : {}),
+    ...(schemaName ? { schemaName } : {}),
+    ...(connectionName ? { connectionName } : {}),
     ...(methods.length ? { methods } : {}),
     ...(custom ? { customMethods: methods.filter(m => !STD_SERVICE_METHODS.has(m)) } : {}),
     schema: {
@@ -1391,6 +1407,10 @@ async function writeServiceManifest(servicesDir: string, manifest: ServiceManife
     auth: manifest.auth,
     custom: !!manifest.custom,
     schemaMode: manifest.schema.mode,
+    ...(manifest.collectionName ? { collectionName: manifest.collectionName } : {}),
+    ...(manifest.tableName ? { tableName: manifest.tableName } : {}),
+    ...(manifest.schemaName ? { schemaName: manifest.schemaName } : {}),
+    ...(manifest.connectionName ? { connectionName: manifest.connectionName } : {}),
   }
   await ensureDir(nfzRoot, io.dry)
   await writeFileSafe(globalManifestPath, `${JSON.stringify(global, null, 2)}\n`, { dry: io.dry, force: true })
@@ -1412,6 +1432,10 @@ function renderManifestShow(manifest: ServiceManifest) {
     `Adapter: ${manifest.adapter}`,
     `Auth: ${manifest.auth ? 'yes' : 'no'}`,
     `Custom: ${manifest.custom ? 'yes' : 'no'}`,
+    ...(manifest.connectionName ? [`Connection: ${manifest.connectionName}`] : []),
+    ...(manifest.collectionName ? [`Collection: ${manifest.collectionName}`] : []),
+    ...(manifest.tableName ? [`Table: ${manifest.tableName}`] : []),
+    ...(manifest.schemaName ? [`SQL schema: ${manifest.schemaName}`] : []),
     `Auth-aware: ${resolveAuthAwareFlag(manifest.name, manifest.auth, manifest.authAware) ? 'yes' : 'no'}`,
     `Schema mode: ${manifest.schema.mode}`,
     ...renderAuthCompatibilityLine(manifest),
@@ -1654,7 +1678,14 @@ async function applyServiceManifest(opts: { servicesDir: string, manifest: Servi
     await writeFileSafe(hooksFile, renderEmptyHooks(ids), { dry: opts.dry, force: true })
   }
   else {
-    await writeFileSafe(classFile, renderClass(ids, next.adapter, next.collectionName || next.path, next.schema.mode), { dry: opts.dry, force: true })
+    await writeFileSafe(classFile, renderClass(
+      ids,
+      next.adapter,
+      next.adapter === 'knex' ? (next.tableName || next.path) : (next.collectionName || next.path),
+      next.schema.mode,
+      next.connectionName,
+      next.schemaName,
+    ), { dry: opts.dry, force: true })
     await writeFileSafe(sharedFile, renderShared(ids, next.path, next.schema.mode), { dry: opts.dry, force: true })
     await writeFileSafe(serviceFile, renderService(ids, next.auth, false, next.schema.mode, next.authAware), { dry: opts.dry, force: true })
     if (next.schema.mode === 'none')
@@ -1865,13 +1896,35 @@ function normalizeCollectionName(raw: string) {
   return cleaned
 }
 
+function normalizeConnectionName(raw: string) {
+  const cleaned = String(raw).trim()
+  if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(cleaned)) {
+    throw new Error(
+      `Invalid --connection '${cleaned}': use 1-64 letters, numbers, underscores or dashes and start with a letter.`,
+    )
+  }
+  return cleaned
+}
+
+function normalizeSqlSchemaName(raw: string) {
+  const cleaned = String(raw).trim()
+  if (!/^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(cleaned)) {
+    throw new Error(
+      `Invalid --schemaName '${cleaned}': use a portable SQL identifier (letters, numbers, underscore or dollar sign).`,
+    )
+  }
+  return cleaned
+}
+
 function createServiceIds(serviceNameKebab: string) {
   const baseKebab = singularize(serviceNameKebab)
   const basePascal = pascalCase(baseKebab)
   const baseCamel = basePascal.charAt(0).toLowerCase() + basePascal.slice(1)
+  const serviceConfigCamel = camelCase(serviceNameKebab)
 
   return {
     serviceNameKebab,
+    serviceConfigCamel,
     baseKebab,
     basePascal,
     baseCamel,
@@ -1887,6 +1940,9 @@ export interface GenerateServiceOptions {
   idField: IdField
   servicePath?: string
   collectionName?: CollectionName
+  tableName?: string
+  schemaName?: string
+  connectionName?: string
   docs: boolean
   schema: SchemaKind
   dry: boolean
@@ -1919,10 +1975,14 @@ export async function generateService(opts: GenerateServiceOptions) {
   const ids = createServiceIds(serviceNameKebab)
 
   const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
-  const collectionName = normalizeCollectionName(
-    opts.collectionName
-    ?? (servicePath.includes('/') ? serviceNameKebab : servicePath),
+  const defaultStorageName = servicePath.includes('/') ? serviceNameKebab : servicePath
+  const storageName = normalizeCollectionName(
+    opts.adapter === 'knex'
+      ? (opts.tableName ?? defaultStorageName)
+      : (opts.collectionName ?? defaultStorageName),
   )
+  const connectionName = opts.connectionName ? normalizeConnectionName(opts.connectionName) : undefined
+  const schemaName = opts.schemaName ? normalizeSqlSchemaName(opts.schemaName) : undefined
 
   const dir = join(opts.servicesDir, serviceNameKebab)
   const schemaKind: SchemaKind = opts.schema ?? 'none'
@@ -1938,7 +1998,7 @@ export async function generateService(opts: GenerateServiceOptions) {
       : schemaKind === 'json'
         ? [{ path: schemaFile, content: renderJsonSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware) }]
         : []),
-    { path: classFile, content: renderClass(ids, opts.adapter, collectionName, schemaKind) },
+    { path: classFile, content: renderClass(ids, opts.adapter, storageName, schemaKind, connectionName, schemaName) },
     ...(schemaKind === 'none'
       ? [{ path: hooksFile, content: renderHooksNoSchema(ids, opts.auth, authAware) }]
       : []),
@@ -1964,7 +2024,10 @@ export async function generateService(opts: GenerateServiceOptions) {
     custom: false,
     authAware,
     idField: opts.idField,
-    ...(opts.adapter === 'mongodb' ? { collectionName } : {}),
+    ...(opts.adapter === 'mongodb' ? { collectionName: storageName } : {}),
+    ...(opts.adapter === 'knex' ? { tableName: storageName } : {}),
+    ...(schemaName ? { schemaName } : {}),
+    ...(connectionName ? { connectionName } : {}),
     methods: ['find', 'get', 'create', 'patch', 'remove'],
     schema: {
       mode: schemaKind,
@@ -2833,17 +2896,19 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 function renderClass(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
-  collectionName: string,
+  storageName: string,
   schemaKind: SchemaKind,
+  connectionName?: string,
+  schemaName?: string,
 ) {
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
   const paramsName = `${Base}Params`
+  const connectionArg = connectionName ? `, ${JSON.stringify(connectionName)}` : ''
 
-  if (schemaKind === 'none') {
-    return renderClassNoSchema(ids, adapter, collectionName)
-  }
+  if (schemaKind === 'none')
+    return renderClassNoSchema(ids, adapter, storageName, connectionName, schemaName)
 
   if (adapter === 'memory') {
     return [
@@ -2875,10 +2940,49 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
 `
   }
 
-  // mongodb
+  if (adapter === 'knex') {
+    return [
+      '// For more information about this file see',
+      '// https://feathersjs.com/api/databases/knex',
+      '',
+    ].join('\n') + `
+
+import type { Params } from '@feathersjs/feathers'
+import type { KnexAdapterOptions, KnexAdapterParams } from '@feathersjs/knex'
+import type { Application } from 'nuxt-feathers-zod/server'
+import type { ${Base}, ${Base}Data, ${Base}Patch, ${Base}Query } from './${serviceName}.schema'
+import { KnexService } from '@feathersjs/knex'
+import { getNfzKnexClient } from 'nuxt-feathers-zod/server-database'
+
+export type { ${Base}, ${Base}Data, ${Base}Patch, ${Base}Query }
+
+export interface ${paramsName} extends KnexAdapterParams<${Base}Query> {}
+
+export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> extends KnexService<
+  ${Base},
+  ${Base}Data,
+  ServiceParams,
+  ${Base}Patch
+> {}
+
+export function getOptions(app: Application): KnexAdapterOptions {
+  return {
+    paginate: {
+      default: 10,
+      max: 100,
+    },
+    multi: true,
+    Model: getNfzKnexClient(app${connectionArg}),
+    name: ${JSON.stringify(storageName)},${schemaName ? `
+    schema: ${JSON.stringify(schemaName)},` : ''}
+  }
+}
+`
+  }
+
   return [
     '// For more information about this file see',
-    '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
+    '// https://feathersjs.com/api/databases/mongodb',
     '',
   ].join('\n') + `
 
@@ -2887,6 +2991,7 @@ import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mo
 import type { Application } from 'nuxt-feathers-zod/server'
 import type { ${Base}, ${Base}Data, ${Base}Patch, ${Base}Query } from './${serviceName}.schema'
 import { MongoDBService } from '@feathersjs/mongodb'
+import { getNfzMongoDatabase } from 'nuxt-feathers-zod/server-database'
 
 export type { ${Base}, ${Base}Data, ${Base}Patch, ${Base}Query }
 
@@ -2895,32 +3000,22 @@ export interface ${paramsName} extends MongoDBAdapterParams<${Base}Query> {}
 export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> extends MongoDBService<
   ${Base},
   ${Base}Data,
-  ${paramsName},
+  ServiceParams,
   ${Base}Patch
 > {}
 
 export function getOptions(app: Application): MongoDBAdapterOptions {
-  const mongoClient = app.get('mongodbClient') as Promise<{ collection: (name: string) => any }> | undefined
-
-  if (!mongoClient || typeof (mongoClient as any).then !== 'function') {
-    throw new Error(
-      '[nuxt-feathers-zod] Service \\\'${collectionName}\\\' uses adapter \\\'mongodb\\\' but app.get(\\\'mongodbClient\\\') is not configured. '
-      + 'Enable feathers.database.mongo in embedded mode, or regenerate this service with --adapter memory.',
-    )
-  }
-
   return {
     paginate: {
       default: 10,
       max: 100,
     },
     multi: true,
-    Model: mongoClient.then(db => db.collection('${collectionName}')),
+    Model: getNfzMongoDatabase(app${connectionArg}).then(db => db.collection(${JSON.stringify(storageName)})),
   }
 }
 `
 }
-
 
 function renderJsonSchema(
   ids: ReturnType<typeof createServiceIds>,
@@ -3066,11 +3161,17 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 `
 }
 
-function renderClassNoSchema(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, collectionName: string) {
+function renderClassNoSchema(
+  ids: ReturnType<typeof createServiceIds>,
+  adapter: Adapter,
+  storageName: string,
+  connectionName?: string,
+  schemaName?: string,
+) {
   const Base = ids.basePascal
-  // no schema
   const serviceClass = `${Base}Service`
   const paramsName = `${Base}Params`
+  const connectionArg = connectionName ? `, ${JSON.stringify(connectionName)}` : ''
 
   if (adapter === 'memory') {
     return `${[
@@ -3105,9 +3206,52 @@ export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
 `
   }
 
+  if (adapter === 'knex') {
+    return `${[
+      '// For more information about this file see',
+      '// https://feathersjs.com/api/databases/knex',
+      '',
+    ].join('\n')}
+
+import type { Params } from '@feathersjs/feathers'
+import type { KnexAdapterOptions, KnexAdapterParams } from '@feathersjs/knex'
+import type { Application } from 'nuxt-feathers-zod/server'
+import { KnexService } from '@feathersjs/knex'
+import { getNfzKnexClient } from 'nuxt-feathers-zod/server-database'
+
+// No schema generated (schemaKind=none). Use Record<string, any> for types.
+export type ${Base} = Record<string, any>
+export type ${Base}Data = Partial<${Base}>
+export type ${Base}Patch = Partial<${Base}>
+export type ${Base}Query = Record<string, any>
+
+export interface ${paramsName} extends KnexAdapterParams<${Base}Query> {}
+
+export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> extends KnexService<
+  ${Base},
+  ${Base}Data,
+  ServiceParams,
+  ${Base}Patch
+> {}
+
+export function getOptions(app: Application): KnexAdapterOptions {
+  return {
+    paginate: {
+      default: 10,
+      max: 100,
+    },
+    multi: true,
+    Model: getNfzKnexClient(app${connectionArg}),
+    name: ${JSON.stringify(storageName)},${schemaName ? `
+    schema: ${JSON.stringify(schemaName)},` : ''}
+  }
+}
+`
+  }
+
   return `${[
     '// For more information about this file see',
-    '// https://dove.feathersjs.com/guides/cli/service.class.html#database-services',
+    '// https://feathersjs.com/api/databases/mongodb',
     '',
   ].join('\n')}
 
@@ -3115,6 +3259,7 @@ import type { Params } from '@feathersjs/feathers'
 import type { MongoDBAdapterOptions, MongoDBAdapterParams } from '@feathersjs/mongodb'
 import type { Application } from 'nuxt-feathers-zod/server'
 import { MongoDBService } from '@feathersjs/mongodb'
+import { getNfzMongoDatabase } from 'nuxt-feathers-zod/server-database'
 
 // No schema generated (schemaKind=none). Use Record<string, any> for types.
 export type ${Base} = Record<string, any>
@@ -3127,32 +3272,22 @@ export interface ${paramsName} extends MongoDBAdapterParams<${Base}Query> {}
 export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> extends MongoDBService<
   ${Base},
   ${Base}Data,
-  ${paramsName},
+  ServiceParams,
   ${Base}Patch
 > {}
 
 export function getOptions(app: Application): MongoDBAdapterOptions {
-  const mongoClient = app.get('mongodbClient') as Promise<{ collection: (name: string) => any }> | undefined
-
-  if (!mongoClient || typeof (mongoClient as any).then !== 'function') {
-    throw new Error(
-      '[nuxt-feathers-zod] Service \\\'${collectionName}\\\' uses adapter \\\'mongodb\\\' but app.get(\\\'mongodbClient\\\') is not configured. '
-      + 'Enable feathers.database.mongo in embedded mode, or regenerate this service with --adapter memory.',
-    )
-  }
-
   return {
     paginate: {
       default: 10,
       max: 100,
     },
     multi: true,
-    Model: mongoClient.then(db => db.collection('${collectionName}')),
+    Model: getNfzMongoDatabase(app${connectionArg}).then(db => db.collection(${JSON.stringify(storageName)})),
   }
 }
 `
 }
-
 
 
 
@@ -3447,7 +3582,7 @@ import { z } from 'zod'
 export const ${base}MetadataSchema = z.record(z.string(), z.unknown()).optional()
 
 export const ${base}FileSchema = z.object({
-  id: z.string(),
+  id: z.string().uuid(),
   fileName: z.string(),
   mimeType: z.string(),
   size: z.number().int().nonnegative(),
@@ -3457,15 +3592,15 @@ export const ${base}FileSchema = z.object({
 export type ${Base}File = z.infer<typeof ${base}FileSchema>
 
 export const ${base}UploadDataSchema = z.object({
-  fileName: z.string().min(1),
-  mimeType: z.string().min(1).default('application/octet-stream'),
-  dataBase64: z.string().min(1),
+  fileName: z.string().trim().min(1).max(255),
+  mimeType: z.string().trim().min(1).max(160).default('application/octet-stream'),
+  dataBase64: z.string().min(4),
   metadata: ${base}MetadataSchema,
 })
 export type ${Base}UploadData = z.infer<typeof ${base}UploadDataSchema>
 
 export const ${base}DownloadDataSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().uuid(),
 })
 export type ${Base}DownloadData = z.infer<typeof ${base}DownloadDataSchema>
 
@@ -3480,47 +3615,98 @@ function renderFileServiceClass(ids: ReturnType<typeof createServiceIds>, storag
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
   const serviceName = ids.serviceNameKebab
+  const serviceConfigBase = ids.serviceConfigCamel
   const base = ids.baseCamel
+  const legacyStorageFallback = serviceConfigBase === base
+    ? ''
+    : `\n      ?? this.app.get('${base}StorageDir')`
+  const legacyMaxBytesFallback = serviceConfigBase === base
+    ? ''
+    : `\n      ?? this.app.get('${base}MaxBytes')`
+  const legacyMimeTypesFallback = serviceConfigBase === base
+    ? ''
+    : `\n      ?? this.app.get('${base}AllowedMimeTypes')`
   return `// ! Generated by nuxt-feathers-zod - local file upload/download service template
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { isAbsolute, relative, resolve } from 'node:path'
 
 import type { Id, NullableId, Params } from '@feathersjs/feathers'
 import type { Application } from 'nuxt-feathers-zod/server'
 
 import type { ${Base}DownloadData, ${Base}DownloadResult, ${Base}File, ${Base}UploadData } from './${serviceName}.schema'
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
+
 function sanitizeFileName(raw: string) {
-  const cleaned = String(raw || 'file.bin').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'file.bin'
+  const cleaned = String(raw || 'file.bin').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+|[.-]+$/g, '') || 'file.bin'
   return cleaned.slice(0, 120)
+}
+
+function assertUuid(value: unknown, label: string): string {
+  const id = String(value ?? '').trim()
+  if (!UUID_PATTERN.test(id))
+    throw new Error(label + ' must be a valid UUID')
+  return id
+}
+
+function decodeCanonicalBase64(value: unknown, maxBytes: number): Buffer {
+  const encoded = String(value ?? '')
+  const maxEncodedLength = 4 * Math.ceil(maxBytes / 3)
+  if (encoded.length > maxEncodedLength)
+    throw new Error('${serviceName}.upload encoded payload exceeds configured maxBytes (' + maxBytes + ')')
+  if (encoded.length === 0 || encoded.length % 4 !== 0 || !BASE64_PATTERN.test(encoded))
+    throw new Error('${serviceName}.upload requires canonical Base64 data')
+
+  const buffer = Buffer.from(encoded, 'base64')
+  if (buffer.toString('base64') !== encoded)
+    throw new Error('${serviceName}.upload requires canonical Base64 data')
+  if (buffer.byteLength > maxBytes)
+    throw new Error('${serviceName}.upload exceeds configured maxBytes (' + maxBytes + ')')
+  return buffer
 }
 
 export class ${serviceClass} {
   constructor(public app: Application) {}
 
   private resolveStorageDir() {
-    const configured = this.app.get('${base}StorageDir') || this.app.get('nfzFileStorageDir') || '${storageDir}'
+    const configured = this.app.get('${serviceConfigBase}StorageDir')${legacyStorageFallback}
+      ?? this.app.get('nfzFileStorageDir')
+      ?? '${storageDir}'
     return resolve(process.cwd(), String(configured))
   }
 
   private resolveMaxBytes() {
-    const configured = this.app.get('${base}MaxBytes') ?? this.app.get('nfzFileMaxBytes') ?? 10 * 1024 * 1024
+    const configured = this.app.get('${serviceConfigBase}MaxBytes')${legacyMaxBytesFallback}
+      ?? this.app.get('nfzFileMaxBytes')
+      ?? 10 * 1024 * 1024
     return Number(configured) > 0 ? Number(configured) : 10 * 1024 * 1024
   }
 
   private resolveAllowedMimeTypes() {
-    const configured = this.app.get('${base}AllowedMimeTypes') ?? this.app.get('nfzFileAllowedMimeTypes') ?? []
+    const configured = this.app.get('${serviceConfigBase}AllowedMimeTypes')${legacyMimeTypesFallback}
+      ?? this.app.get('nfzFileAllowedMimeTypes')
+      ?? []
     if (Array.isArray(configured)) return configured.map(v => String(v).trim()).filter(Boolean)
     return String(configured).split(',').map(v => v.trim()).filter(Boolean)
   }
 
-  private dataPath(root: string, id: string) {
-    return join(root, \`\${id}.bin\`)
+  private safePath(root: string, id: unknown, extension: '.bin' | '.json') {
+    const key = assertUuid(id, '${serviceName} id')
+    const target = resolve(root, \`\${key}\${extension}\`)
+    const relativePath = relative(root, target)
+    if (!relativePath || relativePath.startsWith('..') || isAbsolute(relativePath))
+      throw new Error('${serviceName} resolved a path outside its storage directory')
+    return target
   }
 
-  private metaPath(root: string, id: string) {
-    return join(root, \`\${id}.json\`)
+  private dataPath(root: string, id: unknown) {
+    return this.safePath(root, id, '.bin')
+  }
+
+  private metaPath(root: string, id: unknown) {
+    return this.safePath(root, id, '.json')
   }
 
   private async ensureStorageDir() {
@@ -3529,7 +3715,7 @@ export class ${serviceClass} {
     return root
   }
 
-  private async readMeta(root: string, id: string): Promise<${Base}File> {
+  private async readMeta(root: string, id: unknown): Promise<${Base}File> {
     const raw = await readFile(this.metaPath(root, id), 'utf8')
     return JSON.parse(raw) as ${Base}File
   }
@@ -3537,21 +3723,23 @@ export class ${serviceClass} {
   async find(): Promise<${Base}File[]> {
     const root = await this.ensureStorageDir()
     const entries = await readdir(root)
-    const files = entries.filter(entry => entry.endsWith('.json')).sort()
-    const results = await Promise.all(files.map(async entry => JSON.parse(await readFile(join(root, entry), 'utf8')) as ${Base}File))
+    const files = entries
+      .filter(entry => entry.endsWith('.json') && UUID_PATTERN.test(entry.slice(0, -5)))
+      .sort()
+    const results = await Promise.all(files.map(async entry => JSON.parse(await readFile(resolve(root, entry), 'utf8')) as ${Base}File))
     return results.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   }
 
   async get(id: Id): Promise<${Base}File> {
     const root = await this.ensureStorageDir()
-    return await this.readMeta(root, String(id))
+    return await this.readMeta(root, id)
   }
 
   async remove(id: NullableId): Promise<{ id: string, removed: true }> {
     if (id === null || id === undefined)
       throw new Error('${serviceName}.remove requires an id')
     const root = await this.ensureStorageDir()
-    const key = String(id)
+    const key = assertUuid(id, '${serviceName} id')
     await rm(this.dataPath(root, key), { force: true })
     await rm(this.metaPath(root, key), { force: true })
     return { id: key, removed: true }
@@ -3560,11 +3748,9 @@ export class ${serviceClass} {
   async upload(data: ${Base}UploadData, _params?: Params): Promise<${Base}File> {
     const root = await this.ensureStorageDir()
     const id = randomUUID()
-    const buffer = Buffer.from(data.dataBase64, 'base64')
     const maxBytes = this.resolveMaxBytes()
+    const buffer = decodeCanonicalBase64(data.dataBase64, maxBytes)
     const allowedMimeTypes = this.resolveAllowedMimeTypes()
-    if (buffer.byteLength > maxBytes)
-      throw new Error('${serviceName}.upload exceeds configured maxBytes (' + maxBytes + ')')
     if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(data.mimeType))
       throw new Error('${serviceName}.upload rejects mimeType ' + data.mimeType)
     const descriptor: ${Base}File = {
@@ -3582,8 +3768,9 @@ export class ${serviceClass} {
 
   async download(data: ${Base}DownloadData, _params?: Params): Promise<${Base}DownloadResult> {
     const root = await this.ensureStorageDir()
-    const descriptor = await this.readMeta(root, data.id)
-    const content = await readFile(this.dataPath(root, data.id))
+    const id = assertUuid(data.id, '${serviceName} id')
+    const descriptor = await this.readMeta(root, id)
+    const content = await readFile(this.dataPath(root, id))
     return {
       ...descriptor,
       dataBase64: content.toString('base64'),

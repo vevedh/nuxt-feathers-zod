@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 const rootDir = resolve(process.cwd())
 const files = [
   'src/runtime/templates/server/plugin.ts',
+  'src/runtime/templates/server/database.ts',
   'src/runtime/templates/server/mongodb.ts',
 ]
 const forbidden = [
@@ -29,4 +30,4 @@ if (problems.length) {
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Server templates resolve private MongoDB and Keycloak values at runtime.')
+console.log('[nuxt-feathers-zod] Server templates resolve private database and Keycloak values at runtime.')

@@ -40,7 +40,7 @@ export async function applyServerLayer(options: ResolvedOptions, nuxt: Nuxt): Pr
     if (serverTemplate.filename?.endsWith('server/plugin.ts') || serverTemplate.filename?.endsWith('server/plugin'))
       serverPluginDst = template.dst
 
-    if (serverTemplate.filename?.endsWith('server/rest-bridge.ts') || serverTemplate.filename?.endsWith('server/rest-bridge'))
+    if (serverTemplate.filename?.endsWith('server/rest-bridge.mjs') || serverTemplate.filename?.endsWith('server/rest-bridge'))
       restBridgeDst = template.dst
   }
 
@@ -52,6 +52,13 @@ export async function applyServerLayer(options: ResolvedOptions, nuxt: Nuxt): Pr
 
   if (restBridgeDst && restFramework === 'express' && restPath) {
     const normalizedRestPath = restPath.startsWith('/') ? restPath : `/${restPath}`
+    if (normalizedRestPath !== '/') {
+      addServerHandler({
+        route: normalizedRestPath,
+        handler: restBridgeDst,
+        middleware: true,
+      })
+    }
     addServerHandler({
       route: normalizedRestPath === '/' ? '/**' : `${normalizedRestPath}/**`,
       handler: restBridgeDst,

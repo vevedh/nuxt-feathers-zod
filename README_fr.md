@@ -3,9 +3,9 @@
 `nuxt-feathers-zod` intègre FeathersJS v5 (Dove), les schémas Zod et l'accès typé aux services dans Nuxt 4.
 Le module s'adresse aux applications qui ont besoin d'un vrai contrat backend dans un projet Nuxt, tout en conservant la possibilité de se connecter à une API Feathers externe.
 
-Version de référence : **6.6.0**.
+Version de référence : **6.7.37**.
 
-Socle runtime de la version `6.5.38` : Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6`.
+Socle runtime de la version `6.7.1` : Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6`.
 Le pont Nitro embarqué utilise désormais `@vevedh/feathers-nitro@0.5.0` ; cette version conserve le fonctionnement mono-instance existant tout en préparant une future configuration multi-instance optionnelle.
 
 
@@ -17,7 +17,8 @@ Le pont Nitro embarqué utilise désormais `@vevedh/feathers-nitro@0.5.0` ; cett
 - Schémas Zod, resolvers, validation de requêtes et types TypeScript.
 - Registre extensible de providers local, JWT, OIDC, clé API et custom, avec flux remote orientés Keycloak.
 - Transports REST et Socket.io.
-- Support MongoDB et endpoints optionnels d'administration MongoDB.
+- Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB et SQLite), avec endpoints optionnels d'administration MongoDB.
+- Services Builder et diagnostic Feathers-first sous `nfz/*`.
 - Composables runtime pour le client, les services, l'authentification et les services protégés.
 - Documentation VitePress en français et en anglais.
 
@@ -57,7 +58,7 @@ export default defineNuxtConfig({
 Il faut utiliser la CLI officielle plutôt que créer manuellement les dossiers de service.
 
 ```bash
-bunx nuxt-feathers-zod init embedded --auth --database mongodb
+bunx nuxt-feathers-zod init embedded --auth --framework express
 bunx nuxt-feathers-zod add service users --auth --adapter mongodb --schema zod
 bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
 bunx nuxt-feathers-zod doctor
@@ -112,6 +113,7 @@ feathers: {
 ```ts
 const builder = useBuilderClient()
 const schema = await builder.getSchema('articles')
+const databases = await builder.getDatabaseConnections()
 ```
 
 Les anciennes routes `/api/nfz/**` restent des façades de compatibilité optionnelles. Le code neuf utilise `useBuilderClient()` ou `client.service('nfz/...')`.

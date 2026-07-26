@@ -8,7 +8,18 @@ A service is the primary functional unit of `nuxt-feathers-zod`. The CLI generat
 bunx nuxt-feathers-zod add service articles --adapter mongodb --collection articles --schema zod
 ```
 
-Supported generated adapters are `memory` and `mongodb`. Schema modes are `none`, `zod`, and `json`.
+Supported generated adapters are `memory`, `mongodb`, and `knex` for PostgreSQL, MySQL, MariaDB, and SQLite. Persistent services can select a named connection with `--connection`. Knex services can also set `--table` and `--schemaName`.
+
+```bash
+bunx nuxt-feathers-zod@6.7.37 add service audit-events \
+  --adapter knex \
+  --connection reporting \
+  --table audit_events \
+  --schemaName reporting \
+  --schema zod
+```
+
+Schema modes are `none`, `zod`, and `json`.
 
 ## Custom service
 
@@ -30,7 +41,7 @@ bunx nuxt-feathers-zod schema articles --validate
 ## Protected services
 
 ```bash
-bunx nuxt-feathers-zod auth service articles --enabled true
+bunx nuxt-feathers-zod auth service articles --enabled
 ```
 
 Keep authentication and authorization in Feathers hooks instead of duplicating business security in Nitro API routes.
@@ -59,4 +70,4 @@ const rows = await app.service('articles').find({
 
 No loopback HTTP request is required inside the same server runtime.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

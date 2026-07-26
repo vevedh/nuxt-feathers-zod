@@ -49,7 +49,7 @@ export default defineNuxtConfig({
 ## CLI example
 
 ```bash
-bunx nuxt-feathers-zod mongo management --basePath /mongo --auth true
+bunx nuxt-feathers-zod mongo management --basePath /mongo --auth
 ```
 
 ## Runtime example
@@ -68,4 +68,4 @@ GET /mongo/:db/:collection/schema
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

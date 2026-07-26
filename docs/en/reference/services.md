@@ -13,7 +13,7 @@ Standard and custom Feathers methods are declared separately.
 
 ## NFZ console services
 
-When `console.enabled` is active, eight Feathers services are registered before `app.setup()`.
+When `console.enabled` is active, nine Feathers services are registered before `app.setup()`.
 
 | Service | Methods | Purpose |
 |---|---|---|
@@ -25,6 +25,7 @@ When `console.enabled` is active, eight Feathers services are registered before 
 | `nfz/rbac` | `get`, `patch` | RBAC policy |
 | `nfz/presets` | `find`, `create` | preset list, preview, and apply |
 | `nfz/init` | `create` | guided initialization operations |
+| `nfz/database-connections` | `find`, `get` | redacted diagnostics and health checks for named connections |
 
 ## Discovery
 
@@ -52,4 +53,4 @@ Dangerous property names such as `__proto__`, `prototype`, and `constructor` are
 
 Deprecated `/api/nfz/**` routes are thin adapters to these Feathers services. They are not independent business APIs.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

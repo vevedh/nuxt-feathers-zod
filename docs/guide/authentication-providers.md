@@ -280,6 +280,6 @@ La migration peut donc être progressive. Les services générés en `6.6.0` uti
 - Le provider OIDC valide les access tokens ; il ne pilote pas encore le login interactif du navigateur.
 - Les passkeys, TOTP, magic links et sessions par appareil ne sont pas encore fournis par le cœur stable.
 - Les clés API déclaratives conviennent à un nombre limité de comptes techniques. Gérez leur rotation et leur audit dans votre application.
-- La version actuelle conserve MongoDB comme intégration de base de données principale du module.
+- La version 6.7.0 fournit un registre de connexions nommées MongoDB et Knex. MikroORM et les entités relationnelles restent hors périmètre.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

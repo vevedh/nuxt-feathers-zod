@@ -88,29 +88,66 @@ Default lifecycle order is `modules:pre`, `plugins`, `services`, `modules:post`.
 
 ## `database`
 
+The recommended configuration uses named connections:
+
 ```ts
 feathers: {
   database: {
-    mongo: {
-      url: process.env.MONGODB_URL,
-      management: {
-        enabled: true,
-        basePath: '/mongo',
-        auth: { enabled: true, authenticate: true },
-        showSystemDatabases: false,
-        allowCreateCollection: false,
-        allowDropCollection: false,
-        allowInsertDocuments: false,
-        allowPatchDocuments: false,
-        allowReplaceDocuments: false,
-        allowRemoveDocuments: false,
+    default: 'primary',
+    connections: {
+      primary: {
+        type: 'mongodb',
+        url: process.env.MONGODB_URL,
+        database: 'application',
+        management: {
+          enabled: true,
+          basePath: '/mongo/primary',
+          auth: {
+            enabled: true,
+            authenticate: true,
+          },
+        },
+      },
+      reporting: {
+        type: 'postgresql',
+        connection: process.env.REPORTING_DATABASE_URL,
+        pool: { min: 1, max: 10 },
+      },
+      localCache: {
+        type: 'sqlite',
+        connection: { filename: './data/cache.sqlite' },
+        useNullAsDefault: true,
+        required: false,
       },
     },
   },
 }
 ```
 
-Destructive management operations are disabled by default.
+Supported types are `mongodb`, `postgresql`, `mysql`, `mariadb`, and `sqlite`.
+
+| Option | Default | Purpose |
+|---|---:|---|
+| `enabled` | `true` | enables the connection |
+| `required` | `true` | blocks startup on failure |
+| `healthCheck` | `true` | checks the connection after opening |
+| `label` | — | non-sensitive diagnostic label |
+
+MongoDB connections accept `url`, `database`, and `management`. SQL connections accept `connection`, `client`, `pool`, `acquireConnectionTimeout`, `useNullAsDefault`, and `searchPath`.
+
+The legacy shape remains supported:
+
+```ts
+feathers: {
+  database: {
+    mongo: {
+      url: process.env.MONGODB_URL,
+    },
+  },
+}
+```
+
+It is mapped to a named `default` connection. Do not combine `database.mongo` with `database.connections.default`. Destructive MongoDB management operations remain disabled by default. See [Multi-database registry](/en/guide/multi-database).
 
 ## `auth`
 
@@ -150,4 +187,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

@@ -1,7 +1,12 @@
 import type { Page, TestInfo } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
+
+const { version: packageVersion } = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+) as { version: string }
 
 const documentationImageDirectory = resolve(
   process.cwd(),
@@ -36,7 +41,7 @@ test.describe('playground browser validation', () => {
     await page.goto('/', { waitUntil: 'networkidle' })
 
     await expect(page.getByRole('heading', { name: 'Tester le module sans se perdre' })).toBeVisible()
-    await expect(page.getByRole('main').getByText('v6.6.0', { exact: true })).toBeVisible()
+    await expect(page.getByRole('main').getByText(`v${packageVersion}`, { exact: true })).toBeVisible()
 
     const runButton = page.getByRole('button', { name: 'Lancer les contrôles rapides' })
     await runButton.click()

@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, createCliCommand, generateFileService, generateMiddleware, generateService, runCli } from '../src/cli/index'
@@ -55,7 +56,9 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(cleanupScript).toContain("['rm', '--cached', '--ignore-unmatch', '--', repositoryPath]")
     expect(cleanupScript).not.toContain("['rm', '-f'")
     expect(cleanupScript).toContain("  'docs-private'")
+    expect(cleanupScript).toContain("  'skills'")
     expect(doctorSource).toContain("segments.includes('docs-private')")
+    expect(doctorSource).toContain("segments.includes('skills')")
     expect(doctorSource).toContain('detectTrackedMaintenanceArtifacts')
     expect(doctorSource).toContain('repo:clean-maintenance-index')
   })
@@ -101,6 +104,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(pkg.bin?.nfz).toBe('./bin/nfz')
     expect(pkg.files).toContain('dist')
     expect(pkg.files).toContain('bin')
+    expect(pkg.files).toContain('LICENSE')
     expect(pkg.files).not.toContain('src/cli')
   })
   it('resolves built-in server modules to package subpath exports in consumer apps', async () => {
@@ -116,6 +120,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(compressionModule?.meta.import).toContain('nuxt-feathers-zod/server/modules/express/compression')
     expect(compressionModule?.from).not.toContain('server/server/modules')
     expect(compressionModule?.from).not.toContain('src/runtime/server/modules')
+    expect(resolved.allowMissingDatabaseServices).toBe(false)
   })
 
 
@@ -140,6 +145,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
       swagger: false,
     } as any)()
 
+    expect(code).toContain('"allowMissingDatabaseServices": false')
     expect(code).toContain('nuxt-feathers-zod/server/modules/express/compression')
     expect(code).not.toContain('server/server/modules')
     expect(code).not.toContain('src/runtime/server/modules')
@@ -156,7 +162,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
 
     expect(capabilities).toBeTruthy()
     expect(section?.options).toEqual(['summary', 'runtime', 'services', 'client', 'events', 'all'])
-    expect(NFZ_MODULE_CAPABILITIES.consoleServices).toHaveLength(8)
+    expect(NFZ_MODULE_CAPABILITIES.consoleServices).toHaveLength(9)
     expect(NFZ_MODULE_CAPABILITIES.architecture.apiModel).toBe('feathers-first')
   })
   it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
@@ -216,10 +222,48 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const schema = await readFile(schemaFile, 'utf8')
     expect(schema).toContain('id: objectIdSchema()')
     const klass = await readFile(classFile, 'utf8')
-    expect(klass).toContain('db.collection(\'users\')')
+    expect(klass).toContain('getNfzMongoDatabase(app).then(db => db.collection("users"))')
     const svc = await readFile(svcFile, 'utf8')
     expect(svc).toContain('docs:')
   })
+  it('generates a Knex service bound to a named SQL connection', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-knex-'))
+    const servicesDir = join(root, 'services')
+    await generateService({
+      projectRoot: root,
+      servicesDir,
+      name: 'audit-events',
+      adapter: 'knex',
+      auth: true,
+      idField: 'id',
+      tableName: 'audit_events',
+      schemaName: 'reporting',
+      connectionName: 'warehouse',
+      docs: false,
+      schema: 'zod',
+      dry: false,
+      force: false,
+    })
+
+    const base = join(servicesDir, 'audit-events')
+    const classFile = join(base, 'audit-events.class.ts')
+    const manifestFile = join(servicesDir, '.nfz', 'services', 'audit-events.json')
+    const klass = await readFile(classFile, 'utf8')
+    expect(klass).toContain("from '@feathersjs/knex'")
+    expect(klass).toContain("getNfzKnexClient(app, \"warehouse\")")
+    expect(klass).toContain('name: "audit_events"')
+    expect(klass).toContain('schema: "reporting"')
+    await expectGeneratedTsSyntaxOk([classFile])
+
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8'))
+    expect(manifest).toMatchObject({
+      adapter: 'knex',
+      tableName: 'audit_events',
+      schemaName: 'reporting',
+      connectionName: 'warehouse',
+    })
+  })
+
   it('generates an adapter-less service via generateService --custom', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
@@ -285,9 +329,15 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(existsSync(serviceManifestFile)).toBe(true)
 
     const klass = await readFile(classFile, 'utf8')
-    expect(klass).toContain("return join(root, `\${id}.bin`)")
-    expect(klass).toContain("return join(root, `\${id}.json`)")
-    expect(klass).toContain("const configured = this.app.get('assetStorageDir') || this.app.get('nfzFileStorageDir') || 'storage/assets'")
+    expect(klass).toContain("return this.safePath(root, id, '.bin')")
+    expect(klass).toContain("return this.safePath(root, id, '.json')")
+    expect(klass).toContain('relative(root, target)')
+    expect(klass).toContain('assertUuid(id')
+    expect(klass).toContain('decodeCanonicalBase64(data.dataBase64, maxBytes)')
+    expect(klass).toContain("this.app.get('assetsStorageDir')")
+    expect(klass).toContain("this.app.get('assetStorageDir')")
+    expect(klass).toContain("this.app.get('assetsMaxBytes')")
+    expect(klass).toContain("this.app.get('assetsAllowedMimeTypes')")
 
     const shared = await readFile(sharedFile, 'utf8')
     expect(shared).toContain("export const assetPath = 'api/v1/assets'")
@@ -340,6 +390,93 @@ describe('nuxt-feathers-zod CLI generators', () => {
       join(base, 'attachments.shared.ts'),
       join(base, 'attachments.ts'),
     ])
+  })
+
+
+  it('rejects traversal identifiers, invalid Base64 and oversized payloads in generated file services', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-file-security-'))
+    const servicesDir = join(root, 'services')
+    const storageDir = join(root, 'storage', 'attachments')
+
+    await generateFileService({
+      projectRoot: root,
+      servicesDir,
+      name: 'attachments',
+      auth: false,
+      servicePath: 'attachments',
+      storageDir,
+      docs: false,
+      dry: false,
+      force: false,
+    })
+
+    const classFile = join(servicesDir, 'attachments', 'attachments.class.ts')
+    const module = await import(`${pathToFileURL(classFile).href}?security=${Date.now()}`) as {
+      AttachmentService: new (app: { get(key: string): unknown }) => {
+        get(id: string): Promise<unknown>
+        remove(id: string): Promise<unknown>
+        upload(data: { fileName: string, mimeType: string, dataBase64: string }): Promise<{ id: string, fileName: string, size: number }>
+        download(data: { id: string }): Promise<{ dataBase64: string }>
+      }
+    }
+    const settings = new Map<string, unknown>([
+      ['attachmentsStorageDir', storageDir],
+      ['attachmentsMaxBytes', 16],
+    ])
+    const service = new module.AttachmentService({ get: key => settings.get(key) })
+
+    await expect(service.get('../../outside')).rejects.toThrow('must be a valid UUID')
+    await expect(service.remove('..\\outside')).rejects.toThrow('must be a valid UUID')
+    await expect(service.upload({
+      fileName: 'invalid.txt',
+      mimeType: 'text/plain',
+      dataBase64: 'not-base64!!!',
+    })).rejects.toThrow('requires canonical Base64 data')
+
+    settings.set('attachmentsMaxBytes', 2)
+    await expect(service.upload({
+      fileName: 'too-large.txt',
+      mimeType: 'text/plain',
+      dataBase64: Buffer.from('hello').toString('base64'),
+    })).rejects.toThrow('encoded payload exceeds configured maxBytes')
+
+    settings.set('attachmentsMaxBytes', 16)
+    const created = await service.upload({
+      fileName: '../safe name.txt',
+      mimeType: 'text/plain',
+      dataBase64: Buffer.from('hello').toString('base64'),
+    })
+    expect(created.id).toMatch(/^[0-9a-f-]{36}$/i)
+    expect(created.fileName).toBe('safe-name.txt')
+    expect(created.size).toBe(5)
+    await expect(service.download({ id: created.id })).resolves.toMatchObject({
+      dataBase64: Buffer.from('hello').toString('base64'),
+    })
+  })
+
+  it('filters starter artifacts relative to the template root', async () => {
+    const source = await readFile(join(process.cwd(), 'src', 'cli', 'index.ts'), 'utf8')
+
+    expect(source).toContain('relative(sourceDir, src)')
+    expect(source).not.toContain("const normalized = src.replace(/\\/g, '/')")
+  })
+
+  it('copies the bundled starter from the package root', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-starter-'))
+
+    await runCli([
+      'init',
+      'starter',
+      '--preset', 'quasar-unocss-pinia-auth',
+      '--dir', 'generated-starter',
+    ], { cwd: root, throwOnError: true })
+
+    const starter = join(root, 'generated-starter')
+    expect(existsSync(join(starter, 'package.json'))).toBe(true)
+    expect(existsSync(join(starter, 'nuxt.config.ts'))).toBe(true)
+    expect(existsSync(join(starter, '.env.example'))).toBe(true)
+    expect(existsSync(join(starter, 'app', 'app.vue'))).toBe(true)
+    expect(existsSync(join(starter, 'node_modules'))).toBe(false)
   })
 
   it('dispatches add file-service through the CLI entrypoint', { timeout: LONG_TIMEOUT }, async () => {
@@ -523,6 +660,15 @@ describe('nuxt-feathers-zod CLI generators', () => {
     )
     expect(() => assertServiceGenerationArgs({ _: [], customMethods: 'run' }, false, 'memory')).toThrow(
       '--methods and --customMethods are only supported with --custom',
+    )
+    expect(() => assertServiceGenerationArgs({ _: [], table: 'audit_events' }, false, 'mongodb')).toThrow(
+      '--table and --schemaName require --adapter knex',
+    )
+    expect(() => assertServiceGenerationArgs({ _: [], schemaName: 'reporting' }, false, 'memory')).toThrow(
+      '--table and --schemaName require --adapter knex',
+    )
+    expect(() => assertServiceGenerationArgs({ _: [], connection: 'primary' }, false, 'memory')).toThrow(
+      '--connection requires --adapter mongodb or knex',
     )
   })
   it('hardens invalid remote init flag combinations', () => {

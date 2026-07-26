@@ -20,6 +20,10 @@ Cette matrice décrit le périmètre **visé et validé** pour le socle open sou
 | --- | --- | --- |
 | Nuxt 4 + embedded + memory | Stable | Point d’entrée recommandé |
 | Nuxt 4 + embedded + MongoDB | Stable | Génération CLI recommandée |
+| Nuxt 4 + embedded + PostgreSQL via Knex | Stable optionnel | Requiert `@feathersjs/knex`, `knex` et `pg` |
+| Nuxt 4 + embedded + MySQL/MariaDB via Knex | Stable optionnel | Requiert `mysql2` |
+| Nuxt 4 + embedded + SQLite via Knex | Stable optionnel | Requiert `better-sqlite3` |
+| Plusieurs connexions MongoDB/SQL nommées | Stable en 6.7.0 | Chaque service persistant peut choisir `--connection` |
 | Nuxt 4 + embedded + auth locale/JWT | Stable | Service `users` via CLI |
 | Nuxt 4 + remote REST | Stable | Services distants déclarés explicitement |
 | Nuxt 4 + remote Socket.IO | Stable | Même logique de service déclaré |
@@ -45,6 +49,7 @@ Cette matrice décrit le périmètre **visé et validé** pour le socle open sou
 bun install
 bun run sanity:templates
 bun run sanity:syntax
+bun run sanity:database-registry
 bun run build
 bun run docs:build
 ```

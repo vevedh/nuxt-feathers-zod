@@ -19,6 +19,7 @@ const forbiddenExactPaths = new Set([
 const forbiddenDirectoryNames = new Set([
   'patch-memory',
   'docs-private',
+  'skills',
 ])
 
 const forbiddenFilePrefixes = [

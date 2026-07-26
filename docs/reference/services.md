@@ -18,7 +18,7 @@ Les méthodes standard Feathers et les méthodes personnalisées sont déclarée
 
 ## Services NFZ de console
 
-Lorsque `console.enabled` est actif, le module enregistre huit services Feathers avant `app.setup()`.
+Lorsque `console.enabled` est actif, le module enregistre neuf services Feathers avant `app.setup()`.
 
 | Service | Méthodes | Rôle |
 |---|---|---|
@@ -30,6 +30,7 @@ Lorsque `console.enabled` est actif, le module enregistre huit services Feathers
 | `nfz/rbac` | `get`, `patch` | politique RBAC |
 | `nfz/presets` | `find`, `create` | liste, preview et application de presets |
 | `nfz/init` | `create` | opérations d’initialisation guidée |
+| `nfz/database-connections` | `find`, `get` | diagnostics expurgés et contrôle de santé des connexions nommées |
 
 ## Découverte
 
@@ -88,4 +89,4 @@ L’écriture est refusée lorsque `console.allowWrite` vaut `false`.
 
 Les routes `/api/nfz/**` ne sont pas des services métier indépendants. Lorsqu’elles sont activées, elles délèguent aux services ci-dessus et ajoutent des en-têtes de dépréciation.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

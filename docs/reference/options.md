@@ -159,6 +159,10 @@ server: {
   enabled: true,
   framework: 'express',
   secureDefaults: true,
+  allowMissingDatabaseServices: false,
+  duplicateServicePolicy: 'error',
+  bootstrapDiagnostics: false,
+  loadOrder: ['modules:pre', 'plugins', 'services', 'modules:post'],
 }
 ```
 
@@ -167,6 +171,10 @@ server: {
 | `enabled` | Active le runtime serveur embedded |
 | `framework` | `express` ou `koa` |
 | `secureDefaults` | Active un preset sécurisé |
+| `allowMissingDatabaseServices` | Autorise explicitement le skip des services persistants dont la base est indisponible. `false` par défaut ; à réserver aux services réellement facultatifs. |
+| `duplicateServicePolicy` | `error` par défaut. Rejette un chemin Feathers enregistré deux fois et affiche les deux sources. `skip` conserve explicitement le premier registrar. |
+| `bootstrapDiagnostics` | Active les traces structurées non sensibles `[NFZ bootstrap]`. |
+| `loadOrder` | Ordre déterministe des phases. Lorsque `servicesDirs` découvre des services, la phase `services` doit rester présente. |
 | `modules` | Modules serveur personnalisés |
 | `modulesDir` | Dossier des modules serveur |
 | `serveStatic` | Sert des fichiers statiques |

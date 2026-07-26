@@ -3,8 +3,8 @@ import type { Templates } from '../types'
 import { getServerAuthContents } from './authentication'
 import { getServerAuthTypesContents } from './authentication-types'
 import { getServerAppContents } from './app'
+import { getServerDatabaseContents, getServerDatabaseTypesContents } from './database'
 import { getServerKeycloakContents, getServerKeycloakTypesContents } from './keycloak'
-import { getServerMongodbContents, getServerMongodbTypesContents } from './mongodb'
 import { getServerPluginContents } from './plugin'
 import { getServerRestBridgeContents } from './rest-bridge'
 import { getSecureDefaultsModuleContents } from './secure-defaults'
@@ -39,7 +39,7 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
       write: true,
     },
     {
-      filename: 'feathers/server/rest-bridge.ts',
+      filename: 'feathers/server/rest-bridge.mjs',
       getContents: getServerRestBridgeContents(options),
       write: true,
     },
@@ -55,15 +55,15 @@ export function getServerTemplates(options: ResolvedOptions): Templates {
     },
   ]
 
-  if (options.database.mongo) {
+  if (Object.keys(options.database.connections).length > 0) {
     serverTemplates.push({
-      filename: 'feathers/server/mongodb.ts',
-      getContents: getServerMongodbContents(options),
+      filename: 'feathers/server/database.ts',
+      getContents: getServerDatabaseContents(options),
       write: true,
     })
     serverTemplates.push({
-      filename: 'feathers/server/mongodb.d.ts',
-      getContents: getServerMongodbTypesContents(options),
+      filename: 'feathers/server/database.d.ts',
+      getContents: getServerDatabaseTypesContents(options),
       write: true,
     })
   }

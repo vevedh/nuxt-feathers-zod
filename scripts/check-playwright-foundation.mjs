@@ -52,10 +52,16 @@ for (const subpath of [
 }
 
 const fullReleaseCheck = String(scripts['release:check:full'] || '')
-const browserIndex = fullReleaseCheck.indexOf('bun run test:playwright')
-const tarballIndex = fullReleaseCheck.indexOf('bun run smoke:tarball')
-if (browserIndex === -1 || tarballIndex === -1 || browserIndex > tarballIndex)
-  failures.push('release:check:full must run Playwright before the tarball smoke test')
+if (!fullReleaseCheck.includes('bun run test:playwright'))
+  failures.push('release:check:full must include Playwright before candidate packaging')
+if (fullReleaseCheck.includes('bun run smoke:tarball'))
+  failures.push('release:check:full must not create or validate tarballs before the single-candidate phase')
+
+const artifactVerification = String(scripts['release:verify:artifact'] || '')
+const starterIndex = artifactVerification.indexOf('bun run test:starter:release')
+const tarballIndex = artifactVerification.indexOf('bun run smoke:tarball')
+if (starterIndex === -1 || tarballIndex === -1 || starterIndex > tarballIndex)
+  failures.push('release:verify:artifact must validate the starter before the clean consumer')
 
 if (existsSync(resolve(rootDir, 'scripts/run-playwright-tests.mjs'))) {
   const runner = read('scripts/run-playwright-tests.mjs')
@@ -110,6 +116,18 @@ if (existsSync(resolve(rootDir, 'playground/app/middleware/session.global.ts')))
     failures.push('global session restoration must fail softly for anonymous playground visitors')
 }
 
+if (existsSync(resolve(rootDir, 'playground/nuxt.config.ts')) && existsSync(resolve(rootDir, 'scripts/run-playwright-server.mjs'))) {
+  const playgroundConfig = read('playground/nuxt.config.ts')
+  const playwrightServer = read('scripts/run-playwright-server.mjs')
+
+  if (!playwrightServer.includes(`process.env.NFZ_PLAYGROUND_EMBEDDED_MONGODB = 'false'`))
+    failures.push('Playwright server must explicitly disable embedded MongoDB for the default browser scenario')
+  if (!playgroundConfig.includes('allowMissingDatabaseServices: !embeddedMongoEnabled'))
+    failures.push('playground must skip unavailable persistent services only when embedded MongoDB is deliberately disabled')
+  if (playgroundConfig.includes('allowMissingDatabaseServices: true'))
+    failures.push('playground must remain fail-closed when embedded MongoDB is enabled')
+}
+
 if (existsSync(resolve(rootDir, 'playground/app/pages/index.vue'))) {
   const dashboard = read('playground/app/pages/index.vue')
   for (const message of [
@@ -145,10 +163,14 @@ if (existsSync(resolve(rootDir, 'test/playwright/playground-functional.spec.ts')
     'Tests essentiels',
     'NFZ_UPDATE_DOC_SCREENSHOTS',
     "testInfo.project.name.includes('mobile')",
+    'packageVersion',
+    'getByText(`v${packageVersion}`',
   ]) {
     if (!spec.includes(contract))
       failures.push(`Playwright functional suite is missing contract: ${contract}`)
   }
+  if (/getByText\(["'`]v\d+\.\d+\.\d+/.test(spec))
+    failures.push('Playwright functional suite must derive the displayed release version from package.json')
 }
 
 if (existsSync(resolve(rootDir, 'AGENTS.md'))) {

@@ -50,4 +50,4 @@ const rows = await service.find({ query: { $limit: 25 } })
 
 The business contract remains a Feathers service in both modes.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

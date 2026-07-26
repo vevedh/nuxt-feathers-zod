@@ -20,17 +20,11 @@ export async function configureNfzInfrastructure(
   config: any,
   handlers: NfzInfrastructureHandlers,
 ): Promise<void> {
-  const mongoConfig = config?.database?.mongo
-  const mongoEnabled = Boolean(mongoConfig?.enabled && mongoConfig?.url)
-
-  if (mongoEnabled) {
-    app.set('mongodb', mongoConfig.url)
-    app.set('mongoPath', normalizeMongoPath(mongoConfig.management?.basePath || '/mongo'))
-  }
-
   if (config?.auth?.enabled !== false && typeof handlers.authentication === 'function')
     await handlers.authentication(app)
 
-  if (mongoEnabled && typeof handlers.mongodb === 'function')
-    await handlers.mongodb(app)
+  const databaseConfig = config?.database
+  const hasConnections = Boolean(databaseConfig && Object.keys(databaseConfig.connections || {}).length)
+  if (hasConnections && typeof handlers.database === 'function')
+    await handlers.database(app, databaseConfig)
 }

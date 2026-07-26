@@ -60,6 +60,41 @@ Le script `clean:repo` ne charge pas Nuxt. Il reste donc utilisable même quand 
 
 Depuis la version 6.5.35, le build du CLI utilise directement `Bun.build()` dans le processus Bun déjà actif. Aucun second exécutable `bun` n’est recherché dans le `PATH` Windows.
 
+### `EPERM: Operation not permitted (NtSetInformationFile)` pendant `bun install`
+
+Cette erreur Windows peut interrompre l’extraction vers le cache partagé de Bun et laisser `node_modules` incomplet. Les erreurs suivantes (`Cannot find module 'lodash.merge'`, `human-signals`, etc.) sont alors des conséquences de l’installation interrompue, pas des défauts indépendants du module.
+
+Ferme d’abord les serveurs Nuxt/Vite, Vitest, Playwright et les processus Node/Bun qui utilisent le dossier. Lance ensuite une seule gate :
+
+```powershell
+bun run verify:windows
+```
+
+`verify:windows` contrôle ou installe automatiquement les dépendances. Sous Windows, le cache par défaut est placé dans `%LOCALAPPDATA%/nuxt-feathers-zod/bun-install-cache`, donc les téléchargements valides sont réutilisés entre deux dossiers de versions extraits. L’installateur nettoie uniquement l’arbre `node_modules` incomplet et les entrées temporaires, désactive les scripts de cycle de vie pendant l’extraction afin qu’un `postinstall` ne s’exécute jamais sur un arbre partiel, puis réduit la concurrence réseau de 8 à 2 puis 1 lorsqu’un verrouillage `NtSetInformationFile` est détecté.
+
+Si les tentatives sur le cache partagé restent bloquées, une dernière installation de secours utilise un cache temporaire isolé, une concurrence réseau de 1 et le mode Bun `--no-cache` pour éviter le cache de manifestes. Les scripts NFZ de préparation, build et validation sont exécutés explicitement plus tard par la gate, après vérification complète des dépendances. Après une installation vérifiée, un fingerprint de `package.json`, `bun.lock`, de la version Bun et de la stratégie d’installation évite une réinstallation identique.
+
+Pour la chaîne de release complète, copie d’abord le modèle local non versionné :
+
+```powershell
+Copy-Item .env.release.example .env.release.local
+bun run verify:release:windows
+```
+
+La gate charge automatiquement `.env.release.local` lorsque `MONGODB_URL` n’est pas déjà défini dans le processus. Une variable d’environnement explicite reste prioritaire sur le fichier local.
+
+Si tu as déjà exécuté `bun run install:windows`, la gate complète détecte l’installation vérifiée et la réutilise. Le mode explicite suivant refuse toute réinstallation et échoue si l’état ne correspond plus au lockfile :
+
+```powershell
+bun run verify:release:windows:skip-install
+```
+
+Le cache peut être placé hors du projet avec `NFZ_WINDOWS_CACHE_DIR`. Utilise `bun run install:windows -- --force` uniquement pour imposer une réinstallation propre. Évite de séparer les gates avec `;` dans PowerShell : les commandes suivantes continuent même si l’installation échoue et produisent alors des diagnostics secondaires trompeurs.
+
+Les builds VitePress publics et privés utilisent une installation distincte. Sous Windows, leur cache partagé se trouve par défaut dans `%LOCALAPPDATA%/nuxt-feathers-zod/bun-docs-cache`. Le runner applique les mêmes protections : scripts de cycle de vie désactivés, reprises 8 → 2 → 1, puis une tentative isolée avec `--no-cache`. Une installation VitePress vérifiée est mémorisée et réutilisée. Pour déplacer uniquement ce cache, définis `NFZ_DOCS_CACHE_DIR`.
+
+L’installation VitePress est vérifiée statiquement à partir de `package.json`, du binaire publié et de la version exacte inscrite dans `bun.lock` ; le runner ne lance plus `vitepress --version` pour valider l’installation. Le build réel est ensuite exécuté avec Node.js. Pendant un build long, le runner affiche un heartbeat afin de confirmer que le processus travaille toujours. Le probe Bun reste limité à 20 secondes et le build à 15 minutes par défaut. Un processus qui dépasse cette limite est arrêté avec tout son arbre enfant, puis la gate rend la main avec une erreur explicite. Les valeurs peuvent être adaptées avec `NFZ_DOCS_PROBE_TIMEOUT_MS`, `NFZ_DOCS_BUILD_TIMEOUT_MS` et `NFZ_DOCS_HEARTBEAT_MS`.
+
 ### Code de sortie `58` après le démarrage du playground
 
 Le projet exige désormais Bun `>=1.3.6`. Mets d’abord Bun à niveau avec `bun upgrade`, puis vérifie la version avec `bun --version`.
@@ -94,4 +129,4 @@ const result = await service.find({
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

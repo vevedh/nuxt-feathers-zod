@@ -1,3 +1,4 @@
+import type { ClientApplication } from 'nuxt-feathers-zod/client'
 import { Forbidden } from '@feathersjs/errors'
 import type { EntityId, MessageRecord, ServiceListResult, StudioUser } from '~/types/auth'
 import { getErrorMessage, getFeathersErrorDebug } from '~/utils/errors'
@@ -32,14 +33,21 @@ function sortByCreatedAtDesc<T extends { createdAt?: string }>(items: T[]): T[] 
   })
 }
 
+function isClientApplication(value: unknown): value is ClientApplication {
+  return typeof value === 'object'
+    && value !== null
+    && 'service' in value
+    && typeof value.service === 'function'
+}
+
 export function useAdminFeathers() {
   const nuxtApp = useNuxtApp()
   const session = useStudioSessionStore()
 
-  function api() {
-    const client = nuxtApp.$api
-    if (!client)
-      throw new Error('Client Feathers NFZ indisponible.')
+  function api(): ClientApplication {
+    const client: unknown = nuxtApp.$api
+    if (!isClientApplication(client))
+      throw new Error('Client Feathers NFZ indisponible ou invalide.')
     return client
   }
 

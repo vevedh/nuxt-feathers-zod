@@ -25,7 +25,7 @@ bunx nuxt-feathers-zod capabilities --section all --json
 | `add mongodb-compose` | Generate a development MongoDB Compose file. | `--out <value>`<br>`--service <value>`<br>`--port <value>`<br>`--database <value>`<br>`--rootUser <value>`<br>`--rootPassword <value>`<br>`--volume <value>`<br>`--force`<br>`--dry` |
 | `add remote-service` | Declare a remote Feathers service in the client configuration. | `<name>`<br>`--path <value>`<br>`--methods <value>`<br>`--dry` |
 | `add server-module` | Generate a Feathers/Nitro server module from a preset. | `<name>`<br>`--preset <helmet|security-headers|request-logger|healthcheck|rate-limit|express-baseline>`<br>`--force`<br>`--dry` |
-| `add service` | Generate a Feathers service using memory, MongoDB, or a custom service class. | `<name>`<br>`--custom`<br>`--type <adapter|custom>`<br>`--adapter <memory|mongodb>`<br>`--schema <none|zod|json>`<br>`--auth`<br>`--authAware`<br>`--idField <id|_id>`<br>`--path <value>`<br>`--collection <value>`<br>`--methods <value>`<br>`--customMethods <value>`<br>`--docs`<br>`--servicesDir <value>`<br>`--force`<br>`--dry` |
+| `add service` | Generate a Feathers service using memory, MongoDB, Knex, or a custom service class. | `<name>`<br>`--custom`<br>`--type <adapter|custom>`<br>`--adapter <memory|mongodb|knex>`<br>`--schema <none|zod|json>`<br>`--auth`<br>`--authAware`<br>`--idField <id|_id>`<br>`--path <value>`<br>`--collection <value>`<br>`--table <value>`<br>`--schemaName <value>`<br>`--connection <value>`<br>`--methods <value>`<br>`--customMethods <value>`<br>`--docs`<br>`--servicesDir <value>`<br>`--force`<br>`--dry` |
 | `auth service` | Enable or disable JWT hooks on an existing service. | `<name>`<br>`--servicesDir <value>`<br>`--enabled`<br>`--dry` |
 | `capabilities` | Expose the capability matrix implemented by the installed package version. | `--section <summary|runtime|services|client|events|all>`<br>`--json` |
 | `doctor` | Inspect the current project and report configuration or service inconsistencies. | — |
@@ -75,4 +75,4 @@ bunx nuxt-feathers-zod doctor
 
 The `capabilities --json` command exposes implemented modes, transports, NFZ services, composables, and authentication events. The repository coherence gate compares this matrix with the runtime, playground, and documentation.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

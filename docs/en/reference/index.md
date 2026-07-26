@@ -10,7 +10,7 @@
 | Transports | REST, Socket.IO |
 | Embedded REST server | Express or Koa |
 | Services | adapter, custom, file, remote |
-| Generated adapters | memory, MongoDB |
+| Generated adapters | memory, MongoDB, Knex |
 | Schemas | none, Zod, JSON |
 | Authentication | local/JWT, remote, Keycloak |
 | NFZ tools | services, schemas, manifest, builder, status, RBAC, presets, init |
@@ -35,4 +35,4 @@ bunx nuxt-feathers-zod capabilities --section all --json
 
 Legacy `/api/nfz/**` routes are optional 6.x compatibility facades. The canonical contracts are Feathers services.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

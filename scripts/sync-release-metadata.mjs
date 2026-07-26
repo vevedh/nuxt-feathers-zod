@@ -113,6 +113,10 @@ const globalMarkdownReplacements = [
     pattern: /<!-- release-version: [^>]+ -->/g,
     replacement: `<!-- release-version: ${version} -->`,
   },
+  {
+    pattern: /(nuxt-feathers-zod@)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/g,
+    replacement: (_match, prefix) => `${prefix}${version}`,
+  },
 ]
 
 for (const absolute of markdownTargets) {
@@ -146,14 +150,39 @@ for (const relativePath of firstPartyExamplePackages) {
   }
 }
 
-for (const relativePath of currentExampleTextTargets) {
-  updateTextFile(relativePath, [
-    {
-      pattern: /\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/gi,
-      replacement: version,
-    },
-  ])
-}
+const currentExampleVersionReplacements = [
+  {
+    pattern: /(nuxt-feathers-zod(?:@|\s+|\/nuxt-feathers-zod-))\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/gi,
+    replacement: (_match, prefix) => `${prefix}${version}`,
+  },
+  {
+    pattern: /(\"nuxt-feathers-zod\"\s*:\s*\")\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?(\")/gi,
+    replacement: (_match, prefix, suffix) => `${prefix}${version}${suffix}`,
+  },
+  {
+    pattern: /(NFZ\s+`?)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?(`?)/g,
+    replacement: (_match, prefix, suffix) => `${prefix}${version}${suffix}`,
+  },
+  {
+    pattern: /(Depuis\s+`)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?(`)/g,
+    replacement: (_match, prefix, suffix) => `${prefix}${version}${suffix}`,
+  },
+  {
+    pattern: /(Patch\s+)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/g,
+    replacement: (_match, prefix) => `${prefix}${version}`,
+  },
+  {
+    pattern: /(Si la version\s+)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/g,
+    replacement: (_match, prefix) => `${prefix}${version}`,
+  },
+  {
+    pattern: /(Correctif\s+`\/messages`\s+)\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?/g,
+    replacement: (_match, prefix) => `${prefix}${version}`,
+  },
+]
+
+for (const relativePath of currentExampleTextTargets)
+  updateTextFile(relativePath, currentExampleVersionReplacements)
 
 
 const currentDocumentationReplacements = new Map([

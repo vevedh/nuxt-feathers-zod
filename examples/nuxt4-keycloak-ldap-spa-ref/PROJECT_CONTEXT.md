@@ -6,11 +6,11 @@ Version validée comme **référence modèle Nuxt 4 + Keycloak + LDAP + SPA**.
 
 ## Stack
 
-- Nuxt 6.6.0, verrouillé pour éviter la régression SPA observée en 6.6.0.
+- Nuxt 4.4.2, verrouillé pour préserver la stabilité SPA validée.
 - Quasar 2 via `nuxt-quasar-ui`.
 - UnoCSS.
 - Pinia + persistedstate.
-- nuxt-feathers-zod 6.6.0.
+- nuxt-feathers-zod 6.7.37.
 - Keycloak côté client uniquement via `keycloak-js`.
 - Backend Feathers remote exposant `POST /authentication`.
 - Stratégie backend attendue : `keycloak-ldap` / `SsoLdapStrategy`.
@@ -71,10 +71,10 @@ http://localhost:3000
 
 Si le backend journalise `Method OPTIONS not allowed`, l'appel direct NFZ échouera avec `Failed to fetch` côté navigateur.
 
-## Patch Nuxt 6.6.0 SPA regression
+## Patch de stabilité SPA Nuxt 4.4.2
 
 - Application volontairement en `ssr: false` car Keycloak reste strictement côté client.
-- Nuxt est verrouillé sur `6.6.0` pour éviter l'erreur de développement `No entry found in rollupOptions.input` observée avec Nuxt `6.6.0` + Vite `6.6.0`.
+- Nuxt est verrouillé sur `4.4.2` pour éviter le retour de l'erreur de développement `No entry found in rollupOptions.input` observée lors d'une montée de version Nuxt/Vite.
 - Après chaque changement de version Nuxt, nettoyage complet Windows recommandé : `.nuxt`, `.output`, `node_modules`, caches Vite et `bun.lock`.
 
 ## Fichiers importants

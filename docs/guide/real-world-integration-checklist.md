@@ -9,7 +9,7 @@ editLink: false
 - [ ] `@pinia/nuxt` installé
 - [ ] `nuxt-quasar-ui` installé si UI Quasar
 - [ ] `@unocss/nuxt` installé si UnoCSS
-- [ ] `database.mongo.url` configuré
+- [ ] `database.mongo.url` configuré, ou `database.connections` avec une connexion par défaut explicite
 - [ ] `auth.authStrategies` configuré
 - [ ] `entityClass: 'User'` aligné avec `users.schema.ts`
 - [ ] `servicesDirs` configuré si nécessaire

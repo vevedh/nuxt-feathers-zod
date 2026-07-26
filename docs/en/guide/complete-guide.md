@@ -35,4 +35,4 @@ Use the [reference](/en/reference/) for module options, services, client APIs, c
 
 Package maintenance procedures, patch journals, and roadmap decisions are intentionally absent from this public site.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

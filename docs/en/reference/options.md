@@ -43,6 +43,32 @@ console: {
 
 New applications should disable the Nitro facades and use `useBuilderClient()` or `client.service('nfz/...')`.
 
+
+## `server`
+
+```ts
+server: {
+  enabled: true,
+  secureDefaults: true,
+  allowMissingDatabaseServices: false,
+  duplicateServicePolicy: 'error',
+  bootstrapDiagnostics: false,
+  loadOrder: ['modules:pre', 'plugins', 'services', 'modules:post'],
+}
+```
+
+| Option | Default | Description |
+|---|---:|---|
+| `enabled` | `true` | Enables the embedded Feathers runtime |
+| `secureDefaults` | `true` | Enables the secure middleware baseline |
+| `allowMissingDatabaseServices` | `false` | Allows an unavailable persistent service to be skipped only when it is deliberately optional |
+| `duplicateServicePolicy` | `error` | Rejects duplicate Feathers paths and reports both registrar sources. `skip` explicitly keeps the first registration. |
+| `bootstrapDiagnostics` | `false` | Enables structured, non-sensitive `[NFZ bootstrap]` traces. |
+| `modules` | `[]` | Adds custom server modules |
+| `loadOrder` | standard phases | Controls pre-modules, plugins, services and post-modules order |
+
+Keep `allowMissingDatabaseServices` disabled for required production services. Skipped optional registrars are exposed through `nfz/status`.
+
 ## Main option groups
 
 - `client`: embedded or remote client, Pinia integration and remote authentication.
@@ -57,4 +83,4 @@ New applications should disable the Nitro facades and use `useBuilderClient()` o
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.6.0 -->
+<!-- release-version: 6.7.37 -->

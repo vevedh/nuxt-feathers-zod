@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { recordArtifactValidation, resolveReleaseArtifact } from './lib/release-artifact.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -63,10 +64,6 @@ export function selectSmokePackageManager({
     return forced
   }
 
-  // Bun 1.3.x may fail while moving freshly extracted packages into its
-  // shared cache on Windows (NtSetInformationFile/EPERM). The smoke test
-  // validates the published npm tarball, so npm is the deterministic default
-  // consumer installer on Windows. Set NFZ_SMOKE_PM=bun to test Bun explicitly.
   if (platform === 'win32' && npmAvailable)
     return 'npm'
 
@@ -122,19 +119,6 @@ function install(pm, cwd, workDir) {
   run('npm', ['install', '--no-fund', '--no-audit'], cwd)
 }
 
-function detectPackTool(pm) {
-  if (process.env.NFZ_SMOKE_PACK_PM)
-    return process.env.NFZ_SMOKE_PACK_PM
-
-  // npm pack is currently the most reliable cross-platform choice,
-  // especially on Windows where `bun pm pack` can hang or provide
-  // inconsistent stdout for destination-based packing.
-  if (hasCommand('npm', ['--version']))
-    return 'npm'
-
-  return pm
-}
-
 function execPackageBin(pm, cwd, args) {
   if (pm === 'bun')
     return run('bunx', args, cwd)
@@ -143,36 +127,18 @@ function execPackageBin(pm, cwd, args) {
 
 async function main() {
   const pm = detectPackageManager()
+  const artifact = resolveReleaseArtifact(rootDir)
+  const tarballPath = artifact.tarballPath
   const workDir = await mkdtemp(join(tmpdir(), 'nfz-tarball-smoke-'))
   const consumerDir = join(workDir, 'consumer')
   const fixtureDir = join(rootDir, 'test', 'fixtures', 'tarball-consumer-template')
 
-  if (!existsSync(join(rootDir, 'dist', 'module.mjs')))
-    throw new Error('[nuxt-feathers-zod] dist/module.mjs not found. Run `bun run build` first.')
-
-  if (!existsSync(join(rootDir, 'dist', 'cli', 'index.mjs')))
-    throw new Error('[nuxt-feathers-zod] dist/cli/index.mjs not found. Run `bun run cli:build` first.')
-
   console.log(`[nuxt-feathers-zod] Smoke workspace: ${workDir}`)
+  console.log(`[nuxt-feathers-zod] Exact candidate: ${tarballPath}`)
+  console.log(`[nuxt-feathers-zod] Candidate SHA-256: ${artifact.sha256}`)
   console.log(`[nuxt-feathers-zod] Using package manager: ${pm}`)
   if (process.platform === 'win32' && pm === 'npm' && !process.env.NFZ_SMOKE_PM)
     console.log('[nuxt-feathers-zod] Windows consumer install uses npm by default to avoid Bun shared-cache EPERM failures. Set NFZ_SMOKE_PM=bun to force the isolated-cache Bun path.')
-
-  const packPm = detectPackTool(pm)
-  console.log(`[nuxt-feathers-zod] Using pack tool: ${packPm}`)
-
-  const packOutput = packPm === 'bun'
-    ? run('bun', ['pm', 'pack', '--destination', workDir], rootDir)
-    : run('npm', ['pack', '--pack-destination', workDir], rootDir)
-  const tarballCandidates = packOutput.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
-  const tarballName = tarballCandidates.reverse().find(line => /\.tgz$/.test(line))
-  if (!tarballName)
-    throw new Error('[nuxt-feathers-zod] Unable to determine generated tarball name from pack command output.')
-
-  const tarballPath = join(workDir, tarballName)
-  if (!existsSync(tarballPath))
-    throw new Error(`[nuxt-feathers-zod] Packed tarball not found at ${tarballPath}`)
-  console.log(`[nuxt-feathers-zod] Packed tarball: ${tarballPath}`)
 
   await cp(fixtureDir, consumerDir, { recursive: true })
   console.log(`[nuxt-feathers-zod] Consumer fixture copied to: ${consumerDir}`)
@@ -227,17 +193,15 @@ const resolved = {
 
 for (const key of targets) {
   const entry = exportsMap[key]
-  if (!entry) {
+  if (!entry)
     throw new Error('Missing export entry: ' + key)
-  }
 
   const importTarget = typeof entry === 'string'
     ? entry
     : entry.import || entry.default || entry.require || entry.types
 
-  if (!importTarget) {
+  if (!importTarget)
     throw new Error('Missing import/default target for export: ' + key)
-  }
 
   const abs = resolve(pkgRoot, importTarget)
   await access(abs, constants.F_OK)
@@ -248,16 +212,43 @@ console.log(JSON.stringify(resolved, null, 2))
 `, 'utf8')
 
   run('node', [verifyFile], consumerDir)
-  run('node', [join(consumerDir, 'node_modules', 'nuxt-feathers-zod', 'bin', 'nfz'), '--help'], consumerDir)
+  const installedCli = join(consumerDir, 'node_modules', 'nuxt-feathers-zod', 'bin', 'nfz')
+  run('node', [installedCli, '--help'], consumerDir)
+
+  const starterTarget = 'generated-starter'
+  run('node', [
+    installedCli,
+    'init',
+    'starter',
+    '--preset',
+    'quasar-unocss-pinia-auth',
+    '--dir',
+    starterTarget,
+  ], consumerDir)
+  for (const requiredStarterFile of [
+    'package.json',
+    'nuxt.config.ts',
+    '.env.example',
+    'app/app.vue',
+  ]) {
+    const generatedPath = join(consumerDir, starterTarget, requiredStarterFile)
+    if (!existsSync(generatedPath))
+      throw new Error(`[nuxt-feathers-zod] Installed CLI did not generate starter file: ${generatedPath}`)
+  }
 
   if (fullBuild)
     execPackageBin(pm, consumerDir, ['nuxi', 'build'])
 
   const installedPkg = JSON.parse(await readFile(join(consumerDir, 'node_modules', 'nuxt-feathers-zod', 'package.json'), 'utf8'))
-  if (installedPkg.version !== JSON.parse(await readFile(join(rootDir, 'package.json'), 'utf8')).version)
-    throw new Error('[nuxt-feathers-zod] Installed tarball version does not match workspace package version.')
+  if (installedPkg.version !== artifact.packageJson.version)
+    throw new Error('[nuxt-feathers-zod] Installed tarball version does not match the candidate version.')
 
-  console.log(`[nuxt-feathers-zod] Tarball smoke succeeded (${pm}) in ${consumerDir}`)
+  recordArtifactValidation(rootDir, 'consumer', artifact, {
+    packageManager: pm,
+    fullBuild,
+    generatedStarter: true,
+  })
+  console.log(`[nuxt-feathers-zod] Exact candidate smoke succeeded (${pm}) in ${consumerDir}`)
   if (keepTemp)
     console.log(`[nuxt-feathers-zod] Temporary workspace preserved: ${workDir}`)
   else

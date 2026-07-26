@@ -12,6 +12,7 @@ Cette page documente les limites assumées du socle open source actuel.
 - les **presets métier avancés** ne sont pas encore contractualisés
 - la **discovery distante enrichie** n’est pas un flux standard figé
 - la couche `database.mongo.management` est **optionnelle** et ne remplace pas la conception métier des services applicatifs
+- le registre 6.7.0 ne crée ni migrations Knex ni transactions distribuées entre connexions
 
 ## Limites de méthode
 

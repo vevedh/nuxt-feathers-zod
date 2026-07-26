@@ -3,64 +3,52 @@ editLink: false
 ---
 # Doctor
 
-Cette page remplace l’ancien contenu de maintien de navigation par une explication opérationnelle de la commande `doctor` de diagnostic projet. Elle est destinée aux développeurs qui veulent comprendre l’option, l’activer dans `nuxt.config.ts` et vérifier son comportement dans un projet Nuxt 4.
-
-## Objectif
-
-Cette option ou fonctionnalité permet de garder une architecture cohérente entre le module Nuxt, le runtime Feathers, les services générés, le client TypeScript et le CLI. L’exemple ci-dessous donne une base directement réutilisable.
-
-## Quand utiliser cette option ?
-
-Utilise cette page lorsque tu veux :
-
-- configurer précisément la commande `doctor` de diagnostic projet ;
-- documenter le choix dans un starter ou une application ;
-- tester rapidement le comportement avec une commande CLI ;
-- éviter les divergences entre configuration, fichiers générés et runtime.
-
-## Exemple de configuration
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['nuxt-feathers-zod'],
-
-  feathers: {
-    servicesDirs: ['services'],
-  }
-})
-```
-
-## Exemple CLI
+La commande `doctor` vérifie la cohérence entre la configuration Nuxt, la découverte embedded, les phases de bootstrap et la frontière Zod.
 
 ```bash
 bunx nuxt-feathers-zod doctor
 ```
 
-## Exemple d’utilisation
+## Diagnostic embedded
 
-```ts
-const service = useService('messages')
+Pour chaque projet, le doctor affiche notamment :
 
-const result = await service.find({
-  query: {
-    $limit: 10,
-    $sort: { createdAt: -1 },
-  },
-})
+```text
+services discovered: 8
+service traefik-routes: services/traefik-routes/traefik-routes.ts
+plugins discovered: 0
+server.loadOrder: modules:pre -> plugins -> services -> modules:post
 ```
 
-## Points de vigilance
+Il échoue lorsque :
 
-- Les chemins exposés (`/feathers`, `/feathers/nfz/*`, `/socket.io`, `/mongo`) et les éventuelles façades `/api/nfz/*` doivent être documentés dans le projet applicatif.
-- Les options qui exposent une surface d’administration doivent être protégées avant un déploiement hors local.
-- Les services générés par le CLI restent préférables aux services écrits manuellement pour conserver le manifest, les types et les hooks.
+- `servicesDirs` découvre des services mais `loadOrder` ne contient pas `services` ;
+- un plugin importe manuellement un registrar déjà découvert ;
+- l'application déclare ou résout Zod 4 ;
+- les schémas applicatifs et les validateurs NFZ utilisent deux runtimes Zod actifs différents.
 
-## Bonnes pratiques
+## Diagnostic Zod
 
-- Lance `bunx nuxt-feathers-zod doctor` après la modification.
-- Utilise `--dry` avant les commandes qui écrivent dans le projet.
-- Versionne les fichiers générés importants et documente toute option non standard.
-- Teste un appel REST minimal avant de diagnostiquer le frontend.
+La sortie expose sans secret :
 
-<!-- release-version: 6.6.0 -->
+```text
+zod declared range: 3.25.76
+zod installed copies: 1
+zod application runtime: 3.25.76 (.../zod/package.json)
+zod NFZ validator runtime: 3.25.76 (.../zod/package.json)
+zod compatibility: compatible
+```
+
+Une copie Zod transitive n'est pas automatiquement bloquante. Le doctor contrôle les runtimes réellement résolus par l'application et NFZ.
+
+## Après une modification structurelle
+
+```bash
+bunx nuxt-feathers-zod doctor
+bun run typecheck
+bun run build
+```
+
+Conserve `servicesDirs` comme source métier unique et le `loadOrder` standard. Les plugins restent réservés à l'infrastructure transversale.
+
+<!-- release-version: 6.7.37 -->

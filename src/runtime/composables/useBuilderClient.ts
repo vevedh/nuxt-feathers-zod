@@ -26,11 +26,13 @@ export function useBuilderClient() {
     preview: <T = any>(payload: any) => service(paths.builder).create({ action: 'preview', ...payload }) as Promise<T>,
     apply: <T = any>(payload: any) => service(paths.builder).create({ action: 'apply', ...payload }) as Promise<T>,
     getStatus: <T = any>() => service(paths.status).find() as Promise<T>,
+    getDatabaseConnections: <T = any>() => service(paths.databaseConnections).find() as Promise<T>,
+    checkDatabaseConnection: <T = any>(name: string) => service(paths.databaseConnections).get(name) as Promise<T>,
     getRbac: <T = any>() => service(paths.rbac).get('current') as Promise<T>,
     saveRbac: <T = any>(payload: any) => service(paths.rbac).patch('current', payload) as Promise<T>,
     getPresets: <T = any>() => service(paths.presets).find() as Promise<T>,
     previewPreset: <T = any>(preset: string, params: Record<string, any> = {}) => service(paths.presets).create({ action: 'preview', preset, params }) as Promise<T>,
     applyPreset: <T = any>(preset: string, params: Record<string, any> = {}) => service(paths.presets).create({ action: 'apply', preset, params }) as Promise<T>,
-    initializeUsers: <T = any>(adapter: 'mongodb' | 'memory' = 'mongodb') => service(paths.init).create({ action: 'add-users', adapter }) as Promise<T>,
+    initializeUsers: <T = any>(adapter: 'mongodb' | 'memory' | 'knex' = 'mongodb') => service(paths.init).create({ action: 'add-users', adapter }) as Promise<T>,
   }
 }
