@@ -89,7 +89,7 @@ requireText(
 )
 requireText(
   releaseEnvironmentExample,
-  'MONGODB_URL=mongodb://127.0.0.1:27017/nfz_release',
+  'MONGODB_URL=mongodb://user:secret@127.0.0.1:27017/nfz_release?authSource=admin',
   'release environment MongoDB example',
 )
 

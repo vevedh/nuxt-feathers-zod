@@ -22,13 +22,14 @@ requireText(strategy, "typeof candidate.toHexString === 'function'", 'BSON Objec
 requireText(strategy, 'toHexString(): string', 'lint-safe BSON ObjectId method signature')
 requireText(strategy, "const objectIdPattern = /^[0-9a-f]{24}$/i", 'strict MongoDB ObjectId shape')
 requireText(strategy, 'if (!params.provider)', 'upstream internal local-authentication fast path')
-requireText(strategy, 'const normalizedId = normalizeNfzLocalEntityId(currentId)', 'local entity ID normalization')
+requireText(strategy, 'const normalizedId = normalizeNfzAuthenticationEntityId(currentId)', 'provider-neutral local entity ID normalization')
 requireText(strategy, 'return super.getEntity({', 'upstream local strategy delegation')
 requireText(test, 'normalizes a BSON ObjectId from another driver copy', 'cross-driver ObjectId regression test')
 requireText(test, 're-reads an externally authenticated entity with the normalized string ID', 'external entity re-read regression test')
 requireText(test, 'does not change the internal local-strategy result path', 'internal authentication behavior regression test')
-requireText(test, "describe('nfz local authentication MongoDB entity IDs'", 'lowercase local authentication test title')
-requireText(authIndex, 'NfzLocalStrategy, normalizeNfzLocalEntityId', 'public authentication runtime export')
+requireText(test, 'preserves portable primitive IDs for downstream validation', 'portable primitive identifier preservation regression')
+requireText(test, "describe('nfz local authentication portable entity IDs'", 'portable local authentication test title')
+requireText(authIndex, 'NfzLocalStrategy, normalizeNfzAuthenticationEntityId, normalizeNfzLocalEntityId', 'public authentication runtime exports')
 requireText(windowsVerifier, "Invoke-BunCommand @('run', 'sanity:auth-mongodb-id')", 'early Windows MongoDB auth boundary guard')
 
 if (registry.includes("new LocalStrategy()"))
@@ -43,7 +44,7 @@ if (test.includes(' as Params'))
   problems.push('local authentication tests must not restore unnecessary Params assertions')
 
 const internalFastPathIndex = strategy.indexOf('if (!params.provider)')
-const normalizationIndex = strategy.indexOf('const normalizedId = normalizeNfzLocalEntityId(currentId)')
+const normalizationIndex = strategy.indexOf('const normalizedId = normalizeNfzAuthenticationEntityId(currentId)')
 if (internalFastPathIndex < 0 || normalizationIndex < 0 || internalFastPathIndex > normalizationIndex)
   problems.push('local authentication must preserve the exact upstream internal result before ObjectId normalization')
 if (!test.includes('resolves.toBe(result)'))
@@ -56,4 +57,4 @@ if (problems.length) {
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Local authentication normalizes cross-driver BSON ObjectIds without weakening adapter ID validation.')
+console.log('[nuxt-feathers-zod] Authentication entity IDs preserve portable primitives and normalize cross-driver BSON ObjectIds without weakening adapter validation.')

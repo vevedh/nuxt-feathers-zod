@@ -28,6 +28,10 @@ const starterReleaseInstallGuard = readFileSync(resolve(rootDir, 'scripts/check-
 const tarballSmoke = readFileSync(resolve(rootDir, 'scripts/smoke-tarball-install.mjs'), 'utf8')
 const publicationPipeline = readFileSync(resolve(rootDir, 'scripts/check-publication-pipeline.mjs'), 'utf8')
 const publicDocCommandTest = readFileSync(resolve(rootDir, 'test/public-doc-commands.spec.ts'), 'utf8')
+const embeddedAuthE2e = readFileSync(resolve(rootDir, 'test/e2e/embedded-auth.spec.ts'), 'utf8')
+const embeddedBasicE2e = readFileSync(resolve(rootDir, 'test/e2e/embedded-basic.spec.ts'), 'utf8')
+const embeddedAuthFixtureConfig = readFileSync(resolve(rootDir, 'test/fixtures/embedded-auth/nuxt.config.ts'), 'utf8')
+const embeddedBasicFixtureConfig = readFileSync(resolve(rootDir, 'test/fixtures/embedded-basic/nuxt.config.ts'), 'utf8')
 const ciWorkflow = readFileSync(resolve(rootDir, '.github/workflows/ci.yml'), 'utf8')
 
 const failures = []
@@ -236,6 +240,32 @@ if (publicDocCommandTest.includes("resolve(root, 'src/cli/bin.ts')"))
 if (!publicDocCommandTest.includes("execFileSync(process.execPath, [resolve(root, 'bin/nuxt-feathers-zod')"))
   failures.push('public documentation help commands must execute the packaged CLI bin through process.execPath')
 
+for (const [name, source] of [
+  ['embedded-auth', embeddedAuthE2e],
+  ['embedded-basic', embeddedBasicE2e],
+]) {
+  if (!source.includes("process.platform === 'win32' ? 420_000 : 120_000"))
+    failures.push(`${name} E2E must use the bounded 420s Windows setup timeout instead of @nuxt/test-utils defaults`)
+  if (!source.includes("process.platform === 'win32' ? 180_000 : 60_000"))
+    failures.push(`${name} E2E must use the bounded 180s Windows server-start timeout`)
+  if (!source.includes('setupTimeout: e2eSetupTimeout') || !source.includes('serverStartTimeout: e2eServerStartTimeout'))
+    failures.push(`${name} E2E must pass explicit setup/server-start timeouts to Nuxt test-utils`)
+}
+
+
+for (const [name, source] of [
+  ['embedded-auth', embeddedAuthFixtureConfig],
+  ['embedded-basic', embeddedBasicFixtureConfig],
+]) {
+  if (!source.includes("../../../dist/module.mjs"))
+    failures.push(`${name} E2E fixture must load the already-built dist/module.mjs artifact`)
+  if (source.includes("../../../src/module.ts"))
+    failures.push(`${name} E2E fixture must not compile src/module.ts inside @nuxt/test-utils setup`)
+}
+
+if (!playwrightRuntime.includes("resolve(rootDir, 'dist/module.mjs')"))
+  failures.push('E2E runtime preparation must guarantee dist/module.mjs before fixture startup')
+
 if (scripts['test:playwright'] !== 'node scripts/run-playwright-tests.mjs')
   failures.push('test:playwright must use the cross-platform Playwright runner')
 
@@ -314,6 +344,10 @@ if (!starterRelease.includes('provisionStarterReleaseMongo()') || !starterReleas
   failures.push('starter release validation must provision and stop its MongoDB runtime autonomously')
 if (!starterReleaseMongo.includes("await import('mongodb-memory-server')") || !starterReleaseMongo.includes("new Set(['auto', 'external', 'memory'])"))
   failures.push('starter release MongoDB provisioning must support isolated fallback and explicit modes')
+if (!starterReleaseMongo.includes('MONGODB_URL is ignored in auto mode') || starterReleaseMongo.includes("resolvedMode === 'auto' && normalizedUrl"))
+  failures.push('starter release MongoDB auto mode must remain isolated from ambient MONGODB_URL values')
+if (!starterReleaseMongo.includes('await collection.createIndex({ nfzProbe: 1 })'))
+  failures.push('explicit external starter MongoDB validation must verify write/index permissions before the candidate lifecycle')
 if (!tarballSmoke.includes('resolveReleaseArtifact(rootDir)') || !tarballSmoke.includes("recordArtifactValidation(rootDir, 'consumer'"))
   failures.push('tarball smoke must consume and stamp the exact existing candidate')
 
@@ -386,17 +420,20 @@ for (const command of ['clean:repo', 'lint', 'typecheck', 'test', 'build']) {
     failures.push(`verify-windows.ps1 is missing the ${command} step`)
 }
 
-for (const command of ['docs:build', 'docs:private:build', 'test:playwright', 'release:candidate', 'test:starter:release', 'smoke:tarball', 'release:finalize']) {
+for (const command of ['docs:build', 'docs:private:build', 'test:playwright', 'release:candidate', 'test:postgresql:release', 'test:starter:release', 'smoke:tarball', 'release:finalize']) {
   if (!verifyWindows.includes(`'${command}'`))
     failures.push(`verify-windows.ps1 full mode is missing the ${command} step`)
 }
 
 const candidateIndex = verifyWindows.indexOf("'release:candidate'")
+const postgresqlIndex = verifyWindows.indexOf("'test:postgresql:release'")
 const starterIndex = verifyWindows.indexOf("'test:starter:release'")
 const smokeIndex = verifyWindows.indexOf("'smoke:tarball'")
 const finalizerIndex = verifyWindows.indexOf("'release:finalize'")
-if (!(candidateIndex >= 0 && starterIndex > candidateIndex && smokeIndex > starterIndex && finalizerIndex > smokeIndex))
-  failures.push('verify-windows.ps1 must create one candidate, validate it in the starter and consumer, then finalize it')
+if (!(candidateIndex >= 0 && postgresqlIndex > candidateIndex && starterIndex > postgresqlIndex
+  && smokeIndex > starterIndex && finalizerIndex > smokeIndex)) {
+  failures.push('verify-windows.ps1 must validate PostgreSQL, starter and consumer against one candidate before finalization')
+}
 if (verifyWindows.slice(finalizerIndex + 1).includes('Invoke-BunCommand'))
   failures.push('verify-windows.ps1 must not execute another Bun command after release finalization')
 

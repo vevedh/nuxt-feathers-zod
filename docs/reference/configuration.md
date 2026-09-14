@@ -166,6 +166,8 @@ feathers: {
 
 Types pris en charge : `mongodb`, `postgresql`, `mysql`, `mariadb` et `sqlite`.
 
+À partir de 6.7.41, chaque connexion résolue expose aussi des métadonnées non sensibles : `provider`, `databaseFamily`, `adapter`, `certification` et `capabilities`. Le mapping standard est fail-closed : MongoDB utilise le provider `mongodb`, tandis que PostgreSQL/MySQL/MariaDB/SQLite utilisent le provider `knex`. MongoDB et PostgreSQL sont certifiés ; MySQL, MariaDB et SQLite restent implémentés mais ne deviennent certifiés qu'après leurs gates réelles dédiées.
+
 Options communes à chaque connexion :
 
 | Option | Défaut | Rôle |
@@ -290,4 +292,4 @@ Le module sépare :
 
 Ne dupliquez jamais une URL MongoDB avec identifiants ou un secret Keycloak dans `runtimeConfig.public`.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

@@ -6,27 +6,55 @@ Un service est l’unité fonctionnelle principale de `nuxt-feathers-zod`. La CL
 
 ```bash
 bunx nuxt-feathers-zod add service articles \
-  --adapter mongodb \
+  --database mongodb \
+  --connection primary \
   --collection articles \
   --schema zod
 ```
 
-Adapters pris en charge par la CLI :
+Depuis 6.7.43, la forme recommandée est **moteur + connexion nommée** : `--database` sélectionne le moteur (`mongodb`, `postgresql`, `mysql`, `mariadb`, `sqlite`) et la CLI choisit l'adapter compatible (`mongodb` ou `knex`). `--connection` lie ensuite le service au registre NFZ.
 
-- `memory` ;
-- `mongodb` ;
-- `knex` pour PostgreSQL, MySQL, MariaDB et SQLite.
+Les anciens sélecteurs `--adapter mongodb|knex` restent compatibles. `--adapter memory` reste la forme adaptée aux services en mémoire. Si `--database` et `--adapter` sont fournis ensemble, NFZ refuse les combinaisons incohérentes.
 
-Un service persistant peut sélectionner une connexion nommée avec `--connection`. Pour Knex, utilisez aussi `--table` et, si nécessaire, `--schemaName`.
+Pour SQL, utilisez `--table` et, si nécessaire, `--schemaName` :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.37 add service audit-events \
-  --adapter knex \
+bunx nuxt-feathers-zod@6.7.45 add service audit-events \
+  --database postgresql \
   --connection reporting \
   --table audit_events \
   --schemaName reporting \
   --schema zod
 ```
+
+Le manifeste `.nfz/services/<service>.json` conserve `connectionName`, `databaseType`, `databaseProvider` et `databaseFamily`. `schema <service> --show` expose ces métadonnées, et `doctor` compare le binding généré à la connexion nommée trouvée dans `nuxt.config.ts` lorsqu'elle peut être résolue statiquement.
+
+### Choisir une stratégie d'identifiant
+
+Depuis 6.7.44, `--idStrategy` rend le contrat d'identifiant explicite sans déduire silencieusement la sémantique depuis le moteur :
+
+| Adapter | Défaut | Stratégies disponibles |
+| --- | --- | --- |
+| MongoDB | `objectid` | `objectid`, `uuid`, `string` |
+| Knex / SQL | `integer` | `integer`, `bigint`, `uuid`, `string` |
+| Memory | `integer` | `integer`, `uuid`, `string` |
+
+Exemple PostgreSQL avec UUID :
+
+```bash
+bunx nuxt-feathers-zod@6.7.45 add service api-keys \
+  --database postgresql \
+  --connection reporting \
+  --table api_keys \
+  --schema zod \
+  --idStrategy uuid
+```
+
+Le manifeste enregistre alors `idStrategy: "uuid"`, et la classe générée passe explicitement `id: "id"` à l'adapter Feathers. Les stratégies `uuid` et `string` sont considérées comme des identifiants fournis à la création ; `objectid`, `integer` et `bigint` sont omis du schéma de création par défaut afin de laisser l'adapter ou la base les produire.
+
+`bigint` est représenté dans le contrat API par une **chaîne décimale** (`"9223372036854775807"`), et non par un `bigint` JavaScript. Cette convention évite les pertes ou échecs de sérialisation JSON ; le comportement réel des drivers SQL sera certifié moteur par moteur dans les patchs suivants.
+
+Les requêtes Zod préservent cette distinction : les valeurs de query string sont converties en nombres uniquement pour les champs numériques, tandis que UUID, chaînes et bigint décimal restent des chaînes. Les valeurs `$sort` textuelles `"1"` et `"-1"` sont normalisées vers les ordres Feathers `1` et `-1`.
 
 Modes de schéma :
 
@@ -100,4 +128,4 @@ Aucune boucle HTTP vers la même application n’est nécessaire.
 - N’acceptez jamais un nom de service ou de champ non validé depuis une entrée utilisateur.
 - Exécutez `doctor` et `schema <service> --validate` avant une release.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

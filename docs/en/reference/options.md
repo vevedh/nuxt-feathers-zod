@@ -83,4 +83,4 @@ Keep `allowMissingDatabaseServices` disabled for required production services. S
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

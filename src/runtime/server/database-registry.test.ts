@@ -7,6 +7,7 @@ import {
   getNfzDatabaseDiagnostics,
   getNfzKnexClient,
   getNfzMongoDatabase,
+  withNfzSqlTransaction,
 } from './database-registry'
 
 function createApp() {
@@ -71,10 +72,71 @@ describe('database registry', () => {
     expect(diagnostics).toHaveLength(2)
     expect(JSON.stringify(diagnostics)).not.toContain('secret')
     expect(diagnostics.map(item => item.state)).toEqual(['ready', 'ready'])
+    expect(diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'primary', provider: 'mongodb', databaseFamily: 'document', certification: 'certified' }),
+      expect.objectContaining({
+        name: 'reporting',
+        provider: 'knex',
+        databaseFamily: 'sql',
+        certification: 'certified',
+        defaultClient: 'pg',
+        driverPackage: 'pg',
+        customClient: false,
+      }),
+    ]))
 
     await checkNfzDatabaseConnection(app, 'reporting')
     await (app.get('databaseRegistry') as any).closeAll()
     expect(closeOrder).toEqual(['reporting', 'primary'])
+  })
+
+  it('runs a transaction on one ready SQL connection and rejects non-SQL targets', async () => {
+    const transaction = vi.fn(async (handler: (trx: { marker: string }) => Promise<string>) => {
+      return handler({ marker: 'transaction' })
+    })
+    const config = resolveDataBaseOptions({
+      default: 'reporting',
+      connections: {
+        reporting: {
+          type: 'postgresql',
+          connection: 'postgresql://localhost/reporting',
+        },
+        documents: {
+          type: 'mongodb',
+          url: 'mongodb://localhost/documents',
+          management: { enabled: false },
+        },
+      },
+    })
+    const app = createApp()
+
+    await createDatabaseInfrastructure({
+      connectKnex: async () => ({
+        client: { transaction },
+        close: async () => {},
+        healthCheck: async () => {},
+      }),
+      connectMongo: async () => ({
+        client: {},
+        database: { command: vi.fn() } as any,
+        databaseName: 'documents',
+        close: async () => {},
+        healthCheck: async () => {},
+      }),
+    })(app, config)
+
+    await expect(withNfzSqlTransaction<string, { marker: string }>(
+      app,
+      async trx => trx.marker,
+      { connection: 'reporting' },
+    )).resolves.toBe('transaction')
+    expect(transaction).toHaveBeenCalledOnce()
+
+    await expect(withNfzSqlTransaction(
+      app,
+      async () => 'never',
+      { connection: 'documents' },
+    )).rejects.toThrow(/does not support the NFZ SQL transaction helper/)
   })
 
   it('keeps an optional failed connection visible without blocking startup', async () => {
@@ -91,7 +153,7 @@ describe('database registry', () => {
 
     await createDatabaseInfrastructure({
       connectKnex: async () => {
-        throw new Error('postgresql://user:secret@localhost/missing password=secret')
+        throw new Error('sqlserver://user:secret@localhost/missing password=secret token=top-secret')
       },
     })(app, config)
 
@@ -102,6 +164,8 @@ describe('database registry', () => {
       required: false,
       error: { message: expect.not.stringContaining('secret') },
     })
+    expect(JSON.stringify(getNfzDatabaseDiagnostics(app))).not.toContain('sqlserver://')
+    expect(JSON.stringify(getNfzDatabaseDiagnostics(app))).not.toContain('top-secret')
   })
 
   it('rolls back opened connections when a required connection fails', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { NfzLocalStrategy, normalizeNfzLocalEntityId } from './local'
+import { NfzLocalStrategy, normalizeNfzAuthenticationEntityId, normalizeNfzLocalEntityId } from './local'
 
 const objectId = '6a652673e2a21bbb2f337242'
 
@@ -12,16 +12,20 @@ function foreignObjectId(hex = objectId) {
   }
 }
 
-describe('nfz local authentication MongoDB entity IDs', () => {
+describe('nfz local authentication portable entity IDs', () => {
   it('normalizes a BSON ObjectId from another driver copy', () => {
     expect(normalizeNfzLocalEntityId(foreignObjectId())).toBe(objectId)
   })
 
-  it('preserves primitive and unrelated object IDs for downstream validation', () => {
+  it('preserves portable primitive IDs for downstream validation', () => {
     const unrelated = { toHexString: () => objectId }
+    const uuid = '550e8400-e29b-41d4-a716-446655440000'
+    const bigintId = '9223372036854775807'
 
+    expect(normalizeNfzAuthenticationEntityId(uuid)).toBe(uuid)
+    expect(normalizeNfzAuthenticationEntityId(42)).toBe(42)
+    expect(normalizeNfzAuthenticationEntityId(bigintId)).toBe(bigintId)
     expect(normalizeNfzLocalEntityId('user-1')).toBe('user-1')
-    expect(normalizeNfzLocalEntityId(42)).toBe(42)
     expect(normalizeNfzLocalEntityId(unrelated)).toBe(unrelated)
   })
 

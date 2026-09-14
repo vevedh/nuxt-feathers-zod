@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -16,6 +17,66 @@ import { recordArtifactValidation, resolveReleaseArtifact } from './lib/release-
 const root = resolve(import.meta.dirname, '..')
 const starterSource = resolve(root, 'examples/nfz-quasar-unocss-pinia-starter')
 const bun = requireBunExecutable()
+
+const FEATHERS_VERSION = '5.0.49'
+const FEATHERS_RUNTIME_PACKAGES = [
+  '@feathersjs/adapter-commons',
+  '@feathersjs/authentication',
+  '@feathersjs/authentication-local',
+  '@feathersjs/commons',
+  '@feathersjs/errors',
+  '@feathersjs/feathers',
+  '@feathersjs/mongodb',
+  '@feathersjs/schema',
+  '@feathersjs/transport-commons',
+]
+
+function packageJsonPath(nodeModulesRoot, packageName) {
+  return join(nodeModulesRoot, ...packageName.split('/'), 'package.json')
+}
+
+function assertFreshStarterFeathersConvergence(starterDir) {
+  const rootNodeModules = join(starterDir, 'node_modules')
+  const nestedNodeModules = join(rootNodeModules, 'nuxt-feathers-zod', 'node_modules')
+  const installed = []
+
+  for (const packageName of FEATHERS_RUNTIME_PACKAGES) {
+    const rootPackagePath = packageJsonPath(rootNodeModules, packageName)
+    if (!existsSync(rootPackagePath))
+      continue
+
+    const metadata = JSON.parse(readFileSync(rootPackagePath, 'utf8'))
+    installed.push(`${packageName}@${metadata.version}`)
+    if (metadata.version !== FEATHERS_VERSION) {
+      throw new Error(
+        `[starter-release] Fresh starter resolved ${packageName}@${metadata.version}; expected the certified Feathers train ${FEATHERS_VERSION}.`,
+      )
+    }
+
+    const nestedPackagePath = packageJsonPath(nestedNodeModules, packageName)
+    if (existsSync(nestedPackagePath)) {
+      const nestedMetadata = JSON.parse(readFileSync(nestedPackagePath, 'utf8'))
+      throw new Error(
+        `[starter-release] Duplicate Feathers type runtime detected for ${packageName}: root=${metadata.version} nested=${nestedMetadata.version}. `
+        + 'The packaged starter must dedupe NFZ and application Feathers packages to one physical train.',
+      )
+    }
+  }
+
+  const lockPath = join(starterDir, 'bun.lock')
+  if (existsSync(lockPath)) {
+    const starterLock = readFileSync(lockPath, 'utf8')
+    const mixed = [...starterLock.matchAll(/"@feathersjs\/[a-z0-9-]+@5\.0\.(?!49\b)\d+"/giu)]
+      .map(match => match[0])
+    if (mixed.length > 0) {
+      throw new Error(
+        `[starter-release] Fresh starter lock contains mixed Feathers v5 records: ${[...new Set(mixed)].join(', ')}`,
+      )
+    }
+  }
+
+  console.log(`[starter-release] Fresh starter Feathers runtime converged on ${FEATHERS_VERSION}: ${installed.join(', ')}`)
+}
 
 async function main() {
   const rootPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
@@ -57,6 +118,8 @@ async function main() {
       `[starter-release] dependency installation modes: initial=${installResult.initial.mode} `
       + `frozen=${installResult.frozen.mode}`,
     )
+
+    assertFreshStarterFeathersConvergence(starter)
 
     for (const script of ['prepare', 'typecheck', 'build', 'runtime:doctor', 'e2e:ci'])
       execFileSync(bun, ['run', script], { cwd: starter, env, stdio: 'inherit' })

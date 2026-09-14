@@ -4,12 +4,18 @@ import { resolve } from 'node:path'
 
 const root = resolve(process.cwd())
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
+const connections = readFileSync(resolve(root, 'src/runtime/options/database/connections.ts'), 'utf8')
 const options = readFileSync(resolve(root, 'src/runtime/options/database/index.ts'), 'utf8')
 const registry = readFileSync(resolve(root, 'src/runtime/server/database-registry.ts'), 'utf8')
+const sqlProvider = readFileSync(resolve(root, 'src/runtime/server/sql-provider.ts'), 'utf8')
 const cli = readFileSync(resolve(root, 'src/cli/core.ts'), 'utf8')
 const databaseTemplate = readFileSync(resolve(root, 'src/runtime/templates/server/database.ts'), 'utf8')
+const validators = readFileSync(resolve(root, 'src/runtime/templates/server/validators.ts'), 'utf8')
+const serverDts = readFileSync(resolve(root, 'src/runtime/templates/server/server-dts.ts'), 'utf8')
 const publicOptions = readFileSync(resolve(root, 'src/runtime/options/index.ts'), 'utf8')
 const builderClient = readFileSync(resolve(root, 'src/runtime/composables/useBuilderClient.ts'), 'utf8')
+const doctor = readFileSync(resolve(root, 'src/cli/commands/doctor.ts'), 'utf8')
+const windowsVerifier = readFileSync(resolve(root, 'scripts/verify-windows.ps1'), 'utf8')
 const problems = []
 
 function requireText(source, expected, label) {
@@ -17,13 +23,15 @@ function requireText(source, expected, label) {
     problems.push(`${label}: missing ${JSON.stringify(expected)}`)
 }
 
+// Existing registry/lifecycle invariants from Patch 018+.
 requireText(options, 'connections?: Record<string, NfzDatabaseConnectionOptions>', 'database options')
 requireText(options, 'database.mongo cannot be combined with database.connections.default', 'legacy compatibility')
 requireText(options, 'expose the same management basePath', 'MongoDB management path collision guard')
 requireText(registry, 'createNfzDatabaseRegistry', 'database registry')
 requireText(registry, 'registerMongoManagementServices', 'MongoDB management')
-requireText(registry, 'createRequire(import.meta.url)', 'Knex lazy loading')
-requireText(registry, "const packageName = 'knex'", 'Knex optional package resolution')
+requireText(sqlProvider, 'createRequire(import.meta.url)', 'SQL package lazy loading')
+requireText(sqlProvider, "loadPackage('knex')", 'Knex optional package resolution')
+requireText(sqlProvider, 'assertNfzSqlDriverAvailable', 'SQL driver preflight')
 requireText(registry, 'sanitizeError', 'redacted diagnostics')
 requireText(registry, 'Database startup failed and one or more opened connections could not be rolled back cleanly.', 'startup rollback')
 requireText(registry, 'Database infrastructure failed and one or more connections could not be closed cleanly.', 'infrastructure cleanup')
@@ -39,6 +47,47 @@ requireText(publicOptions, "databaseConnections: 'nfz/database-connections'", 'p
 requireText(builderClient, 'getDatabaseConnections', 'builder database diagnostics helper')
 requireText(builderClient, 'checkDatabaseConnection', 'builder database health helper')
 
+// Patch 062 provider/capability contracts.
+requireText(connections, "export type NfzDatabaseProvider = 'mongodb' | 'knex'", 'provider union')
+requireText(connections, "export type NfzDatabaseFamily = 'document' | 'sql'", 'database family union')
+requireText(connections, 'databaseFamily: NfzDatabaseFamily', 'database family metadata key')
+requireText(registry, 'databaseFamily: _databaseFamily', 'Mongo metadata stripping without consuming native family option')
+requireText(connections, 'NfzDatabaseProviderDescriptor', 'provider descriptor contract')
+requireText(connections, 'NfzDatabaseCapabilities', 'capability contract')
+requireText(connections, "certification: 'certified'", 'certified MongoDB descriptor')
+requireText(connections, "certification: 'implemented'", 'implemented SQL descriptor')
+requireText(connections, 'Unsupported database connection type', 'fail-closed unsupported engine mapping')
+requireText(connections, 'getNfzDefaultDatabaseClient', 'exhaustive default driver lookup')
+requireText(connections, "defaultClient: 'pg'", 'PostgreSQL driver mapping')
+requireText(connections, "defaultClient: 'mysql2'", 'MySQL/MariaDB driver mapping')
+requireText(connections, "defaultClient: 'better-sqlite3'", 'SQLite driver mapping')
+requireText(connections, "driverPackage: 'pg'", 'PostgreSQL driver package mapping')
+requireText(connections, "driverPackage: 'mysql2'", 'MySQL/MariaDB driver package mapping')
+requireText(connections, "driverPackage: 'better-sqlite3'", 'SQLite driver package mapping')
+requireText(connections, 'poolDefaults: { min: 0, max: 10 }', 'server SQL safe pool defaults')
+requireText(connections, 'poolDefaults: { min: 0, max: 1 }', 'SQLite single-connection pool default')
+requireText(connections, 'transactions: true', 'SQL transaction capability')
+requireText(options, 'hasDatabaseProvider', 'provider detection helper')
+requireText(registry, 'const connectionConfig = handle.config', 'connector config discriminant binding')
+requireText(registry, "connectionConfig.provider === 'mongodb'", 'provider-based registry dispatch')
+requireText(registry, '[redacted-database-url]', 'generic URL redaction')
+requireText(registry, 'capabilities: { ...handle.capabilities }', 'diagnostic capabilities')
+requireText(registry, 'defaultClient: handle.config.defaultClient', 'diagnostic default driver metadata')
+requireText(registry, 'driverPackage: handle.config.driverPackage', 'diagnostic SQL driver package metadata')
+requireText(registry, 'customClient: handle.config.customClient', 'diagnostic custom driver metadata')
+requireText(registry, 'withNfzSqlTransaction', 'provider-neutral SQL transaction helper')
+requireText(registry, 'isNfzSqlTransactionClient', 'transaction runtime capability guard')
+requireText(validators, "hasDatabaseProvider(options?.database, 'mongodb')", 'named Mongo validator detection')
+requireText(serverDts, "hasDatabaseProvider(options.database, 'mongodb')", 'named Mongo server typing detection')
+requireText(publicOptions, 'certification: connection.certification', 'public certification metadata')
+requireText(publicOptions, 'capabilities: { ...connection.capabilities }', 'public capability metadata')
+requireText(publicOptions, 'defaultClient: connection.defaultClient', 'public default driver metadata')
+requireText(publicOptions, 'driverPackage: connection.driverPackage', 'public SQL driver package metadata')
+requireText(publicOptions, 'customClient: connection.customClient', 'public custom driver metadata')
+requireText(doctor, 'parseDatabaseRegistryConfig', 'provider-neutral doctor parser')
+requireText(doctor, '- database.connections:', 'provider-neutral doctor summary')
+requireText(windowsVerifier, "Invoke-BunCommand @('run', 'sanity:database-registry')", 'Windows registry guard')
+
 if (!pkg.exports?.['./server-database'])
   problems.push('package.json must export ./server-database')
 if (!pkg.typesVersions?.['*']?.['server-database'])
@@ -50,15 +99,19 @@ for (const name of ['@feathersjs/knex', 'knex', 'pg', 'mysql2', 'better-sqlite3'
     problems.push(`SQL peer must be optional: ${name}`)
 }
 
+
+if (/\n\s*family:\s*NfzDatabaseFamily/.test(connections))
+  problems.push('generic database metadata must use databaseFamily, not family, because MongoClientOptions.family is a native driver option')
+
 const publicSection = publicOptions.slice(publicOptions.indexOf('export function resolvePublicRuntimeConfig'))
 if (/connection:\s*connection\.connection/.test(publicSection) || /url:\s*connection\.url/.test(publicSection))
   problems.push('public runtime database metadata must not expose connection strings')
 
 if (problems.length) {
-  console.error('[nuxt-feathers-zod] Multi-database registry guard failed:')
+  console.error('[nuxt-feathers-zod] Database provider/capability registry guard failed:')
   for (const problem of problems)
     console.error(`- ${problem}`)
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Multi-database registry, compatibility aliases and redacted diagnostics are aligned.')
+console.log('[nuxt-feathers-zod] Database provider descriptors, lifecycle, compatibility aliases, named-Mongo detection and redacted diagnostics are aligned.')

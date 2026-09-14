@@ -1,6 +1,6 @@
 # Multi-database registry
 
-Since version 6.7.0, NFZ can initialize several named connections and let every Feathers service select its connection. The registry supports MongoDB and the SQL databases handled by Knex: PostgreSQL, MySQL, MariaDB, and SQLite.
+Since version 6.7.0, NFZ can initialize several named connections and let every Feathers service select its connection. Starting with 6.7.41, every engine is also described by a **provider**, a **database family** (`databaseFamily`), a **certification** level, and non-sensitive **capabilities**. MongoDB and PostgreSQL are certified by real-engine gates; MySQL, MariaDB, and SQLite have implemented Knex paths that remain uncertified until their dedicated patches.
 
 ## Recommended configuration
 
@@ -34,7 +34,26 @@ export default defineNuxtConfig({
 })
 ```
 
-Private `url` and `connection` values stay in `runtimeConfig._feathers`. Public runtime configuration only exposes the name, type, default state, and non-sensitive diagnostic options.
+Private `url` and `connection` values stay in `runtimeConfig._feathers`. Public runtime configuration only exposes the name, type, provider, `databaseFamily`, certification level, capabilities, default state, and non-sensitive diagnostic options.
+
+
+## Provider and capabilities
+
+NFZ now separates the database **engine** (`type`) from its runtime **provider**. This prevents engine-specific branching from spreading through the runtime and prepares future engines without implicit fallbacks.
+
+| Type | Provider | Database family | Knex client | Driver package | NFZ pool default | NFZ certification |
+| --- | --- | --- | --- | --- | --- | --- |
+| `mongodb` | `mongodb` | document | — | native MongoDB driver | — | certified |
+| `postgresql` | `knex` | SQL | `pg` | `pg` | `min: 0, max: 10` | certified |
+| `mysql` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | implemented path |
+| `mariadb` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | implemented path |
+| `sqlite` | `knex` | SQL | `better-sqlite3` | `better-sqlite3` | `min: 0, max: 1` | implemented path |
+
+`databaseFamily` is deliberately distinct from MongoDB's native numeric `family` option used for IPv4/IPv6 selection; the native driver option remains available.
+
+`nfz/database-connections` diagnostics expose only these metadata and capabilities, never connection secrets. Starting with 6.7.42, SQL connections advertise `transactions: true` because NFZ now provides a transaction helper scoped to **one named SQL connection**. `indexManagement` and `migrations` remain `false` until their dedicated patches land.
+
+The client/driver mapping is **exhaustive and fail-closed**: a new `type` must have an explicit descriptor before it can resolve. When a real SQL connection starts, NFZ checks that the declared driver package is installed before creating the Knex client. An advanced Knex `client` override is still allowed, but it must explicitly declare `driverPackage`; NFZ does not guess the matching driver. Public diagnostics expose `defaultClient`, `driverPackage`, and the `customClient` boolean, never a connection string.
 
 ## SQL dependencies
 
@@ -57,13 +76,74 @@ For SQLite:
 bun add @feathersjs/knex knex better-sqlite3
 ```
 
+The SQL provider loads Knex and the driver lazily. A missing driver package fails with an explicit NFZ startup error before the connection is opened.
+
+
+## PostgreSQL certification
+
+Starting with 6.7.45, PostgreSQL is an **NFZ-certified** engine. The release gate runs the exact candidate npm tarball against a real isolated PostgreSQL instance. It covers:
+
+- connection and health check through `pg`/Knex;
+- isolated schema creation and teardown;
+- real PostgreSQL table and index creation;
+- Feathers CRUD with an integer identifier;
+- numeric filtering, `$in`, pagination, and `$sort` parsed from HTTP-like query strings;
+- a verified transaction rollback;
+- local authentication followed by JWT entity re-read for a UUID user ID;
+- registry close and schema teardown.
+
+The gate uses Docker by default (`postgres:18-alpine`) and can target an explicitly dedicated external database:
+
+```powershell
+$env:NFZ_POSTGRESQL_CERTIFICATION_URL = 'postgresql://nfz:secret@127.0.0.1:5432/nfz_cert'
+bun run release:candidate
+bun run test:postgresql:release
+```
+
+Without `NFZ_POSTGRESQL_CERTIFICATION_URL`, Docker must be available. The gate always creates and removes a dedicated `nfz_cert_*` schema, but only a database intended for certification should be used. This evidence does not turn `indexManagement` or `migrations` into generic NFZ capabilities; those remain `false` until a provider-neutral API exists.
+
+### Migrating from 6.7.44 and earlier
+
+The 6.7.45 certification does not change `feathers.database.connections` or generated Knex service shapes. To migrate an existing PostgreSQL project:
+
+1. upgrade NFZ to 6.7.45;
+2. keep `type: 'postgresql'` and the existing named connection;
+3. ensure `@feathersjs/knex`, `knex`, and `pg` are installed by the application;
+4. run your normal application migrations before NFZ startup;
+5. use `nuxt-feathers-zod doctor` and `nfz/database-connections` to confirm `certification: 'certified'` and a healthy connection.
+
+NFZ does not automatically run SQL migrations or mutate application schemas during the upgrade.
+
+## Safe SQL pooling
+
+NFZ normalizes the Knex pool before creating the client:
+
+- PostgreSQL, MySQL, and MariaDB default to `min: 0`, `max: 10`;
+- SQLite defaults to `min: 0`, `max: 1`, and `pool.max=1` is enforced to preserve single-file/in-memory database semantics;
+- `acquireConnectionTimeout` defaults to `60000` ms and must be a positive integer;
+- pool bounds and timeout values are validated before startup;
+- `pool.min > pool.max` is rejected instead of silently corrected.
+
+```ts
+reporting: {
+  type: 'postgresql',
+  connection: process.env.REPORTING_DATABASE_URL!,
+  pool: {
+    min: 0,
+    max: 7,
+    idleTimeoutMillis: 30_000,
+  },
+  acquireConnectionTimeout: 10_000,
+}
+```
+
 ## Generate a service for a named connection
 
 MongoDB:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.37 add service messages \
-  --adapter mongodb \
+bunx nuxt-feathers-zod@6.7.45 add service messages \
+  --database mongodb \
   --connection primary \
   --collection messages \
   --schema zod
@@ -72,8 +152,8 @@ bunx nuxt-feathers-zod@6.7.37 add service messages \
 PostgreSQL with an explicit table and SQL schema:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.37 add service audit-events \
-  --adapter knex \
+bunx nuxt-feathers-zod@6.7.45 add service audit-events \
+  --database postgresql \
   --connection reporting \
   --table audit_events \
   --schemaName reporting \
@@ -82,6 +162,17 @@ bunx nuxt-feathers-zod@6.7.37 add service audit-events \
 ```
 
 The generated MongoDB service uses `getNfzMongoDatabase(app, 'primary')`. The Knex service uses `getNfzKnexClient(app, 'reporting')`. Services do not create independent connections.
+
+Starting with 6.7.43, generated manifests also record portable binding identity (`databaseType`, `databaseProvider`, `databaseFamily`). The legacy-compatible `--adapter mongodb|knex` syntax remains accepted, but `--database` keeps adapter selection out of the business-facing CLI. `doctor` reports a mismatch when, for example, a service generated for `postgresql` references a named connection configured as `mysql`.
+
+
+### Portable identifiers
+
+Starting with 6.7.44, a service binding can also record `idStrategy`. This property describes the service identifier contract independently from `databaseType`: MongoDB keeps `objectid` as its default, Knex and Memory use `integer` by default, and compatible alternatives are validated fail-closed.
+
+`uuid` and `string` are client-assigned identifiers in generated create templates. `bigint` is available only on the Knex path and stays a decimal string at the API/Zod boundary so it remains JSON-serializable. PostgreSQL now has real CRUD/auth/query/lifecycle evidence with UUID and integer IDs. Native bigint guarantees remain intentionally outside this certification; MySQL/MariaDB and SQLite will receive real-engine evidence in their dedicated patches.
+
+`doctor` surfaces `idStrategy` from the service manifest and rejects a strategy that is provably incompatible with the generated adapter.
 
 ## Default connection
 
@@ -155,16 +246,32 @@ import {
   getNfzDatabaseRegistry,
   getNfzKnexClient,
   getNfzMongoDatabase,
+  withNfzSqlTransaction,
 } from 'nuxt-feathers-zod/server-database'
 ```
 
 Use these helpers from Feathers services and server modules instead of reading registry internals.
 
-## 6.7.0 limits
+### Transaction on one SQL connection
+
+`withNfzSqlTransaction()` delegates to the Knex client already owned by the registry. It rejects MongoDB connections and never coordinates multiple databases:
+
+```ts
+import type { Knex } from 'knex'
+import { withNfzSqlTransaction } from 'nuxt-feathers-zod/server-database'
+
+await withNfzSqlTransaction<void, Knex.Transaction>(app, async (trx) => {
+  await trx('audit_events').insert({ action: 'login' })
+}, { connection: 'reporting' })
+```
+
+An exception from the callback is propagated to Knex so that connection's transaction is rolled back. NFZ does not simulate cross-connection or MongoDB + SQL atomic transactions.
+
+## 6.7.x train limits
 
 - NFZ initializes connections and adapters but does not create SQL tables or Knex migrations.
 - Transactions spanning multiple connections are not atomic.
 - MikroORM and relational entities are reserved for a later release.
 - SQL drivers remain optional dependencies of the consumer application.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

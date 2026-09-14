@@ -20,13 +20,32 @@ const displayUser = computed(() => {
 })
 
 const isMounted = ref(false)
+const logoutBusy = ref(false)
 
 async function logout() {
+  if (logoutBusy.value)
+    return
+
+  logoutBusy.value = true
+  error.value = null
+  const provider = auth.provider.value
+
   try {
-    await auth.logout()
+    await auth.logout(provider === 'keycloak'
+      ? { redirectUri: window.location.origin + '/' }
+      : undefined)
+
+    messages.value = { total: 0, data: [] }
+
+    if (provider !== 'keycloak')
+      await navigateTo('/')
   }
-  catch (e) {
+  catch (e: any) {
+    error.value = e?.message || String(e)
     console.warn('[playground/messages] logout failed', e)
+  }
+  finally {
+    logoutBusy.value = false
   }
 }
 
@@ -95,7 +114,7 @@ const authProviderLabel = computed(() => auth.provider.value || 'none')
         description="Validez la session, la lecture paginée et la création d’un enregistrement avec le service Feathers de démonstration."
       >
         <template #actions>
-          <button class="nfz-button nfz-button--danger" type="button" @click="logout">Se déconnecter</button>
+          <button class="nfz-button nfz-button--danger" type="button" :disabled="logoutBusy" @click="logout">{{ logoutBusy ? 'Déconnexion…' : 'Se déconnecter' }}</button>
         </template>
       </PlaygroundPageHeader>
 

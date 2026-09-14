@@ -3,11 +3,16 @@ import { $fetch, fetch, setup, useTestContext } from '@nuxt/test-utils/e2e'
 import { io } from 'socket.io-client'
 import { describe, expect, it } from 'vitest'
 
+const e2eSetupTimeout = process.platform === 'win32' ? 420_000 : 120_000
+const e2eServerStartTimeout = process.platform === 'win32' ? 180_000 : 60_000
+
 await setup({
   rootDir: fileURLToPath(new URL('../fixtures/embedded-basic', import.meta.url)),
   server: true,
   dev: false,
   browser: false,
+  setupTimeout: e2eSetupTimeout,
+  serverStartTimeout: e2eServerStartTimeout,
 })
 
 describe('e2e embedded-basic fixture', () => {

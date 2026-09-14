@@ -1,7 +1,11 @@
 export type Adapter = 'mongodb' | 'memory' | 'knex'
+export type ServiceDatabaseType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'
+export type ServiceDatabaseProvider = 'mongodb' | 'knex'
+export type ServiceDatabaseFamily = 'document' | 'sql'
 export type SchemaKind = 'none' | 'zod' | 'json'
 export type MiddlewareTarget = 'nitro' | 'route' | 'feathers' | 'server-module' | 'module' | 'client-module' | 'hook' | 'policy'
 export type IdField = 'id' | '_id'
+export type ServiceIdStrategy = 'objectid' | 'uuid' | 'integer' | 'bigint' | 'string'
 export type CollectionName = string
 
 export interface RunCliOptions {
@@ -24,10 +28,14 @@ export interface ServiceManifest {
   custom?: boolean
   authAware?: boolean
   idField?: IdField
+  idStrategy?: ServiceIdStrategy
   collectionName?: string
   tableName?: string
   schemaName?: string
   connectionName?: string
+  databaseType?: ServiceDatabaseType
+  databaseProvider?: ServiceDatabaseProvider
+  databaseFamily?: ServiceDatabaseFamily
   methods?: string[]
   customMethods?: string[]
   schema: {

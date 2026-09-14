@@ -54,6 +54,142 @@ export default defineNuxtConfig({
     expect(warns).toEqual([])
   })
 
+  it('reports named database providers without exposing connection secrets', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-database-registry-'))
+    await writeFile(join(root, 'nuxt.config.ts'), `
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: { mode: 'embedded' },
+    database: {
+      default: 'reporting',
+      connections: {
+        archive: {
+          type: 'mongodb',
+          url: 'mongodb://archive:super-secret@127.0.0.1/archive',
+          management: { enabled: false },
+        },
+        reporting: {
+          type: 'postgresql',
+          connection: 'postgresql://reporter:super-secret@127.0.0.1/reporting',
+        },
+      },
+    },
+  },
+})
+`)
+
+    const infos: string[] = []
+    vi.spyOn(consola, 'info').mockImplementation((msg?: any) => { infos.push(String(msg ?? '')) })
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+
+    await runDoctor(root)
+
+    expect(infos.some(line => line.includes('- database.default: reporting'))).toBe(true)
+    expect(infos.some(line => line.includes('- database.connections: 2'))).toBe(true)
+    expect(infos.some(line => line.includes('archive: type=mongodb provider=mongodb databaseFamily=document certification=certified enabled=true'))).toBe(true)
+    expect(infos.some(line => line.includes('reporting: type=postgresql provider=knex databaseFamily=sql certification=certified driver=pg enabled=true'))).toBe(true)
+    expect(infos.join('\n')).not.toContain('super-secret')
+    expect(infos.join('\n')).not.toContain('postgresql://')
+  })
+
+  it('diagnoses generated service database bindings against named connection types', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-service-bindings-'))
+    await mkdir(join(root, 'services', 'audit-events'), { recursive: true })
+    await mkdir(join(root, 'services', '.nfz', 'services'), { recursive: true })
+    await writeFile(join(root, 'services', 'audit-events', 'audit-events.ts'), 'export const ok = true\n')
+    await writeFile(join(root, 'services', '.nfz', 'services', 'audit-events.json'), JSON.stringify({
+      name: 'audit-events',
+      path: 'audit-events',
+      adapter: 'knex',
+      connectionName: 'reporting',
+      databaseType: 'postgresql',
+      databaseProvider: 'knex',
+      databaseFamily: 'sql',
+      idStrategy: 'uuid',
+      auth: false,
+      schema: { mode: 'zod', fields: {} },
+    }))
+    await writeFile(join(root, 'nuxt.config.ts'), `
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: { mode: 'embedded' },
+    servicesDirs: ['services'],
+    database: {
+      default: 'reporting',
+      connections: {
+        reporting: {
+          type: 'mysql',
+          connection: 'mysql://user:super-secret@127.0.0.1/reporting',
+        },
+      },
+    },
+  },
+})
+`)
+
+    const infos: string[] = []
+    const errors: string[] = []
+    vi.spyOn(consola, 'info').mockImplementation((msg?: any) => { infos.push(String(msg ?? '')) })
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    vi.spyOn(consola, 'error').mockImplementation((msg?: any) => { errors.push(String(msg ?? '')) })
+
+    const result = await runDoctor(root)
+
+    expect(result.ok).toBe(false)
+    expect(infos.some(line => line.includes('audit-events: adapter=knex connection=reporting databaseType=postgresql provider=knex databaseFamily=sql idStrategy=uuid'))).toBe(true)
+    expect(errors.some(line => line.includes("declares databaseType 'postgresql' but connection 'reporting' is configured as 'mysql'"))).toBe(true)
+    expect(infos.join('\n')).not.toContain('super-secret')
+  })
+
+  it('rejects an identifier strategy that is incompatible with the generated adapter', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-id-strategy-'))
+    await mkdir(join(root, 'services', 'audit-events'), { recursive: true })
+    await mkdir(join(root, 'services', '.nfz', 'services'), { recursive: true })
+    await writeFile(join(root, 'services', 'audit-events', 'audit-events.ts'), 'export const ok = true\n')
+    await writeFile(join(root, 'services', '.nfz', 'services', 'audit-events.json'), JSON.stringify({
+      name: 'audit-events',
+      path: 'audit-events',
+      adapter: 'knex',
+      connectionName: 'reporting',
+      databaseType: 'postgresql',
+      databaseProvider: 'knex',
+      databaseFamily: 'sql',
+      idStrategy: 'objectid',
+      auth: false,
+      schema: { mode: 'zod', fields: {} },
+    }))
+    await writeFile(join(root, 'nuxt.config.ts'), `
+export default defineNuxtConfig({
+  modules: ['nuxt-feathers-zod'],
+  feathers: {
+    client: { mode: 'embedded' },
+    servicesDirs: ['services'],
+    database: {
+      default: 'reporting',
+      connections: {
+        reporting: {
+          type: 'postgresql',
+          connection: 'postgresql://user:secret@127.0.0.1/reporting',
+        },
+      },
+    },
+  },
+})
+`)
+
+    const errors: string[] = []
+    vi.spyOn(consola, 'info').mockImplementation(() => {})
+    vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    vi.spyOn(consola, 'error').mockImplementation((msg?: any) => { errors.push(String(msg ?? '')) })
+
+    const result = await runDoctor(root)
+
+    expect(result.ok).toBe(false)
+    expect(errors.some(line => line.includes("declares idStrategy 'objectid' which is not supported by adapter 'knex'"))).toBe(true)
+  })
+
   it('reports embedded local auth defaults and payload shape', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-doctor-auth-defaults-'))
     await mkdir(join(root, 'services', 'users'), { recursive: true })
@@ -149,7 +285,6 @@ export default defineNuxtConfig({
     expect(warns.some(line => line.includes('Mongo management is enabled but database.mongo.url is missing.'))).toBe(true)
   })
 })
-
 
 describe('nfz doctor embedded architecture diagnostics', () => {
   afterEach(() => {

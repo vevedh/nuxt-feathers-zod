@@ -3,7 +3,15 @@ import type { AuthOptions, PublicAuthOptions, ResolvedAuthOptions, ResolvedAuthO
 import type { ClientOptions, ResolvedClientOptions, ResolvedClientOptionsOrDisabled } from './client'
 import type { PiniaOptions } from './client/pinia'
 import type { ConsoleOptions, ResolvedConsoleOptions } from './console'
-import type { DataBaseOptions, ResolvedDataBaseOptions } from './database'
+import type {
+  DataBaseOptions,
+  NfzDatabaseCapabilities,
+  NfzDatabaseCertification,
+  NfzDatabaseConnectionType,
+  NfzDatabaseFamily,
+  NfzDatabaseProvider,
+  ResolvedDataBaseOptions,
+} from './database'
 import type { MongoManagementRouteSpec } from './database/mongodb'
 import type { KeycloakOptions, ResolvedKeycloakOptions, ResolvedKeycloakOptionsOrDisabled } from './keycloak'
 import type { ResolvedServerOptions, ServerOptions } from './server'
@@ -109,7 +117,15 @@ export interface FeathersPublicRuntimeConfig {
     default?: string
     connections?: Array<{
       name: string
-      type: 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'
+      type: NfzDatabaseConnectionType
+      provider: NfzDatabaseProvider
+      databaseFamily: NfzDatabaseFamily
+      adapter: 'mongodb' | 'knex'
+      certification: NfzDatabaseCertification
+      capabilities: NfzDatabaseCapabilities
+      defaultClient?: string
+      driverPackage?: string
+      customClient?: boolean
       default: boolean
       enabled: boolean
       legacy: boolean
@@ -307,6 +323,18 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
     return {
       name: connection.name,
       type: connection.type,
+      provider: connection.provider,
+      databaseFamily: connection.databaseFamily,
+      adapter: connection.adapter,
+      certification: connection.certification,
+      capabilities: { ...connection.capabilities },
+      ...(connection.provider === 'knex'
+        ? {
+            defaultClient: connection.defaultClient,
+            driverPackage: connection.driverPackage,
+            customClient: connection.customClient,
+          }
+        : {}),
       default: connection.name === database?.default,
       enabled: connection.enabled,
       legacy: connection.legacy,
@@ -449,3 +477,17 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
     authProvider: options.keycloak ? 'keycloak' : undefined,
   }
 }
+
+export {
+  getNfzDatabaseProviderDescriptor,
+  getNfzDefaultDatabaseClient,
+  NFZ_DATABASE_CONNECTION_TYPES,
+} from './database'
+export type {
+  NfzDatabaseCapabilities,
+  NfzDatabaseCertification,
+  NfzDatabaseConnectionType,
+  NfzDatabaseFamily,
+  NfzDatabaseProvider,
+  NfzDatabaseProviderDescriptor,
+} from './database'

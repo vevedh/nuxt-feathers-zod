@@ -185,9 +185,31 @@ describe('resolvePublicRuntimeConfig', () => {
     expect(pub.database?.default).toBe('reporting')
     expect(pub.builder?.services?.databaseConnections).toBe('nfz/database-connections')
     expect(pub.database?.connections).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: 'reporting', type: 'postgresql', default: true, enabled: true }),
-      expect.objectContaining({ name: 'archive', type: 'mongodb', default: false }),
+      expect.objectContaining({
+        name: 'reporting',
+        type: 'postgresql',
+        provider: 'knex',
+        databaseFamily: 'sql',
+        certification: 'certified',
+        defaultClient: 'pg',
+        driverPackage: 'pg',
+        customClient: false,
+        default: true,
+        enabled: true,
+      }),
+      expect.objectContaining({
+        name: 'archive',
+        type: 'mongodb',
+        provider: 'mongodb',
+        databaseFamily: 'document',
+        certification: 'certified',
+        default: false,
+      }),
     ]))
+    expect(pub.database?.connections?.find(item => item.name === 'reporting')?.capabilities).toMatchObject({
+      healthCheck: true,
+      transactions: true,
+    })
     expect(JSON.stringify(pub)).not.toContain('top-secret')
     expect(JSON.stringify(pub)).not.toContain('postgresql://')
     expect(JSON.stringify(pub)).not.toContain('mongodb://archive')

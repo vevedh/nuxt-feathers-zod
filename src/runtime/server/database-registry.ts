@@ -6,15 +6,23 @@ import type {
   ResolvedNfzDatabaseConnectionOptions,
 } from '../options/database'
 
-import { createRequire } from 'node:module'
 import { MongoClient as MongoClientConstructor } from 'mongodb'
 import { registerMongoManagementServices } from './mongodb'
+import { connectNfzSqlProvider, isNfzSqlTransactionClient } from './sql-provider'
 
 export type NfzDatabaseConnectionState = 'idle' | 'connecting' | 'ready' | 'failed' | 'closed'
 
 export interface NfzDatabaseConnectionDiagnostics {
   name: string
   type: ResolvedNfzDatabaseConnectionOptions['type']
+  provider: ResolvedNfzDatabaseConnectionOptions['provider']
+  databaseFamily: ResolvedNfzDatabaseConnectionOptions['databaseFamily']
+  adapter: ResolvedNfzDatabaseConnectionOptions['adapter']
+  certification: ResolvedNfzDatabaseConnectionOptions['certification']
+  capabilities: ResolvedNfzDatabaseConnectionOptions['capabilities']
+  defaultClient?: string
+  driverPackage?: string
+  customClient?: boolean
   label?: string
   default: boolean
   legacy: boolean
@@ -35,6 +43,11 @@ export interface NfzDatabaseConnectionDiagnostics {
 export interface NfzDatabaseConnectionHandle {
   name: string
   type: ResolvedNfzDatabaseConnectionOptions['type']
+  provider: ResolvedNfzDatabaseConnectionOptions['provider']
+  databaseFamily: ResolvedNfzDatabaseConnectionOptions['databaseFamily']
+  adapter: ResolvedNfzDatabaseConnectionOptions['adapter']
+  certification: ResolvedNfzDatabaseConnectionOptions['certification']
+  capabilities: ResolvedNfzDatabaseConnectionOptions['capabilities']
   config: ResolvedNfzDatabaseConnectionOptions
   state: NfzDatabaseConnectionState
   client?: unknown
@@ -92,8 +105,9 @@ function sanitizeError(error?: Error): NfzDatabaseConnectionDiagnostics['error']
     return undefined
 
   const message = String(error.message || error.name || 'Database connection failed')
-    .replace(/(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|mariadb):\/\/\S+/gi, '[redacted-database-url]')
-    .replace(/password\s*[=:]\s*[^\s,;]+/gi, 'password=[redacted]')
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s'"`]+/gi, '[redacted-database-url]')
+    .replace(/((?:password|passwd|pwd|secret|token)\s*[=:]\s*)[^\s,;]+/gi, '$1[redacted]')
+    .replace(/(["']?(?:password|passwd|pwd|secret|token)["']?\s*:\s*)["'][^"']*["']/gi, '$1"[redacted]"')
 
   return {
     name: error.name || 'Error',
@@ -127,6 +141,11 @@ async function defaultConnectMongo(
     healthCheck: _healthCheck,
     label: _label,
     legacy: _legacy,
+    provider: _provider,
+    databaseFamily: _databaseFamily,
+    adapter: _adapter,
+    certification: _certification,
+    capabilities: _capabilities,
     ...clientOptions
   } = config
 
@@ -147,48 +166,10 @@ async function defaultConnectMongo(
   }
 }
 
-function loadKnexFactory(): (config: Record<string, unknown>) => any {
-  const require = createRequire(import.meta.url)
-  try {
-    const packageName = 'knex'
-    const module = require(packageName)
-    const factory = module.default || module.knex || module
-    if (typeof factory !== 'function')
-      throw new TypeError('The knex package did not expose a callable factory.')
-    return factory
-  }
-  catch (error) {
-    throw new Error(
-      'A named SQL connection requires the optional `knex` package and the matching driver. '
-      + 'Install `@feathersjs/knex knex` plus `pg`, `mysql2`, or `better-sqlite3`.',
-      { cause: error },
-    )
-  }
-}
-
 async function defaultConnectKnex(
   { config }: NfzDatabaseConnectorContext & { config: ResolvedKnexDatabaseConnectionOptions },
 ): Promise<NfzDatabaseConnectorResult> {
-  const knexFactory = loadKnexFactory()
-  const knexConfig: Record<string, unknown> = {
-    client: config.client,
-    connection: config.connection,
-    ...(config.pool ? { pool: config.pool } : {}),
-    ...(config.acquireConnectionTimeout != null ? { acquireConnectionTimeout: config.acquireConnectionTimeout } : {}),
-    ...(config.useNullAsDefault != null ? { useNullAsDefault: config.useNullAsDefault } : {}),
-    ...(config.searchPath?.length ? { searchPath: config.searchPath } : {}),
-  }
-  const client = knexFactory(knexConfig)
-
-  return {
-    client,
-    async close() {
-      await client.destroy()
-    },
-    async healthCheck() {
-      await client.raw('select 1 as nfz_health')
-    },
-  }
+  return connectNfzSqlProvider(config)
 }
 
 function toDiagnostics(
@@ -198,6 +179,18 @@ function toDiagnostics(
   return {
     name: handle.name,
     type: handle.type,
+    provider: handle.provider,
+    databaseFamily: handle.databaseFamily,
+    adapter: handle.adapter,
+    certification: handle.certification,
+    capabilities: { ...handle.capabilities },
+    ...(handle.config.provider === 'knex'
+      ? {
+          defaultClient: handle.config.defaultClient,
+          driverPackage: handle.config.driverPackage,
+          customClient: handle.config.customClient,
+        }
+      : {}),
     ...(handle.config.label ? { label: handle.config.label } : {}),
     default: handle.name === defaultConnection,
     legacy: handle.config.legacy,
@@ -227,6 +220,11 @@ export function createNfzDatabaseRegistry(
     const handle: NfzDatabaseConnectionHandle = {
       name: connectionConfig.name,
       type: connectionConfig.type,
+      provider: connectionConfig.provider,
+      databaseFamily: connectionConfig.databaseFamily,
+      adapter: connectionConfig.adapter,
+      certification: connectionConfig.certification,
+      capabilities: { ...connectionConfig.capabilities },
       config: connectionConfig,
       state: 'idle',
       async close() {},
@@ -256,17 +254,21 @@ export function createNfzDatabaseRegistry(
     const started = Date.now()
     let result: NfzDatabaseConnectorResult | undefined
     try {
-      if (handle.type === 'mongodb') {
+      const connectionConfig = handle.config
+      if (connectionConfig.provider === 'mongodb') {
         result = await (dependencies.connectMongo || defaultConnectMongo)({
           name: handle.name,
-          config: handle.config as ResolvedMongoDatabaseConnectionOptions,
+          config: connectionConfig,
+        })
+      }
+      else if (connectionConfig.provider === 'knex') {
+        result = await (dependencies.connectKnex || defaultConnectKnex)({
+          name: handle.name,
+          config: connectionConfig,
         })
       }
       else {
-        result = await (dependencies.connectKnex || defaultConnectKnex)({
-          name: handle.name,
-          config: handle.config as ResolvedKnexDatabaseConnectionOptions,
-        })
+        throw new Error(`Database provider '${String(handle.provider)}' is not supported by this NFZ runtime.`)
       }
 
       const connectedResult = result
@@ -457,9 +459,33 @@ export async function getNfzMongoDatabase(app: any, name?: string): Promise<Db> 
 
 export function getNfzKnexClient(app: any, name?: string): any {
   const handle = getNfzDatabaseConnection(app, name)
-  if (handle.type === 'mongodb')
+  if (handle.config.provider !== 'knex')
     throw new Error(`Database connection '${handle.name}' is not a Knex/SQL connection.`)
   return handle.client
+}
+
+export async function withNfzSqlTransaction<TResult, TTransaction = unknown>(
+  app: any,
+  handler: (transaction: TTransaction) => Promise<TResult>,
+  options: { connection?: string } = {},
+): Promise<TResult> {
+  const handle = getNfzDatabaseConnection(app, options.connection)
+  if (handle.config.provider !== 'knex') {
+    throw new Error(
+      `Database connection '${handle.name}' does not support the NFZ SQL transaction helper.`,
+    )
+  }
+  if (!handle.capabilities.transactions) {
+    throw new Error(
+      `Database connection '${handle.name}' does not advertise transactional capability.`,
+    )
+  }
+  if (!isNfzSqlTransactionClient(handle.client)) {
+    throw new Error(
+      `Database connection '${handle.name}' does not expose a Knex transaction() runtime.`,
+    )
+  }
+  return handle.client.transaction<TTransaction, TResult>(handler)
 }
 
 export function getNfzDatabaseDiagnostics(app: any): NfzDatabaseConnectionDiagnostics[] {

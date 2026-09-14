@@ -80,4 +80,4 @@ Screenshots are generated from the playground only after the related Playwright 
 - [npm package](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [GitHub repository](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

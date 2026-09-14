@@ -104,4 +104,4 @@ Pour le dépôt du module lui-même, utilisez aussi le [playground de validation
 - [API client et composables](/reference/runtime)
 - [Référence CLI](/reference/cli)
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

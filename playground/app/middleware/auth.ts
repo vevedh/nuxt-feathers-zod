@@ -12,8 +12,23 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuth()
   await auth.init()
 
-  // Only Keycloak can do an interactive redirect here.
-  if (auth.provider.value === 'keycloak' && !auth.isAuthenticated.value) {
+  if (auth.isAuthenticated.value)
+    return
+
+  // Keycloak owns its interactive login redirect. Local/remote playground
+  // scenarios return to a public entry page instead of leaving a protected
+  // screen mounted with an anonymous session.
+  if (auth.provider.value === 'keycloak') {
     await auth.login({ redirectUri: window.location.origin + to.fullPath })
+    return
   }
+
+  const target = auth.provider.value === 'remote' ? '/tests' : '/'
+  return navigateTo({
+    path: target,
+    query: {
+      auth: 'required',
+      redirect: to.fullPath,
+    },
+  }, { replace: true })
 })

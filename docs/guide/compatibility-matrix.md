@@ -19,11 +19,11 @@ Cette matrice décrit le périmètre **visé et validé** pour le socle open sou
 | Scénario | Statut visé | Notes |
 | --- | --- | --- |
 | Nuxt 4 + embedded + memory | Stable | Point d’entrée recommandé |
-| Nuxt 4 + embedded + MongoDB | Stable | Génération CLI recommandée |
-| Nuxt 4 + embedded + PostgreSQL via Knex | Stable optionnel | Requiert `@feathersjs/knex`, `knex` et `pg` |
-| Nuxt 4 + embedded + MySQL/MariaDB via Knex | Stable optionnel | Requiert `mysql2` |
-| Nuxt 4 + embedded + SQLite via Knex | Stable optionnel | Requiert `better-sqlite3` |
-| Plusieurs connexions MongoDB/SQL nommées | Stable en 6.7.0 | Chaque service persistant peut choisir `--connection` |
+| Nuxt 4 + embedded + MongoDB | **Certifié NFZ** | Gate réelle Windows + starter MongoDB isolé |
+| Nuxt 4 + embedded + PostgreSQL via Knex | **Certifié NFZ** | Gate PostgreSQL réelle sur l'artefact npm exact : CRUD/auth/query/index/schema/transaction/lifecycle |
+| Nuxt 4 + embedded + MySQL/MariaDB via Knex | **Chemin implémenté, non certifié** | Certifications séparées prévues au Patch 067 |
+| Nuxt 4 + embedded + SQLite via Knex | **Chemin implémenté, non certifié** | Certification réelle prévue au Patch 068 |
+| Plusieurs connexions MongoDB/SQL nommées | **Socle implémenté** | Registry provider/capabilities ; certification multi-engine finale au Patch 070 |
 | Nuxt 4 + embedded + auth locale/JWT | Stable | Service `users` via CLI |
 | Nuxt 4 + remote REST | Stable | Services distants déclarés explicitement |
 | Nuxt 4 + remote Socket.IO | Stable | Même logique de service déclaré |

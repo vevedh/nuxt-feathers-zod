@@ -1,6 +1,7 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 
 import type { Application } from 'nuxt-feathers-zod/server'
+import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 import { getOptions, MessageService } from './messages.class'
 import { messageDataResolver, messageDataValidator, messageExternalResolver, messagePatchResolver, messagePatchValidator, messageQueryResolver, messageQueryValidator, messageResolver } from './messages.schema'
@@ -22,6 +23,7 @@ export function message(app: Application) {
   app.service(messagePath).hooks({
     around: {
       all: [
+        authenticateNfz(),
         schemaHooks.resolveExternal(messageExternalResolver),
         schemaHooks.resolveResult(messageResolver),
       ],

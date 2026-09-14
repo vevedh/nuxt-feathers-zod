@@ -101,4 +101,4 @@ Les secrets faibles, de démonstration ou dérivés du chemin de l’application
 
 Les secrets, clés privées, peppers, empreintes de clés API et identités techniques ne sont jamais copiés dans la configuration publique.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

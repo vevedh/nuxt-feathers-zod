@@ -30,7 +30,7 @@ const expectedScripts = {
   'release:prepare:publish': 'bun run release:prepare',
   'release:publish': 'bun run publish:npm',
   'release:candidate': 'node scripts/pack-release.mjs',
-  'release:verify:artifact': 'bun run test:starter:release && bun run smoke:tarball',
+  'release:verify:artifact': 'bun run test:postgresql:release && bun run test:starter:release && bun run smoke:tarball',
   'release:finalize': 'node scripts/finalize-release.mjs',
   'release:artifact:check': 'node scripts/check-release-artifact.mjs',
 }
@@ -39,8 +39,10 @@ for (const [name, expected] of Object.entries(expectedScripts)) {
     failures.push(`${name} must be ${JSON.stringify(expected)}`)
 }
 
-for (const name of ['test:starter:release', 'smoke:tarball']) {
-  const source = read(name === 'test:starter:release' ? 'scripts/validate-starter-release.mjs' : 'scripts/smoke-tarball-install.mjs')
+for (const name of ['test:postgresql:release', 'test:starter:release', 'smoke:tarball']) {
+  const source = read(name === 'test:postgresql:release'
+    ? 'scripts/validate-postgresql-release.mjs'
+    : name === 'test:starter:release' ? 'scripts/validate-starter-release.mjs' : 'scripts/smoke-tarball-install.mjs')
   if (!source.includes('resolveReleaseArtifact'))
     failures.push(`${name} must consume the existing release candidate`)
   if (source.includes("'pack'") || source.includes("'pm', 'pack'"))
@@ -58,7 +60,7 @@ for (const forbidden of ["spawnSync(command, args, {\n  cwd: rootDir", "'pack', 
 }
 
 const finalize = read('scripts/finalize-release.mjs')
-for (const fragment of ["['starter', 'consumer']", 'promoteCandidate', 'No build or test remains']) {
+for (const fragment of ["['postgresql', 'starter', 'consumer']", 'promoteCandidate', 'No build or test remains']) {
   if (!finalize.includes(fragment))
     failures.push(`release finalizer is missing ${fragment}`)
 }
@@ -73,11 +75,14 @@ if (publish.includes('release:prepare:publish'))
 
 const verifyWindows = read('scripts/verify-windows.ps1')
 const candidateIndex = verifyWindows.indexOf("'release:candidate'")
+const postgresqlIndex = verifyWindows.indexOf("'test:postgresql:release'")
 const starterIndex = verifyWindows.indexOf("'test:starter:release'")
 const smokeIndex = verifyWindows.indexOf("'smoke:tarball'")
 const finalizeIndex = verifyWindows.indexOf("'release:finalize'")
-if (!(candidateIndex >= 0 && starterIndex > candidateIndex && smokeIndex > starterIndex && finalizeIndex > smokeIndex))
-  failures.push('Windows release gate must create one candidate, validate it twice, then finalize it last')
+if (!(candidateIndex >= 0 && postgresqlIndex > candidateIndex && starterIndex > postgresqlIndex
+  && smokeIndex > starterIndex && finalizeIndex > smokeIndex)) {
+  failures.push('Windows release gate must create one candidate, validate PostgreSQL/starter/consumer, then finalize it last')
+}
 const textAfterFinalize = verifyWindows.slice(finalizeIndex + "'release:finalize'".length)
 if (/Invoke-BunCommand/.test(textAfterFinalize))
   failures.push('Windows release gate must not run another Bun script after finalization')

@@ -9,11 +9,13 @@ import consola from 'consola'
 import { getMongoManagementRoutes, normalizeMongoManagementBasePath } from '../runtime/options/database/mongodb'
 import { NFZ_MODULE_CAPABILITIES } from '../runtime/capabilities'
 
-import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind } from './core/types'
+import type { Adapter, IdField, MiddlewareTarget, RunCliOptions, SchemaKind, ServiceDatabaseType, ServiceIdStrategy } from './core/types'
 import { loadCliCore, loadDoctorCommand } from './command-loader'
+import { resolveServiceIdStrategy } from './identifiers'
 import { handleCliError, printHelp } from './core/help'
 
 export type { RunCliOptions } from './core/types'
+export { resolveServiceIdStrategy } from './identifiers'
 
 const findProjectRoot = async (...args: Parameters<typeof import('./core')['findProjectRoot']>) => (await loadCliCore()).findProjectRoot(...args)
 const generateMongoCompose = async (...args: Parameters<typeof import('./core')['generateMongoCompose']>) => (await loadCliCore()).generateMongoCompose(...args)
@@ -142,7 +144,6 @@ function parseWebsocketOptions(args: Record<string, unknown>) {
 }
 
 type CliContextArgs = Record<string, unknown> & { _: string[] }
-
 
 function printCapabilities(section: string, jsonOutput: boolean): void {
   const normalized = section === 'all' ? 'all' : section || 'summary'
@@ -287,6 +288,19 @@ function hasDefinedFlag(args: Record<string, unknown>, key: string) {
   return args[key] !== undefined
 }
 
+export function resolveServiceAdapter(adapter: Adapter | undefined, databaseType: ServiceDatabaseType | undefined): Adapter {
+  if (!databaseType)
+    return adapter ?? 'memory'
+
+  const expected: Adapter = databaseType === 'mongodb' ? 'mongodb' : 'knex'
+  if (adapter && adapter !== expected) {
+    throw new Error(
+      `Invalid service database target: --database ${databaseType} requires --adapter ${expected} when --adapter is provided.`,
+    )
+  }
+  return expected
+}
+
 export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolean, adapter: Adapter) {
   const hasCollection = typeof args.collection === 'string' && String(args.collection).trim().length > 0
   const hasTable = typeof args.table === 'string' && String(args.table).trim().length > 0
@@ -295,14 +309,15 @@ export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolea
   const hasMethods = typeof args.methods === 'string' && String(args.methods).trim().length > 0
   const hasCustomMethods = typeof args.customMethods === 'string' && String(args.customMethods).trim().length > 0
   const hasIdField = hasDefinedFlag(args, 'idField')
+  const hasIdStrategy = hasDefinedFlag(args, 'idStrategy')
 
   if (custom) {
     if (adapter !== 'memory')
       throw new Error('Invalid flags for `add service --custom`: --adapter is not supported for adapter-less custom services.')
-    if (hasCollection || hasTable || hasSchemaName || hasConnection)
+    if (hasCollection || hasTable || hasSchemaName || hasConnection || hasDefinedFlag(args, 'database'))
       throw new Error('Invalid flags for `add service --custom`: database selection flags are only valid for adapter services.')
-    if (hasIdField)
-      throw new Error('Invalid flags for `add service --custom`: --idField is not used by adapter-less custom services.')
+    if (hasIdField || hasIdStrategy)
+      throw new Error('Invalid flags for `add service --custom`: --idField/--idStrategy are not used by adapter-less custom services.')
     return
   }
 
@@ -318,7 +333,7 @@ export function assertServiceGenerationArgs(args: CliContextArgs, custom: boolea
     throw new Error('Invalid flags for `add service`: --table and --schemaName require --adapter knex.')
 
   if (hasConnection && adapter === 'memory')
-    throw new Error('Invalid flags for `add service`: --connection requires --adapter mongodb or knex.')
+    throw new Error('Invalid flags for `add service`: --connection requires --database <type> or --adapter mongodb|knex.')
 }
 
 export function assertInitRemoteArgs(args: CliContextArgs, transport: 'auto' | 'rest' | 'socketio', authEnabled: boolean) {
@@ -552,14 +567,19 @@ async function handleAddServiceCommand(cwd: string, args: CliContextArgs, compat
   if (!name)
     throw new Error('Missing <name>.')
 
-  const adapter = (args.adapter as Adapter | undefined) ?? 'memory'
+  const requestedAdapter = args.adapter as Adapter | undefined
+  const databaseType = args.database as ServiceDatabaseType | undefined
   const auth = parseBooleanFlag(args.auth as string | boolean | undefined, false)
   const custom = compatibilityAlias
     || parseBooleanFlag(args.custom as string | boolean | undefined, false)
     || args.type === 'custom'
     || typeof args.customMethods === 'string'
+  if (custom && databaseType)
+    throw new Error('Invalid flags for `add service --custom`: --database is only valid for adapter services.')
+  const adapter = resolveServiceAdapter(requestedAdapter, databaseType)
   assertServiceGenerationArgs(args, custom, adapter)
   const idField = (args.idField as IdField | undefined) ?? (adapter === 'mongodb' ? '_id' : 'id')
+  const idStrategy = resolveServiceIdStrategy(adapter, args.idStrategy as ServiceIdStrategy | undefined)
   const servicePath = typeof args.path === 'string' ? String(args.path) : undefined
   const collectionName = typeof args.collection === 'string' ? String(args.collection) : undefined
   const tableName = typeof args.table === 'string' ? String(args.table) : undefined
@@ -587,11 +607,13 @@ async function handleAddServiceCommand(cwd: string, args: CliContextArgs, compat
     adapter,
     auth,
     idField,
+    idStrategy,
     servicePath,
     collectionName,
     tableName,
     schemaName,
     connectionName,
+    databaseType,
     docs,
     authAware,
     schema,
@@ -698,7 +720,6 @@ async function handleAddMiddlewareCommand(cwd: string, args: CliContextArgs) {
     await tryPatchNuxtConfig(projectRoot, { ensureServerModuleDir: 'server/feathers/modules' }, { dry })
 }
 
-
 async function handleSchemaCommand(cwd: string, args: CliContextArgs) {
   const name = typeof args.name === 'string' ? String(args.name) : ''
   if (!name)
@@ -766,8 +787,6 @@ async function handleSchemaCommand(cwd: string, args: CliContextArgs) {
   if (!hasMutation)
     await showServiceSchema({ projectRoot, servicesDir, name, format: 'show' })
 }
-
-
 
 async function listTsFiles(dir: string, filter?: (name: string) => boolean) {
   if (!existsSync(dir))
@@ -921,7 +940,6 @@ allowInsertDocuments: ${allowInsertDocuments}
 routes:
 ${routeList}`)
 }
-
 
 export function createCliCommand() {
   const capabilitiesCommand = defineCommand({
@@ -1113,11 +1131,13 @@ export function createCliCommand() {
       name: { type: 'positional', required: true, description: 'Service name' },
       custom: { type: 'boolean', description: 'Generate an adapter-less custom service' },
       type: { type: 'enum', options: ['adapter', 'custom'], description: 'Service kind' },
-      adapter: { type: 'enum', options: ['memory', 'mongodb', 'knex'], description: 'Service adapter' },
+      adapter: { type: 'enum', options: ['memory', 'mongodb', 'knex'], description: 'Service adapter (compatibility/advanced selector)' },
+      database: { type: 'enum', options: ['mongodb', 'postgresql', 'mysql', 'mariadb', 'sqlite'], description: 'Database engine for a portable named-connection service' },
       schema: { type: 'enum', options: ['none', 'zod', 'json'], description: 'Schema generation mode' },
       auth: { type: 'boolean', description: 'Enable JWT auth hooks' },
       authAware: { type: 'boolean', description: 'Enable auth-aware password hashing/masking for users service' },
       idField: { type: 'enum', options: ['id', '_id'], description: 'Service id field' },
+      idStrategy: { type: 'enum', options: ['objectid', 'uuid', 'integer', 'bigint', 'string'], description: 'Portable identifier strategy (defaults: ObjectId for MongoDB, integer otherwise)' },
       path: { type: 'string', description: 'Service path' },
       collection: { type: 'string', description: 'MongoDB collection name' },
       table: { type: 'string', description: 'Knex table name' },
@@ -1505,7 +1525,6 @@ export function createCliCommand() {
       await handleAuthServiceCommand(process.cwd(), args as CliContextArgs)
     },
   })
-
 
   const schemaCommand = defineCommand({
     meta: {

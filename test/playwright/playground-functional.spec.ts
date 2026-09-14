@@ -69,6 +69,45 @@ test.describe('playground browser validation', () => {
     await captureDocumentationScreenshot(page, 'playwright-diagnostics.png', testInfo)
   })
 
+  test('closes the local session and blocks the protected messages route', async ({ page, request }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop auth journey is sufficient for this contract.')
+    const browserErrors = observePageErrors(page)
+
+    await page.goto('/', { waitUntil: 'networkidle' })
+    // The existing @docs dashboard test owns the heading contract. For this
+    // auth journey, the local login control is the observable readiness gate.
+    await expect(page.getByRole('button', { name: 'Se connecter' })).toBeVisible({ timeout: 15_000 })
+
+    await page.getByLabel('Identifiant').fill('test')
+    await page.getByLabel('Mot de passe').fill('12345')
+    await page.getByRole('button', { name: 'Se connecter' }).click()
+    await expect(page.getByText('Session active', { exact: true })).toBeVisible({ timeout: 15_000 })
+
+    await page.getByRole('link', { name: 'Tester le CRUD protégé' }).click()
+    await expect(page).toHaveURL(/\/messages$/)
+    await expect(page.getByRole('heading', { name: 'Messages' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Se déconnecter' }).click()
+    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 })
+    await expect(page.getByRole('button', { name: 'Se connecter' })).toBeVisible({ timeout: 15_000 })
+    await expect.poll(async () => page.evaluate(() => ({
+      feathersJwt: window.localStorage.getItem('feathers-jwt'),
+      accessToken: window.localStorage.getItem('accessToken'),
+    }))).toEqual({ feathersJwt: null, accessToken: null })
+
+    const anonymousResponse = await request.get('/feathers/messages?$limit=1')
+    expect(anonymousResponse.status()).toBe(401)
+
+    await page.goto('/messages', { waitUntil: 'networkidle' })
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === '/'
+        && url.searchParams.get('auth') === 'required'
+        && url.searchParams.get('redirect') === '/messages'
+    })
+    await expect(page.getByRole('button', { name: 'Se connecter' })).toBeVisible({ timeout: 15_000 })
+    expect(browserErrors).toEqual([])
+  })
+
   test('keeps the navigation usable on a mobile viewport', async ({ page }, testInfo) => {
     test.skip(!testInfo.project.name.includes('mobile'), 'Mobile-only navigation contract.')
     const browserErrors = observePageErrors(page)

@@ -3,21 +3,21 @@
 `nuxt-feathers-zod` integrates FeathersJS v5 (Dove), Zod schemas and typed service access into Nuxt 4.
 It is designed for applications that need a real backend contract inside a Nuxt project, while keeping the option to connect to an external Feathers API.
 
-Current reference version: **6.7.37**.
+Current reference version: **6.7.45**.
 
-Runtime baseline for `6.7.1`: Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6`.
-The embedded Nitro bridge now uses `@vevedh/feathers-nitro@0.5.0`; this release preserves the existing single-instance behavior while preparing a future opt-in multi-instance configuration.
+Runtime baseline for `6.7.39`: Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6` (release validation is recommended with Bun 1.3.14).
+The embedded Nitro bridge uses `@vevedh/feathers-nitro@0.6.0` with FeathersJS 5.0.49, Nuxt 4.5.2 and Vue 3.5.42; Nitro 2.13.4 and H3 1.15.11 remain deliberately frozen on this train.
 
 
 ## What the module provides
 
 - Embedded Feathers server mounted in Nuxt/Nitro.
 - Remote Feathers client mode for an existing backend.
-- Service generation through the CLI.
+- Service generation through the CLI, including portable `objectid`, UUID, integer, decimal-string bigint and string identifier strategies.
 - Zod-first schemas, resolvers, query validation and TypeScript types.
 - Extensible local, JWT, OIDC, API-key and custom authentication provider registry, plus Keycloak-oriented remote flows.
 - REST and Socket.io transports.
-- Named MongoDB and Knex connections (PostgreSQL, MySQL, MariaDB and SQLite), plus optional MongoDB management endpoints.
+- Named MongoDB and Knex connections (PostgreSQL, MySQL, MariaDB and SQLite), with explicit SQL drivers, safe pool defaults, single-connection transaction helpers, redacted diagnostics, and optional MongoDB management endpoints. MongoDB and PostgreSQL are certified; MySQL, MariaDB and SQLite remain implemented paths until their dedicated real-engine gates are complete.
 - Feathers-first Builder and diagnostic services under `nfz/*`.
 - Runtime composables for client, service, authentication and protected service access.
 - VitePress documentation in French and English.

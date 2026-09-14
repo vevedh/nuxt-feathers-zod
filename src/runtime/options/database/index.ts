@@ -1,5 +1,6 @@
 import type {
   NfzDatabaseConnectionOptions,
+  NfzDatabaseProvider,
   ResolvedNfzDatabaseConnectionOptions,
 } from './connections'
 import type { MongoOptions, ResolvedMongoOptions } from './mongodb'
@@ -18,6 +19,15 @@ export interface ResolvedDataBaseOptions {
   mongo?: ResolvedMongoOptions
   default?: string
   connections: Record<string, ResolvedNfzDatabaseConnectionOptions>
+}
+
+export function hasDatabaseProvider(
+  database: ResolvedDataBaseOptions | undefined,
+  provider: NfzDatabaseProvider,
+): boolean {
+  return Object.values(database?.connections ?? {}).some(
+    connection => connection.enabled && connection.provider === provider,
+  )
 }
 
 export function resolveDataBaseOptions(database: DataBaseOptions = {}): ResolvedDataBaseOptions {
@@ -81,10 +91,24 @@ export type {
   KnexDatabaseConnectionOptions,
   KnexPoolOptions,
   MongoDatabaseConnectionOptions,
+  NfzDatabaseCapabilities,
+  NfzDatabaseCertification,
   NfzDatabaseConnectionOptions,
   NfzDatabaseConnectionType,
+  NfzDatabaseFamily,
+  NfzDatabaseProvider,
+  NfzDatabaseProviderDescriptor,
   NfzSqlConnectionType,
+  NfzSqlPoolDefaults,
   ResolvedKnexDatabaseConnectionOptions,
   ResolvedMongoDatabaseConnectionOptions,
   ResolvedNfzDatabaseConnectionOptions,
+} from './connections'
+
+export {
+  getNfzDatabaseProviderDescriptor,
+  getNfzDefaultDatabaseClient,
+  getNfzSqlDriverPackage,
+  getNfzSqlPoolDefaults,
+  NFZ_DATABASE_CONNECTION_TYPES,
 } from './connections'

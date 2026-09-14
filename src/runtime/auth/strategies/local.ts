@@ -26,7 +26,7 @@ function isBsonObjectIdLike(value: unknown): value is BsonObjectIdLike & { toHex
  * accepted by Feathers adapters. Primitive IDs and unrelated objects are left
  * unchanged so the downstream service keeps its normal validation behavior.
  */
-export function normalizeNfzLocalEntityId(value: unknown): unknown {
+export function normalizeNfzAuthenticationEntityId(value: unknown): unknown {
   if (!isBsonObjectIdLike(value))
     return value
 
@@ -37,6 +37,11 @@ export function normalizeNfzLocalEntityId(value: unknown): unknown {
   catch {
     return value
   }
+}
+
+/** Backwards-compatible alias retained for code that imported the Mongo-specific helper name. */
+export function normalizeNfzLocalEntityId(value: unknown): unknown {
+  return normalizeNfzAuthenticationEntityId(value)
 }
 
 /**
@@ -51,7 +56,7 @@ export class NfzLocalStrategy extends LocalStrategy {
     const entityService = this.entityService as { id?: string }
     const { entityId = entityService.id } = this.configuration
     const currentId = entityId ? result?.[entityId] : undefined
-    const normalizedId = normalizeNfzLocalEntityId(currentId)
+    const normalizedId = normalizeNfzAuthenticationEntityId(currentId)
 
     if (!entityId || normalizedId === currentId)
       return super.getEntity(result, params)

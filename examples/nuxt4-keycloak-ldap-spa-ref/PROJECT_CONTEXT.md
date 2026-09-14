@@ -6,11 +6,11 @@ Version validée comme **référence modèle Nuxt 4 + Keycloak + LDAP + SPA**.
 
 ## Stack
 
-- Nuxt 4.4.2, verrouillé pour préserver la stabilité SPA validée.
+- Nuxt 4.5.2, requalifié dans le train coordonné Patch 059 avec Vue 3.5.42 et Vite 8.
 - Quasar 2 via `nuxt-quasar-ui`.
 - UnoCSS.
 - Pinia + persistedstate.
-- nuxt-feathers-zod 6.7.37.
+- nuxt-feathers-zod 6.7.45.
 - Keycloak côté client uniquement via `keycloak-js`.
 - Backend Feathers remote exposant `POST /authentication`.
 - Stratégie backend attendue : `keycloak-ldap` / `SsoLdapStrategy`.
@@ -71,10 +71,10 @@ http://localhost:3000
 
 Si le backend journalise `Method OPTIONS not allowed`, l'appel direct NFZ échouera avec `Failed to fetch` côté navigateur.
 
-## Patch de stabilité SPA Nuxt 4.4.2
+## Baseline SPA Nuxt 4.5.2
 
 - Application volontairement en `ssr: false` car Keycloak reste strictement côté client.
-- Nuxt est verrouillé sur `4.4.2` pour éviter le retour de l'erreur de développement `No entry found in rollupOptions.input` observée lors d'une montée de version Nuxt/Vite.
+- Nuxt est verrouillé sur `4.5.2`. Le précédent pin 4.4.2 lié à `No entry found in rollupOptions.input` est superseded par la requalification coordonnée Nuxt 4.5.2 / Vue 3.5.42 / Vite 8 du Patch 059 ; toute réapparition doit rester un échec de gate, pas être masquée par un downgrade implicite.
 - Après chaque changement de version Nuxt, nettoyage complet Windows recommandé : `.nuxt`, `.output`, `node_modules`, caches Vite et `bun.lock`.
 
 ## Fichiers importants

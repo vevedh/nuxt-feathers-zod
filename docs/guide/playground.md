@@ -25,6 +25,8 @@ Le bouton **Lancer les contrôles rapides** ne modifie aucune donnée persistant
 
 La page **Tests essentiels** vérifie d’abord un service, puis une session locale. Elle affiche le résultat utile pour diagnostiquer un problème de transport ou d’authentification.
 
+Dans le scénario local, la page **Messages** exige une session authentifiée côté route **et** côté service Feathers. Le bouton **Se déconnecter** ferme la session, efface les données protégées affichées et renvoie vers le tableau de bord. Une tentative d’accès direct à `/messages` sans session est redirigée vers une page publique et l’API `messages` répond `401`.
+
 ![Diagnostic des services et de l’authentification](/images/guides/playwright/playwright-diagnostics.png)
 
 ## Parcours utiles
@@ -58,4 +60,4 @@ Les images de cette documentation sont produites par les scénarios Playwright d
 
 Le playground utilise uniquement des identités et secrets de test. Ne recopiez jamais ces valeurs dans un environnement de production.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

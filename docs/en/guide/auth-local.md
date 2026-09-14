@@ -51,6 +51,13 @@ const result = await service.find({
 })
 ```
 
+
+## Portable authentication entity identifiers
+
+NFZ does not force the authentication entity identifier to be a MongoDB ObjectId. The local strategy preserves primitive identifiers used by SQL or Memory services, including integers, UUIDs, strings, and decimal-string bigints. Only BSON `ObjectId` values that may originate from another MongoDB driver copy are normalized to hexadecimal strings before the external entity re-read.
+
+The normalization performs no implicit numeric conversion and does not weaken the target adapter's validation. The `users` service `idStrategy` must therefore match the schema and storage contract used by the application.
+
 ## Practical advice
 
 - Keep runtime-affecting options explicit in `nuxt.config.ts`.
@@ -58,4 +65,4 @@ const result = await service.find({
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

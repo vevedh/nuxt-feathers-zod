@@ -10,11 +10,13 @@ const appTemplate = read('src/runtime/templates/server/app.ts')
 const pluginTemplate = read('src/runtime/templates/server/plugin.ts')
 
 const expectedPackage = '@vevedh/feathers-nitro'
-const expectedVersion = '0.5.0'
-const expectedNodeEngine = '^22.12.0 || ^24.11.0 || >=26.0.0'
+const expectedVersion = '0.6.0'
+const expectedNodeEngine = '^22.19.0 || ^24.11.0 || >=26.0.0'
+const expectedFeathersRange = '^5.0.49'
+const expectedNitroVersion = '2.13.4'
+const expectedH3Version = '1.15.11'
 const legacyPackage = '@gabortorma/feathers-nitro-adapter'
 const failures = []
-const warnings = []
 
 function assert(condition, message) {
   if (!condition)
@@ -27,38 +29,36 @@ assert(!(legacyPackage in (packageJson.dependencies ?? {})),
   `package.json still declares the legacy package ${legacyPackage}.`)
 assert(packageJson.engines?.node === expectedNodeEngine,
   `package.json engines.node must match the adapter support range: ${expectedNodeEngine}.`)
+assert(packageJson.dependencies?.['@feathersjs/feathers'] === '5.0.49',
+  'The root Feathers runtime must remain pinned to 5.0.49 for this migration.')
+assert(packageJson.dependencies?.nitropack === expectedNitroVersion,
+  `The root Nitro runtime must remain pinned to ${expectedNitroVersion}.`)
+assert(packageJson.dependencies?.h3 === expectedH3Version,
+  `The root H3 runtime must remain pinned to ${expectedH3Version}.`)
+
 assert(lock.includes(`"${expectedPackage}": "${expectedVersion}"`),
   `bun.lock workspace dependencies do not pin ${expectedPackage} to ${expectedVersion}.`)
 assert(lock.includes(`"${expectedPackage}": ["${expectedPackage}@${expectedVersion}"`),
   `bun.lock does not contain the resolved ${expectedPackage}@${expectedVersion} package entry.`)
 assert(!lock.includes(`"${legacyPackage}": [`),
   `bun.lock still resolves the legacy package ${legacyPackage}.`)
+
+const adapterLine = lock.split('\n').find(line => line.includes(`"${expectedPackage}": ["${expectedPackage}@${expectedVersion}"`)) ?? ''
+assert(adapterLine.includes(`"@feathersjs/feathers": "${expectedFeathersRange}"`),
+  `${expectedPackage}@${expectedVersion} must resolve with @feathersjs/feathers ${expectedFeathersRange}.`)
+assert(adapterLine.includes(`"nitropack": "${expectedNitroVersion}"`),
+  `${expectedPackage}@${expectedVersion} must resolve with nitropack ${expectedNitroVersion}.`)
+assert(adapterLine.includes(`"h3": "${expectedH3Version}"`),
+  `${expectedPackage}@${expectedVersion} must resolve with h3 ${expectedH3Version}.`)
+
 assert(appTemplate.includes(`from '${expectedPackage}/handlers'`),
-  'The generated server app template does not use the new Koa handler entry point.')
+  'The generated server app template does not use the supported Koa handler entry point.')
 assert(pluginTemplate.includes(`from '${expectedPackage}/handlers'`),
-  'The generated Nitro plugin template does not use the new Express handler entry point.')
+  'The generated Nitro plugin template does not use the supported Express handler entry point.')
 assert(pluginTemplate.includes(`from '${expectedPackage}/routers'`),
-  'The generated Nitro plugin template does not use the new router entry point.')
+  'The generated Nitro plugin template does not use the supported router entry point.')
 assert(!appTemplate.includes(legacyPackage) && !pluginTemplate.includes(legacyPackage),
   'A generated server template still imports the legacy adapter.')
-
-const adapterNitroVersion = lock.match(/"@vevedh\/feathers-nitro": \[[^\n]*"nitropack": "([^"]+)"/)?.[1]
-const rootNitroVersion = packageJson.dependencies?.nitropack
-if (adapterNitroVersion && rootNitroVersion && adapterNitroVersion !== rootNitroVersion) {
-  warnings.push(
-    `Dependency alignment: ${expectedPackage} declares Nitro ${adapterNitroVersion}, while the module pins ${rootNitroVersion}. `
-    + 'The current migration intentionally preserves the existing runtime; validate a dedicated Nitro upgrade separately.',
-  )
-}
-
-const adapterFeathersRange = lock.match(/"@vevedh\/feathers-nitro": \[[^\n]*"@feathersjs\/feathers": "([^"]+)"/)?.[1]
-const rootFeathersVersion = packageJson.dependencies?.['@feathersjs/feathers']
-if (adapterFeathersRange && rootFeathersVersion && !adapterFeathersRange.endsWith(rootFeathersVersion)) {
-  warnings.push(
-    `Dependency alignment: ${expectedPackage} declares @feathersjs/feathers ${adapterFeathersRange}, `
-    + `while the module pins ${rootFeathersVersion}. Keep this visible until the Feathers patch-line upgrade is validated.`,
-  )
-}
 
 if (failures.length > 0) {
   console.error('[nuxt-feathers-zod] Feathers Nitro migration guard failed:')
@@ -67,6 +67,6 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log(`[nuxt-feathers-zod] ${expectedPackage}@${expectedVersion} migration guard passed.`)
-for (const warning of warnings)
-  console.warn(`[nuxt-feathers-zod] Warning: ${warning}`)
+console.log(
+  `[nuxt-feathers-zod] ${expectedPackage}@${expectedVersion} is aligned with Feathers 5.0.49, Nitro ${expectedNitroVersion}, H3 ${expectedH3Version} and the Node runtime floor.`,
+)

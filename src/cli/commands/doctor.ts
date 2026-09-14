@@ -6,10 +6,12 @@ import { dirname, join, relative, resolve } from 'node:path'
 
 import consola from 'consola'
 
+import type { ServiceIdStrategy } from '../core/types'
+import { isServiceIdStrategySupported } from '../identifiers'
 import { getDefaultAuthStrategies, getAuthStaticDefaults } from '../../runtime/options/authentication'
 import { getAuthLocalDefaults } from '../../runtime/options/authentication/local'
+import { getNfzDatabaseProviderDescriptor } from '../../runtime/options/database'
 import { getMongoManagementRoutes, normalizeMongoManagementBasePath } from '../../runtime/options/database/mongodb'
-
 
 function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
   if (!existsSync(resolve(projectRoot, '.git')))
@@ -231,7 +233,6 @@ function redactMongoUrl(url: string) {
 }
 
 type ScanState = 'normal' | 'single' | 'double' | 'template' | 'lineComment' | 'blockComment'
-
 
 function extractRootObjectBody(source: string): string {
   const markerIndex = source.search(/defineNuxtConfig\s*\(/)
@@ -520,6 +521,206 @@ function parseQuotedString(raw: string | null, fallback = '') {
   return trimmed.replace(/^['"`]|['"`]$/g, '') || fallback
 }
 
+function parseTopLevelObjectEntries(rawObject: string | null): Array<[string, string]> {
+  if (!rawObject?.trim().startsWith('{'))
+    return []
+
+  const source = rawObject.trim().slice(1, -1)
+  const entries: Array<[string, string]> = []
+  let index = 0
+
+  const skipSpaceAndComments = () => {
+    while (index < source.length) {
+      if (/\s|,/.test(source[index] || '')) {
+        index++
+        continue
+      }
+      if (source[index] === '/' && source[index + 1] === '/') {
+        index += 2
+        while (index < source.length && source[index] !== '\n')
+          index++
+        continue
+      }
+      if (source[index] === '/' && source[index + 1] === '*') {
+        index += 2
+        while (index < source.length && !(source[index] === '*' && source[index + 1] === '/'))
+          index++
+        index += 2
+        continue
+      }
+      break
+    }
+  }
+
+  while (index < source.length) {
+    skipSpaceAndComments()
+    if (index >= source.length)
+      break
+
+    let key = ''
+    const quote = source[index]
+    if (quote === '\'' || quote === '"' || quote === '`') {
+      index++
+      while (index < source.length && source[index] !== quote) {
+        key += source[index]
+        index++
+      }
+      index++
+    }
+    else {
+      const match = source.slice(index).match(/^[A-Za-z_$][\w$-]*/)
+      if (!match) {
+        index++
+        continue
+      }
+      key = match[0]
+      index += key.length
+    }
+
+    while (index < source.length && /\s/.test(source[index] || ''))
+      index++
+    if (source[index] !== ':')
+      continue
+    index++
+    while (index < source.length && /\s/.test(source[index] || ''))
+      index++
+
+    const valueStart = index
+    let state: ScanState = 'normal'
+    let escape = false
+    let curly = 0
+    let square = 0
+    let paren = 0
+
+    for (; index < source.length; index++) {
+      const char = source[index]
+      const next = source[index + 1]
+      if (state === 'lineComment') {
+        if (char === '\n')
+          state = 'normal'
+        continue
+      }
+      if (state === 'blockComment') {
+        if (char === '*' && next === '/') {
+          state = 'normal'
+          index++
+        }
+        continue
+      }
+      if (state === 'single' || state === 'double' || state === 'template') {
+        if (escape) {
+          escape = false
+          continue
+        }
+        if (char === '\\') {
+          escape = true
+          continue
+        }
+        if ((state === 'single' && char === '\'') || (state === 'double' && char === '"') || (state === 'template' && char === '`'))
+          state = 'normal'
+        continue
+      }
+      if (char === '/' && next === '/') {
+        state = 'lineComment'
+        index++
+        continue
+      }
+      if (char === '/' && next === '*') {
+        state = 'blockComment'
+        index++
+        continue
+      }
+      if (char === '\'') {
+        state = 'single'
+        continue
+      }
+      if (char === '"') {
+        state = 'double'
+        continue
+      }
+      if (char === '`') {
+        state = 'template'
+        continue
+      }
+      if (char === '{')
+        curly++
+      else if (char === '}')
+        curly--
+      else if (char === '[')
+        square++
+      else if (char === ']')
+        square--
+      else if (char === '(')
+        paren++
+      else if (char === ')')
+        paren--
+      else if (char === ',' && curly === 0 && square === 0 && paren === 0)
+        break
+    }
+
+    const value = source.slice(valueStart, index).trim()
+    if (key && value)
+      entries.push([key, value])
+    index++
+  }
+
+  return entries
+}
+
+interface ParsedDatabaseRegistryConfig {
+  default?: string
+  connections: Array<{
+    name: string
+    type: string
+    enabled: boolean
+    provider: string
+    databaseFamily: string
+    certification: string
+    driverPackage?: string
+  }>
+}
+
+function parseDatabaseRegistryConfig(cfg: string): ParsedDatabaseRegistryConfig {
+  const rootBody = extractRootObjectBody(cfg)
+  const feathersBlock = extractTopLevelValue(rootBody, 'feathers')
+  const feathersBody = feathersBlock?.startsWith('{') ? feathersBlock.slice(1, -1) : rootBody
+  const databaseBlock = extractTopLevelValue(feathersBody, 'database')
+  if (!databaseBlock?.startsWith('{'))
+    return { connections: [] }
+
+  const databaseBody = databaseBlock.slice(1, -1)
+  const defaultName = parseQuotedString(extractTopLevelValue(databaseBody, 'default')) || undefined
+  const connectionsBlock = extractTopLevelValue(databaseBody, 'connections')
+  const connections = parseTopLevelObjectEntries(connectionsBlock).map(([name, raw]) => {
+    const body = raw.startsWith('{') ? raw.slice(1, -1) : ''
+    const type = parseQuotedString(extractTopLevelValue(body, 'type'))
+    const enabled = extractTopLevelValue(body, 'enabled')?.trim() !== 'false'
+    const configuredDriverPackage = parseQuotedString(extractTopLevelValue(body, 'driverPackage'))
+    try {
+      const descriptor = getNfzDatabaseProviderDescriptor(type)
+      return {
+        name,
+        type,
+        enabled,
+        provider: descriptor.provider,
+        databaseFamily: descriptor.databaseFamily,
+        certification: descriptor.certification,
+        ...(configuredDriverPackage || descriptor.driverPackage
+          ? { driverPackage: configuredDriverPackage || descriptor.driverPackage }
+          : {}),
+      }
+    }
+    catch {
+      return { name, type: type || '(missing)', enabled, provider: 'unsupported', databaseFamily: 'unknown', certification: 'unsupported' }
+    }
+  })
+
+  return {
+    ...(defaultName ? { default: defaultName } : {}),
+    connections,
+  }
+}
+
 interface ParsedEmbeddedAuthConfig {
   enabled: boolean
   source: 'default' | 'boolean' | 'object'
@@ -619,6 +820,90 @@ function parseEmbeddedAuthConfig(cfg: string): ParsedEmbeddedAuthConfig {
 interface EmbeddedServiceSource {
   name: string
   source: string
+}
+
+interface ServiceDatabaseBinding {
+  service: string
+  adapter: 'mongodb' | 'knex'
+  connectionName?: string
+  databaseType?: string
+  databaseProvider?: string
+  databaseFamily?: string
+  idStrategy?: ServiceIdStrategy
+}
+
+async function detectServiceDatabaseBindings(absServicesDirs: string[]): Promise<ServiceDatabaseBinding[]> {
+  const bindings: ServiceDatabaseBinding[] = []
+  for (const dir of absServicesDirs) {
+    const manifestsDir = join(dir, '.nfz', 'services')
+    if (!existsSync(manifestsDir))
+      continue
+
+    for (const entry of (await readdir(manifestsDir).catch(() => [])).filter(name => name.endsWith('.json')).sort()) {
+      const filePath = join(manifestsDir, entry)
+      try {
+        const manifest = JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>
+        const adapter = manifest.adapter === 'mongodb' || manifest.adapter === 'knex'
+          ? manifest.adapter
+          : undefined
+        if (!adapter)
+          continue
+        bindings.push({
+          service: typeof manifest.name === 'string' ? manifest.name : entry.replace(/\.json$/, ''),
+          adapter,
+          ...(typeof manifest.connectionName === 'string' ? { connectionName: manifest.connectionName } : {}),
+          ...(typeof manifest.databaseType === 'string' ? { databaseType: manifest.databaseType } : {}),
+          ...(typeof manifest.databaseProvider === 'string' ? { databaseProvider: manifest.databaseProvider } : {}),
+          ...(typeof manifest.databaseFamily === 'string' ? { databaseFamily: manifest.databaseFamily } : {}),
+          ...(['objectid', 'uuid', 'integer', 'bigint', 'string'].includes(String(manifest.idStrategy)) ? { idStrategy: manifest.idStrategy as ServiceIdStrategy } : {}),
+        })
+      }
+      catch {
+        // Malformed service manifests are diagnosed by schema/service commands; doctor keeps scanning other services.
+      }
+    }
+  }
+  return bindings
+}
+
+function diagnoseServiceDatabaseBindings(
+  bindings: ServiceDatabaseBinding[],
+  registry: ParsedDatabaseRegistryConfig,
+  errors: string[],
+) {
+  const byName = new Map(registry.connections.map(connection => [connection.name, connection]))
+  for (const binding of bindings) {
+    const targetName = binding.connectionName || registry.default
+    if (!targetName)
+      continue
+    const connection = byName.get(targetName)
+    if (!connection) {
+      consola.warn(`Service ${binding.service} references database connection '${targetName}', which doctor could not resolve statically.`)
+      continue
+    }
+
+    const expectedProvider = binding.adapter === 'mongodb' ? 'mongodb' : 'knex'
+    if (binding.idStrategy && !isServiceIdStrategySupported(binding.adapter, binding.idStrategy)) {
+      const message = `Service ${binding.service} declares idStrategy '${binding.idStrategy}' which is not supported by adapter '${binding.adapter}'.`
+      errors.push(message)
+      consola.error(message)
+    }
+    if (connection.provider !== expectedProvider) {
+      const message = `Service ${binding.service} uses adapter '${binding.adapter}' but connection '${targetName}' resolves to provider '${connection.provider}'.`
+      errors.push(message)
+      consola.error(message)
+    }
+    if (binding.databaseProvider && binding.databaseProvider !== connection.provider) {
+      const message = `Service ${binding.service} declares databaseProvider '${binding.databaseProvider}' but connection '${targetName}' resolves to '${connection.provider}'.`
+      errors.push(message)
+      consola.error(message)
+    }
+    if (binding.databaseType && binding.databaseType !== connection.type) {
+      const message = `Service ${binding.service} declares databaseType '${binding.databaseType}' but connection '${targetName}' is configured as '${connection.type}'.`
+      errors.push(message)
+      consola.error(message)
+    }
+  }
 }
 
 async function detectEmbeddedServiceSources(absServicesDirs: string[]): Promise<EmbeddedServiceSource[]> {
@@ -902,6 +1187,7 @@ export async function runDoctor(projectRoot: string): Promise<NfzDoctorResult> {
 
   const mode = parseMode(cfg)
   const restPath = parseRestPath(cfg)
+  let serviceDatabaseBindings: ServiceDatabaseBinding[] = []
   consola.info(`- feathers.client.mode: ${mode}`)
   consola.info(`- transports.rest.path: ${restPath}`)
 
@@ -955,6 +1241,14 @@ export async function runDoctor(projectRoot: string): Promise<NfzDoctorResult> {
     consola.info(`- services discovered: ${services.length}`)
     for (const service of serviceSources)
       consola.info(`  - service ${service.name}: ${relative(projectRoot, service.source).replace(/\\/g, '/')}`)
+
+    serviceDatabaseBindings = await detectServiceDatabaseBindings(absServicesDirs)
+    consola.info(`- service database bindings: ${serviceDatabaseBindings.length}`)
+    for (const binding of serviceDatabaseBindings) {
+      consola.info(
+        `  - ${binding.service}: adapter=${binding.adapter}${binding.connectionName ? ` connection=${binding.connectionName}` : ''}${binding.databaseType ? ` databaseType=${binding.databaseType}` : ''}${binding.databaseProvider ? ` provider=${binding.databaseProvider}` : ''}${binding.databaseFamily ? ` databaseFamily=${binding.databaseFamily}` : ''}${binding.idStrategy ? ` idStrategy=${binding.idStrategy}` : ''}`,
+      )
+    }
 
     const loadOrder = parseLoadOrder(cfg)
     consola.info(`- server.loadOrder: ${loadOrder.join(' -> ')}`)
@@ -1013,6 +1307,18 @@ export async function runDoctor(projectRoot: string): Promise<NfzDoctorResult> {
     errors.push(message)
     consola.error(message)
   }
+
+  const databaseRegistry = parseDatabaseRegistryConfig(cfg)
+  if (databaseRegistry.connections.length || databaseRegistry.default) {
+    consola.info(`- database.default: ${databaseRegistry.default || '(implicit)'}`)
+    consola.info(`- database.connections: ${databaseRegistry.connections.length}`)
+    for (const connection of databaseRegistry.connections) {
+      consola.info(
+        `  - ${connection.name}: type=${connection.type} provider=${connection.provider} databaseFamily=${connection.databaseFamily} certification=${connection.certification}${connection.driverPackage ? ` driver=${connection.driverPackage}` : ''} enabled=${connection.enabled}`,
+      )
+    }
+  }
+  diagnoseServiceDatabaseBindings(serviceDatabaseBindings, databaseRegistry, errors)
 
   const mongo = parseMongoManagement(cfg)
   if (mongo.url || mongo.enabled) {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
@@ -21,9 +22,22 @@ export async function probeMongoUrl(url) {
     serverSelectionTimeoutMS: 2_000,
   })
 
+  const probeCollectionName = `nfz_release_probe_${randomUUID().replaceAll('-', '')}`
+
   try {
     await client.connect()
-    await client.db().command({ ping: 1 })
+    const db = client.db()
+    await db.command({ ping: 1 })
+
+    const collection = db.collection(probeCollectionName)
+    try {
+      await collection.insertOne({ nfzProbe: true })
+      await collection.createIndex({ nfzProbe: 1 })
+      await collection.findOne({ nfzProbe: true })
+    }
+    finally {
+      await collection.drop().catch(() => undefined)
+    }
   }
   finally {
     await client.close().catch(() => undefined)
@@ -60,6 +74,20 @@ export async function createIsolatedMongoRuntime({ env = process.env } = {}) {
   }
 }
 
+async function startIsolatedMongo({ env, createMemoryRuntime }) {
+  try {
+    return await createMemoryRuntime({ env })
+  }
+  catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `Unable to start the isolated MongoDB used by starter release validation: ${detail}. `
+      + 'To validate against a real test database instead, set NFZ_STARTER_RELEASE_MONGODB_MODE=external '
+      + 'and provide an authenticated MONGODB_URL with sufficient create/read/write/index permissions.',
+    )
+  }
+}
+
 export async function provisionStarterReleaseMongo({
   requestedUrl = process.env.MONGODB_URL,
   mode = process.env.NFZ_STARTER_RELEASE_MONGODB_MODE,
@@ -83,38 +111,30 @@ export async function provisionStarterReleaseMongo({
     }
     catch {
       throw new Error(
-        'The configured external MONGODB_URL is unreachable. Start MongoDB or use NFZ_STARTER_RELEASE_MONGODB_MODE=memory.',
+        'The configured external MONGODB_URL is unreachable or cannot authenticate. '
+        + 'Provide a non-production database URL with the permissions required by the starter, '
+        + 'or use NFZ_STARTER_RELEASE_MONGODB_MODE=memory.',
       )
     }
 
-    logger.info('[starter-release] MongoDB validation mode: external connection.')
+    logger.info('[starter-release] MongoDB validation mode: explicit external connection.')
     return { mode: 'external', url: normalizedUrl, stop: () => Promise.resolve() }
   }
 
-  if (resolvedMode === 'auto' && normalizedUrl) {
-    try {
-      await probe(normalizedUrl)
-      logger.info('[starter-release] MongoDB validation mode: reachable external connection.')
-      return { mode: 'external', url: normalizedUrl, stop: () => Promise.resolve() }
-    }
-    catch {
-      logger.warn('[starter-release] Configured MONGODB_URL is unreachable; starting an isolated MongoDB for candidate validation.')
-    }
-  }
-
-  if (resolvedMode === 'auto' && !normalizedUrl)
-    logger.info('[starter-release] No MONGODB_URL configured; starting an isolated MongoDB for candidate validation.')
-  else if (resolvedMode === 'memory')
+  if (resolvedMode === 'memory') {
     logger.info('[starter-release] MongoDB validation mode forced to isolated memory server.')
-
-  try {
-    return await createMemoryRuntime({ env })
+    return startIsolatedMongo({ env, createMemoryRuntime })
   }
-  catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
-    throw new Error(
-      `Unable to start the isolated MongoDB used by starter release validation: ${detail}. `
-      + 'Provide a reachable MONGODB_URL with NFZ_STARTER_RELEASE_MONGODB_MODE=external to bypass the isolated runtime.',
+
+  if (normalizedUrl) {
+    logger.info(
+      '[starter-release] MONGODB_URL is ignored in auto mode; using an isolated MongoDB for deterministic candidate validation. '
+      + 'Set NFZ_STARTER_RELEASE_MONGODB_MODE=external to opt into the configured database.',
     )
   }
+  else {
+    logger.info('[starter-release] MongoDB validation mode: isolated memory server (auto).')
+  }
+
+  return startIsolatedMongo({ env, createMemoryRuntime })
 }

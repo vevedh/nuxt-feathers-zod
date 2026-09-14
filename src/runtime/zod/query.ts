@@ -2,7 +2,11 @@ import { z, type ZodRawShape, type ZodTypeAny } from 'zod'
 
 type KeysOf<Shape extends ZodRawShape> = Extract<keyof Shape, string>
 
-const order = z.union([z.literal(1), z.literal(-1)])
+const order = z.preprocess((value) => {
+  if (typeof value === 'string' && value.trim() !== '')
+    return Number(value)
+  return value
+}, z.union([z.literal(1), z.literal(-1)]))
 
 /** Coerce numbers coming from querystrings ("10" -> 10). */
 function coerceNumber() {
@@ -11,6 +15,43 @@ function coerceNumber() {
       return Number(v)
     return v
   }, z.number())
+}
+
+function unwrapQueryProperty(prop: ZodTypeAny): ZodTypeAny {
+  let current = prop
+  for (let depth = 0; depth < 8; depth++) {
+    if (
+      current instanceof z.ZodOptional
+      || current instanceof z.ZodNullable
+      || current instanceof z.ZodDefault
+      || current instanceof z.ZodCatch
+    ) {
+      current = current._def.innerType
+      continue
+    }
+    if (current instanceof z.ZodEffects) {
+      current = current._def.schema
+      continue
+    }
+    if (current instanceof z.ZodBranded) {
+      current = current._def.type
+      continue
+    }
+    break
+  }
+  return current
+}
+
+function queryCompatibleProperty<T extends ZodTypeAny>(prop: T) {
+  const inner = unwrapQueryProperty(prop)
+  if (inner instanceof z.ZodNumber) {
+    return z.preprocess((value) => {
+      if (typeof value === 'string' && value.trim() !== '')
+        return Number(value)
+      return value
+    }, prop)
+  }
+  return prop
 }
 
 /** Accept an array or a comma-separated string. */
@@ -44,8 +85,9 @@ export function queryProperty<
   T extends ZodTypeAny,
   X extends Record<string, ZodTypeAny> = {},
 >(prop: T, extension: X = {} as X) {
-  const nullishProp = prop.nullish()
-  const propOptional = prop.optional()
+  const queryProp = queryCompatibleProperty(prop)
+  const nullishProp = queryProp.nullish()
+  const propOptional = queryProp.optional()
 
   return z.union([
     // Direct equality (supports null/undefined if the base schema allows it)

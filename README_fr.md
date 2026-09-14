@@ -3,21 +3,21 @@
 `nuxt-feathers-zod` intègre FeathersJS v5 (Dove), les schémas Zod et l'accès typé aux services dans Nuxt 4.
 Le module s'adresse aux applications qui ont besoin d'un vrai contrat backend dans un projet Nuxt, tout en conservant la possibilité de se connecter à une API Feathers externe.
 
-Version de référence : **6.7.37**.
+Version de référence : **6.7.45**.
 
-Socle runtime de la version `6.7.1` : Node.js `^22.12.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6`.
-Le pont Nitro embarqué utilise désormais `@vevedh/feathers-nitro@0.5.0` ; cette version conserve le fonctionnement mono-instance existant tout en préparant une future configuration multi-instance optionnelle.
+Socle runtime de la version `6.7.39` : Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6` (validation de release recommandée avec Bun 1.3.14).
+Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5.0.49, Nuxt 4.5.2 et Vue 3.5.42 ; Nitro 2.13.4 et H3 1.15.11 restent volontairement gelés sur ce train.
 
 
 ## Ce que fournit le module
 
 - Serveur Feathers embarqué dans Nuxt/Nitro.
 - Mode client remote vers un backend Feathers existant.
-- Génération de services par CLI.
+- Génération de services par CLI, avec stratégies d’identifiant portables `objectid`, UUID, entier, bigint décimal sous forme de chaîne et chaîne libre.
 - Schémas Zod, resolvers, validation de requêtes et types TypeScript.
 - Registre extensible de providers local, JWT, OIDC, clé API et custom, avec flux remote orientés Keycloak.
 - Transports REST et Socket.io.
-- Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB et SQLite), avec endpoints optionnels d'administration MongoDB.
+- Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB et SQLite), avec drivers SQL explicites, pools sûrs, transactions mono-connexion, diagnostics expurgés et endpoints optionnels d'administration MongoDB. MongoDB et PostgreSQL sont certifiés ; MySQL, MariaDB et SQLite restent des chemins implémentés jusqu'à leurs gates réelles dédiées.
 - Services Builder et diagnostic Feathers-first sous `nfz/*`.
 - Composables runtime pour le client, les services, l'authentification et les services protégés.
 - Documentation VitePress en français et en anglais.

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { defineNuxtConfig } from 'nuxt/config'
 
-const modulePath = fileURLToPath(new URL('../../../src/module.ts', import.meta.url))
+const modulePath = fileURLToPath(new URL('../../../dist/module.mjs', import.meta.url))
 
 export default defineNuxtConfig({
   modules: [modulePath],

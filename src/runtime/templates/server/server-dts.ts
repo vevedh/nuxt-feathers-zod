@@ -1,6 +1,7 @@
 import type { ResolvedOptions } from '../../options'
 import type { DefaultAuthOptions } from '../../options/authentication'
 import type { RestOptions } from '../../options/transports/rest'
+import { hasDatabaseProvider } from '../../options/database'
 import { put, puts } from '../utils'
 
 /**
@@ -15,7 +16,7 @@ export function getServerDtsContents(options: ResolvedOptions) {
     const exp = (transports?.rest as RestOptions).framework === 'express'
     const koa = (transports?.rest as RestOptions).framework === 'koa'
 
-    const mongo = !!options.database?.mongo
+    const mongo = hasDatabaseProvider(options.database, 'mongodb')
 
     let entity, entityImport
     const auth = options?.auth as DefaultAuthOptions

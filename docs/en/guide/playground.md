@@ -25,6 +25,8 @@ The **Run quick checks** action does not change persistent data.
 
 The **Essential tests** page checks a service first and then a local session. It displays useful details for diagnosing a transport or authentication issue.
 
+In the local scenario, the **Messages** page requires an authenticated session at both the route and Feathers service layers. **Sign out** closes the session, clears protected page data, and returns to the dashboard. Direct anonymous access to `/messages` is redirected to a public page and the `messages` API returns `401`.
+
 ![Service and authentication diagnostics](/images/guides/playwright/playwright-diagnostics.png)
 
 ## Useful workflows
@@ -58,4 +60,4 @@ Documentation images are produced by playground Playwright scenarios. A screensh
 
 The playground uses test-only identities and secrets. Never copy those values into production.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

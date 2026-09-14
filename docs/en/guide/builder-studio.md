@@ -36,4 +36,4 @@ feathers: {
 
 Keep Builder administration separate from business screens and record every applied change in the project repository.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

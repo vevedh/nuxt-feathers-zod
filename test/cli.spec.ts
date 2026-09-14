@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
-import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, createCliCommand, generateFileService, generateMiddleware, generateService, runCli } from '../src/cli/index'
+import { assertInitEmbeddedArgs, assertInitRemoteArgs, assertServiceGenerationArgs, createCliCommand, generateFileService, generateMiddleware, generateService, resolveServiceAdapter, resolveServiceIdStrategy, runCli } from '../src/cli/index'
 import { NFZ_MODULE_CAPABILITIES } from '../src/runtime/capabilities'
 import { resolveServerOptions } from '../src/runtime/options/server'
 import { getServerPluginContents } from '../src/runtime/templates/server/plugin'
@@ -122,7 +122,6 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(compressionModule?.from).not.toContain('src/runtime/server/modules')
     expect(resolved.allowMissingDatabaseServices).toBe(false)
   })
-
 
   it('renders consumer-safe built-in server module imports in the generated server plugin', async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-consumer-plugin-'))
@@ -264,6 +263,130 @@ describe('nuxt-feathers-zod CLI generators', () => {
     })
   })
 
+  it('resolves portable database engines to the compatible service adapter', () => {
+    expect(resolveServiceAdapter(undefined, 'mongodb')).toBe('mongodb')
+    expect(resolveServiceAdapter(undefined, 'postgresql')).toBe('knex')
+    expect(resolveServiceAdapter(undefined, 'mysql')).toBe('knex')
+    expect(resolveServiceAdapter(undefined, 'mariadb')).toBe('knex')
+    expect(resolveServiceAdapter(undefined, 'sqlite')).toBe('knex')
+    expect(resolveServiceAdapter('knex', 'postgresql')).toBe('knex')
+    expect(() => resolveServiceAdapter('mongodb', 'postgresql')).toThrow('--database postgresql requires --adapter knex')
+  })
+
+  it('qualifies identifier strategies per adapter without changing legacy defaults', () => {
+    expect(resolveServiceIdStrategy('mongodb')).toBe('objectid')
+    expect(resolveServiceIdStrategy('knex')).toBe('integer')
+    expect(resolveServiceIdStrategy('memory')).toBe('integer')
+    expect(resolveServiceIdStrategy('mongodb', 'uuid')).toBe('uuid')
+    expect(resolveServiceIdStrategy('knex', 'bigint')).toBe('bigint')
+    expect(() => resolveServiceIdStrategy('mongodb', 'integer')).toThrow('--idStrategy integer is not supported with --adapter mongodb')
+    expect(() => resolveServiceIdStrategy('knex', 'objectid')).toThrow('--idStrategy objectid is not supported with --adapter knex')
+  })
+
+  it('generates a UUID SQL service with explicit adapter id and portable manifest metadata', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-portable-uuid-'))
+    await writeFile(join(root, 'nuxt.config.ts'), `export default defineNuxtConfig({ modules: ['nuxt-feathers-zod'] })
+`)
+    await runCli([
+      'add',
+      'service',
+      'api-keys',
+      '--database',
+      'postgresql',
+      '--connection',
+      'primary',
+      '--table',
+      'api_keys',
+      '--schema',
+      'zod',
+      '--idStrategy',
+      'uuid',
+    ], { cwd: root })
+
+    const base = join(root, 'services', 'api-keys')
+    const classFile = join(base, 'api-keys.class.ts')
+    const schemaFile = join(base, 'api-keys.schema.ts')
+    const manifestFile = join(root, 'services', '.nfz', 'services', 'api-keys.json')
+    const klass = await readFile(classFile, 'utf8')
+    const schemaSource = await readFile(schemaFile, 'utf8')
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8'))
+
+    expect(klass).toContain('id: "id"')
+    expect(schemaSource).toContain('id: z.string().uuid()')
+    expect(schemaSource).toContain('export const apiKeyDataSchema = apiKeySchema.pick({ id: true, text: true })')
+    expect(manifest).toMatchObject({
+      adapter: 'knex',
+      idField: 'id',
+      idStrategy: 'uuid',
+      databaseType: 'postgresql',
+      databaseProvider: 'knex',
+      databaseFamily: 'sql',
+    })
+    await expectGeneratedTsSyntaxOk([classFile, schemaFile])
+  })
+
+  it('generates a portable PostgreSQL service from --database and records connection identity metadata', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-portable-postgresql-'))
+    await writeFile(join(root, 'nuxt.config.ts'), `export default defineNuxtConfig({ modules: ['nuxt-feathers-zod'] })\n`)
+    await runCli([
+      'add',
+      'service',
+      'audit-events',
+      '--database',
+      'postgresql',
+      '--connection',
+      'warehouse',
+      '--table',
+      'audit_events',
+      '--schema',
+      'zod',
+    ], { cwd: root })
+
+    const base = join(root, 'services', 'audit-events')
+    const classFile = join(base, 'audit-events.class.ts')
+    const manifestFile = join(root, 'services', '.nfz', 'services', 'audit-events.json')
+    const klass = await readFile(classFile, 'utf8')
+    expect(klass).toContain("getNfzKnexClient(app, \"warehouse\")")
+    expect(klass).toContain('name: "audit_events"')
+    await expectGeneratedTsSyntaxOk([classFile])
+
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8'))
+    expect(manifest).toMatchObject({
+      adapter: 'knex',
+      connectionName: 'warehouse',
+      databaseType: 'postgresql',
+      databaseProvider: 'knex',
+      databaseFamily: 'sql',
+      tableName: 'audit_events',
+    })
+  })
+
+  it('keeps --adapter mongodb|knex compatible while enriching persistent service manifests', { timeout: LONG_TIMEOUT }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'nfz-portable-compat-'))
+    const servicesDir = join(root, 'services')
+    await generateService({
+      projectRoot: root,
+      servicesDir,
+      name: 'messages',
+      adapter: 'mongodb',
+      auth: false,
+      idField: '_id',
+      connectionName: 'primary',
+      docs: false,
+      schema: 'zod',
+      dry: false,
+      force: false,
+    })
+    const manifest = JSON.parse(await readFile(join(servicesDir, '.nfz', 'services', 'messages.json'), 'utf8'))
+    expect(manifest).toMatchObject({
+      adapter: 'mongodb',
+      connectionName: 'primary',
+      databaseType: 'mongodb',
+      databaseProvider: 'mongodb',
+      databaseFamily: 'document',
+    })
+  })
+
   it('generates an adapter-less service via generateService --custom', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
     const servicesDir = join(root, 'services')
@@ -391,7 +514,6 @@ describe('nuxt-feathers-zod CLI generators', () => {
       join(base, 'attachments.ts'),
     ])
   })
-
 
   it('rejects traversal identifiers, invalid Base64 and oversized payloads in generated file services', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-file-security-'))
@@ -668,7 +790,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
       '--table and --schemaName require --adapter knex',
     )
     expect(() => assertServiceGenerationArgs({ _: [], connection: 'primary' }, false, 'memory')).toThrow(
-      '--connection requires --adapter mongodb or knex',
+      '--connection requires --database <type> or --adapter mongodb|knex',
     )
   })
   it('hardens invalid remote init flag combinations', () => {
@@ -884,7 +1006,6 @@ it('dispatches init remote through the citty CLI entrypoint', async () => {
   })
 
 })
-
 
 it('uses exact-match aliases so server subpath exports are not rewritten to .nuxt local paths', async () => {
   const source = await readFile(join(process.cwd(), 'src/setup/apply-aliases.ts'), 'utf8')

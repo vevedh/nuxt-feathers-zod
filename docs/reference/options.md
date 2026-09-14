@@ -206,6 +206,39 @@ auth: {
 | `local` | Options local auth |
 | `client.storageKey` | Clé de stockage côté client |
 
+## `database.connections`
+
+Le registre moderne utilise des connexions nommées. Pour SQL, NFZ 6.7.42 résout explicitement le client Knex, le package driver et les limites de pool avant le démarrage.
+
+```ts
+database: {
+  default: 'reporting',
+  connections: {
+    reporting: {
+      type: 'postgresql',
+      connection: process.env.REPORTING_DATABASE_URL!,
+      pool: { min: 0, max: 7 },
+      acquireConnectionTimeout: 10_000,
+    },
+  },
+}
+```
+
+| Option SQL | Défaut | Description |
+|---|---:|---|
+| `type` | — | `postgresql`, `mysql`, `mariadb` ou `sqlite` |
+| `connection` | — | chaîne ou objet de connexion transmis à Knex |
+| `client` | selon `type` | client Knex ; un override personnalisé impose `driverPackage` |
+| `driverPackage` | selon `type` | package npm chargé au démarrage (`pg`, `mysql2`, `better-sqlite3`) |
+| `pool.min` | `0` | nombre minimum de connexions conservées |
+| `pool.max` | `10` (`1` pour SQLite) | plafond du pool ; SQLite impose `1` |
+| `acquireConnectionTimeout` | `60000` | attente maximale d'acquisition d'une connexion, en ms |
+| `searchPath` | — | liste de schémas, principalement utile avec PostgreSQL |
+| `required` | `true` | bloque le démarrage si la connexion échoue |
+| `healthCheck` | `true` | exécute `select 1` après ouverture |
+
+Les valeurs de connexion restent privées. Les diagnostics publics n'exposent que les métadonnées non sensibles, dont `provider`, `databaseFamily`, `driverPackage`, `certification` et `capabilities`.
+
 ## `database.mongo`
 
 ```ts

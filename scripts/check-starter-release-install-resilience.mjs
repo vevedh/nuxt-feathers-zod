@@ -16,9 +16,9 @@ try {
     name: 'nfz-starter-install-fixture',
     private: true,
     dependencies: {
-      nuxt: '4.4.2',
+      nuxt: '4.5.2',
       'nuxt-feathers-zod': expectedVersion,
-      'vue-tsc': '3.1.8',
+      'vue-tsc': '3.3.11',
     },
   }, null, 2)}\n`)
 
@@ -41,9 +41,9 @@ if (args.includes('--frozen-lockfile') && !existsSync(resolve(process.cwd(), 'bu
   process.exit(2)
 }
 for (const [name, version] of [
-  ['nuxt', '4.4.2'],
+  ['nuxt', '4.5.2'],
   ['nuxt-feathers-zod', ${JSON.stringify(expectedVersion)}],
-  ['vue-tsc', '3.1.8'],
+  ['vue-tsc', '3.3.11'],
 ]) {
   const target = resolve(process.cwd(), 'node_modules', ...name.split('/'))
   mkdirSync(target, { recursive: true })

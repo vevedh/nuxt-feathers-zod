@@ -49,7 +49,7 @@ You can install only `nuxt-feathers-zod` directly when you build:
 ## Recommended command
 
 ```bash
-bunx nuxt-feathers-zod@6.7.37 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.7.45 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env

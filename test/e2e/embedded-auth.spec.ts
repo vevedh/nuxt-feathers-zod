@@ -3,6 +3,9 @@ import { fileURLToPath } from 'node:url'
 import { $fetch, setup } from '@nuxt/test-utils/e2e'
 import { describe, expect, it } from 'vitest'
 
+const e2eSetupTimeout = process.platform === 'win32' ? 420_000 : 120_000
+const e2eServerStartTimeout = process.platform === 'win32' ? 180_000 : 60_000
+
 process.env.NFZ_AUTH_SECRET ||= randomBytes(48).toString('base64url')
 
 await setup({
@@ -10,6 +13,8 @@ await setup({
   server: true,
   dev: false,
   browser: false,
+  setupTimeout: e2eSetupTimeout,
+  serverStartTimeout: e2eServerStartTimeout,
 })
 
 describe('e2e embedded-auth fixture', () => {

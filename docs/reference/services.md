@@ -5,7 +5,7 @@
 Les services applicatifs vivent dans les dossiers déclarés par `servicesDirs`. La CLI produit la structure attendue par le scanner :
 
 ```bash
-bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
+bunx nuxt-feathers-zod add service articles --database mongodb --connection primary --schema zod
 ```
 
 Pour une méthode personnalisée :
@@ -14,7 +14,9 @@ Pour une méthode personnalisée :
 bunx nuxt-feathers-zod add custom-service reports --methods find --customMethods run --schema zod
 ```
 
-Les méthodes standard Feathers et les méthodes personnalisées sont déclarées séparément.
+Les méthodes standard Feathers et les méthodes personnalisées sont déclarées séparément. Pour un service persistant, `--database` est le sélecteur portable recommandé et `--connection` lie le manifeste au registre nommé ; `--adapter mongodb|knex` reste compatible.
+
+Le générateur accepte aussi `--idStrategy objectid|uuid|integer|bigint|string`. Les combinaisons sont validées par adapter : MongoDB utilise `objectid` par défaut ; Knex et Memory utilisent `integer`. Le manifeste conserve cette stratégie et `doctor` la contrôle. Le mode `bigint` utilise une chaîne décimale au niveau API afin de rester compatible JSON.
 
 ## Services NFZ de console
 
@@ -89,4 +91,4 @@ L’écriture est refusée lorsque `console.allowWrite` vaut `false`.
 
 Les routes `/api/nfz/**` ne sont pas des services métier indépendants. Lorsqu’elles sont activées, elles délèguent aux services ci-dessus et ajoutent des en-têtes de dépréciation.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

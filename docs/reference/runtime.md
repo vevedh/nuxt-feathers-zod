@@ -142,6 +142,8 @@ Pour une opération métier :
 
 ## Helpers serveur du registre de bases
 
-Les services et modules serveur peuvent importer `getNfzDatabaseRegistry`, `getNfzDatabaseConnection`, `getNfzMongoDatabase`, `getNfzKnexClient`, `getNfzDatabaseDiagnostics` et `checkNfzDatabaseConnection` depuis `nuxt-feathers-zod/server-database`. Les helpers imposent la sélection d’une connexion prête et évitent l’accès direct aux secrets de configuration.
+Les services et modules serveur peuvent importer `getNfzDatabaseRegistry`, `getNfzDatabaseConnection`, `getNfzMongoDatabase`, `getNfzKnexClient`, `withNfzSqlTransaction`, `getNfzDatabaseDiagnostics` et `checkNfzDatabaseConnection` depuis `nuxt-feathers-zod/server-database`. Les helpers imposent la sélection d’une connexion prête et évitent l’accès direct aux secrets de configuration.
 
-<!-- release-version: 6.7.37 -->
+Les diagnostics de connexion incluent également `provider`, `databaseFamily`, `certification`, `capabilities` et, pour SQL, `driverPackage`. Ils restent volontairement expurgés : aucune URL, mot de passe ni structure `connection` n'est renvoyée au client.
+
+<!-- release-version: 6.7.45 -->

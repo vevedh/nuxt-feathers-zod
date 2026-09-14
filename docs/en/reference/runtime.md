@@ -131,6 +131,8 @@ For a business operation:
 
 ## Database registry server helpers
 
-Server services and modules can import `getNfzDatabaseRegistry`, `getNfzDatabaseConnection`, `getNfzMongoDatabase`, `getNfzKnexClient`, `getNfzDatabaseDiagnostics`, and `checkNfzDatabaseConnection` from `nuxt-feathers-zod/server-database`. These helpers require a ready connection and avoid direct access to configuration secrets.
+Server services and modules can import `getNfzDatabaseRegistry`, `getNfzDatabaseConnection`, `getNfzMongoDatabase`, `getNfzKnexClient`, `withNfzSqlTransaction`, `getNfzDatabaseDiagnostics`, and `checkNfzDatabaseConnection` from `nuxt-feathers-zod/server-database`. These helpers require a ready connection and avoid direct access to configuration secrets.
 
-<!-- release-version: 6.7.37 -->
+Connection diagnostics also include `provider`, `databaseFamily`, `certification`, `capabilities`, and `driverPackage` for SQL connections. They remain deliberately redacted: no URL, password, or raw `connection` object is returned to clients.
+
+<!-- release-version: 6.7.45 -->

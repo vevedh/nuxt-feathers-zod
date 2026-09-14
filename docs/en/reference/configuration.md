@@ -126,6 +126,8 @@ feathers: {
 
 Supported types are `mongodb`, `postgresql`, `mysql`, `mariadb`, and `sqlite`.
 
+Starting with 6.7.41, every resolved connection also exposes non-sensitive `provider`, `databaseFamily`, `adapter`, `certification`, and `capabilities` metadata. Standard driver mapping is fail-closed: MongoDB uses the `mongodb` provider, while PostgreSQL/MySQL/MariaDB/SQLite use `knex`. MongoDB and PostgreSQL are certified; MySQL, MariaDB, and SQLite remain implemented until their dedicated real-engine gates are complete.
+
 | Option | Default | Purpose |
 |---|---:|---|
 | `enabled` | `true` | enables the connection |
@@ -187,4 +189,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

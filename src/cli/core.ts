@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { camelCase, kebabCase, pascalCase } from 'change-case'
 import consola from 'consola'
 
-
-import type { Adapter, CollectionName, IdField, MiddlewareTarget, RunCliOptions, SchemaKind, ServiceManifest, ServiceSchemaField } from './core/types'
-export type { Adapter, CollectionName, IdField, MiddlewareTarget, RunCliOptions, SchemaKind, ServiceManifest, ServiceSchemaField } from './core/types'
+import type { Adapter, CollectionName, IdField, MiddlewareTarget, RunCliOptions, SchemaKind, ServiceDatabaseFamily, ServiceDatabaseProvider, ServiceDatabaseType, ServiceIdStrategy, ServiceManifest, ServiceSchemaField } from './core/types'
+export type { Adapter, CollectionName, IdField, MiddlewareTarget, RunCliOptions, SchemaKind, ServiceDatabaseFamily, ServiceDatabaseProvider, ServiceDatabaseType, ServiceIdStrategy, ServiceManifest, ServiceSchemaField } from './core/types'
+import { getDefaultServiceIdStrategy, resolveServiceIdStrategy, serviceIdFieldType, serviceIdJsonType } from './identifiers'
 export { handleCliError, printHelp } from './core/help'
 
 function findNuxtConfigPath(projectRoot: string): string | null {
@@ -40,7 +40,6 @@ export function parseFlags(argv: string[]) {
   }
   return out
 }
-
 
 // --- nuxt.config.ts feathers:{} auto-init helpers (DX) -----------------------
 
@@ -352,7 +351,6 @@ function renderStringArray(values?: string[]): string | undefined {
   return `[${values.map(v => `'${v}'`).join(', ')}]`
 }
 
-
 function parseCsvList(raw?: string): string[] | undefined {
   if (!raw)
     return undefined
@@ -468,7 +466,6 @@ function ensureNuxtModuleInConfig(src: string, moduleName: string): string {
   return src.slice(0, insertAt) + block + src.slice(insertAt)
 }
 
-
 function renderWebsocketConfig(websocket: any, websocketPath?: string): string {
   const parts: string[] = []
   parts.push(`path: '${websocketPath ?? '/socket.io'}'`)
@@ -541,7 +538,6 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     auth: ${authEnabled},
     swagger: ${swaggerEnabled},`
   })()
-
 
   const mongoManagementPart = (() => {
     if (!patch.mongoManagement) return ''
@@ -645,7 +641,6 @@ function buildFeathersBlock(patch: NuxtConfigPatch): string {
     feathers: {${servicesPart}${authPart}${templatesPart}${serverPart}${embeddedPart}${mongoManagementPart}${keycloakPart}${clientPart}
     },`
 }
-
 
 function patchFeathersObjectLiteral(feathersObj: string, patch: NuxtConfigPatch): string {
   const entries = parseObjectPropEntries(feathersObj)
@@ -807,7 +802,6 @@ function ensureNestedDatabaseMongo(objLiteral: string, mongoValue: string): stri
   return before + databaseObj + after
 }
 
-
 function ensureNestedTransports(
   objLiteral: string,
   framework: 'express' | 'koa' | undefined,
@@ -861,7 +855,6 @@ function locateObjectLiteral(src: string, startPattern: RegExp): { start: number
   }
   return null
 }
-
 
 function locateArrayLiteral(src: string, startPattern: RegExp): { start: number; end: number } | null {
   const m = startPattern.exec(src)
@@ -1112,7 +1105,6 @@ export {}
 `
 }
 
-
 export async function findProjectRoot(start: string) {
   // Walk up until we find a package.json.
   let dir = resolve(start)
@@ -1142,8 +1134,6 @@ function normalizeServiceName(raw: string) {
   // Allow "posts", "haproxy-domains", "traefik_stacks" etc.
   return kebabCase(raw)
 }
-
-
 
 function getNfzRoot(servicesDir: string) {
   return join(servicesDir, '.nfz')
@@ -1176,6 +1166,12 @@ function inferFieldTypeFromZodExpression(expr: string): string {
   const value = expr.replace(/\s+/g, ' ').trim()
   if (/objectIdSchema\(\)/.test(value))
     return 'id'
+  if (/z\.string\(\)\.uuid\(\)/.test(value))
+    return 'uuid'
+  if (/Invalid bigint identifier/.test(value))
+    return 'bigint'
+  if (/z\.number\(\)\.int\(\)/.test(value))
+    return 'integer'
   if (/z\.string\(\)/.test(value))
     return 'string'
   if (/z\.number\(\)/.test(value))
@@ -1257,7 +1253,14 @@ function parseJsonFields(source: string): Record<string, ServiceSchemaField> {
     const match = trimmed.match(/^([A-Za-z0-9_]+):\s*\{\s*type:\s*['\"]([^'\"]+)['\"](?:,\s*default:\s*([^,}]+))?.*\}$/)
     if (!match)
       continue
-    const [, name, type, rawDefault] = match
+    const [, name, rawType, rawDefault] = match
+    const type = /format:\s*['"]uuid['"]/.test(trimmed)
+      ? 'uuid'
+      : /pattern:\s*['"]\^-\?\[0-9\]\+\$['"]/.test(trimmed)
+        ? 'bigint'
+        : rawType === 'integer'
+          ? 'integer'
+          : rawType
     fields[name] = {
       type,
       required: required.has(name),
@@ -1268,8 +1271,7 @@ function parseJsonFields(source: string): Record<string, ServiceSchemaField> {
   return fields
 }
 
-
-const SUPPORTED_FIELD_TYPES = new Set(['string', 'number', 'boolean', 'date', 'object', 'array', 'id', 'string[]', 'number[]', 'boolean[]'])
+const SUPPORTED_FIELD_TYPES = new Set(['string', 'number', 'integer', 'bigint', 'uuid', 'boolean', 'date', 'object', 'array', 'id', 'string[]', 'number[]', 'boolean[]'])
 
 function assertSupportedFieldType(type: string) {
   if (!SUPPORTED_FIELD_TYPES.has(type))
@@ -1328,6 +1330,27 @@ function parseRenameFieldSpec(spec: string): { from: string, to: string } {
   return { from, to }
 }
 
+function serviceDatabaseMetadata(adapter: Adapter, databaseType?: ServiceDatabaseType): {
+  databaseType?: ServiceDatabaseType
+  databaseProvider?: ServiceDatabaseProvider
+  databaseFamily?: ServiceDatabaseFamily
+} {
+  if (adapter === 'memory')
+    return {}
+  if (adapter === 'mongodb') {
+    return {
+      databaseType: databaseType ?? 'mongodb',
+      databaseProvider: 'mongodb',
+      databaseFamily: 'document',
+    }
+  }
+  return {
+    ...(databaseType ? { databaseType } : {}),
+    databaseProvider: 'knex',
+    databaseFamily: 'sql',
+  }
+}
+
 async function inferServiceManifest(projectRoot: string, servicesDir: string, name: string): Promise<ServiceManifest> {
   const serviceNameKebab = normalizeServiceName(name)
   const ids = createServiceIds(serviceNameKebab)
@@ -1370,6 +1393,7 @@ async function inferServiceManifest(projectRoot: string, servicesDir: string, na
     : undefined
   const connectionName = classSource.match(/getNfz(?:MongoDatabase|KnexClient)\(app\s*,\s*["']([^"']+)["']\)/)?.[1]
   const idField: IdField = schemaSource.includes('_id') || classSource.includes('_id') ? '_id' : 'id'
+  const idStrategy = inferIdStrategyFromFields(fields, idField, adapter)
 
   return {
     name: serviceNameKebab,
@@ -1378,10 +1402,12 @@ async function inferServiceManifest(projectRoot: string, servicesDir: string, na
     auth: serviceSource.includes('authenticateNfz()') || serviceSource.includes("authenticate('jwt')"),
     custom,
     idField,
+    ...(!custom ? { idStrategy } : {}),
     ...(collectionName ? { collectionName } : {}),
     ...(tableName ? { tableName } : {}),
     ...(schemaName ? { schemaName } : {}),
     ...(connectionName ? { connectionName } : {}),
+    ...serviceDatabaseMetadata(adapter),
     ...(methods.length ? { methods } : {}),
     ...(custom ? { customMethods: methods.filter(m => !STD_SERVICE_METHODS.has(m)) } : {}),
     schema: {
@@ -1411,6 +1437,10 @@ async function writeServiceManifest(servicesDir: string, manifest: ServiceManife
     ...(manifest.tableName ? { tableName: manifest.tableName } : {}),
     ...(manifest.schemaName ? { schemaName: manifest.schemaName } : {}),
     ...(manifest.connectionName ? { connectionName: manifest.connectionName } : {}),
+    ...(manifest.idStrategy ? { idStrategy: manifest.idStrategy } : {}),
+    ...(manifest.databaseType ? { databaseType: manifest.databaseType } : {}),
+    ...(manifest.databaseProvider ? { databaseProvider: manifest.databaseProvider } : {}),
+    ...(manifest.databaseFamily ? { databaseFamily: manifest.databaseFamily } : {}),
   }
   await ensureDir(nfzRoot, io.dry)
   await writeFileSafe(globalManifestPath, `${JSON.stringify(global, null, 2)}\n`, { dry: io.dry, force: true })
@@ -1433,6 +1463,10 @@ function renderManifestShow(manifest: ServiceManifest) {
     `Auth: ${manifest.auth ? 'yes' : 'no'}`,
     `Custom: ${manifest.custom ? 'yes' : 'no'}`,
     ...(manifest.connectionName ? [`Connection: ${manifest.connectionName}`] : []),
+    ...(manifest.idStrategy ? [`ID strategy: ${manifest.idStrategy}`] : []),
+    ...(manifest.databaseType ? [`Database type: ${manifest.databaseType}`] : []),
+    ...(manifest.databaseProvider ? [`Database provider: ${manifest.databaseProvider}`] : []),
+    ...(manifest.databaseFamily ? [`Database family: ${manifest.databaseFamily}`] : []),
     ...(manifest.collectionName ? [`Collection: ${manifest.collectionName}`] : []),
     ...(manifest.tableName ? [`Table: ${manifest.tableName}`] : []),
     ...(manifest.schemaName ? [`SQL schema: ${manifest.schemaName}`] : []),
@@ -1538,7 +1572,6 @@ function renderAuthCompatibilityLine(manifest: ServiceManifest) {
   return lines
 }
 
-
 function enforceAuthSchemaGuard(_manifest: ServiceManifest, _nextMode: SchemaKind, _force: boolean) {
 }
 
@@ -1597,8 +1630,27 @@ function inferIdFieldFromFields(fields: Record<string, ServiceSchemaField>, fall
   return fallback
 }
 
-function pickCreateFieldMap(fields: Record<string, ServiceSchemaField>, idField: IdField) {
-  return Object.fromEntries(Object.entries(fields).filter(([name]) => name !== idField))
+function inferIdStrategyFromFields(fields: Record<string, ServiceSchemaField>, idField: IdField, adapter: Adapter): ServiceIdStrategy {
+  const type = fields[idField]?.type
+  if (type === 'id')
+    return adapter === 'mongodb' ? 'objectid' : 'integer'
+  if (type === 'uuid')
+    return 'uuid'
+  if (type === 'integer' || type === 'number')
+    return 'integer'
+  if (type === 'bigint')
+    return 'bigint'
+  if (type === 'string')
+    return 'string'
+  return getDefaultServiceIdStrategy(adapter)
+}
+
+function usesClientAssignedServiceId(strategy: ServiceIdStrategy): boolean {
+  return strategy === 'uuid' || strategy === 'string'
+}
+
+function pickCreateFieldMap(fields: Record<string, ServiceSchemaField>, idField: IdField, idStrategy: ServiceIdStrategy) {
+  return Object.fromEntries(Object.entries(fields).filter(([name]) => name !== idField || usesClientAssignedServiceId(idStrategy)))
 }
 
 function renderZodFieldExpression(field: ServiceSchemaField, adapter: Adapter) {
@@ -1606,6 +1658,15 @@ function renderZodFieldExpression(field: ServiceSchemaField, adapter: Adapter) {
   switch (field.type) {
     case 'id':
       base = adapter === 'mongodb' ? 'objectIdSchema()' : 'z.number().int()'
+      break
+    case 'uuid':
+      base = 'z.string().uuid()'
+      break
+    case 'integer':
+      base = 'z.number().int()'
+      break
+    case 'bigint':
+      base = `z.string().regex(/^-?[0-9]+$/, 'Invalid bigint identifier')`
       break
     case 'string':
       base = 'z.string()'
@@ -1644,18 +1705,26 @@ function renderZodFieldExpression(field: ServiceSchemaField, adapter: Adapter) {
   return base
 }
 
-function renderSchemaFromManifest(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField, schemaKind: SchemaKind, fields: Record<string, ServiceSchemaField>, auth = false, authAware?: boolean) {
+function renderSchemaFromManifest(ids: ReturnType<typeof createServiceIds>, adapter: Adapter, idField: IdField, idStrategy: ServiceIdStrategy, schemaKind: SchemaKind, fields: Record<string, ServiceSchemaField>, auth = false, authAware?: boolean) {
   if (schemaKind === 'zod')
-    return renderZodSchema(ids, adapter, idField, fields, auth, authAware)
+    return renderZodSchema(ids, adapter, idField, idStrategy, fields, auth, authAware)
   if (schemaKind === 'json')
-    return renderJsonSchema(ids, adapter, idField, fields, auth, authAware)
+    return renderJsonSchema(ids, adapter, idField, idStrategy, fields, auth, authAware)
   return ''
 }
 
 async function applyServiceManifest(opts: { servicesDir: string, manifest: ServiceManifest, dry: boolean, force: boolean }) {
+  const idField = inferIdFieldFromFields(opts.manifest.schema.fields, opts.manifest.idField || (opts.manifest.adapter === 'mongodb' ? '_id' : 'id'))
+  const idStrategy = opts.manifest.custom
+    ? undefined
+    : resolveServiceIdStrategy(
+        opts.manifest.adapter,
+        opts.manifest.idStrategy || inferIdStrategyFromFields(opts.manifest.schema.fields, idField, opts.manifest.adapter),
+      )
   const next: ServiceManifest = {
     ...opts.manifest,
-    idField: inferIdFieldFromFields(opts.manifest.schema.fields, opts.manifest.idField || (opts.manifest.adapter === 'mongodb' ? '_id' : 'id')),
+    idField,
+    ...(idStrategy ? { idStrategy } : {}),
   }
 
   const ids = createServiceIds(next.name)
@@ -1683,11 +1752,12 @@ async function applyServiceManifest(opts: { servicesDir: string, manifest: Servi
       next.adapter,
       next.adapter === 'knex' ? (next.tableName || next.path) : (next.collectionName || next.path),
       next.schema.mode,
+      next.idField || (next.adapter === 'mongodb' ? '_id' : 'id'),
       next.connectionName,
       next.schemaName,
     ), { dry: opts.dry, force: true })
     await writeFileSafe(sharedFile, renderShared(ids, next.path, next.schema.mode), { dry: opts.dry, force: true })
-    await writeFileSafe(serviceFile, renderService(ids, next.auth, false, next.schema.mode, next.authAware), { dry: opts.dry, force: true })
+    await writeFileSafe(serviceFile, renderService(ids, next.auth, false, next.schema.mode, next.idStrategy || getDefaultServiceIdStrategy(next.adapter), next.authAware), { dry: opts.dry, force: true })
     if (next.schema.mode === 'none')
       await writeFileSafe(hooksFile, renderHooksNoSchema(ids, next.auth, next.authAware), { dry: opts.dry, force: true })
   }
@@ -1704,7 +1774,7 @@ async function applyServiceManifest(opts: { servicesDir: string, manifest: Servi
   else {
     await writeFileSafe(
       schemaFile,
-      renderSchemaFromManifest(ids, next.adapter, next.idField || (next.adapter === 'mongodb' ? '_id' : 'id'), next.schema.mode, next.schema.fields, next.auth, next.authAware),
+      renderSchemaFromManifest(ids, next.adapter, next.idField || (next.adapter === 'mongodb' ? '_id' : 'id'), next.idStrategy || getDefaultServiceIdStrategy(next.adapter), next.schema.mode, next.schema.fields, next.auth, next.authAware),
       { dry: opts.dry, force: true },
     )
   }
@@ -1806,7 +1876,6 @@ export async function mutateServiceFields(opts: {
   if (!opts.dry)
     consola.success(`Updated fields for '${applied.name}': ${actions.join(', ')}`)
 }
-
 
 export async function validateServiceSchema(opts: { projectRoot: string, servicesDir: string, name: string, format?: 'show' | 'json' }) {
   const manifest = await inferServiceManifest(opts.projectRoot, opts.servicesDir, opts.name)
@@ -1938,11 +2007,13 @@ export interface GenerateServiceOptions {
   adapter: Adapter
   auth: boolean
   idField: IdField
+  idStrategy?: ServiceIdStrategy
   servicePath?: string
   collectionName?: CollectionName
   tableName?: string
   schemaName?: string
   connectionName?: string
+  databaseType?: ServiceDatabaseType
   docs: boolean
   schema: SchemaKind
   dry: boolean
@@ -1972,6 +2043,7 @@ export async function generateService(opts: GenerateServiceOptions) {
   }
   const serviceNameKebab = normalizeServiceName(opts.name)
   const authAware = resolveAuthAwareFlag(serviceNameKebab, opts.auth, opts.authAware)
+  const idStrategy = resolveServiceIdStrategy(opts.adapter, opts.idStrategy)
   const ids = createServiceIds(serviceNameKebab)
 
   const servicePath = normalizeServicePath(opts.servicePath ?? serviceNameKebab)
@@ -1994,16 +2066,16 @@ export async function generateService(opts: GenerateServiceOptions) {
 
   const files: Array<{ path: string, content: string }> = [
     ...(schemaKind === 'zod'
-      ? [{ path: schemaFile, content: renderZodSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware) }]
+      ? [{ path: schemaFile, content: renderZodSchema(ids, opts.adapter, opts.idField, idStrategy, undefined, opts.auth, authAware) }]
       : schemaKind === 'json'
-        ? [{ path: schemaFile, content: renderJsonSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware) }]
+        ? [{ path: schemaFile, content: renderJsonSchema(ids, opts.adapter, opts.idField, idStrategy, undefined, opts.auth, authAware) }]
         : []),
-    { path: classFile, content: renderClass(ids, opts.adapter, storageName, schemaKind, connectionName, schemaName) },
+    { path: classFile, content: renderClass(ids, opts.adapter, storageName, schemaKind, opts.idField, connectionName, schemaName) },
     ...(schemaKind === 'none'
       ? [{ path: hooksFile, content: renderHooksNoSchema(ids, opts.auth, authAware) }]
       : []),
     { path: sharedFile, content: renderShared(ids, servicePath, schemaKind) },
-    { path: serviceFile, content: renderService(ids, opts.auth, opts.docs, schemaKind, authAware) },
+    { path: serviceFile, content: renderService(ids, opts.auth, opts.docs, schemaKind, idStrategy, authAware) },
   ]
 
   await ensureDir(dir, opts.dry)
@@ -2024,18 +2096,20 @@ export async function generateService(opts: GenerateServiceOptions) {
     custom: false,
     authAware,
     idField: opts.idField,
+    idStrategy,
     ...(opts.adapter === 'mongodb' ? { collectionName: storageName } : {}),
     ...(opts.adapter === 'knex' ? { tableName: storageName } : {}),
     ...(schemaName ? { schemaName } : {}),
     ...(connectionName ? { connectionName } : {}),
+    ...serviceDatabaseMetadata(opts.adapter, opts.databaseType),
     methods: ['find', 'get', 'create', 'patch', 'remove'],
     schema: {
       mode: schemaKind,
       fields: schemaKind === 'none'
         ? {}
         : schemaKind === 'zod'
-          ? parseZodFields(renderZodSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware))
-          : parseJsonFields(renderJsonSchema(ids, opts.adapter, opts.idField, undefined, opts.auth, authAware)),
+          ? parseZodFields(renderZodSchema(ids, opts.adapter, opts.idField, idStrategy, undefined, opts.auth, authAware))
+          : parseJsonFields(renderJsonSchema(ids, opts.adapter, opts.idField, idStrategy, undefined, opts.auth, authAware)),
     },
   }, { dry: opts.dry, force: true })
 
@@ -2043,7 +2117,6 @@ export async function generateService(opts: GenerateServiceOptions) {
     consola.success(`Generated service '${serviceNameKebab}' in ${relativeToCwd(dir)}`)
   }
 }
-
 
 export interface GenerateFileServiceOptions {
   projectRoot: string
@@ -2177,7 +2250,6 @@ export interface GenerateMiddlewareOptions {
   force: boolean
   preset?: string
 }
-
 
 export interface GenerateMongoComposeOptions {
   projectRoot: string
@@ -2332,7 +2404,6 @@ function safeMethodName(name: string) {
   // custom methods should still be valid JS identifiers
   return isValidIdentifier(name) ? name : kebabCase(name).replace(/-([a-z])/g, (_, c) => c.toUpperCase())
 }
-
 
 function renderMongoComposeFile(opts: GenerateMongoComposeOptions) {
   const serviceName = opts.serviceName || 'mongodb'
@@ -2572,7 +2643,6 @@ function relativeToCwd(p: string) {
   }
 }
 
-
 function resolveAuthAwareFlag(serviceNameKebab: string, auth: boolean, authAware?: boolean) {
   if (!auth)
     return false
@@ -2589,6 +2659,7 @@ function renderAuthUsersZodSchema(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
   idField: IdField,
+  idStrategy: ServiceIdStrategy,
   fields?: Record<string, ServiceSchemaField>,
   authAware = true,
 ) {
@@ -2598,13 +2669,13 @@ function renderAuthUsersZodSchema(
   const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
     ? fields
     : {
-        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        [idField]: { type: serviceIdFieldType(idStrategy), required: true },
         userId: { type: 'string', required: true },
         password: { type: 'string', required: true, secret: true },
       }
 
   const schemaEntries = Object.entries(fieldMap)
-  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
+  const idSchema = Object.values(fieldMap).some(field => field.type === 'id')
     ? `
 const objectIdRegex = /^[0-9a-f]{24}$/i
 export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid ObjectId')
@@ -2618,6 +2689,9 @@ export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid Obj
   const queryPick = fieldMap.userId
     ? `{ ${idField}: true, userId: true }`
     : `{ ${idField}: true }`
+  const dataPick = usesClientAssignedServiceId(idStrategy)
+    ? `{ ${idField}: true, userId: true, password: true }`
+    : `{ userId: true, password: true }`
 
   const patchResolver = fieldMap.password
     ? `
@@ -2651,10 +2725,7 @@ export const ${base}ExternalResolver = resolve<${Base}, HookContext<${serviceCla
 })
 
 // Schema for creating new entries
-export const ${base}DataSchema = ${base}Schema.pick({
-  userId: true,
-  password: true,
-})
+export const ${base}DataSchema = ${base}Schema.pick(${dataPick})
 export type ${Base}Data = z.infer<typeof ${base}DataSchema>
 export const ${base}DataValidator = getZodValidator(${base}DataSchema, { kind: 'data' })
 export const ${base}DataResolver = resolve<${Base}, any>({
@@ -2682,11 +2753,27 @@ export const ${base}QueryResolver = resolve<${Base}Query, HookContext<${serviceC
 }
 
 function renderJsonField(field: ServiceSchemaField, adapter: Adapter) {
-  const type = field.type === 'id'
-    ? (adapter === 'mongodb' ? 'string' : 'number')
-    : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
+  let type = field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type
+  const constraints: string[] = []
 
-  const pieces = [`type: '${type}'`]
+  if (field.type === 'id') {
+    type = adapter === 'mongodb' ? 'string' : 'number'
+    if (adapter === 'mongodb')
+      constraints.push(`pattern: '^[0-9a-f]{24}$'`)
+  }
+  else if (field.type === 'uuid') {
+    type = 'string'
+    constraints.push(`format: 'uuid'`)
+  }
+  else if (field.type === 'integer') {
+    type = 'integer'
+  }
+  else if (field.type === 'bigint') {
+    type = 'string'
+    constraints.push(`pattern: '^-?[0-9]+$'`)
+  }
+
+  const pieces = [`type: '${type}'`, ...constraints]
   if (field.default !== undefined)
     pieces.push(`default: ${JSON.stringify(field.default)}`)
 
@@ -2710,6 +2797,7 @@ function renderAuthUsersJsonSchema(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
   idField: IdField,
+  idStrategy: ServiceIdStrategy,
   fields?: Record<string, ServiceSchemaField>,
   authAware = true,
 ) {
@@ -2719,18 +2807,18 @@ function renderAuthUsersJsonSchema(
   const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
     ? fields
     : {
-        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        [idField]: { type: serviceIdFieldType(idStrategy), required: true },
         userId: { type: 'string', required: true },
         password: { type: 'string', required: true, secret: true },
       }
 
   const properties = renderJsonProperties(fieldMap, adapter)
-  const createFields = pickCreateFieldMap(fieldMap, idField)
+  const createFields = pickCreateFieldMap(fieldMap, idField, idStrategy)
   const dataProperties = renderJsonProperties(createFields, adapter)
   const required = jsonRequired(createFields)
   const patchProperties = renderJsonProperties(fieldMap, adapter)
   const queryProperties = [
-    `${idField}: ${renderJsonField(fieldMap[idField] || { type: adapter === 'mongodb' ? 'id' : 'number', required: true }, adapter)}`,
+    `${idField}: ${renderJsonField(fieldMap[idField] || { type: serviceIdFieldType(idStrategy), required: true }, adapter)}`,
     fieldMap.userId ? `userId: ${renderJsonField(fieldMap.userId, adapter)}` : '',
   ].filter(Boolean).join(',\n    ')
 
@@ -2814,12 +2902,13 @@ function renderZodSchema(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
   idField: IdField,
+  idStrategy: ServiceIdStrategy,
   fields?: Record<string, ServiceSchemaField>,
   auth = false,
   authAware?: boolean,
 ) {
   if (isAuthUsersService(ids, auth, authAware))
-    return renderAuthUsersZodSchema(ids, adapter, idField, fields, authAware)
+    return renderAuthUsersZodSchema(ids, adapter, idField, idStrategy, fields, authAware)
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
@@ -2827,15 +2916,15 @@ function renderZodSchema(
   const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
     ? fields
     : {
-        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        [idField]: { type: serviceIdFieldType(idStrategy), required: true },
         text: { type: 'string', required: true },
       }
 
   const schemaEntries = Object.entries(fieldMap)
-  const createFields = pickCreateFieldMap(fieldMap, idField)
+  const createFields = pickCreateFieldMap(fieldMap, idField, idStrategy)
   const queryFields = Object.fromEntries(schemaEntries.filter(([name]) => name === idField || name === 'text' || name === 'userId'))
 
-  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
+  const idSchema = Object.values(fieldMap).some(field => field.type === 'id')
     ? `
 const objectIdRegex = /^[0-9a-f]{24}$/i
 export const objectIdSchema = () => z.string().regex(objectIdRegex, 'Invalid ObjectId')
@@ -2898,6 +2987,7 @@ function renderClass(
   adapter: Adapter,
   storageName: string,
   schemaKind: SchemaKind,
+  idField: IdField,
   connectionName?: string,
   schemaName?: string,
 ) {
@@ -2908,7 +2998,7 @@ function renderClass(
   const connectionArg = connectionName ? `, ${JSON.stringify(connectionName)}` : ''
 
   if (schemaKind === 'none')
-    return renderClassNoSchema(ids, adapter, storageName, connectionName, schemaName)
+    return renderClassNoSchema(ids, adapter, storageName, idField, connectionName, schemaName)
 
   if (adapter === 'memory') {
     return [
@@ -2934,6 +3024,7 @@ export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> exten
 
 export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
   return {
+    id: ${JSON.stringify(idField)},
     multi: true,
   }
 }
@@ -2971,6 +3062,7 @@ export function getOptions(app: Application): KnexAdapterOptions {
       default: 10,
       max: 100,
     },
+    id: ${JSON.stringify(idField)},
     multi: true,
     Model: getNfzKnexClient(app${connectionArg}),
     name: ${JSON.stringify(storageName)},${schemaName ? `
@@ -3010,6 +3102,7 @@ export function getOptions(app: Application): MongoDBAdapterOptions {
       default: 10,
       max: 100,
     },
+    id: ${JSON.stringify(idField)},
     multi: true,
     Model: getNfzMongoDatabase(app${connectionArg}).then(db => db.collection(${JSON.stringify(storageName)})),
   }
@@ -3021,12 +3114,13 @@ function renderJsonSchema(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
   idField: IdField,
+  idStrategy: ServiceIdStrategy,
   fields?: Record<string, ServiceSchemaField>,
   auth = false,
   authAware?: boolean,
 ) {
   if (isAuthUsersService(ids, auth, authAware))
-    return renderAuthUsersJsonSchema(ids, adapter, idField, fields, authAware)
+    return renderAuthUsersJsonSchema(ids, adapter, idField, idStrategy, fields, authAware)
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceClass = `${Base}Service`
@@ -3034,33 +3128,19 @@ function renderJsonSchema(
   const fieldMap: Record<string, ServiceSchemaField> = fields && Object.keys(fields).length
     ? fields
     : {
-        [idField]: { type: adapter === 'mongodb' ? 'id' : 'number', required: true },
+        [idField]: { type: serviceIdFieldType(idStrategy), required: true },
         text: { type: 'string', required: true },
       }
 
-  const props = Object.entries(fieldMap)
-    .map(([name, field]) => {
-      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
-      const pieces = [`type: '${type}'`]
-      if (field.default !== undefined)
-        pieces.push(`default: ${JSON.stringify(field.default)}`)
-      return `    ${name}: { ${pieces.join(', ')} },`
-    })
-    .join('\n')
+  const props = renderJsonProperties(fieldMap, adapter)
 
-  const createFields = Object.entries(fieldMap).filter(([name]) => name !== idField)
+  const createFields = Object.entries(fieldMap).filter(([name]) => name !== idField || usesClientAssignedServiceId(idStrategy))
   const createProps = createFields
-    .map(([name, field]) => {
-      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
-      const pieces = [`type: '${type}'`]
-      if (field.default !== undefined)
-        pieces.push(`default: ${JSON.stringify(field.default)}`)
-      return `    ${name}: { ${pieces.join(', ')} },`
-    })
+    .map(([name, field]) => `    ${name}: ${renderJsonField(field, adapter)},`)
     .join('\n')
   const requiredCreate = createFields.filter(([, field]) => field.required !== false).map(([name]) => `'${name}'`)
 
-  const idSchema = adapter === 'mongodb' || Object.values(fieldMap).some(field => field.type === 'id')
+  const idSchema = Object.values(fieldMap).some(field => field.type === 'id')
     ? `
 const objectIdRegex = '^[0-9a-f]{24}$'
 `
@@ -3068,13 +3148,7 @@ const objectIdRegex = '^[0-9a-f]{24}$'
 
   const queryFields = Object.entries(fieldMap).filter(([name]) => name === idField || name === 'text' || name === 'userId')
   const queryProps = (queryFields.length ? queryFields : Object.entries(fieldMap).filter(([name]) => name === idField))
-    .map(([name, field]) => {
-      const type = field.type === 'id' ? (adapter === 'mongodb' ? 'string' : 'number') : (field.type.endsWith('[]') ? 'array' : field.type === 'date' ? 'string' : field.type)
-      const pieces = [`type: '${type}'`]
-      if (field.default !== undefined)
-        pieces.push(`default: ${JSON.stringify(field.default)}`)
-      return `    ${name}: { ${pieces.join(', ')} },`
-    })
+    .map(([name, field]) => `    ${name}: ${renderJsonField(field, adapter)},`)
     .join('\n')
 
   return `// JSON Schema variant (generated by nuxt-feathers-zod CLI)
@@ -3165,6 +3239,7 @@ function renderClassNoSchema(
   ids: ReturnType<typeof createServiceIds>,
   adapter: Adapter,
   storageName: string,
+  idField: IdField,
   connectionName?: string,
   schemaName?: string,
 ) {
@@ -3200,6 +3275,7 @@ export class ${serviceClass}<ServiceParams extends Params = ${paramsName}> exten
 
 export function getOptions(app: Application): MemoryServiceOptions<${Base}> {
   return {
+    id: ${JSON.stringify(idField)},
     multi: true,
   }
 }
@@ -3240,6 +3316,7 @@ export function getOptions(app: Application): KnexAdapterOptions {
       default: 10,
       max: 100,
     },
+    id: ${JSON.stringify(idField)},
     multi: true,
     Model: getNfzKnexClient(app${connectionArg}),
     name: ${JSON.stringify(storageName)},${schemaName ? `
@@ -3282,14 +3359,13 @@ export function getOptions(app: Application): MongoDBAdapterOptions {
       default: 10,
       max: 100,
     },
+    id: ${JSON.stringify(idField)},
     multi: true,
     Model: getNfzMongoDatabase(app${connectionArg}).then(db => db.collection(${JSON.stringify(storageName)})),
   }
 }
 `
 }
-
-
 
 function renderShared(ids: ReturnType<typeof createServiceIds>, servicePath: string, schemaKind: SchemaKind) {
   const base = ids.baseCamel
@@ -3331,13 +3407,13 @@ declare module 'nuxt-feathers-zod/client' {
 `
 }
 
-function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, schemaKind: SchemaKind, authAware?: boolean) {
+function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, schemaKind: SchemaKind, idStrategy: ServiceIdStrategy, authAware?: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
   const serviceClass = `${Base}Service`
   if (schemaKind === 'none') {
-    return renderServiceNoSchema(ids, auth, docs, authAware)
+    return renderServiceNoSchema(ids, auth, docs, idStrategy, authAware)
   }
 
   const authImports = auth ? "import { authenticateNfz } from 'nuxt-feathers-zod/server-auth'\n" : ''
@@ -3349,7 +3425,7 @@ function renderService(ids: ReturnType<typeof createServiceIds>, auth: boolean, 
     ? `
     docs: {
       description: '${Base} service',
-      idType: 'string',
+      idType: '${serviceIdJsonType(idStrategy)}',
 ${auth
   ? `      securities: ${base}Methods,
 `
@@ -3441,9 +3517,7 @@ declare module 'nuxt-feathers-zod/server' {
 `
 }
 
-
-
-function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, authAware?: boolean) {
+function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: boolean, docs: boolean, idStrategy: ServiceIdStrategy, authAware?: boolean) {
   const base = ids.baseCamel
   const Base = ids.basePascal
   const serviceName = ids.serviceNameKebab
@@ -3454,7 +3528,7 @@ function renderServiceNoSchema(ids: ReturnType<typeof createServiceIds>, auth: b
     ? `
     docs: {
       description: '${Base} service',
-      idType: 'string',
+      idType: '${serviceIdJsonType(idStrategy)}',
       definitions: {},
     },
 `
@@ -3569,9 +3643,6 @@ export const ${base}Hooks: HooksObject<Application, ${Service}> = {
 function renderEmptyHooks(_ids: ReturnType<typeof createServiceIds>) {
   return `// ! Generated by nuxt-feathers-zod - do not change manually\n\nexport default {}\n`
 }
-
-
-
 
 function renderFileServiceSchema(ids: ReturnType<typeof createServiceIds>) {
   const Base = ids.basePascal
@@ -4608,7 +4679,6 @@ export default defineFeathersServerModule(async (app) => {
 `
 }
 
-
 function renderSecureConfig(secure: NonNullable<NonNullable<NuxtConfigPatch['embedded']>['secure']>) {
   const parts: string[] = []
   if (typeof secure.cors === 'boolean') parts.push(`cors: ${secure.cors}`)
@@ -4654,8 +4724,6 @@ function ensureNestedServerSecure(
 
   return before + patched + after
 }
-
-
 
 interface ParsedRemoteAuthConfig {
   enabled?: boolean

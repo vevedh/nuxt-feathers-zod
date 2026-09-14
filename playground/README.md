@@ -28,7 +28,7 @@ Le serveur écoute par défaut sur `http://localhost:3000`.
 1. Ouvrir `/` et lancer les contrôles rapides.
 2. Se connecter avec le compte local de démonstration `test` / `12345` lorsque le scénario local est actif.
 3. Ouvrir `/tests` pour valider un service et la restauration de session.
-4. Ouvrir `/messages` pour tester un CRUD protégé.
+4. Ouvrir `/messages` pour tester un CRUD protégé, puis utiliser **Se déconnecter** : la session doit être fermée, la page doit revenir au tableau de bord et un accès anonyme à `messages` doit être refusé.
 5. Ouvrir `/actions` pour appeler une méthode personnalisée.
 6. Ouvrir `/mongo` lorsque MongoDB est activé.
 7. Ouvrir `/validation` pour comparer le scénario actif avec les autres configurations prises en charge.

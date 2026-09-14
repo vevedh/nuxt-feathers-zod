@@ -25,7 +25,7 @@ bunx nuxt-feathers-zod capabilities --section all --json
 | `add mongodb-compose` | Génère un fichier Compose MongoDB de développement. | `--out <value>`<br>`--service <value>`<br>`--port <value>`<br>`--database <value>`<br>`--rootUser <value>`<br>`--rootPassword <value>`<br>`--volume <value>`<br>`--force`<br>`--dry` |
 | `add remote-service` | Déclare un service Feathers distant dans la configuration client. | `<name>`<br>`--path <value>`<br>`--methods <value>`<br>`--dry` |
 | `add server-module` | Génère un module serveur Feathers/Nitro à partir d’un preset. | `<name>`<br>`--preset <helmet|security-headers|request-logger|healthcheck|rate-limit|express-baseline>`<br>`--force`<br>`--dry` |
-| `add service` | Génère un service Feathers avec adapter memory, MongoDB ou Knex, ou un service personnalisé. | `<name>`<br>`--custom`<br>`--type <adapter|custom>`<br>`--adapter <memory|mongodb|knex>`<br>`--schema <none|zod|json>`<br>`--auth`<br>`--authAware`<br>`--idField <id|_id>`<br>`--path <value>`<br>`--collection <value>`<br>`--table <value>`<br>`--schemaName <value>`<br>`--connection <value>`<br>`--methods <value>`<br>`--customMethods <value>`<br>`--docs`<br>`--servicesDir <value>`<br>`--force`<br>`--dry` |
+| `add service` | Génère un service Feathers portable par moteur/connexion nommée, avec compatibilité adapter memory, MongoDB ou Knex. | `<name>`<br>`--custom`<br>`--type <adapter|custom>`<br>`--adapter <memory|mongodb|knex>`<br>`--database <mongodb|postgresql|mysql|mariadb|sqlite>`<br>`--schema <none|zod|json>`<br>`--auth`<br>`--authAware`<br>`--idField <id|_id>`<br>`--idStrategy <objectid|uuid|integer|bigint|string>`<br>`--path <value>`<br>`--collection <value>`<br>`--table <value>`<br>`--schemaName <value>`<br>`--connection <value>`<br>`--methods <value>`<br>`--customMethods <value>`<br>`--docs`<br>`--servicesDir <value>`<br>`--force`<br>`--dry` |
 | `auth service` | Active ou désactive les hooks JWT sur un service existant. | `<name>`<br>`--servicesDir <value>`<br>`--enabled`<br>`--dry` |
 | `capabilities` | Expose la matrice des capacités réellement implémentées par la version installée. | `--section <summary|runtime|services|client|events|all>`<br>`--json` |
 | `doctor` | Analyse le projet courant et signale les incohérences de configuration ou de services. | — |
@@ -51,8 +51,8 @@ bunx nuxt-feathers-zod capabilities --section all --json
 
 ```bash
 bunx nuxt-feathers-zod init embedded --auth --framework express
-bunx nuxt-feathers-zod add service users --adapter mongodb --schema zod --auth
-bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
+bunx nuxt-feathers-zod add service users --database mongodb --schema zod --auth
+bunx nuxt-feathers-zod add service articles --database mongodb --schema zod
 bunx nuxt-feathers-zod schema articles --add-field title:string!
 bunx nuxt-feathers-zod doctor
 ```
@@ -75,4 +75,4 @@ bunx nuxt-feathers-zod doctor
 
 La commande `capabilities --json` expose les modes, transports, services NFZ, composables et événements d’authentification implémentés. Le contrôle de cohérence du dépôt compare cette matrice au runtime, au playground et à la documentation.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

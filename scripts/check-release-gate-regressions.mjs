@@ -12,6 +12,7 @@ const starterRelease = read('scripts/validate-starter-release.mjs')
 const starterReleaseInstaller = read('scripts/lib/starter-release-installer.mjs')
 const starterReleaseInstallGuard = read('scripts/check-starter-release-install-resilience.mjs')
 const starterPublishedTypes = read('scripts/check-starter-published-types.mjs')
+const starterQuasarCompat = read('scripts/check-starter-quasar-compat.mjs')
 const starterReleaseRuntime = read('scripts/check-starter-release-runtime.mjs')
 const starterReleaseMongo = read('scripts/lib/starter-release-mongodb.mjs')
 const windowsInstaller = read('scripts/install-windows.mjs')
@@ -46,6 +47,8 @@ requireText(starterReleaseInstaller, 'resolveNetworkConcurrency', 'starter adapt
 requireText(starterReleaseInstallGuard, 'frozenVerification=true', 'starter frozen-lockfile resilience smoke')
 requireText(starterPublishedTypes, 'mongodbClient?: Promise<Db>', 'published starter MongoDB configuration contract')
 requireText(starterPublishedTypes, 'AroundHookFunction & HookFunction', 'published starter hybrid auth hook contract')
+requireText(starterQuasarCompat, "'nuxt-quasar-ui': '3.1.1'", 'Nuxt 4 Quasar bridge baseline')
+requireText(starterQuasarCompat, "quasar: '2.31.0'", 'Quasar 2 starter baseline')
 requireText(starterReleaseRuntime, "const authSecret = randomBytes(48).toString('base64url')", 'ephemeral starter release auth secret guard')
 requireText(starterReleaseRuntime, 'NFZ_AUTH_SECRET: authSecret', 'starter production auth secret injection guard')
 requireText(windowsInstaller, "resolve(stateRoot, 'shared-cache')", 'reusable Windows install cache')
@@ -58,19 +61,28 @@ requireText(windowsVerifier, '$SkipInstall', 'Windows verification skip-install 
 requireText(windowsVerifier, 'scripts/print-bun-executable.mjs', 'PowerShell Bun executable resolution')
 requireText(windowsVerifier, 'sanity:starter-release-install-resilience', 'PowerShell starter install resilience guard')
 requireText(windowsVerifier, 'sanity:starter-published-types', 'PowerShell published starter type guard')
+requireText(windowsVerifier, 'sanity:starter-quasar-compat', 'PowerShell starter Quasar compatibility guard')
 requireText(windowsVerifier, 'sanity:starter-release-runtime', 'PowerShell starter production runtime guard')
 requireText(windowsVerifier, 'sanity:generated-template-types', 'PowerShell generated handler syntax guard')
 requireText(windowsVerifier, 'sanity:zod-boundary', 'PowerShell Nitro Zod runtime guard')
+requireText(windowsVerifier, 'sanity:portable-identifiers', 'PowerShell portable identifier guard')
+requireText(windowsVerifier, 'sanity:postgresql-certification', 'PowerShell PostgreSQL certification guard')
+requireText(windowsVerifier, 'test:postgresql:release', 'PowerShell exact-candidate PostgreSQL certification gate')
 requireText(windowsVerifier, 'sanity:release-lint-regressions', 'PowerShell early release lint guard')
 requireText(windowsVerifier, 'sanity:release-typecheck-regressions', 'PowerShell early release TypeScript guard')
 requireText(windowsVerifier, "Invoke-BunCommand @('run', 'release:candidate')", 'single candidate creation')
 requireText(windowsVerifier, "Invoke-BunCommand @('run', 'release:finalize')", 'final artifact promotion')
 
+const starterQuasarIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:starter-quasar-compat')")
 const starterRuntimeIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:starter-release-runtime')")
 const generatedTemplateIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:generated-template-types')")
 const zodBoundaryIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:zod-boundary')")
+const postgresqlGuardIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:postgresql-certification')")
 const lintRegressionIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:release-lint-regressions')")
 const lintIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'lint')")
+if (starterQuasarIndex < 0 || lintIndex < 0 || starterQuasarIndex > lintIndex)
+  problems.push('Windows starter Quasar compatibility guard must run before ESLint')
+
 if (starterRuntimeIndex < 0 || lintIndex < 0 || starterRuntimeIndex > lintIndex)
   problems.push('Windows starter production runtime guard must run before ESLint')
 
@@ -80,8 +92,27 @@ if (generatedTemplateIndex < 0 || lintIndex < 0 || generatedTemplateIndex > lint
 if (zodBoundaryIndex < 0 || lintIndex < 0 || zodBoundaryIndex > lintIndex)
   problems.push('Windows Nitro Zod runtime guard must run before ESLint')
 
+if (postgresqlGuardIndex < 0 || lintIndex < 0 || postgresqlGuardIndex > lintIndex)
+  problems.push('Windows PostgreSQL certification guard must run before ESLint')
+
 if (lintRegressionIndex < 0 || lintIndex < 0 || lintRegressionIndex > lintIndex)
   problems.push('Windows release lint regression guard must run before ESLint')
+
+const feathersNitroIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:feathers-nitro')")
+const dependencyConvergenceIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:dependency-convergence')")
+if (feathersNitroIndex < 0 || dependencyConvergenceIndex < 0 || lintIndex < 0
+  || feathersNitroIndex > lintIndex || dependencyConvergenceIndex > lintIndex) {
+  problems.push('Windows release dependency convergence guards must run before lint')
+}
+
+
+const candidateIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'release:candidate')")
+const postgresqlReleaseIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'test:postgresql:release')")
+const finalizeIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'release:finalize')")
+if (candidateIndex < 0 || postgresqlReleaseIndex < 0 || finalizeIndex < 0
+  || postgresqlReleaseIndex < candidateIndex || postgresqlReleaseIndex > finalizeIndex) {
+  problems.push('exact-candidate PostgreSQL certification must run after candidate creation and before finalization')
+}
 
 const typecheckRegressionIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'sanity:release-typecheck-regressions')")
 const typecheckIndex = windowsVerifier.indexOf("Invoke-BunCommand @('run', 'typecheck')")
@@ -98,6 +129,12 @@ if (packageJson.scripts?.['verify:release:windows'] !== 'powershell -NoProfile -
   problems.push('complete fail-fast Windows release gate is missing')
 if (packageJson.scripts?.['verify:release:windows:skip-install'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Full -SkipInstall')
   problems.push('complete Windows release gate skip-install mode is missing')
+if (packageJson.scripts?.['sanity:portable-identifiers'] !== 'node scripts/check-portable-identifiers.mjs')
+  problems.push('portable identifier sanity guard is missing')
+if (packageJson.scripts?.['sanity:postgresql-certification'] !== 'node scripts/check-postgresql-certification.mjs')
+  problems.push('PostgreSQL certification sanity guard is missing')
+if (packageJson.scripts?.['test:postgresql:release'] !== 'node scripts/validate-postgresql-release.mjs')
+  problems.push('exact-candidate PostgreSQL certification script is missing')
 if (packageJson.scripts?.['sanity:windows-install-retry'] !== 'node scripts/check-windows-install-retry-policy.mjs')
   problems.push('adaptive Windows install retry guard is missing')
 if (packageJson.scripts?.['sanity:windows-install-verification'] !== 'node scripts/check-windows-install-verification.mjs')
@@ -106,6 +143,10 @@ if (packageJson.scripts?.['sanity:starter-release-install-resilience'] !== 'node
   problems.push('starter release install resilience guard is missing')
 if (packageJson.scripts?.['sanity:starter-published-types'] !== 'node scripts/check-starter-published-types.mjs')
   problems.push('published starter type guard is missing')
+if (packageJson.scripts?.['sanity:starter-quasar-compat'] !== 'node scripts/check-starter-quasar-compat.mjs')
+  problems.push('starter Quasar compatibility guard is missing')
+if (!packageJson.scripts?.['release:check']?.includes('bun run sanity:starter-quasar-compat'))
+  problems.push('release:check must run the starter Quasar compatibility guard')
 if (packageJson.scripts?.['sanity:starter-release-runtime'] !== 'node scripts/check-starter-release-runtime.mjs')
   problems.push('starter production runtime guard is missing')
 if (packageJson.scripts?.['sanity:release-lint-regressions'] !== 'node scripts/check-release-lint-regressions.mjs')

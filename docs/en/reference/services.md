@@ -5,11 +5,13 @@
 Application services live in `servicesDirs` and should be generated through the CLI when possible:
 
 ```bash
-bunx nuxt-feathers-zod add service articles --adapter mongodb --schema zod
+bunx nuxt-feathers-zod add service articles --database mongodb --connection primary --schema zod
 bunx nuxt-feathers-zod add custom-service reports --methods find --customMethods run --schema zod
 ```
 
-Standard and custom Feathers methods are declared separately.
+Standard and custom Feathers methods are declared separately. For persistent services, `--database` is the recommended portable selector and `--connection` binds the manifest to the named registry; `--adapter mongodb|knex` remains compatible.
+
+The generator also accepts `--idStrategy objectid|uuid|integer|bigint|string`. Combinations are validated by adapter: MongoDB defaults to `objectid`, while Knex and Memory default to `integer`. The manifest records the strategy and `doctor` validates it. `bigint` uses a decimal string at the API boundary to remain JSON-safe.
 
 ## NFZ console services
 
@@ -53,4 +55,4 @@ Dangerous property names such as `__proto__`, `prototype`, and `constructor` are
 
 Deprecated `/api/nfz/**` routes are thin adapters to these Feathers services. They are not independent business APIs.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

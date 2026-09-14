@@ -21,7 +21,7 @@ export { resolveNfzJwtKeys } from './security'
 export type { NfzJwtKeyMode, NfzJwtKeyOptions, NfzResolvedJwtKeys } from './security'
 export { NfzAuthenticationService } from './service'
 export { hashNfzApiKey, NfzApiKeyStrategy } from './strategies/api-key'
-export { NfzLocalStrategy, normalizeNfzLocalEntityId } from './strategies/local'
+export { NfzLocalStrategy, normalizeNfzAuthenticationEntityId, normalizeNfzLocalEntityId } from './strategies/local'
 export { NfzOidcStrategy } from './strategies/oidc'
 export type {
   NfzApiKeyIdentity,

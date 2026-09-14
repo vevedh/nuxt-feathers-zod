@@ -19,11 +19,11 @@ This matrix describes the validated target perimeter of the open-source core.
 | Scenario | Target status | Notes |
 | --- | --- | --- |
 | Nuxt 4 + embedded + memory | Stable | Recommended minimal entry point |
-| Nuxt 4 + embedded + MongoDB | Stable | CLI generation recommended |
-| Nuxt 4 + embedded + PostgreSQL through Knex | Stable optional path | Requires `@feathersjs/knex`, `knex`, and `pg` |
-| Nuxt 4 + embedded + MySQL/MariaDB through Knex | Stable optional path | Requires `mysql2` |
-| Nuxt 4 + embedded + SQLite through Knex | Stable optional path | Requires `better-sqlite3` |
-| Several named MongoDB/SQL connections | Stable in 6.7.0 | Every persistent service may select `--connection` |
+| Nuxt 4 + embedded + MongoDB | **NFZ certified** | Real Windows gate + isolated MongoDB starter validation |
+| Nuxt 4 + embedded + PostgreSQL through Knex | **NFZ certified** | Real PostgreSQL gate against the exact npm artifact: CRUD/auth/query/index/schema/transaction/lifecycle |
+| Nuxt 4 + embedded + MySQL/MariaDB through Knex | **Implemented path, not certified** | Separate engine certifications planned for Patch 067 |
+| Nuxt 4 + embedded + SQLite through Knex | **Implemented path, not certified** | Real-engine certification planned for Patch 068 |
+| Several named MongoDB/SQL connections | **Implemented foundation** | Provider/capability registry; final multi-engine certification in Patch 070 |
 | Nuxt 4 + embedded + local/JWT auth | Stable | Generate the `users` service through the CLI |
 | Nuxt 4 + remote REST | Stable | Declare remote services explicitly |
 | Nuxt 4 + remote Socket.IO | Stable | Uses the same declared-service model |
@@ -55,4 +55,4 @@ bun run build
 bun run docs:build
 ```
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->

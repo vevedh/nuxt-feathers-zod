@@ -58,10 +58,13 @@ if (fullReleaseCheck.includes('bun run smoke:tarball'))
   failures.push('release:check:full must not create or validate tarballs before the single-candidate phase')
 
 const artifactVerification = String(scripts['release:verify:artifact'] || '')
+const postgresqlIndex = artifactVerification.indexOf('bun run test:postgresql:release')
 const starterIndex = artifactVerification.indexOf('bun run test:starter:release')
 const tarballIndex = artifactVerification.indexOf('bun run smoke:tarball')
-if (starterIndex === -1 || tarballIndex === -1 || starterIndex > tarballIndex)
-  failures.push('release:verify:artifact must validate the starter before the clean consumer')
+if (postgresqlIndex === -1 || starterIndex === -1 || tarballIndex === -1
+  || postgresqlIndex > starterIndex || starterIndex > tarballIndex) {
+  failures.push('release:verify:artifact must validate PostgreSQL, then starter, then clean consumer')
+}
 
 if (existsSync(resolve(rootDir, 'scripts/run-playwright-tests.mjs'))) {
   const runner = read('scripts/run-playwright-tests.mjs')

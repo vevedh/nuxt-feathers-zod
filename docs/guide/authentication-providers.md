@@ -282,4 +282,4 @@ La migration peut donc être progressive. Les services générés en `6.6.0` uti
 - Les clés API déclaratives conviennent à un nombre limité de comptes techniques. Gérez leur rotation et leur audit dans votre application.
 - La version 6.7.0 fournit un registre de connexions nommées MongoDB et Knex. MikroORM et les entités relationnelles restent hors périmètre.
 
-<!-- release-version: 6.7.37 -->
+<!-- release-version: 6.7.45 -->
