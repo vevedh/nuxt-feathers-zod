@@ -25,6 +25,29 @@ const forbiddenPublicFiles = new Set([
   'open-core.md',
   'open-core-vs-pro.md',
 ])
+
+const publicCheckoutGuards = [
+  'scripts/check-postgresql-certification.mjs',
+  'scripts/check-mysql-mariadb-certification.mjs',
+]
+const forbiddenGuardMaintenanceReferences = [
+  'patch-memory/',
+  'docs-private/',
+  'AGENTS.md',
+]
+
+for (const guard of publicCheckoutGuards) {
+  const guardPath = resolve(root, guard)
+  if (!existsSync(guardPath))
+    continue
+
+  const source = readFileSync(guardPath, 'utf8')
+  for (const privatePath of forbiddenGuardMaintenanceReferences) {
+    if (source.includes(privatePath))
+      errors.push(`${guard} must not depend on ignored maintenance path ${privatePath}`)
+  }
+}
+
 const forbiddenPublicText = [
   'patch-memory',
   'docs-private',

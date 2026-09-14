@@ -35,13 +35,19 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.3.14
 
       - name: Install deps
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Check docs front matter
-        run: bun run docs:check-frontmatter
+      - name: Validate public documentation boundary
+        run: bun run docs:check-boundary
+
+      - name: Check docs front matter and links
+        run: |
+          bun run docs:check-frontmatter
+          bun run docs:check-links
+          bun run docs:check-commands
 
       - name: Build docs
         run: bun run docs:build

@@ -11,7 +11,6 @@ const windows = read('scripts/verify-windows.ps1')
 const finalizer = read('scripts/finalize-release.mjs')
 const doctorTest = read('test/doctor.spec.ts')
 const runtimeSingleFileExample = read('examples/nfz-runtime-single-file.app.ts')
-const roadmap = read('patch-memory/ROADMAP-database-portability-061-070.md')
 const problems = []
 
 function requireText(source, expected, label) {
@@ -96,7 +95,6 @@ if (candidateIndex < 0 || postgresqlIndex < 0 || finalizeIndex < 0
   problems.push('PostgreSQL release certification must run after candidate creation and before finalization')
 }
 
-requireText(roadmap, 'Patch 066 — PostgreSQL certification — CANDIDATE', 'roadmap Patch 066 status')
 
 if (problems.length) {
   console.error('[nuxt-feathers-zod] PostgreSQL certification guard failed:')
