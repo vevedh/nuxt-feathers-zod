@@ -29,10 +29,11 @@ bunx nuxt-feathers-zod capabilities --section all --json
 - [Module process](/en/reference/module)
 - [Configuration](/en/reference/configuration)
 - [Services](/en/reference/services)
+- [Database matrix](/en/reference/database-matrix)
 - [Client API and composables](/en/reference/runtime)
 - [Events and lifecycle](/en/reference/events)
 - [CLI reference](/en/reference/cli)
 
 Legacy `/api/nfz/**` routes are optional 6.x compatibility facades. The canonical contracts are Feathers services.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

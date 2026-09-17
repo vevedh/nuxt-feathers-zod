@@ -219,8 +219,8 @@ export function renderCliReference(commands: NfzCliCommandReference[], locale: '
     isFr ? '## Source de vérité' : '## Source of truth',
     '',
     isFr
-      ? 'La commande `capabilities --json` expose les modes, transports, services NFZ, composables et événements d’authentification implémentés. Le contrôle de cohérence du dépôt compare cette matrice au runtime, au playground et à la documentation.'
-      : 'The `capabilities --json` command exposes implemented modes, transports, NFZ services, composables, and authentication events. The repository coherence gate compares this matrix with the runtime, playground, and documentation.',
+      ? 'La commande `capabilities --json` expose les modes, transports, moteurs de base, services NFZ, composables et événements d’authentification implémentés. Le contrôle de cohérence du dépôt compare cette matrice au runtime, au playground et à la documentation.'
+      : 'The `capabilities --json` command exposes implemented modes, transports, database engines, NFZ services, composables, and authentication events. The repository coherence gate compares this matrix with the runtime, playground, and documentation.',
     '',
     `<!-- release-version: ${version} -->`,
     '',

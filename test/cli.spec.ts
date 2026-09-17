@@ -160,9 +160,12 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const section = capabilities?.args?.section as { options?: string[] } | undefined
 
     expect(capabilities).toBeTruthy()
-    expect(section?.options).toEqual(['summary', 'runtime', 'services', 'client', 'events', 'all'])
+    expect(section?.options).toEqual(['summary', 'runtime', 'services', 'client', 'events', 'databases', 'all'])
     expect(NFZ_MODULE_CAPABILITIES.consoleServices).toHaveLength(9)
     expect(NFZ_MODULE_CAPABILITIES.architecture.apiModel).toBe('feathers-first')
+    expect(NFZ_MODULE_CAPABILITIES.databaseEngines).toHaveLength(6)
+    expect(NFZ_MODULE_CAPABILITIES.databaseEngines.every(engine => engine.certification === 'certified')).toBe(true)
+    expect(NFZ_MODULE_CAPABILITIES.databaseEngines.find(engine => engine.type === 'mssql')).toMatchObject({ driverPackage: 'tedious' })
   })
   it('generates a mongodb service (4 files)', { timeout: LONG_TIMEOUT }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'nfz-'))
@@ -269,6 +272,7 @@ describe('nuxt-feathers-zod CLI generators', () => {
     expect(resolveServiceAdapter(undefined, 'mysql')).toBe('knex')
     expect(resolveServiceAdapter(undefined, 'mariadb')).toBe('knex')
     expect(resolveServiceAdapter(undefined, 'sqlite')).toBe('knex')
+    expect(resolveServiceAdapter(undefined, 'mssql')).toBe('knex')
     expect(resolveServiceAdapter('knex', 'postgresql')).toBe('knex')
     expect(() => resolveServiceAdapter('mongodb', 'postgresql')).toThrow('--database postgresql requires --adapter knex')
   })

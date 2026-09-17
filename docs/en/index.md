@@ -30,6 +30,8 @@ features:
     details: "Use local/JWT, OIDC, Keycloak, or API keys behind one normalized principal."
   - title: "Multi-database registry"
     details: "Name several MongoDB or Knex connections, select one per service, and inspect health without exposing credentials."
+  - title: "Redis through Nitro/Unstorage"
+    details: "Add a server-side Redis cache with explicit TTL and invalidation without exposing credentials or documenting a native NFZ option that 6.7.51 does not provide."
   - title: "Project-oriented CLI"
     details: "Initialize the integration, generate services, and inspect configuration without copying a complete architecture."
   - title: "Verifiable playground"
@@ -80,4 +82,4 @@ Screenshots are generated from the playground only after the related Playwright 
 - [npm package](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [GitHub repository](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

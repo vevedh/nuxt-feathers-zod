@@ -406,6 +406,20 @@ if (!verifyWindows.includes('node scripts/install-windows.mjs --check') || !veri
 if (!verifyWindows.includes("sanity:docs-build-resilience"))
   failures.push('verify-windows.ps1 must run the documentation build resilience guard before VitePress builds')
 
+if (!verifyWindows.includes("sanity:release-docker") || !verifyWindows.includes('$ResumeCandidate'))
+  failures.push('verify-windows.ps1 must preflight Docker for full/resume modes and support candidate resume')
+
+if (verifyWindows.includes('[int]$Full') || verifyWindows.includes('[int]$Quick') || verifyWindows.includes('[int]$ResumeCandidate'))
+  failures.push('verify-windows.ps1 must not cast SwitchParameter values directly to Int32; use IsPresent-based mode counting')
+
+for (const fragment of ['$ModeSwitch.IsPresent', '$ModeSwitchCount++', 'if ($ModeSwitchCount -gt 1)']) {
+  if (!verifyWindows.includes(fragment))
+    failures.push(`verify-windows.ps1 mode exclusivity guard is missing ${fragment}`)
+}
+
+if (!verifyWindows.includes('scripts/check-release-candidate-state.mjs --has-validation'))
+  failures.push('verify-windows.ps1 candidate resume must validate stamps against the exact candidate SHA')
+
 if (!verifyWindows.includes("sanity:starter-release-install-resilience"))
   failures.push('verify-windows.ps1 must run the starter release install resilience guard before the expensive release gates')
 
@@ -420,19 +434,43 @@ for (const command of ['clean:repo', 'lint', 'typecheck', 'test', 'build']) {
     failures.push(`verify-windows.ps1 is missing the ${command} step`)
 }
 
-for (const command of ['docs:build', 'docs:private:build', 'test:playwright', 'release:candidate', 'test:postgresql:release', 'test:starter:release', 'smoke:tarball', 'release:finalize']) {
+for (const command of [
+  'docs:build',
+  'docs:private:build',
+  'test:playwright',
+  'release:candidate',
+  'test:postgresql:release',
+  'test:mysql-mariadb:release',
+  'test:sqlite:release',
+  'test:mssql:release',
+  'test:database-matrix:release',
+  'test:starter:release',
+  'smoke:tarball',
+  'release:finalize',
+]) {
   if (!verifyWindows.includes(`'${command}'`))
     failures.push(`verify-windows.ps1 full mode is missing the ${command} step`)
 }
 
-const candidateIndex = verifyWindows.indexOf("'release:candidate'")
-const postgresqlIndex = verifyWindows.indexOf("'test:postgresql:release'")
-const starterIndex = verifyWindows.indexOf("'test:starter:release'")
-const smokeIndex = verifyWindows.indexOf("'smoke:tarball'")
-const finalizerIndex = verifyWindows.indexOf("'release:finalize'")
-if (!(candidateIndex >= 0 && postgresqlIndex > candidateIndex && starterIndex > postgresqlIndex
+const dockerPreflightIndex = verifyWindows.indexOf("'sanity:release-docker'")
+const cleanRepoIndex = verifyWindows.indexOf("'clean:repo'")
+if (dockerPreflightIndex < 0 || cleanRepoIndex < 0 || dockerPreflightIndex > cleanRepoIndex)
+  failures.push('full release Docker preflight must run before clean/source/docs/browser gates')
+
+const candidateIndex = verifyWindows.lastIndexOf("'release:candidate'")
+const postgresqlIndex = verifyWindows.lastIndexOf("'test:postgresql:release'")
+const mysqlMariaDbIndex = verifyWindows.lastIndexOf("'test:mysql-mariadb:release'")
+const sqliteIndex = verifyWindows.lastIndexOf("'test:sqlite:release'")
+const mssqlIndex = verifyWindows.lastIndexOf("'test:mssql:release'")
+const databaseMatrixIndex = verifyWindows.lastIndexOf("'test:database-matrix:release'")
+const starterIndex = verifyWindows.lastIndexOf("'test:starter:release'")
+const smokeIndex = verifyWindows.lastIndexOf("'smoke:tarball'")
+const finalizerIndex = verifyWindows.lastIndexOf("'release:finalize'")
+if (!(candidateIndex >= 0 && postgresqlIndex > candidateIndex && mysqlMariaDbIndex > postgresqlIndex
+  && sqliteIndex > mysqlMariaDbIndex && mssqlIndex > sqliteIndex
+  && databaseMatrixIndex > mssqlIndex && starterIndex > databaseMatrixIndex
   && smokeIndex > starterIndex && finalizerIndex > smokeIndex)) {
-  failures.push('verify-windows.ps1 must validate PostgreSQL, starter and consumer against one candidate before finalization')
+  failures.push('verify-windows.ps1 must validate PostgreSQL, MySQL/MariaDB, SQLite, MSSQL, database matrix, starter and consumer against one candidate before finalization')
 }
 if (verifyWindows.slice(finalizerIndex + 1).includes('Invoke-BunCommand'))
   failures.push('verify-windows.ps1 must not execute another Bun command after release finalization')
@@ -442,6 +480,12 @@ if (scripts['verify:release:windows'] !== 'powershell -NoProfile -ExecutionPolic
 
 if (scripts['verify:release:windows:skip-install'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Full -SkipInstall')
   failures.push('verify:release:windows:skip-install must execute the complete gate without reinstalling')
+
+if (scripts['verify:release:windows:resume'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -ResumeCandidate')
+  failures.push('verify:release:windows:resume must resume the immutable candidate without replaying source gates')
+
+if (scripts['sanity:release-docker'] !== 'node scripts/check-release-docker-preflight.mjs')
+  failures.push('sanity:release-docker must guard Docker Engine availability before expensive release work')
 
 if (scripts['sanity:windows-install-retry'] !== 'node scripts/check-windows-install-retry-policy.mjs')
   failures.push('sanity:windows-install-retry must guard the adaptive reusable-cache policy')

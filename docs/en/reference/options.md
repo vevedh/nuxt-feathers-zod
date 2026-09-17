@@ -69,6 +69,10 @@ server: {
 
 Keep `allowMissingDatabaseServices` disabled for required production services. Skipped optional registrars are exposed through `nfz/status`.
 
+## `database.connections`
+
+Named SQL connections resolve an explicit Knex client and driver before startup. Supported SQL `type` values are `postgresql`, `mysql`, `mariadb`, `sqlite`, and `mssql`. Standard driver packages are respectively `pg`, `mysql2`, `mysql2`, `better-sqlite3`, and `tedious`. Server SQL engines default to `pool: { min: 0, max: 10 }`; SQLite is constrained to `max: 1`. `searchPath` is primarily useful with PostgreSQL and MSSQL. Connection values and credentials remain private; diagnostics expose only redacted metadata and capabilities.
+
 ## Main option groups
 
 - `client`: embedded or remote client, Pinia integration and remote authentication.
@@ -83,4 +87,4 @@ Keep `allowMissingDatabaseServices` disabled for required production services. S
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

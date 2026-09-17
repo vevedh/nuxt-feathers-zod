@@ -3,7 +3,7 @@
 `nuxt-feathers-zod` intègre FeathersJS v5 (Dove), les schémas Zod et l'accès typé aux services dans Nuxt 4.
 Le module s'adresse aux applications qui ont besoin d'un vrai contrat backend dans un projet Nuxt, tout en conservant la possibilité de se connecter à une API Feathers externe.
 
-Version de référence : **6.7.45**.
+Version de référence : **6.7.51**.
 
 Socle runtime de la version `6.7.39` : Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6` (validation de release recommandée avec Bun 1.3.14).
 Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5.0.49, Nuxt 4.5.2 et Vue 3.5.42 ; Nitro 2.13.4 et H3 1.15.11 restent volontairement gelés sur ce train.
@@ -17,7 +17,8 @@ Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5
 - Schémas Zod, resolvers, validation de requêtes et types TypeScript.
 - Registre extensible de providers local, JWT, OIDC, clé API et custom, avec flux remote orientés Keycloak.
 - Transports REST et Socket.io.
-- Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB et SQLite), avec drivers SQL explicites, pools sûrs, transactions mono-connexion, diagnostics expurgés et endpoints optionnels d'administration MongoDB. MongoDB et PostgreSQL sont certifiés ; MySQL, MariaDB et SQLite restent des chemins implémentés jusqu'à leurs gates réelles dédiées.
+- Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB, SQLite et Microsoft SQL Server), avec drivers SQL explicites, pools sûrs, transactions mono-connexion, diagnostics expurgés et endpoints optionnels d'administration MongoDB. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite et MSSQL sont certifiés par des gates réelles sur le candidate exact ; la certification MSSQL utilise SQL Server 2025 avec `tedious`, une base/un schéma isolés et un teardown lié au SHA du candidate.
+- Intégration cache Redis via Nitro/Unstorage pour les routes serveur et les patterns cache-aside métier ; NFZ 6.7.51 n’expose pas d’option native `feathers.cache`.
 - Services Builder et diagnostic Feathers-first sous `nfz/*`.
 - Composables runtime pour le client, les services, l'authentification et les services protégés.
 - Documentation VitePress en français et en anglais.
@@ -65,6 +66,19 @@ bunx nuxt-feathers-zod doctor
 ```
 
 La CLI écrit le manifeste `services/.nfz/manifest.json`, génère les fichiers de service et conserve les conventions attendues par le scanner runtime du module.
+
+## Exemples
+
+Le dépôt propose désormais une progression d’exemples maintenus dans [`examples/`](./examples/) :
+
+- `minimal-embedded-memory` — plus petit exemple Feathers embedded + Zod, sans base de données ;
+- `nfz-quasar-unocss-pinia-starter` — starter complet Nuxt 4 + Quasar 2 + Pinia + MongoDB + auth locale ;
+- `real-world-nuxt4-daisyui-pinia-redis` — Nuxt 4 + DaisyUiKit + Pinia + MongoDB + local/JWT + RBAC + cache Redis ;
+- `remote-rest-minimal` — client REST remote vers un backend Feathers existant ;
+- `sql-knex-named-connections` — recette de connexions nommées PostgreSQL/MySQL/MariaDB ;
+- références SPA/SSR Keycloak + LDAP pour les intégrations SSO.
+
+Commence par [`examples/README.md`](./examples/README.md) pour choisir le parcours le plus petit correspondant à ton besoin.
 
 ## Utilisation runtime
 

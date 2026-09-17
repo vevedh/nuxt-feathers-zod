@@ -21,9 +21,10 @@ Cette matrice décrit le périmètre **visé et validé** pour le socle open sou
 | Nuxt 4 + embedded + memory | Stable | Point d’entrée recommandé |
 | Nuxt 4 + embedded + MongoDB | **Certifié NFZ** | Gate réelle Windows + starter MongoDB isolé |
 | Nuxt 4 + embedded + PostgreSQL via Knex | **Certifié NFZ** | Gate PostgreSQL réelle sur l'artefact npm exact : CRUD/auth/query/index/schema/transaction/lifecycle |
-| Nuxt 4 + embedded + MySQL/MariaDB via Knex | **Chemin implémenté, non certifié** | Certifications séparées prévues au Patch 067 |
-| Nuxt 4 + embedded + SQLite via Knex | **Chemin implémenté, non certifié** | Certification réelle prévue au Patch 068 |
-| Plusieurs connexions MongoDB/SQL nommées | **Socle implémenté** | Registry provider/capabilities ; certification multi-engine finale au Patch 070 |
+| Nuxt 4 + embedded + MySQL/MariaDB via Knex | **NFZ certifié** | Gates réelles séparées MySQL 8.4 + MariaDB 11.8 sur le tarball exact |
+| Nuxt 4 + embedded + SQLite via Knex | **Certifié NFZ** | Gate `better-sqlite3` réelle sur fichier temporaire, candidate exact, CRUD/auth/query/index/rollback/close-reopen |
+| Nuxt 4 + embedded + MSSQL / SQL Server 2025 CU8 via Knex | **Certifié NFZ** | Gate SQL Server réelle sur candidate exact : CRUD/auth/query/schema/index/rollback/lifecycle, GUIDs canoniques |
+| Plusieurs connexions MongoDB/SQL nommées | **Matrice cross-database certifiée** | Registry unique : MongoDB, PostgreSQL, MySQL, MariaDB, SQLite, MSSQL ; limitations portables explicites |
 | Nuxt 4 + embedded + auth locale/JWT | Stable | Service `users` via CLI |
 | Nuxt 4 + remote REST | Stable | Services distants déclarés explicitement |
 | Nuxt 4 + remote Socket.IO | Stable | Même logique de service déclaré |

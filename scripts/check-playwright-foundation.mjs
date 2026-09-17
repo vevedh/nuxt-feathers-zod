@@ -59,11 +59,16 @@ if (fullReleaseCheck.includes('bun run smoke:tarball'))
 
 const artifactVerification = String(scripts['release:verify:artifact'] || '')
 const postgresqlIndex = artifactVerification.indexOf('bun run test:postgresql:release')
+const mysqlMariaDbIndex = artifactVerification.indexOf('bun run test:mysql-mariadb:release')
+const sqliteIndex = artifactVerification.indexOf('bun run test:sqlite:release')
+const mssqlIndex = artifactVerification.indexOf('bun run test:mssql:release')
+const matrixIndex = artifactVerification.indexOf('bun run test:database-matrix:release')
 const starterIndex = artifactVerification.indexOf('bun run test:starter:release')
 const tarballIndex = artifactVerification.indexOf('bun run smoke:tarball')
-if (postgresqlIndex === -1 || starterIndex === -1 || tarballIndex === -1
-  || postgresqlIndex > starterIndex || starterIndex > tarballIndex) {
-  failures.push('release:verify:artifact must validate PostgreSQL, then starter, then clean consumer')
+if (postgresqlIndex === -1 || mysqlMariaDbIndex === -1 || sqliteIndex === -1 || mssqlIndex === -1 || matrixIndex === -1 || starterIndex === -1 || tarballIndex === -1
+  || postgresqlIndex > mysqlMariaDbIndex || mysqlMariaDbIndex > sqliteIndex
+  || sqliteIndex > mssqlIndex || mssqlIndex > matrixIndex || matrixIndex > starterIndex || starterIndex > tarballIndex) {
+  failures.push('release:verify:artifact must validate PostgreSQL, then MySQL/MariaDB, then SQLite, then MSSQL, then database matrix, then starter, then clean consumer')
 }
 
 if (existsSync(resolve(rootDir, 'scripts/run-playwright-tests.mjs'))) {

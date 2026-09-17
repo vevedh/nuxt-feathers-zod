@@ -1,3 +1,117 @@
+## 6.7.51 - 2026-09-15 - Maintenance-debt observability and docs bundle measurement
+
+### Fixed
+- finish Vue lint convergence for the maintained DaisyUiKit/Redis example by replacing an all-static `:class` binding with `class` and aligning DaisyUiKit `is` ordering around `v-if`/`v-else`; no NFZ runtime/API/dependency change.
+- make the maintained Nuxt 4 + DaisyUiKit + Redis example satisfy the repository lint contract: CSS/YAML/JSONC/Vue/import formatting is aligned and Bearer-token parsing no longer uses the regex rejected for potential super-linear backtracking; no NFZ runtime/API/dependency change.
+- fail closed before npm Trusted Publishing when the tagged release source is not represented in GitHub `main`: add clean-main/remote synchronization checks, tagged-commit containment proof and a synthetic Git provenance regression smoke.
+- keep documentation resilience fixtures dependency-complete after post-build bundle reporting was introduced: copy `report-docs-bundle.mjs` alongside `run-docs-build.mjs` so isolated-rescue and hung-build smokes exercise the real runner contract instead of failing with `MODULE_NOT_FOUND`.
+
+### Changed
+- promote the certified 6.7.50 / Patch071 r7 artifact SHA `a826f8fc0e14d8f6df7d1ce3c924721cf8b28912e55ff77b0d739a9e88a4fa22` as the baseline for the next maintenance cycle;
+- keep the certified `better-sqlite3@12.11.1` / public `^11 || ^12` line fail-closed until the v13 Windows/npm native-install path is proven;
+- keep transitive `uuid@8` and `glob@10` debt explicit without unsafe root major overrides;
+- classify Node `DEP0155` as visible upstream Nuxt/Nitro/Vue packaging debt rather than suppressing deprecation output.
+
+### Added
+- document Redis cache integration explicitly as a Nitro/Unstorage application concern in 6.7.51, including private credentials, TTL, invalidation, RBAC-sensitive cache guidance and FR/EN configuration references;
+- add the maintained source example `examples/real-world-nuxt4-daisyui-pinia-redis` with Nuxt 4, DaisyUiKit 5.2.7, Tailwind CSS 4, Pinia, MongoDB, embedded FeathersJS v5, local/JWT auth, `admin/member` RBAC, theme switching and a protected Redis-cached dashboard;
+- extend maintained-example and release-metadata guards so the new example remains indexed and NFZ-version aligned.
+- add post-build VitePress bundle measurement for public and private docs, including the largest JS/CSS assets and a 500 KiB soft debt threshold;
+- add optional `NFZ_DOCS_BUNDLE_MAX_BYTES` hard enforcement and `docs:bundle:report`;
+- add `sanity:docs-bundle-observability` to reject warning suppression and protect measured-debt policy.
+
+## 6.7.50 - 2026-09-15 - Release engineering maintenance and safe candidate resume
+
+### Fixed
+- scope exact-candidate database fixture installation to the database proof itself: use Bun with `--omit=peer`, `copyfile`, hoisted linking and bounded network backoff so PostgreSQL/MySQL/MariaDB/SQLite/MSSQL/matrix no longer install a full Nuxt application graph; keep the separate clean npm consumer as the Nuxt/npm peer-contract gate;
+- contain the npm 10.9.3 Arborist `#loadPeerSet` / `edgesOut` crash in exact-candidate fixtures by explicitly pinning Nuxt 4.5.2, the certified Vite/Rolldown/Vue/TypeScript platform and the complete FeathersJS 5.0.49 family before invoking fixture-scoped `--legacy-peer-deps`; keep published peer ranges and runtime semantics unchanged;
+- make exact-candidate npm consumer installation resilient and deterministic on Windows: shared 15-minute timeout, 2 bounded attempts, clean retry state, `--prefer-offline`, exact Nuxt 4.5.2 peer satisfaction, and inherited Vite 8.2.2 / Rolldown 1.2.4 / Vue 3.5.42 root overrides across PostgreSQL, MySQL/MariaDB, SQLite, MSSQL, database-matrix and the clean tarball consumer;
+- isolate embedded-auth prepare fallback tests from `.env.release.local` by stubbing/restoring both `npm_lifecycle_event` and `NFZ_AUTH_PREPARE_STRICT`, and add explicit strict-prepare coverage;
+- scope PostgreSQL/MySQL/MariaDB/SQLite/MSSQL static release-order checks to the canonical `if ($Full) { ... }` branch so the new resume branch cannot create false prepare/install failures;
+- count PowerShell release-mode switches through `SwitchParameter.IsPresent` instead of invalid direct `Int32` casts;
+- guard both regressions in the Windows tooling and full release regression sentinels.
+
+### Changed
+- preflight Docker Desktop/Engine at the start of the full Windows release path, before source tests, docs and browser gates;
+- add `verify:release:windows:resume` to continue validation of an existing immutable candidate while reusing only SHA-matching validation stamps;
+- add `release:candidate:status` for candidate SHA and stamp visibility;
+- make transitive maintenance debt explicit and forbid unsafe root major overrides for `uuid`, `glob` and `better-sqlite3`;
+- keep the Windows-certified `better-sqlite3@12.11.1` proof instead of moving to v13 while current upstream Windows/npm reports still show implicit node-gyp/Python invocation;
+- document FR/EN Docker preflight and safe candidate recovery semantics.
+
+### Baseline
+- promote 6.7.49 / Patch070 r6 as the certified baseline with immutable candidate/final SHA-256 `ebb76e3113c501ea467998c2e42977f454632af385e96c37ee973bb8c3a468a5`;
+- Patch070 closes the database portability train 061–070.
+
+## 6.7.49 — Patch070 r6
+
+### Fixed
+- Make the dependency-free documentation resilience success/reuse fixtures use a 10-second bounded VitePress deadline instead of 2 seconds, while preserving the dedicated 600 ms hung-build timeout proof; this removes a Windows scheduling/AV false positive without changing production docs-build limits or runtime behavior.
+
+## 6.7.49 — Patch070 r5
+
+### Fixed
+- Keep the cross-database exact-candidate harness on published package surfaces by replacing its invalid `resolveDataBaseOptions` import with the public database provider descriptor API.
+- Add an exact-candidate package-surface smoke before native rebuilds and Docker startup so missing `./options` or `./server-database` exports fail immediately.
+- Harden the database-matrix guard against importing internal option resolvers from public subpaths; no NFZ runtime API is broadened.
+
+## 6.7.49 — Patch070 r4
+
+### Fixed
+- Preflight the cross-database MongoDB/PostgreSQL Docker images with explicit bounded pulls before container startup, avoiding false `docker run` `ETIMEDOUT` failures during implicit image download.
+- Document the actual immutable order `MSSQL -> database-matrix -> starter` and expose matrix Docker image overrides in `.env.release.example`.
+- Replace the stale MSSQL `2025-GA-ubuntu` release-env example with the certified `2025-CU8-ubuntu-22.04` pin.
+
+## 6.7.49 — Patch070 r3
+
+### Fixed
+- Kept generated FR/EN CLI source-of-truth prose synchronized with the public database-engine capability matrix.
+- Extended the database certification matrix guard to cover the CLI reference renderer and all four generated CLI documentation surfaces.
+- Preserved fail-closed `sanity:project-coherence` instead of auto-rewriting stale tracked documentation during install.
+
+## 6.7.49 - 2026-09-14 - Cross-database certification matrix and public stabilization
+
+- consolidate MongoDB, PostgreSQL, MySQL, MariaDB, SQLite and MSSQL into one runtime-derived public database support matrix exposed by `NFZ_MODULE_CAPABILITIES.databaseEngines`;
+- add `nuxt-feathers-zod capabilities --section databases --json` and make `doctor` report the built-in engine list plus the certified count without opening a database connection;
+- add `sanity:database-certification-matrix` to cross-check runtime descriptors, CLI/doctor surfaces, public FR/EN documentation and the immutable SQL validation set required by finalization/publication;
+- publish dedicated FR/EN database-matrix references and close the compatibility matrix with all six built-in engines certified while keeping MongoDB's historical certification distinct from the SQL exact-candidate train;
+- preserve the provider-neutral limits `indexManagement: false` and `migrations: false`, plus the explicit absence of distributed cross-connection transactions and engine-specific operator portability guarantees;
+- keep the exact release chain PostgreSQL -> MySQL/MariaDB -> SQLite -> MSSQL -> database-matrix -> starter -> consumer -> finalize bound to one candidate SHA;
+- close Patch 069 / 6.7.48 as the Windows-certified baseline with immutable final tarball SHA-256 `7966dda0d8ee6f00b1d59c9ce9546ffea6ce0e29cdcd1a2557e340f334bbdb29`.
+- make the public-documentation integration regression assert the semantic audit summary instead of the mutable historical `127 pages` count; Patch070 adds two legitimate FR/EN matrix pages and the current audit reports 129 pages.
+
+## 6.7.48 - 2026-09-14 - Microsoft SQL Server real-engine certification
+
+- add `mssql` as an explicit NFZ named SQL connection type backed by Knex `mssql` and optional `tedious ^20.0.0`;
+- certify the exact candidate against SQL Server 2025 with an isolated database/schema, Feathers CRUD, integer IDs, numeric query coercion, pagination/sort/skip, UUID local/JWT auth, real index inspection and DML rollback;
+- close registries and remove the isolated SQL Server database fail-closed before recording a candidate-bound `mssql` validation stamp;
+- require PostgreSQL/MySQL/MariaDB/SQLite/MSSQL/starter/consumer stamps on the same SHA before immutable finalization or npm publication;
+- keep generic `indexManagement` and `migrations` disabled while exposing evidence-backed MSSQL `transactions` and `schemaNamespaces`;
+- keep generated Docker `sa` credentials out of command arguments by passing them only through the child-process environment.
+- synchronize the generated FR/EN CLI reference and guide pages with the new `mssql` database selector, and make the MSSQL sanity guard reject future CLI-documentation drift before release packaging.
+- pin MSSQL certification to the published `mcr.microsoft.com/mssql/server:2025-CU8-ubuntu-22.04` image, preflight the Docker image explicitly, and reject the unavailable `2025-GA-ubuntu` tag before release promotion.
+- normalize object-based MSSQL connections with `tedious` `lowerCaseGuids: true` by default, keep strict UUID round-trip assertions, and use a hostname SNI value in the loopback certification fixture to avoid Node TLS IP-servername deprecation noise.
+
+## 6.7.47 - 2026-09-14 - SQLite real-engine certification
+
+- promote SQLite from an implemented Knex path to an NFZ-certified engine behind an exact-candidate file-backed release gate;
+- certify `better-sqlite3@12.11.1` against a real temporary `.sqlite` file with Feathers CRUD, integer IDs, Zod numeric query coercion, `$in`, `$sort`, `$limit`, `$skip` and pagination;
+- certify local authentication with UUID entity IDs, JWT entity re-read, real SQLite index inspection, DML transaction rollback, registry teardown and close/reopen persistence;
+- make certification fail closed on leaked SQLite handles by deleting the real database file and temporary directory before recording the candidate-bound `sqlite` stamp;
+- require matching PostgreSQL/MySQL/MariaDB/SQLite/starter/consumer stamps before release finalization or npm publication and align Windows, GitHub CI and publish workflows on that immutable order;
+- keep generic `indexManagement: false` and `migrations: false`; native certification fixture DDL does not imply provider-neutral NFZ index or migration APIs;
+- synchronize FR/EN multi-database, compatibility and configuration documentation. Screenshot evidence is not required because Patch 068 changes database/release certification rather than browser UI.
+
+## 6.7.46 - 2026-09-13 - MySQL/MariaDB certification and focused examples
+
+- promote MySQL and MariaDB from implemented Knex paths to separately NFZ-certified engines while keeping SQLite implemented-only until Patch 068;
+- add an exact-candidate `test:mysql-mariadb:release` gate that installs the immutable npm tarball once and runs the same behavioral contract against real `mysql:8.4` and `mariadb:11.8` containers;
+- certify connection health, real engine identity, Feathers CRUD, numeric query coercion, pagination/sort, index DDL inspection, DML rollback, local authentication, JWT entity re-read, UUID string IDs and registry teardown on both engines;
+- keep dialect limits explicit: MySQL/MariaDB expose no PostgreSQL-style schema namespaces, DDL can imply commits, and NFZ still does not claim provider-neutral migrations or index-management APIs;
+- require MySQL and MariaDB validation stamps before immutable finalization and wire the new guard/gate into the Windows release sequence after PostgreSQL and before starter/consumer validation;
+- add a maintained `examples/README.md` catalog plus focused `minimal-embedded-memory`, `remote-rest-minimal` and `sql-knex-named-connections` examples, protected by `sanity:examples`;
+- synchronize the current release version across maintained examples and FR/EN documentation. Screenshot evidence is not required because Patch 067 changes database certification and code examples, not browser UI.
+
 ## 6.7.45 - 2026-09-13 - PostgreSQL real-engine certification
 
 - promote PostgreSQL from an implemented Knex path to an NFZ-certified engine while keeping MySQL, MariaDB and SQLite at implemented status until their dedicated gates;

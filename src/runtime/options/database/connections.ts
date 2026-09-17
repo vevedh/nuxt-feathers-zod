@@ -1,7 +1,7 @@
 import type { MongoOptions, ResolvedMongoOptions } from './mongodb'
 import { resolveMongoOptions } from './mongodb'
 
-export type NfzDatabaseConnectionType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'
+export type NfzDatabaseConnectionType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'mssql'
 export type NfzSqlConnectionType = Exclude<NfzDatabaseConnectionType, 'mongodb'>
 export type NfzDatabaseProvider = 'mongodb' | 'knex'
 export type NfzDatabaseFamily = 'document' | 'sql'
@@ -76,7 +76,7 @@ const DATABASE_PROVIDER_DESCRIPTORS: Record<NfzDatabaseConnectionType, NfzDataba
     provider: 'knex',
     databaseFamily: 'sql',
     adapter: 'knex',
-    certification: 'implemented',
+    certification: 'certified',
     defaultClient: 'mysql2',
     driverPackage: 'mysql2',
     poolDefaults: { min: 0, max: 10 },
@@ -92,7 +92,7 @@ const DATABASE_PROVIDER_DESCRIPTORS: Record<NfzDatabaseConnectionType, NfzDataba
     provider: 'knex',
     databaseFamily: 'sql',
     adapter: 'knex',
-    certification: 'implemented',
+    certification: 'certified',
     defaultClient: 'mysql2',
     driverPackage: 'mysql2',
     poolDefaults: { min: 0, max: 10 },
@@ -108,7 +108,7 @@ const DATABASE_PROVIDER_DESCRIPTORS: Record<NfzDatabaseConnectionType, NfzDataba
     provider: 'knex',
     databaseFamily: 'sql',
     adapter: 'knex',
-    certification: 'implemented',
+    certification: 'certified',
     defaultClient: 'better-sqlite3',
     driverPackage: 'better-sqlite3',
     poolDefaults: { min: 0, max: 1 },
@@ -119,11 +119,31 @@ const DATABASE_PROVIDER_DESCRIPTORS: Record<NfzDatabaseConnectionType, NfzDataba
       nativeObjectId: false,
     },
   },
+  mssql: {
+    type: 'mssql',
+    provider: 'knex',
+    databaseFamily: 'sql',
+    adapter: 'knex',
+    certification: 'certified',
+    defaultClient: 'mssql',
+    driverPackage: 'tedious',
+    poolDefaults: { min: 0, max: 10 },
+    capabilities: {
+      ...BASE_CAPABILITIES,
+      transactions: true,
+      schemaNamespaces: true,
+      nativeObjectId: false,
+    },
+  },
 }
 
 export const NFZ_DATABASE_CONNECTION_TYPES = Object.freeze(
   Object.keys(DATABASE_PROVIDER_DESCRIPTORS) as NfzDatabaseConnectionType[],
 )
+
+export function listNfzDatabaseProviderDescriptors(): NfzDatabaseProviderDescriptor[] {
+  return NFZ_DATABASE_CONNECTION_TYPES.map(type => getNfzDatabaseProviderDescriptor(type))
+}
 
 function cloneCapabilities(capabilities: NfzDatabaseCapabilities): NfzDatabaseCapabilities {
   return { ...capabilities }
@@ -343,6 +363,32 @@ function normalizeSearchPath(value: unknown): string[] | undefined {
   return normalized.length ? [...new Set(normalized)] : undefined
 }
 
+function normalizeSqlConnectionValue(
+  connectionName: string,
+  type: NfzSqlConnectionType,
+  connection: string | Record<string, unknown>,
+): string | Record<string, unknown> {
+  if (typeof connection === 'string')
+    return connection.trim()
+
+  const normalized = { ...connection }
+  if (type !== 'mssql')
+    return normalized
+
+  const rawOptions = normalized.options
+  if (rawOptions != null && (typeof rawOptions !== 'object' || Array.isArray(rawOptions))) {
+    throw new Error(
+      `Database connection '${connectionName}' MSSQL connection.options must be an object when provided.`,
+    )
+  }
+
+  const options = { ...((rawOptions || {}) as Record<string, unknown>) }
+  if (options.lowerCaseGuids == null)
+    options.lowerCaseGuids = true
+  normalized.options = options
+  return normalized
+}
+
 export function resolveDatabaseConnection(
   nameInput: string,
   input: NfzDatabaseConnectionOptions,
@@ -415,7 +461,7 @@ export function resolveDatabaseConnection(
     defaultClient,
     driverPackage,
     customClient,
-    connection: typeof connection === 'string' ? connection.trim() : { ...connection },
+    connection: normalizeSqlConnectionValue(name, sqlInput.type, connection),
     pool,
     acquireConnectionTimeout,
     ...(sqlInput.type === 'sqlite' && sqlInput.useNullAsDefault == null ? { useNullAsDefault: true } : {}),

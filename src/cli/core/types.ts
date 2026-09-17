@@ -1,5 +1,5 @@
 export type Adapter = 'mongodb' | 'memory' | 'knex'
-export type ServiceDatabaseType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'
+export type ServiceDatabaseType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'mssql'
 export type ServiceDatabaseProvider = 'mongodb' | 'knex'
 export type ServiceDatabaseFamily = 'document' | 'sql'
 export type SchemaKind = 'none' | 'zod' | 'json'

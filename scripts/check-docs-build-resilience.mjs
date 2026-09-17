@@ -14,6 +14,7 @@ import { basename, resolve } from 'node:path'
 
 const root = resolve(process.cwd())
 const runnerPath = resolve(root, 'scripts/run-docs-build.mjs')
+const bundleReporterPath = resolve(root, 'scripts/report-docs-bundle.mjs')
 const runner = readFileSync(runnerPath, 'utf8')
 const failures = []
 const fixtureRoots = []
@@ -43,6 +44,8 @@ for (const fragment of [
   'process.execPath',
   'terminateProcessTree',
   'VitePress build completed',
+  'report-docs-bundle.mjs',
+  'Bundle budget report failed',
 ]) {
   if (!runner.includes(fragment))
     failures.push(`documentation build runner is missing ${fragment}`)
@@ -76,6 +79,7 @@ function createFixture(label) {
   mkdirSync(fixtureDocs, { recursive: true })
 
   cpSync(runnerPath, resolve(fixtureScripts, 'run-docs-build.mjs'))
+  cpSync(bundleReporterPath, resolve(fixtureScripts, 'report-docs-bundle.mjs'))
   cpSync(resolve(root, 'scripts/lib/bun-executable.mjs'), resolve(fixtureLib, 'bun-executable.mjs'))
   cpSync(resolve(root, 'scripts/lib/windows-install-policy.mjs'), resolve(fixtureLib, 'windows-install-policy.mjs'))
   cpSync(resolve(root, 'docs', 'package.json'), resolve(fixtureDocs, 'package.json'))
@@ -144,7 +148,9 @@ process.exit(1)
     NFZ_DOCS_CACHE_DIR: resolve(fixture, 'shared-cache'),
     NFZ_DOCS_PROBE_TIMEOUT_MS: '5000',
     NFZ_DOCS_TERMINATION_GRACE_MS: '400',
-    NFZ_DOCS_BUILD_TIMEOUT_MS: '2000',
+    // Successful fake builds only prove process completion/reuse. Give Windows/AV process startup
+    // enough headroom; the dedicated hung-build scenario below owns the tight timeout proof.
+    NFZ_DOCS_BUILD_TIMEOUT_MS: '10000',
     NFZ_DOCS_HEARTBEAT_MS: '250',
   }
   const runnerInvocation = [

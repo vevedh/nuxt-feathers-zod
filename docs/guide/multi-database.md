@@ -1,6 +1,8 @@
 # Registre multi-base de données
 
-Depuis la version 6.7.0, NFZ peut initialiser plusieurs connexions nommées et laisser chaque service Feathers choisir sa connexion. À partir de 6.7.41, chaque moteur est aussi décrit par un **provider**, une **famille de base** exposée par `databaseFamily`, un niveau de **certification** et un jeu de **capabilities** non sensibles. MongoDB et PostgreSQL sont certifiés par des gates réelles ; MySQL, MariaDB et SQLite disposent d'un chemin implémenté via Knex mais restent non certifiés jusqu'à leurs patches dédiés.
+Depuis la version 6.7.0, NFZ peut initialiser plusieurs connexions nommées et laisser chaque service Feathers choisir sa connexion. À partir de 6.7.41, chaque moteur est aussi décrit par un **provider**, une **famille de base** exposée par `databaseFamily`, un niveau de **certification** et un jeu de **capabilities** non sensibles. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite et MSSQL sont certifiés par des gates réelles sur l'artefact candidat exact. MSSQL est certifié avec SQL Server 2025 et le driver `tedious`, dans une base et un schéma isolés.
+
+La vue de référence consolidée est disponible dans la [matrice de certification des bases](/reference/database-matrix). Elle est dérivée des mêmes descripteurs que le runtime et vérifiée par la gate de release.
 
 ## Configuration recommandée
 
@@ -52,9 +54,10 @@ NFZ sépare désormais le **moteur** (`type`) du **provider runtime**. Cette dis
 | --- | --- | --- | --- | --- | --- | --- |
 | `mongodb` | `mongodb` | document | — | driver MongoDB natif | — | certifié |
 | `postgresql` | `knex` | SQL | `pg` | `pg` | `min: 0, max: 10` | certifié |
-| `mysql` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | chemin implémenté |
-| `mariadb` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | chemin implémenté |
-| `sqlite` | `knex` | SQL | `better-sqlite3` | `better-sqlite3` | `min: 0, max: 1` | chemin implémenté |
+| `mysql` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | certifié |
+| `mariadb` | `knex` | SQL | `mysql2` | `mysql2` | `min: 0, max: 10` | certifié |
+| `sqlite` | `knex` | SQL | `better-sqlite3` | `better-sqlite3` | `min: 0, max: 1` | certifié |
+| `mssql` | `knex` | SQL | `mssql` | `tedious` | `min: 0, max: 10` | certifié |
 
 Les diagnostics `nfz/database-connections` exposent uniquement ces métadonnées et les capabilities sans secret. Le nom `databaseFamily` est volontaire : MongoDB possède déjà une option native `family` pour la sélection IPv4/IPv6 ; NFZ la conserve sans la détourner. À partir de 6.7.42, les connexions SQL annoncent `transactions: true` parce que NFZ expose désormais un helper transactionnel borné à **une seule connexion nommée**. `indexManagement` et `migrations` restent à `false` jusqu'aux patches dédiés.
 
@@ -81,7 +84,13 @@ Pour SQLite :
 bun add @feathersjs/knex knex better-sqlite3
 ```
 
-Le provider SQL charge Knex et le driver à la demande. L'absence du package attendu produit une erreur explicite avant l'ouverture de la connexion, au lieu de laisser Knex échouer plus loin avec un message dépendant du dialecte.
+Pour Microsoft SQL Server :
+
+```bash
+bun add @feathersjs/knex knex tedious
+```
+
+Le provider SQL charge Knex et le driver à la demande. L'absence du package attendu produit une erreur explicite avant l'ouverture de la connexion, au lieu de laisser Knex échouer plus loin avec un message dépendant du dialecte. Pour une connexion MSSQL objet, NFZ ajoute `connection.options.lowerCaseGuids: true` par défaut afin de conserver une représentation UUID canonique cohérente avec les autres moteurs. Un override explicite reste possible, mais il modifie alors la casse des `uniqueidentifier` retournés par `tedious`.
 
 
 ## Certification PostgreSQL
@@ -119,11 +128,88 @@ La certification 6.7.45 ne change pas la forme de `feathers.database.connections
 
 NFZ ne lance pas automatiquement vos migrations SQL et ne modifie pas vos schémas applicatifs lors de la mise à niveau.
 
+## Certification MySQL et MariaDB
+
+À partir de 6.7.46, **MySQL et MariaDB sont certifiés séparément** au lieu d'être assimilés l'un à l'autre parce qu'ils partagent `mysql2`. La gate de release exécute le même tarball candidat exact contre deux moteurs réels : `mysql:8.4` puis `mariadb:11.8`.
+
+La preuve couvre, pour chacun des deux moteurs :
+
+- connexion et health check via `mysql2`/Knex ;
+- vérification de l'identité réelle du moteur avec `VERSION()` ;
+- création/suppression de tables isolées et inspection d'un index via `information_schema.statistics` ;
+- CRUD Feathers avec identifiant entier ;
+- filtres numériques, `$in`, pagination et `$sort` issus d'une query HTTP ;
+- rollback d'une transaction **DML** ;
+- authentification locale puis JWT sur un utilisateur UUID stocké en chaîne de 36 caractères ;
+- fermeture du registre et teardown des tables isolées.
+
+Par défaut :
+
+```powershell
+bun run release:candidate
+bun run test:mysql-mariadb:release
+```
+
+Pour des bases externes dédiées :
+
+```powershell
+$env:NFZ_MYSQL_CERTIFICATION_URL = 'mysql://nfz:secret@127.0.0.1:3306/nfz_cert'
+$env:NFZ_MARIADB_CERTIFICATION_URL = 'mysql://nfz:secret@127.0.0.1:3307/nfz_cert'
+bun run release:candidate
+bun run test:mysql-mariadb:release
+```
+
+Limites dialectales explicites : MySQL et MariaDB n'exposent pas de namespaces de schéma PostgreSQL (`schemaNamespaces: false`) et leur DDL peut provoquer des commits implicites. La certification transactionnelle porte donc sur le DML ; elle ne transforme pas `migrations` ou `indexManagement` en capabilities génériques NFZ.
+
+## Certification SQLite
+
+À partir de 6.7.47, SQLite devient un moteur **certifié NFZ**. La gate installe le tarball candidat exact dans un consumer isolé, reconstruit uniquement le binding natif `better-sqlite3`, puis travaille sur un vrai fichier `.sqlite` créé dans un répertoire temporaire. Elle n'utilise ni Docker ni `:memory:`.
+
+La preuve couvre :
+
+- connexion/health check Knex et vérification de `sqlite_version()` ;
+- CRUD Feathers avec identifiant entier ;
+- coercition numérique Zod et requêtes `$in`, `$sort`, `$limit`, `$skip` avec pagination ;
+- authentification locale avec identifiant utilisateur UUID puis relecture de l'entité via JWT ;
+- création et inspection d'un index SQLite réel via `sqlite_master` ;
+- rollback vérifié d'une transaction DML ;
+- fermeture complète du premier registry, réouverture du **même fichier** dans un nouveau registry et contrôle de persistance ;
+- fermeture du second registry puis suppression explicite du fichier et de son répertoire temporaire avant l'émission du stamp de certification.
+
+```powershell
+bun run release:candidate
+bun run test:sqlite:release
+```
+
+La gate fixe `better-sqlite3@12.11.1` pour la preuve de release, version incluse dans le peer public `^11.0.0 || ^12.0.0`. Le fait de créer un index natif dans la fixture de certification ne fournit pas pour autant une API NFZ portable de gestion d'index ou de migrations : `indexManagement: false` et `migrations: false` restent donc inchangés.
+
+## Certification MSSQL
+
+À partir de 6.7.48, `mssql` devient un moteur **certifié NFZ**. La gate installe le tarball candidat exact dans un consumer isolé et utilise Knex avec `client: 'mssql'` et `tedious`. Par défaut, elle démarre une instance SQL Server 2025 dédiée depuis l’image Microsoft `mcr.microsoft.com/mssql/server:2025-CU8-ubuntu-22.04`; une connexion externe explicitement dédiée peut être fournie via `NFZ_MSSQL_CERTIFICATION_CONNECTION_JSON`.
+
+La preuve vérifie :
+
+- l’identité SQL Server et une version majeure `17` ou supérieure ;
+- la création d’une base puis d’un schéma `nfz_*` isolés ;
+- CRUD Feathers avec ID entier `IDENTITY` ;
+- coercition numérique Zod, `$in`, `$sort`, `$limit`, `$skip` et pagination ;
+- authentification locale avec ID UUID puis relecture de l’entité via JWT, avec retour canonique en minuscules via `tedious` `lowerCaseGuids` ;
+- création et inspection d’un index réel dans `sys.indexes`/`sys.tables`/`sys.schemas` ;
+- rollback DML vérifié ;
+- fermeture des registries puis suppression fail-closed de la base isolée avant l’émission du stamp `mssql`.
+
+```powershell
+bun run release:candidate
+bun run test:mssql:release
+```
+
+Le conteneur local de certification reçoit un mot de passe `sa` aléatoire via l’environnement du processus Docker, jamais comme valeur visible dans la ligne de commande. Pour une cible externe, conservez le JSON de connexion dans un environnement mainteneur privé et utilisez uniquement une base dédiée à la certification. La preuve d’un index natif ne transforme pas `indexManagement` ou `migrations` en APIs NFZ génériques : ces capabilities restent `false`.
+
 ## Pool SQL sûr
 
 NFZ normalise le pool Knex avant de créer le client :
 
-- PostgreSQL, MySQL et MariaDB : `min: 0`, `max: 10` par défaut ;
+- PostgreSQL, MySQL, MariaDB et MSSQL : `min: 0`, `max: 10` par défaut ;
 - SQLite : `min: 0`, `max: 1` et `pool.max=1` est imposé pour préserver la sémantique d'une base fichier/in-memory unique ;
 - `acquireConnectionTimeout` vaut `60000` ms par défaut et doit rester un entier positif ;
 - `pool.min`, `pool.max` et les timeouts de pool sont validés avant le démarrage ;
@@ -149,7 +235,7 @@ reporting: {
 MongoDB :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.45 add service messages \
+bunx nuxt-feathers-zod@6.7.51 add service messages \
   --database mongodb \
   --connection primary \
   --collection messages \
@@ -159,7 +245,7 @@ bunx nuxt-feathers-zod@6.7.45 add service messages \
 PostgreSQL avec une table et un schéma SQL explicites :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.45 add service audit-events \
+bunx nuxt-feathers-zod@6.7.51 add service audit-events \
   --database postgresql \
   --connection reporting \
   --table audit_events \
@@ -176,7 +262,7 @@ Depuis 6.7.43, ces manifests enregistrent aussi l'identité portable du binding 
 
 À partir de 6.7.44, le binding de service peut aussi enregistrer `idStrategy`. Cette propriété décrit le contrat d'identifiant du service, indépendamment de `databaseType` : MongoDB conserve `objectid` par défaut, les adapters Knex et Memory utilisent `integer` par défaut, et les variantes compatibles sont validées de façon fail-closed.
 
-`uuid` et `string` sont des identifiants fournis à la création dans les templates générés. `bigint` est disponible uniquement sur le chemin Knex et reste une chaîne décimale au niveau API/Zod afin de rester sérialisable en JSON. PostgreSQL dispose maintenant de sa preuve réelle CRUD/auth/query/lifecycle avec UUID et ID entier. Les garanties natives bigint restent volontairement hors de cette certification ; MySQL/MariaDB et SQLite recevront leurs preuves réelles dans leurs patches dédiés.
+`uuid` et `string` sont des identifiants fournis à la création dans les templates générés. `bigint` est disponible uniquement sur le chemin Knex et reste une chaîne décimale au niveau API/Zod afin de rester sérialisable en JSON. PostgreSQL dispose de sa preuve réelle CRUD/auth/query/lifecycle avec UUID et ID entier. Les garanties natives bigint restent volontairement hors de cette certification ; MySQL/MariaDB disposent de preuves réelles dédiées, SQLite dispose d'une preuve fichier réelle avec fermeture/réouverture, et MSSQL dispose d'une preuve SQL Server 2025 avec base/schéma isolés et teardown vérifié.
 
 `doctor` expose `idStrategy` depuis le manifeste et rejette une stratégie incompatible avec l'adapter généré lorsqu'il peut la prouver statiquement.
 
@@ -280,4 +366,4 @@ Une exception dans le callback est propagée à Knex, qui effectue le rollback d
 - MikroORM et les entités relationnelles sont réservés à une version ultérieure.
 - Les pilotes SQL restent des dépendances optionnelles de l’application consommatrice.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

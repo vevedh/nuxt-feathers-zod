@@ -10,7 +10,7 @@ import type { ServiceIdStrategy } from '../core/types'
 import { isServiceIdStrategySupported } from '../identifiers'
 import { getDefaultAuthStrategies, getAuthStaticDefaults } from '../../runtime/options/authentication'
 import { getAuthLocalDefaults } from '../../runtime/options/authentication/local'
-import { getNfzDatabaseProviderDescriptor } from '../../runtime/options/database'
+import { getNfzDatabaseProviderDescriptor, listNfzDatabaseProviderDescriptors } from '../../runtime/options/database'
 import { getMongoManagementRoutes, normalizeMongoManagementBasePath } from '../../runtime/options/database/mongodb'
 
 function detectTrackedMaintenanceArtifacts(projectRoot: string): string[] {
@@ -1307,6 +1307,11 @@ export async function runDoctor(projectRoot: string): Promise<NfzDoctorResult> {
     errors.push(message)
     consola.error(message)
   }
+
+  const databaseSupportMatrix = listNfzDatabaseProviderDescriptors()
+  const certifiedDatabaseCount = databaseSupportMatrix.filter(engine => engine.certification === 'certified').length
+  consola.info(`- database.supportedEngines: ${databaseSupportMatrix.map(engine => engine.type).join(', ')}`)
+  consola.info(`- database.certifiedEngines: ${certifiedDatabaseCount}/${databaseSupportMatrix.length}`)
 
   const databaseRegistry = parseDatabaseRegistryConfig(cfg)
   if (databaseRegistry.connections.length || databaseRegistry.default) {

@@ -29,6 +29,9 @@ const forbiddenPublicFiles = new Set([
 const publicCheckoutGuards = [
   'scripts/check-postgresql-certification.mjs',
   'scripts/check-mysql-mariadb-certification.mjs',
+  'scripts/check-mssql-certification.mjs',
+  'scripts/check-database-certification-matrix.mjs',
+  'scripts/validate-mssql-release.mjs',
 ]
 const forbiddenGuardMaintenanceReferences = [
   'patch-memory/',

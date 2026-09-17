@@ -153,6 +153,8 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
       ? { consoleServices: NFZ_MODULE_CAPABILITIES.consoleServices }
       : normalized === 'events'
         ? { authEvents: NFZ_MODULE_CAPABILITIES.authEvents }
+        : normalized === 'databases'
+          ? { databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines }
         : normalized === 'client'
           ? { composables: NFZ_MODULE_CAPABILITIES.composables, helpers: NFZ_MODULE_CAPABILITIES.clientHelpers }
           : normalized === 'runtime'
@@ -164,6 +166,7 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
                 schemaModes: NFZ_MODULE_CAPABILITIES.schemaModes,
                 serviceKinds: NFZ_MODULE_CAPABILITIES.serviceKinds,
                 adapters: NFZ_MODULE_CAPABILITIES.adapters,
+                databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines,
                 authProviders: NFZ_MODULE_CAPABILITIES.authProviders,
                 serverLifecycle: NFZ_MODULE_CAPABILITIES.serverLifecycle,
               }
@@ -176,6 +179,8 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
                 composables: NFZ_MODULE_CAPABILITIES.composables.length,
                 clientHelpers: NFZ_MODULE_CAPABILITIES.clientHelpers.length,
                 authEvents: NFZ_MODULE_CAPABILITIES.authEvents.length,
+                databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines.length,
+                certifiedDatabaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines.filter(engine => engine.certification === 'certified').length,
               }
 
   if (jsonOutput) {
@@ -192,7 +197,8 @@ Schema modes: ${NFZ_MODULE_CAPABILITIES.schemaModes.join(', ')}
 NFZ services: ${NFZ_MODULE_CAPABILITIES.consoleServices.length}
 Client composables: ${NFZ_MODULE_CAPABILITIES.composables.length}
 Client helpers: ${NFZ_MODULE_CAPABILITIES.clientHelpers.length}
-Auth trace events: ${NFZ_MODULE_CAPABILITIES.authEvents.length}`)
+Auth trace events: ${NFZ_MODULE_CAPABILITIES.authEvents.length}
+Database engines: ${NFZ_MODULE_CAPABILITIES.databaseEngines.filter(engine => engine.certification === 'certified').length}/${NFZ_MODULE_CAPABILITIES.databaseEngines.length} certified`)
     return
   }
 
@@ -948,7 +954,7 @@ export function createCliCommand() {
       description: 'Inspect the capabilities implemented by this module version',
     },
     args: {
-      section: { type: 'enum', options: ['summary', 'runtime', 'services', 'client', 'events', 'all'], description: 'Capability section to display' },
+      section: { type: 'enum', options: ['summary', 'runtime', 'services', 'client', 'events', 'databases', 'all'], description: 'Capability section to display' },
       json: { type: 'boolean', description: 'Print machine-readable JSON' },
     },
     run: ({ args }) => {
@@ -1132,7 +1138,7 @@ export function createCliCommand() {
       custom: { type: 'boolean', description: 'Generate an adapter-less custom service' },
       type: { type: 'enum', options: ['adapter', 'custom'], description: 'Service kind' },
       adapter: { type: 'enum', options: ['memory', 'mongodb', 'knex'], description: 'Service adapter (compatibility/advanced selector)' },
-      database: { type: 'enum', options: ['mongodb', 'postgresql', 'mysql', 'mariadb', 'sqlite'], description: 'Database engine for a portable named-connection service' },
+      database: { type: 'enum', options: ['mongodb', 'postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql'], description: 'Database engine for a portable named-connection service' },
       schema: { type: 'enum', options: ['none', 'zod', 'json'], description: 'Schema generation mode' },
       auth: { type: 'boolean', description: 'Enable JWT auth hooks' },
       authAware: { type: 'boolean', description: 'Enable auth-aware password hashing/masking for users service' },

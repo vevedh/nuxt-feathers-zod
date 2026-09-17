@@ -15,7 +15,7 @@ The existing `--adapter mongodb|knex` syntax remains compatible, while `--adapte
 For SQL, use `--table` and optionally `--schemaName`:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.45 add service audit-events \
+bunx nuxt-feathers-zod@6.7.51 add service audit-events \
   --database postgresql \
   --connection reporting \
   --table audit_events \
@@ -38,7 +38,7 @@ Starting with 6.7.44, `--idStrategy` makes the identifier contract explicit with
 PostgreSQL UUID example:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.45 add service api-keys \
+bunx nuxt-feathers-zod@6.7.51 add service api-keys \
   --database postgresql \
   --connection reporting \
   --table api_keys \
@@ -103,4 +103,4 @@ const rows = await app.service('articles').find({
 
 No loopback HTTP request is required inside the same server runtime.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

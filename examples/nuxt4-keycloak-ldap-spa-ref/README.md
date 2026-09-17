@@ -1,10 +1,10 @@
-# Nuxt 4 + Quasar + UnoCSS + NFZ 6.7.45 remote + Keycloak client-only + LDAP backend
+# Nuxt 4 + Quasar + UnoCSS + NFZ 6.7.51 remote + Keycloak client-only + LDAP backend
 
 Cette application est le **modèle de référence validé** pour une application SPA Nuxt 4 utilisant Keycloak, LDAP et NFZ.
 
 ```txt
 Keycloak = uniquement côté client Nuxt
-NFZ 6.7.45 = client Feathers remote direct
+NFZ 6.7.51 = client Feathers remote direct
 LDAP = uniquement côté backend Feathers
 ```
 

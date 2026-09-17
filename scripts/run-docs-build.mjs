@@ -580,3 +580,19 @@ if (build.status !== 0)
   throw new Error(`[docs-build] VitePress build failed for ${requested} with exit ${build.status ?? 'unknown'}.`)
 
 console.log(`[docs-build] VitePress build completed for ${requested}.`)
+
+const bundleReport = spawnSync(process.execPath, [resolve(root, 'scripts/report-docs-bundle.mjs'), requested], {
+  cwd: root,
+  encoding: 'utf8',
+  shell: false,
+  windowsHide: true,
+  env: process.env,
+})
+if (bundleReport.stdout)
+  process.stdout.write(bundleReport.stdout)
+if (bundleReport.stderr)
+  process.stderr.write(bundleReport.stderr)
+if (bundleReport.error)
+  throw bundleReport.error
+if (bundleReport.status !== 0)
+  throw new Error(`[docs-build] Bundle budget report failed for ${requested} with exit ${bundleReport.status ?? 'unknown'}.`)

@@ -6,7 +6,7 @@ const rootDir = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const paths = getReleasePaths(rootDir)
 const artifact = loadArtifactManifest(rootDir, paths.finalManifest, { expectedState: 'final' })
 const validations = new Set(artifact.manifest.validations || [])
-for (const required of ['postgresql', 'starter', 'consumer']) {
+for (const required of ['postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql', 'database-matrix', 'starter', 'consumer']) {
   if (!validations.has(required))
     throw new Error(`[release-artifact] Final manifest is missing ${required} validation.`)
 }

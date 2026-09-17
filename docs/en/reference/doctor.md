@@ -22,6 +22,18 @@ The doctor reports deterministic service sources, plugin counts and the effectiv
 
 The output includes the declared range, detected copy count, active application path, active NFZ validator path and compatibility status. Unrelated transitive copies are listed but only active incompatible boundaries are blocking.
 
+
+## Certified database matrix
+
+Doctor also exposes the built-in matrix without opening database connections:
+
+```text
+database.supportedEngines: mongodb, postgresql, mysql, mariadb, sqlite, mssql
+database.certifiedEngines: 6/6
+```
+
+Use `bunx nuxt-feathers-zod capabilities --section databases --json` for full descriptors, or `nfz/database-connections` for configured connection health.
+
 ## After structural changes
 
 ```bash
@@ -32,4 +44,4 @@ bun run build
 
 Keep `servicesDirs` as the single business registrar source and preserve the standard load order. Use plugins only for cross-cutting infrastructure.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

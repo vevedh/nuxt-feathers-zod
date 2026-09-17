@@ -24,7 +24,45 @@ describe('named database connection options', () => {
       poolDefaults: { min: 0, max: 10 },
       capabilities: { schemaNamespaces: true, transactions: true },
     })
-    expect(() => getNfzDatabaseProviderDescriptor('mssql')).toThrow(/Unsupported database connection type/)
+    expect(getNfzDatabaseProviderDescriptor('mysql')).toMatchObject({
+      provider: 'knex',
+      databaseFamily: 'sql',
+      adapter: 'knex',
+      certification: 'certified',
+      defaultClient: 'mysql2',
+      driverPackage: 'mysql2',
+      capabilities: { schemaNamespaces: false, transactions: true },
+    })
+    expect(getNfzDatabaseProviderDescriptor('mariadb')).toMatchObject({
+      provider: 'knex',
+      databaseFamily: 'sql',
+      adapter: 'knex',
+      certification: 'certified',
+      defaultClient: 'mysql2',
+      driverPackage: 'mysql2',
+      capabilities: { schemaNamespaces: false, transactions: true },
+    })
+    expect(getNfzDatabaseProviderDescriptor('sqlite')).toMatchObject({
+      provider: 'knex',
+      databaseFamily: 'sql',
+      adapter: 'knex',
+      certification: 'certified',
+      defaultClient: 'better-sqlite3',
+      driverPackage: 'better-sqlite3',
+      poolDefaults: { min: 0, max: 1 },
+      capabilities: { schemaNamespaces: false, transactions: true, indexManagement: false, migrations: false },
+    })
+    expect(getNfzDatabaseProviderDescriptor('mssql')).toMatchObject({
+      provider: 'knex',
+      databaseFamily: 'sql',
+      adapter: 'knex',
+      certification: 'certified',
+      defaultClient: 'mssql',
+      driverPackage: 'tedious',
+      poolDefaults: { min: 0, max: 10 },
+      capabilities: { schemaNamespaces: true, transactions: true, indexManagement: false, migrations: false },
+    })
+    expect(() => getNfzDatabaseProviderDescriptor('oracle')).toThrow(/Unsupported database connection type/)
   })
 
   it('detects named providers without relying on the legacy database.mongo alias', () => {
@@ -87,6 +125,17 @@ describe('named database connection options', () => {
           type: 'sqlite',
           connection: { filename: ':memory:' },
         },
+        enterprise: {
+          type: 'mssql',
+          connection: {
+            server: '127.0.0.1',
+            port: 1433,
+            user: 'nfz',
+            password: 'redacted-test-value',
+            database: 'nfz',
+            options: { encrypt: true, trustServerCertificate: true },
+          },
+        },
       },
     })
 
@@ -101,6 +150,40 @@ describe('named database connection options', () => {
       pool: { min: 0, max: 1 },
       acquireConnectionTimeout: 60000,
       capabilities: { transactions: true },
+    })
+    expect(resolved.connections.enterprise).toMatchObject({
+      client: 'mssql',
+      defaultClient: 'mssql',
+      driverPackage: 'tedious',
+      customClient: false,
+      pool: { min: 0, max: 10 },
+      connection: {
+        options: {
+          encrypt: true,
+          trustServerCertificate: true,
+          lowerCaseGuids: true,
+        },
+      },
+      capabilities: { transactions: true, schemaNamespaces: true },
+    })
+
+
+    const explicitMssqlGuidCase = resolveDataBaseOptions({
+      connections: {
+        enterprise: {
+          type: 'mssql',
+          connection: {
+            server: 'localhost',
+            user: 'nfz',
+            password: 'redacted-test-value',
+            database: 'nfz',
+            options: { lowerCaseGuids: false },
+          },
+        },
+      },
+    })
+    expect(explicitMssqlGuidCase.connections.enterprise).toMatchObject({
+      connection: { options: { lowerCaseGuids: false } },
     })
 
     expect(() => resolveDataBaseOptions({

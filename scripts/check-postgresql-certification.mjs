@@ -48,9 +48,7 @@ if (authConfigIndex < 0 || authServiceIndex < 0 || localRegisterIndex < 0
 requireText(certification, "const KNEX_VERSION = '3.2.10'", 'Knex peer-compatible exact consumer')
 requireText(certification, 'knex: KNEX_VERSION', 'Knex exact consumer dependency')
 requireText(certification, 'pg: PG_PACKAGE_VERSION', 'PostgreSQL driver exact consumer')
-requireText(certification, 'resolveNpmCliPath', 'portable npm CLI resolver')
-requireText(certification, "process.platform === 'win32' ? 'npm.cmd' : 'npm'", 'Windows npm command fallback')
-requireText(certification, "shell: !npmCliPath && process.platform === 'win32'", 'Windows npm shell fallback')
+requireText(certification, "installExactReleaseConsumer({ cwd: workspace, label: 'postgresql-cert' })", 'shared resilient exact-candidate consumer install')
 if (certification.includes("run('npm', ['install'"))
   problems.push('PostgreSQL certification must not spawn bare npm directly on Windows')
 requireText(certification, "certification: 'certified'", 'certified runtime diagnostics')
@@ -76,7 +74,11 @@ requireText(pkg.scripts?.['prepare:project'] || '', 'bun run sanity:postgresql-c
 requireText(pkg.scripts?.['release:verify:artifact'] || '', 'bun run test:postgresql:release', 'artifact PostgreSQL validation')
 requireText(windows, "Invoke-BunCommand @('run', 'sanity:postgresql-certification')", 'Windows PostgreSQL static guard')
 requireText(windows, "Invoke-BunCommand @('run', 'test:postgresql:release')", 'Windows exact-candidate PostgreSQL gate')
-requireText(finalizer, "['postgresql', 'starter', 'consumer']", 'immutable finalization PostgreSQL stamp')
+requireText(
+  finalizer,
+  "['postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql', 'database-matrix', 'starter', 'consumer']",
+  'immutable finalization PostgreSQL stamp',
+)
 requireText(doctorTest, 'reporting: type=postgresql provider=knex databaseFamily=sql certification=certified driver=pg enabled=true', 'doctor PostgreSQL certified expectation')
 if (doctorTest.includes('reporting: type=postgresql provider=knex databaseFamily=sql certification=implemented driver=pg enabled=true'))
   problems.push('doctor PostgreSQL expectation is stale: certified engines must not be asserted as implemented')
@@ -87,9 +89,11 @@ const exampleAuthServiceIndex = runtimeSingleFileExample.indexOf('const auth = n
 if (exampleConfigIndex < 0 || exampleAuthServiceIndex < 0 || exampleConfigIndex > exampleAuthServiceIndex)
   problems.push('single-file Feathers v5 example must set authentication config before constructing strategies')
 
-const candidateIndex = windows.indexOf("Invoke-BunCommand @('run', 'release:candidate')")
-const postgresqlIndex = windows.indexOf("Invoke-BunCommand @('run', 'test:postgresql:release')")
-const finalizeIndex = windows.indexOf("Invoke-BunCommand @('run', 'release:finalize')")
+const fullReleaseStart = windows.search(/^if \(\$Full\) \{\r?$/m)
+const fullRelease = fullReleaseStart >= 0 ? windows.slice(fullReleaseStart) : ''
+const candidateIndex = fullRelease.indexOf("Invoke-BunCommand @('run', 'release:candidate')")
+const postgresqlIndex = fullRelease.indexOf("Invoke-BunCommand @('run', 'test:postgresql:release')")
+const finalizeIndex = fullRelease.indexOf("Invoke-BunCommand @('run', 'release:finalize')")
 if (candidateIndex < 0 || postgresqlIndex < 0 || finalizeIndex < 0
   || postgresqlIndex < candidateIndex || postgresqlIndex > finalizeIndex) {
   problems.push('PostgreSQL release certification must run after candidate creation and before finalization')

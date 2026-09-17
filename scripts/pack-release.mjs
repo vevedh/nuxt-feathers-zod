@@ -169,4 +169,4 @@ writeJson(paths.candidateManifest, manifest)
 
 console.log(`[release] Candidate tarball created: ${artifact.tarballPath}`)
 console.log(`[release] Candidate SHA-256: ${artifact.sha256}`)
-console.log('[release] The candidate must pass PostgreSQL, starter and clean-consumer validation before finalization.')
+console.log('[release] The candidate must pass PostgreSQL, MySQL/MariaDB, SQLite, MSSQL, cross-database matrix, starter and clean-consumer validation before finalization.')

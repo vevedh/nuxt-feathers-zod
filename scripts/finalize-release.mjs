@@ -10,7 +10,11 @@ import {
 const rootDir = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const paths = getReleasePaths(rootDir)
 const candidate = loadArtifactManifest(rootDir, paths.candidateManifest, { expectedState: 'candidate' })
-const validations = requireArtifactValidations(rootDir, candidate, ['postgresql', 'starter', 'consumer'])
+const validations = requireArtifactValidations(
+  rootDir,
+  candidate,
+  ['postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql', 'database-matrix', 'starter', 'consumer'],
+)
 const finalArtifact = promoteCandidate(rootDir, candidate, validations)
 
 console.log(`[release] Final immutable tarball: ${finalArtifact.tarballPath}`)

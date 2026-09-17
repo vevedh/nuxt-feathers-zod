@@ -27,12 +27,17 @@ const explicitMarkdownTargets = [
 
 const firstPartyExamplePackages = [
   'examples/nfz-quasar-unocss-pinia-starter/package.json',
+  'examples/real-world-nuxt4-daisyui-pinia-redis/package.json',
   'examples/nuxt4-keycloak-ldap-spa-ref/package.json',
   'examples/nuxt4-keycloak-ldap-ssr-ref/package.json',
+  'examples/minimal-embedded-memory/package.json',
+  'examples/remote-rest-minimal/package.json',
 ]
 
 const currentExampleTextTargets = [
   'examples/nfz-quasar-unocss-pinia-starter/README.md',
+  'examples/real-world-nuxt4-daisyui-pinia-redis/README.md',
+  'examples/real-world-nuxt4-daisyui-pinia-redis/app/layouts/default.vue',
   'examples/nuxt4-keycloak-ldap-spa-ref/.env.example',
   'examples/nuxt4-keycloak-ldap-spa-ref/PROJECT_CONTEXT.md',
   'examples/nuxt4-keycloak-ldap-spa-ref/README.md',
@@ -41,6 +46,10 @@ const currentExampleTextTargets = [
   'examples/nuxt4-keycloak-ldap-ssr-ref/PROJECT_CONTEXT.md',
   'examples/nuxt4-keycloak-ldap-ssr-ref/README.md',
   'examples/nuxt4-keycloak-ldap-ssr-ref/app/pages/index.vue',
+  'examples/README.md',
+  'examples/minimal-embedded-memory/README.md',
+  'examples/remote-rest-minimal/README.md',
+  'examples/sql-knex-named-connections/README.md',
 ]
 
 function collectMarkdownFiles(directory) {

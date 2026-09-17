@@ -10,7 +10,7 @@ Version validée comme **référence modèle Nuxt 4 + Keycloak + LDAP + SPA**.
 - Quasar 2 via `nuxt-quasar-ui`.
 - UnoCSS.
 - Pinia + persistedstate.
-- nuxt-feathers-zod 6.7.45.
+- nuxt-feathers-zod 6.7.51.
 - Keycloak côté client uniquement via `keycloak-js`.
 - Backend Feathers remote exposant `POST /authentication`.
 - Stratégie backend attendue : `keycloak-ldap` / `SsoLdapStrategy`.

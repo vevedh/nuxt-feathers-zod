@@ -18,8 +18,8 @@ function forbidText(path, needle, label) {
     failures.push(`${path} still contains ${label}`)
 }
 
-requireText('src/cli/core/types.ts', "export type ServiceDatabaseType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite'", 'portable service database type')
-requireText('src/cli/index.ts', "database: { type: 'enum', options: ['mongodb', 'postgresql', 'mysql', 'mariadb', 'sqlite']", '--database CLI selector')
+requireText('src/cli/core/types.ts', "export type ServiceDatabaseType = 'mongodb' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'mssql'", 'portable service database type')
+requireText('src/cli/index.ts', "database: { type: 'enum', options: ['mongodb', 'postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql']", '--database CLI selector')
 requireText('src/cli/index.ts', 'resolveServiceAdapter(requestedAdapter, databaseType)', 'database-to-adapter resolution')
 requireText('src/cli/core.ts', '...serviceDatabaseMetadata(opts.adapter, opts.databaseType)', 'service manifest database identity metadata')
 requireText('src/cli/core.ts', 'Database type: ${manifest.databaseType}', 'manifest database diagnostics')

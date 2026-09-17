@@ -110,5 +110,6 @@ export {
   getNfzDefaultDatabaseClient,
   getNfzSqlDriverPackage,
   getNfzSqlPoolDefaults,
+  listNfzDatabaseProviderDescriptors,
   NFZ_DATABASE_CONNECTION_TYPES,
 } from './connections'

@@ -1,0 +1,16 @@
+{
+  "name": "nfz-example-remote-rest-minimal",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "prepare": "nuxt prepare",
+    "build": "nuxt build"
+  },
+  "dependencies": {
+    "nuxt": "4.5.2",
+    "nuxt-feathers-zod": "6.7.51",
+    "vue": "3.5.42",
+    "vue-router": "4.5.1"
+  }
+}

@@ -1,0 +1,24 @@
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - '27038:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: changeMe
+    volumes:
+      - nfz_daisyui_mongodb:/data/db
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, yes]
+    ports:
+      - '6380:6379'
+    volumes:
+      - nfz_daisyui_redis:/data
+
+volumes:
+  nfz_daisyui_mongodb:
+  nfz_daisyui_redis:

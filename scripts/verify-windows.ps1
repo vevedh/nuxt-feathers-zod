@@ -2,14 +2,21 @@ param(
   [switch]$StartDev,
   [switch]$Full,
   [switch]$Quick,
+  [switch]$ResumeCandidate,
   [switch]$SkipInstall
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-if ($Full -and $Quick) {
-  throw 'Choose either -Full or -Quick, not both.'
+$ModeSwitchCount = 0
+foreach ($ModeSwitch in @($Full, $Quick, $ResumeCandidate)) {
+  if ($ModeSwitch.IsPresent) {
+    $ModeSwitchCount++
+  }
+}
+if ($ModeSwitchCount -gt 1) {
+  throw 'Choose only one of -Full, -Quick or -ResumeCandidate.'
 }
 
 $BunExecutable = (& node scripts/print-bun-executable.mjs).Trim()
@@ -88,7 +95,7 @@ catch {
 
 Write-Host "Node: $(node --version)"
 Write-Host "Bun:  $BunVersionText"
-Write-Host "Mode: $(if ($Full) { 'full release' } else { 'quick validation' })"
+Write-Host "Mode: $(if ($ResumeCandidate) { 'resume exact candidate' } elseif ($Full) { 'full release' } else { 'quick validation' })"
 Write-Host "Install: $(if ($SkipInstall) { 'reuse verified dependency tree' } else { 'verify or install automatically' })"
 
 if ($BunVersion -lt $MinimumBunVersion) {
@@ -107,12 +114,57 @@ if ($LASTEXITCODE -ne 0) {
   throw "Windows dependency verification/installation failed with exit code $LASTEXITCODE."
 }
 
+if ($Full -or $ResumeCandidate) {
+  Import-ReleaseEnvironmentFile -Path (Join-Path (Get-Location) '.env.release.local')
+  Invoke-BunCommand @('run', 'sanity:release-docker')
+}
+
+if ($ResumeCandidate) {
+  Invoke-BunCommand @('run', 'sanity:release-consumer-install-resilience')
+  Write-Host "`nResuming immutable candidate validation without replaying source/docs/browser gates." -ForegroundColor Cyan
+  & node scripts/check-release-candidate-state.mjs
+  if ($LASTEXITCODE -ne 0) {
+    throw 'No valid immutable release candidate is available to resume.'
+  }
+
+  $CandidateValidations = @(
+    @{ Name = 'postgresql'; Script = 'test:postgresql:release' },
+    @{ Name = 'mysql'; Script = 'test:mysql-mariadb:release' },
+    @{ Name = 'mariadb'; Script = 'test:mysql-mariadb:release' },
+    @{ Name = 'sqlite'; Script = 'test:sqlite:release' },
+    @{ Name = 'mssql'; Script = 'test:mssql:release' },
+    @{ Name = 'database-matrix'; Script = 'test:database-matrix:release' },
+    @{ Name = 'starter'; Script = 'test:starter:release' },
+    @{ Name = 'consumer'; Script = 'smoke:tarball' }
+  )
+
+  $ExecutedScripts = @{}
+  foreach ($Validation in $CandidateValidations) {
+    & node scripts/check-release-candidate-state.mjs --has-validation $Validation.Name
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host ("[release] Reusing valid candidate stamp: {0}" -f $Validation.Name) -ForegroundColor DarkGreen
+      continue
+    }
+
+    if (-not $ExecutedScripts.ContainsKey($Validation.Script)) {
+      Invoke-BunCommand @('run', $Validation.Script)
+      $ExecutedScripts[$Validation.Script] = $true
+    }
+  }
+
+  Invoke-BunCommand @('run', 'release:finalize')
+  Write-Host "`nWindows candidate resume completed successfully." -ForegroundColor Green
+  exit 0
+}
+
 Invoke-BunCommand @('run', 'clean:repo')
 Invoke-BunCommand @('run', 'sync:release-meta')
 Invoke-BunCommand @('run', 'sanity:version-coherence')
 Invoke-BunCommand @('run', 'sanity:release-meta')
 Invoke-BunCommand @('run', 'sanity:feathers-nitro')
 Invoke-BunCommand @('run', 'sanity:dependency-convergence')
+Invoke-BunCommand @('run', 'sanity:maintenance-debt')
+Invoke-BunCommand @('run', 'sanity:release-consumer-install-resilience')
 Invoke-BunCommand @('run', 'sanity:publication-pipeline')
 Invoke-BunCommand @('run', 'sanity:windows-tooling')
 Invoke-BunCommand @('run', 'sanity:windows-install-resilience')
@@ -127,6 +179,11 @@ Invoke-BunCommand @('run', 'sanity:auth-mongodb-id')
 Invoke-BunCommand @('run', 'sanity:database-registry')
 Invoke-BunCommand @('run', 'sanity:relational-sql-provider')
 Invoke-BunCommand @('run', 'sanity:postgresql-certification')
+Invoke-BunCommand @('run', 'sanity:mysql-mariadb-certification')
+Invoke-BunCommand @('run', 'sanity:sqlite-certification')
+Invoke-BunCommand @('run', 'sanity:mssql-certification')
+Invoke-BunCommand @('run', 'sanity:database-certification-matrix')
+Invoke-BunCommand @('run', 'sanity:examples')
 Invoke-BunCommand @('run', 'sanity:portable-service-generator')
 Invoke-BunCommand @('run', 'sanity:portable-identifiers')
 Invoke-BunCommand @('run', 'sanity:playground-protected-session')
@@ -138,8 +195,8 @@ Invoke-BunCommand @('run', 'typecheck')
 Invoke-BunCommand @('run', 'test')
 Invoke-BunCommand @('run', 'build')
 
-if ($StartDev -and $Full) {
-  throw '-StartDev cannot be combined with -Full because final release artifact creation must remain the last operation.'
+if ($StartDev -and ($Full -or $ResumeCandidate)) {
+  throw '-StartDev cannot be combined with -Full or -ResumeCandidate.'
 }
 
 if ($StartDev) {
@@ -147,8 +204,6 @@ if ($StartDev) {
 }
 
 if ($Full) {
-  Import-ReleaseEnvironmentFile -Path (Join-Path (Get-Location) '.env.release.local')
-
   Invoke-BunCommand @('run', 'release:check:registry')
   Invoke-BunCommand @('run', 'docs:build')
   Invoke-BunCommand @('run', 'docs:private:build')
@@ -157,6 +212,10 @@ if ($Full) {
   Write-Host "`nCreating one immutable release candidate for exact-artifact validation." -ForegroundColor Cyan
   Invoke-BunCommand @('run', 'release:candidate')
   Invoke-BunCommand @('run', 'test:postgresql:release')
+  Invoke-BunCommand @('run', 'test:mysql-mariadb:release')
+  Invoke-BunCommand @('run', 'test:sqlite:release')
+  Invoke-BunCommand @('run', 'test:mssql:release')
+  Invoke-BunCommand @('run', 'test:database-matrix:release')
   Invoke-BunCommand @('run', 'test:starter:release')
   Invoke-BunCommand @('run', 'smoke:tarball')
   Invoke-BunCommand @('run', 'release:finalize')

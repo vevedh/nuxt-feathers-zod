@@ -22,6 +22,7 @@ const frGuideSidebar = [
       { text: 'Keycloak et OIDC', link: '/guide/keycloak-sso' },
       { text: 'Registre multi-base', link: '/guide/multi-database' },
       { text: 'MongoDB', link: '/reference/mongodb-management' },
+      { text: 'Redis cache', link: '/guide/redis-cache' },
       { text: 'Upload et téléchargement', link: '/guide/file-upload-download' },
     ],
   },
@@ -53,6 +54,7 @@ const frReferenceSidebar = [
       { text: 'Options du module', link: '/reference/configuration' },
       { text: 'RuntimeConfig', link: '/reference/runtime-config' },
       { text: 'Modes embedded et remote', link: '/reference/embedded' },
+      { text: 'Matrice bases de données', link: '/reference/database-matrix' },
     ],
   },
   {
@@ -95,6 +97,7 @@ const enGuideSidebar = [
       { text: 'Keycloak and OIDC', link: '/en/guide/keycloak-sso' },
       { text: 'Multi-database registry', link: '/en/guide/multi-database' },
       { text: 'MongoDB', link: '/en/reference/mongodb-management' },
+      { text: 'Redis cache', link: '/en/guide/redis-cache' },
       { text: 'File upload and download', link: '/en/guide/file-upload-download' },
     ],
   },
@@ -126,6 +129,7 @@ const enReferenceSidebar = [
       { text: 'Module options', link: '/en/reference/configuration' },
       { text: 'RuntimeConfig', link: '/en/reference/runtime-config' },
       { text: 'Embedded and remote modes', link: '/en/reference/embedded' },
+      { text: 'Database matrix', link: '/en/reference/database-matrix' },
     ],
   },
   {

@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { recordArtifactValidation, resolveReleaseArtifact } from './lib/release-artifact.mjs'
+import { createExactReleaseConsumerPackage } from './lib/release-consumer-install.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -116,7 +117,7 @@ function install(pm, cwd, workDir) {
     return
   }
 
-  run('npm', ['install', '--no-fund', '--no-audit'], cwd)
+  run('npm', ['install', '--no-fund', '--no-audit', '--legacy-peer-deps'], cwd)
 }
 
 function execPackageBin(pm, cwd, args) {
@@ -143,19 +144,17 @@ async function main() {
   await cp(fixtureDir, consumerDir, { recursive: true })
   console.log(`[nuxt-feathers-zod] Consumer fixture copied to: ${consumerDir}`)
 
-  const consumerPkg = {
+  const consumerPkg = createExactReleaseConsumerPackage({
+    root: rootDir,
     name: 'nfz-tarball-smoke-consumer',
-    private: true,
-    type: 'module',
     scripts: {
       prepare: 'nuxi prepare',
       build: 'nuxi build',
     },
     dependencies: {
-      nuxt: '^4.3.1',
       'nuxt-feathers-zod': `file:${tarballPath.replace(/\\/g, '/')}`,
     },
-  }
+  })
 
   await writeFile(join(consumerDir, 'package.json'), `${JSON.stringify(consumerPkg, null, 2)}\n`, 'utf8')
   install(pm, consumerDir, workDir)

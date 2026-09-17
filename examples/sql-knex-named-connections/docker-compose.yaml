@@ -1,0 +1,24 @@
+services:
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: nfz
+      POSTGRES_USER: nfz
+      POSTGRES_PASSWORD: nfz
+    ports: ['55432:5432']
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: nfz
+      MYSQL_USER: nfz
+      MYSQL_PASSWORD: nfz
+      MYSQL_ROOT_PASSWORD: root-nfz
+    ports: ['53306:3306']
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_DATABASE: nfz
+      MARIADB_USER: nfz
+      MARIADB_PASSWORD: nfz
+      MARIADB_ROOT_PASSWORD: root-nfz
+    ports: ['53307:3306']

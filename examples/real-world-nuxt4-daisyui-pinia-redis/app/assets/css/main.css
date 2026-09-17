@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@plugin 'daisyui' {
+  themes:
+    light --default,
+    dark --prefersdark,
+    corporate,
+    emerald,
+    business,
+    night;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+}
+
+.nfz-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, currentColor 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, currentColor 5%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

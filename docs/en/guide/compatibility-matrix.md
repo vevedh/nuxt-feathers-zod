@@ -21,9 +21,10 @@ This matrix describes the validated target perimeter of the open-source core.
 | Nuxt 4 + embedded + memory | Stable | Recommended minimal entry point |
 | Nuxt 4 + embedded + MongoDB | **NFZ certified** | Real Windows gate + isolated MongoDB starter validation |
 | Nuxt 4 + embedded + PostgreSQL through Knex | **NFZ certified** | Real PostgreSQL gate against the exact npm artifact: CRUD/auth/query/index/schema/transaction/lifecycle |
-| Nuxt 4 + embedded + MySQL/MariaDB through Knex | **Implemented path, not certified** | Separate engine certifications planned for Patch 067 |
-| Nuxt 4 + embedded + SQLite through Knex | **Implemented path, not certified** | Real-engine certification planned for Patch 068 |
-| Several named MongoDB/SQL connections | **Implemented foundation** | Provider/capability registry; final multi-engine certification in Patch 070 |
+| Nuxt 4 + embedded + MySQL/MariaDB through Knex | **NFZ certified** | Separate real MySQL 8.4 + MariaDB 11.8 gates against the exact tarball |
+| Nuxt 4 + embedded + SQLite through Knex | **NFZ certified** | Real `better-sqlite3` file gate against the exact candidate: CRUD/auth/query/index/rollback/close-reopen |
+| Nuxt 4 + embedded + MSSQL / SQL Server 2025 CU8 through Knex | **NFZ certified** | Real SQL Server 2025 CU8 gate against the exact candidate: CRUD/auth/query/schema/index/transaction/lifecycle |
+| Several named MongoDB/SQL connections | **Certified cross-database matrix** | One registry exposes six certified engines; the candidate-bound coexistence gate runs MongoDB 7 + PostgreSQL 18 + file-backed SQLite simultaneously, with explicit provider-neutral limits |
 | Nuxt 4 + embedded + local/JWT auth | Stable | Generate the `users` service through the CLI |
 | Nuxt 4 + remote REST | Stable | Declare remote services explicitly |
 | Nuxt 4 + remote Socket.IO | Stable | Uses the same declared-service model |
@@ -55,4 +56,4 @@ bun run build
 bun run docs:build
 ```
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

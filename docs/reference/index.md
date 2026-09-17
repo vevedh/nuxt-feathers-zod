@@ -29,6 +29,7 @@ bunx nuxt-feathers-zod capabilities --section all --json
 - [Processus du module](/reference/module)
 - [Configuration](/reference/configuration)
 - [Services](/reference/services)
+- [Matrice des bases de données](/reference/database-matrix)
 - [API client et composables](/reference/runtime)
 - [Événements et cycle de vie](/reference/events)
 - [Référence CLI](/reference/cli)
@@ -52,4 +53,4 @@ Nuxt 4
 
 Les routes Nitro métier ne sont pas le contrat principal du module. Les anciennes routes `/api/nfz/**` sont des façades de compatibilité désactivables avec `console.legacyNitroRoutes: false`.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

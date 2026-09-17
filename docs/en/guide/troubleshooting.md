@@ -89,6 +89,18 @@ If `bun run install:windows` was already executed, the full gate detects and reu
 bun run verify:release:windows:skip-install
 ```
 
+Before the expensive source/docs/browser stages of a full release, the gate now verifies that the **Docker server** is actually reachable. It fails immediately when Docker Desktop/Engine is not running instead of waiting until PostgreSQL/MySQL/MariaDB/MSSQL and the cross-database matrix certifications. Particularly slow hosts can tune `NFZ_RELEASE_DOCKER_PREFLIGHT_TIMEOUT_MS` and `NFZ_RELEASE_DOCKER_PREFLIGHT_ATTEMPTS`.
+
+If an external failure happens **after** the immutable candidate has been created, do not recreate the tarball or replay the source/docs/browser gates. After fixing the environment, run:
+
+```powershell
+bun run verify:release:windows:resume
+```
+
+This mode verifies the existing candidate SHA, reuses only stamps that match that exact SHA, runs missing or stale validations in order, then calls `release:finalize`. It is a recovery tool; the authoritative certification remains a complete `bun run verify:release:windows` replay.
+
+The PostgreSQL/MySQL/MariaDB/SQLite/MSSQL exact-candidate consumers and the cross-database matrix now use Bun for dependency materialization. These database fixtures are not Nuxt application tests, so Bun runs with `--omit=peer`, keeps dependency lifecycle scripts disabled, uses the `copyfile` backend plus the hoisted linker, and retries from a clean workspace with network concurrency reduced from 8 to 2. The temporary package still pins Zod 3.25.76 and the complete certified FeathersJS 5.0.49 family through overrides, while the separate clean npm consumer remains responsible for validating the published Nuxt peer contract. The default timeout remains **15 minutes per attempt** with **2 attempts**. On unusually slow hosts, tune `NFZ_RELEASE_CONSUMER_INSTALL_TIMEOUT_MS`, `NFZ_RELEASE_CONSUMER_INSTALL_ATTEMPTS`, or `NFZ_RELEASE_CONSUMER_NETWORK_CONCURRENCY` instead of editing certification scripts.
+
 Set `NFZ_WINDOWS_CACHE_DIR` to place the cache outside the project. Use `bun run install:windows -- --force` only when a clean reinstall is required. Do not separate release gates with `;` in PowerShell: subsequent commands continue after a failed install and produce misleading secondary failures.
 
 Public and private VitePress builds use a separate dependency workspace. On Windows, their shared cache defaults to `%LOCALAPPDATA%/nuxt-feathers-zod/bun-docs-cache`. The runner applies the same protections: lifecycle scripts disabled, retries at 8 → 2 → 1, then one isolated `--no-cache` rescue attempt. A verified VitePress install is fingerprinted and reused. Set `NFZ_DOCS_CACHE_DIR` to relocate only this cache.
@@ -123,4 +135,4 @@ const result = await service.find({
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

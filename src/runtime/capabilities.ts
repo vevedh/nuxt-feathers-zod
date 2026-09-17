@@ -1,3 +1,5 @@
+import { listNfzDatabaseProviderDescriptors } from './options/database'
+
 export const NFZ_CONSOLE_SERVICE_PATHS = {
   services: 'nfz/services',
   schemas: 'nfz/schemas',
@@ -47,6 +49,7 @@ export const NFZ_MODULE_CAPABILITIES = {
   schemaModes: ['none', 'zod', 'json'],
   serviceKinds: ['adapter', 'custom', 'file', 'remote'],
   adapters: ['memory', 'mongodb', 'knex'],
+  databaseEngines: listNfzDatabaseProviderDescriptors(),
   authProviders: ['jwt', 'local', 'oauth', 'oidc', 'api-key', 'custom', 'keycloak-bridge', 'remote', 'none'],
   consoleServices: [
     { key: 'services', path: NFZ_CONSOLE_SERVICE_PATHS.services, methods: ['find'], purpose: 'service discovery' },

@@ -20,7 +20,7 @@ jobs:
   validate:
     name: Lint, tests, build and documentation
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 70
 
     services:
       mongodb:
@@ -97,6 +97,21 @@ jobs:
 
       - name: Create one immutable release candidate
         run: bun run release:candidate
+
+      - name: Certify exact candidate against PostgreSQL
+        run: bun run test:postgresql:release
+
+      - name: Certify exact candidate against MySQL and MariaDB
+        run: bun run test:mysql-mariadb:release
+
+      - name: Certify exact candidate against SQLite
+        run: bun run test:sqlite:release
+
+      - name: Certify exact candidate against Microsoft SQL Server
+        run: bun run test:mssql:release
+
+      - name: Certify exact candidate cross-database coexistence
+        run: bun run test:database-matrix:release
 
       - name: Validate exact candidate in the production starter
         env:

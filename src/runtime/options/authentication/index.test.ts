@@ -1,13 +1,17 @@
 import type { Import } from 'unimport'
 import type { AuthStrategies } from './index'
 import { createResolver } from '@nuxt/kit'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getAuthClientDefaults } from './client'
 import { getAuthDefaults, resolveAuthOptions } from './index'
 import { authJwtDefaults } from './jwt'
 import { authLocalDefaults } from './local'
 
 describe('resolveAuthOptions', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   const servicesDir = createResolver(import.meta.url).resolve('../../../../services')
   const servicesResolver = createResolver(servicesDir)
   const UserImport: Import = {
@@ -121,31 +125,23 @@ describe('resolveAuthOptions', () => {
   })
 
   it('degrades to false during prepare when embedded auth has no detected services', () => {
-    const previous = process.env.npm_lifecycle_event
-    process.env.npm_lifecycle_event = 'postinstall'
-    try {
-      expect(resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toEqual(false)
-    }
-    finally {
-      if (previous == null)
-        delete process.env.npm_lifecycle_event
-      else
-        process.env.npm_lifecycle_event = previous
-    }
+    vi.stubEnv('npm_lifecycle_event', 'postinstall')
+    vi.stubEnv('NFZ_AUTH_PREPARE_STRICT', '')
+
+    expect(resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toEqual(false)
+  })
+
+  it('honors NFZ_AUTH_PREPARE_STRICT during prepare when embedded auth has no detected services', () => {
+    vi.stubEnv('npm_lifecycle_event', 'postinstall')
+    vi.stubEnv('NFZ_AUTH_PREPARE_STRICT', 'true')
+
+    expect(() => resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toThrow(/no service schemas were detected/i)
   })
 
   it('stays strict outside prepare when embedded auth has no detected services', () => {
-    const previous = process.env.npm_lifecycle_event
-    delete process.env.npm_lifecycle_event
-    try {
-      expect(() => resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toThrow(/no service schemas were detected/i)
-    }
-    finally {
-      if (previous == null)
-        delete process.env.npm_lifecycle_event
-      else
-        process.env.npm_lifecycle_event = previous
-    }
+    vi.stubEnv('npm_lifecycle_event', '')
+
+    expect(() => resolveAuthOptions(true, { client: false, mode: 'embedded' }, [], appDir)).toThrow(/no service schemas were detected/i)
   })
 
   it('does not reintroduce local defaults when jwt is explicit', () => {

@@ -20,6 +20,7 @@ Les clés ci-dessous correspondent à `ModuleOptions` dans le code du module.
 |---|---|---|
 | `transports` | objet | REST et Socket.IO |
 | `database` | objet | registre de connexions MongoDB et SQL |
+| `cache` | — | **non exposé en 6.7.51** ; utiliser Nitro/Unstorage pour Redis |
 | `servicesDirs` | chaîne ou liste | dossiers de découverte des services |
 | `server` | objet | serveur Feathers embedded, modules et sécurité |
 | `auth` | booléen ou objet | authentification locale/JWT |
@@ -164,9 +165,9 @@ feathers: {
 }
 ```
 
-Types pris en charge : `mongodb`, `postgresql`, `mysql`, `mariadb` et `sqlite`.
+Types pris en charge : `mongodb`, `postgresql`, `mysql`, `mariadb`, `sqlite` et `mssql`.
 
-À partir de 6.7.41, chaque connexion résolue expose aussi des métadonnées non sensibles : `provider`, `databaseFamily`, `adapter`, `certification` et `capabilities`. Le mapping standard est fail-closed : MongoDB utilise le provider `mongodb`, tandis que PostgreSQL/MySQL/MariaDB/SQLite utilisent le provider `knex`. MongoDB et PostgreSQL sont certifiés ; MySQL, MariaDB et SQLite restent implémentés mais ne deviennent certifiés qu'après leurs gates réelles dédiées.
+À partir de 6.7.41, chaque connexion résolue expose aussi des métadonnées non sensibles : `provider`, `databaseFamily`, `adapter`, `certification` et `capabilities`. Le mapping standard est fail-closed : MongoDB utilise le provider `mongodb`, tandis que PostgreSQL/MySQL/MariaDB/SQLite/MSSQL utilisent le provider `knex`. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite et MSSQL sont certifiés. La gate MSSQL 6.7.48 utilise `tedious` sur SQL Server 2025, vérifie une vraie base et un vrai schéma isolés, l’auth UUID/JWT, un index natif, le rollback DML et le teardown de la base avant d’enregistrer le stamp. Pour les connexions MSSQL objets, NFZ ajoute `options.lowerCaseGuids: true` quand cette option n’est pas fournie afin de stabiliser la représentation des UUID.
 
 Options communes à chaque connexion :
 
@@ -192,6 +193,23 @@ feathers: {
 ```
 
 Elle devient une connexion nommée `default`. Ne combinez pas `database.mongo` et `database.connections.default`. Les opérations d’administration MongoDB destructrices restent désactivées par défaut. Voir [Registre multi-base](/guide/multi-database).
+
+## Redis cache
+
+Il n'existe pas de clé publique `feathers.cache` ou `feathers.redis` dans `ModuleOptions` 6.7.51. Pour Redis, utilise la couche serveur Nitro/Unstorage et garde les secrets dans `runtimeConfig` privé.
+
+```ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    redis: {
+      url: process.env.REDIS_URL || 'redis://127.0.0.1:6379/0',
+      prefix: process.env.REDIS_PREFIX || 'nfz:app',
+    },
+  },
+})
+```
+
+Voir [Redis cache avec NFZ](/guide/redis-cache) pour le montage du driver, le TTL, l'invalidation et l'exemple DaisyUiKit complet.
 
 ## `auth`
 
@@ -292,4 +310,4 @@ Le module sépare :
 
 Ne dupliquez jamais une URL MongoDB avec identifiants ou un secret Keycloak dans `runtimeConfig.public`.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

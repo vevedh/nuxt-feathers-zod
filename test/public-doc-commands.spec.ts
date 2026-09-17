@@ -26,8 +26,9 @@ describe('public documentation command contracts', () => {
       encoding: 'utf8',
     })
 
-    expect(output).toContain('Public documentation commands OK')
-    expect(output).toContain('127 pages')
+    expect(output).toMatch(
+      /Public documentation commands OK: \d+ pages, \d+ command references, \d+ CLI commands, \d+ package scripts, \d+ external\/runtime commands\./,
+    )
   })
 
   it('keeps the command audit before artifact creation without making prepack heavy', () => {

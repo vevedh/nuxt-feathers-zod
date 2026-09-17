@@ -6,7 +6,7 @@ import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { recordArtifactValidation, resolveReleaseArtifact } from './lib/release-artifact.mjs'
-import { resolveNpmCliPath } from './lib/npm-cli.mjs'
+import { createExactReleaseConsumerPackage, installExactReleaseConsumer } from './lib/release-consumer-install.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const artifact = resolveReleaseArtifact(root, { allowFinal: false })
@@ -18,7 +18,6 @@ const dockerImage = String(process.env.NFZ_POSTGRESQL_DOCKER_IMAGE || 'postgres:
 const PG_PACKAGE_VERSION = '8.23.0'
 const FEATHERS_VERSION = '5.0.49'
 const KNEX_VERSION = '3.2.10'
-const INSTALL_TIMEOUT_MS = 8 * 60 * 1000
 const HARNESS_TIMEOUT_MS = 3 * 60 * 1000
 const DOCKER_READY_TIMEOUT_MS = 90 * 1000
 
@@ -370,10 +369,10 @@ try {
 
   workspace = await mkdtemp(resolve(tmpdir(), 'nfz-postgresql-cert-'))
   const packagePath = candidate.replaceAll('\\', '/')
-  const consumerPackage = {
+  const consumerPackage = createExactReleaseConsumerPackage({
+    root,
     name: 'nfz-postgresql-certification-consumer',
-    private: true,
-    type: 'module',
+    profile: 'database',
     dependencies: {
       '@feathersjs/authentication': FEATHERS_VERSION,
       '@feathersjs/authentication-local': FEATHERS_VERSION,
@@ -385,25 +384,13 @@ try {
       pg: PG_PACKAGE_VERSION,
       zod: '3.25.76',
     },
-  }
+  })
 
   await writeFile(resolve(workspace, 'package.json'), `${JSON.stringify(consumerPackage, null, 2)}\n`)
   await writeFile(resolve(workspace, 'postgresql-certification.mjs'), harnessSource)
 
   console.log(`[postgresql-cert] Installing exact certification consumer for ${basename(candidate)}.`)
-  const npmCliPath = resolveNpmCliPath()
-  const npmCommand = npmCliPath
-    ? process.execPath
-    : (process.platform === 'win32' ? 'npm.cmd' : 'npm')
-  const npmArgs = npmCliPath
-    ? [npmCliPath, 'install', '--ignore-scripts', '--no-audit', '--no-fund']
-    : ['install', '--ignore-scripts', '--no-audit', '--no-fund']
-  run(npmCommand, npmArgs, {
-    cwd: workspace,
-    timeout: INSTALL_TIMEOUT_MS,
-    stdio: 'inherit',
-    shell: !npmCliPath && process.platform === 'win32',
-  })
+  installExactReleaseConsumer({ cwd: workspace, label: 'postgresql-cert' })
 
   const schema = `nfz_cert_${Date.now()}_${randomBytes(4).toString('hex')}`
   console.log(`[postgresql-cert] Running exact candidate against ${runtime.source}; isolated schema=${schema}.`)

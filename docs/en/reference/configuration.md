@@ -20,6 +20,7 @@ The keys below match `ModuleOptions` in the module source.
 |---|---|
 | `transports` | REST and Socket.IO |
 | `database` | MongoDB and MongoDB Management |
+| `cache` | not exposed in 6.7.51; use Nitro/Unstorage for Redis |
 | `servicesDirs` | service discovery directories |
 | `server` | embedded server, modules, and security |
 | `auth` | local/JWT authentication |
@@ -124,9 +125,9 @@ feathers: {
 }
 ```
 
-Supported types are `mongodb`, `postgresql`, `mysql`, `mariadb`, and `sqlite`.
+Supported types are `mongodb`, `postgresql`, `mysql`, `mariadb`, `sqlite`, and `mssql`.
 
-Starting with 6.7.41, every resolved connection also exposes non-sensitive `provider`, `databaseFamily`, `adapter`, `certification`, and `capabilities` metadata. Standard driver mapping is fail-closed: MongoDB uses the `mongodb` provider, while PostgreSQL/MySQL/MariaDB/SQLite use `knex`. MongoDB and PostgreSQL are certified; MySQL, MariaDB, and SQLite remain implemented until their dedicated real-engine gates are complete.
+Starting with 6.7.41, every resolved connection also exposes non-sensitive `provider`, `databaseFamily`, `adapter`, `certification`, and `capabilities` metadata. Standard driver mapping is fail-closed: MongoDB uses the `mongodb` provider, while PostgreSQL/MySQL/MariaDB/SQLite/MSSQL use `knex`. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite, and MSSQL are certified. The 6.7.48 MSSQL gate uses `tedious` against SQL Server 2025 and verifies a real isolated database/schema, UUID/JWT authentication, a native index, DML rollback, and database teardown before the stamp is recorded. For object-based MSSQL connections, NFZ defaults `options.lowerCaseGuids` to `true` when it is not supplied so UUID representation remains stable.
 
 | Option | Default | Purpose |
 |---|---:|---|
@@ -150,6 +151,23 @@ feathers: {
 ```
 
 It is mapped to a named `default` connection. Do not combine `database.mongo` with `database.connections.default`. Destructive MongoDB management operations remain disabled by default. See [Multi-database registry](/en/guide/multi-database).
+
+## Redis cache
+
+There is no public `feathers.cache` or `feathers.redis` key in the 6.7.51 `ModuleOptions` contract. Use Nitro/Unstorage on the server and keep Redis credentials in private runtime configuration.
+
+```ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    redis: {
+      url: process.env.REDIS_URL || 'redis://127.0.0.1:6379/0',
+      prefix: process.env.REDIS_PREFIX || 'nfz:app',
+    },
+  },
+})
+```
+
+See [Redis cache with NFZ](/en/guide/redis-cache) for the driver mount, TTL/invalidation rules, and the full DaisyUiKit example.
 
 ## `auth`
 
@@ -189,4 +207,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

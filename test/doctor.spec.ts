@@ -73,6 +73,28 @@ export default defineNuxtConfig({
           type: 'postgresql',
           connection: 'postgresql://reporter:super-secret@127.0.0.1/reporting',
         },
+        commerce: {
+          type: 'mysql',
+          connection: 'mysql://commerce:super-secret@127.0.0.1/commerce',
+        },
+        legacy: {
+          type: 'mariadb',
+          connection: 'mysql://legacy:super-secret@127.0.0.1/legacy',
+        },
+        localCache: {
+          type: 'sqlite',
+          connection: { filename: './data/local-cache.sqlite' },
+        },
+        enterprise: {
+          type: 'mssql',
+          connection: {
+            server: '127.0.0.1',
+            user: 'sa',
+            password: 'super-secret',
+            database: 'enterprise',
+            options: { encrypt: true, trustServerCertificate: true },
+          },
+        },
       },
     },
   },
@@ -85,12 +107,35 @@ export default defineNuxtConfig({
 
     await runDoctor(root)
 
+    expect(infos.some(line => line.includes('- database.supportedEngines: mongodb, postgresql, mysql, mariadb, sqlite, mssql'))).toBe(true)
+    expect(infos.some(line => line.includes('- database.certifiedEngines: 6/6'))).toBe(true)
     expect(infos.some(line => line.includes('- database.default: reporting'))).toBe(true)
-    expect(infos.some(line => line.includes('- database.connections: 2'))).toBe(true)
+    expect(infos.some(line => line.includes('- database.connections: 6'))).toBe(true)
     expect(infos.some(line => line.includes('archive: type=mongodb provider=mongodb databaseFamily=document certification=certified enabled=true'))).toBe(true)
     expect(infos.some(line => line.includes('reporting: type=postgresql provider=knex databaseFamily=sql certification=certified driver=pg enabled=true'))).toBe(true)
+    expect(
+      infos.some(line => line.includes(
+        'commerce: type=mysql provider=knex databaseFamily=sql certification=certified driver=mysql2 enabled=true',
+      )),
+    ).toBe(true)
+    expect(
+      infos.some(line => line.includes(
+        'legacy: type=mariadb provider=knex databaseFamily=sql certification=certified driver=mysql2 enabled=true',
+      )),
+    ).toBe(true)
+    expect(
+      infos.some(line => line.includes(
+        'localCache: type=sqlite provider=knex databaseFamily=sql certification=certified driver=better-sqlite3 enabled=true',
+      )),
+    ).toBe(true)
+    expect(
+      infos.some(line => line.includes(
+        'enterprise: type=mssql provider=knex databaseFamily=sql certification=certified driver=tedious enabled=true',
+      )),
+    ).toBe(true)
     expect(infos.join('\n')).not.toContain('super-secret')
     expect(infos.join('\n')).not.toContain('postgresql://')
+    expect(infos.join('\n')).not.toContain('mysql://')
   })
 
   it('diagnoses generated service database bindings against named connection types', async () => {

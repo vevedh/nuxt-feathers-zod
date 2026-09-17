@@ -226,14 +226,14 @@ database: {
 
 | Option SQL | Défaut | Description |
 |---|---:|---|
-| `type` | — | `postgresql`, `mysql`, `mariadb` ou `sqlite` |
+| `type` | — | `postgresql`, `mysql`, `mariadb`, `sqlite` ou `mssql` |
 | `connection` | — | chaîne ou objet de connexion transmis à Knex |
 | `client` | selon `type` | client Knex ; un override personnalisé impose `driverPackage` |
-| `driverPackage` | selon `type` | package npm chargé au démarrage (`pg`, `mysql2`, `better-sqlite3`) |
+| `driverPackage` | selon `type` | package npm chargé au démarrage (`pg`, `mysql2`, `better-sqlite3`, `tedious`) |
 | `pool.min` | `0` | nombre minimum de connexions conservées |
 | `pool.max` | `10` (`1` pour SQLite) | plafond du pool ; SQLite impose `1` |
 | `acquireConnectionTimeout` | `60000` | attente maximale d'acquisition d'une connexion, en ms |
-| `searchPath` | — | liste de schémas, principalement utile avec PostgreSQL |
+| `searchPath` | — | liste de schémas, principalement utile avec PostgreSQL et MSSQL |
 | `required` | `true` | bloque le démarrage si la connexion échoue |
 | `healthCheck` | `true` | exécute `select 1` après ouverture |
 

@@ -28,6 +28,7 @@ for (const [type, driver] of [
   ['mysql', 'mysql2'],
   ['mariadb', 'mysql2'],
   ['sqlite', 'better-sqlite3'],
+  ['mssql', 'tedious'],
 ]) {
   requireText(connections, `type: '${type}'`, `${type} descriptor`)
   requireText(connections, `driverPackage: '${driver}'`, `${type} driver package`)

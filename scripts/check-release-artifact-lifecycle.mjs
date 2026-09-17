@@ -61,18 +61,30 @@ try {
   writeJson(paths.candidateManifest, createArtifactManifest(fixtureRoot, candidate, { state: 'candidate' }))
   const loaded = loadArtifactManifest(fixtureRoot, paths.candidateManifest, { expectedState: 'candidate' })
   recordArtifactValidation(fixtureRoot, 'postgresql', loaded, { fixture: true })
+  recordArtifactValidation(fixtureRoot, 'mysql', loaded, { fixture: true })
+  recordArtifactValidation(fixtureRoot, 'mariadb', loaded, { fixture: true })
+  recordArtifactValidation(fixtureRoot, 'sqlite', loaded, { fixture: true })
+  recordArtifactValidation(fixtureRoot, 'mssql', loaded, { fixture: true })
+  recordArtifactValidation(fixtureRoot, 'database-matrix', loaded, { fixture: true })
   recordArtifactValidation(fixtureRoot, 'starter', loaded, { fixture: true })
   recordArtifactValidation(fixtureRoot, 'consumer', loaded, { fixture: true })
-  const validations = requireArtifactValidations(fixtureRoot, loaded, ['postgresql', 'starter', 'consumer'])
+  const validations = requireArtifactValidations(
+    fixtureRoot,
+    loaded,
+    ['postgresql', 'mysql', 'mariadb', 'sqlite', 'mssql', 'database-matrix', 'starter', 'consumer'],
+  )
   const finalArtifact = promoteCandidate(fixtureRoot, loaded, validations)
   const finalLoaded = loadArtifactManifest(fixtureRoot, getReleasePaths(fixtureRoot).finalManifest, { expectedState: 'final' })
 
   if (finalArtifact.sha256 !== candidate.sha256 || finalLoaded.sha256 !== candidate.sha256)
     throw new Error('The final artifact hash does not match the validated candidate.')
-  if (finalLoaded.manifest.validations.join(',') !== 'postgresql,starter,consumer')
+  if (finalLoaded.manifest.validations.join(',') !== 'postgresql,mysql,mariadb,sqlite,mssql,database-matrix,starter,consumer')
     throw new Error('The final manifest did not preserve exact-artifact validations.')
 
-  console.log('[release] Artifact lifecycle smoke passed: candidate -> postgresql/starter/consumer stamps -> final immutable tarball.')
+  console.log(
+    '[release] Artifact lifecycle smoke passed: candidate -> postgresql/mysql/mariadb/sqlite/mssql/database-matrix/starter/consumer ' +
+      'stamps -> final immutable tarball.',
+  )
 }
 finally {
   rmSync(fixtureRoot, { recursive: true, force: true })

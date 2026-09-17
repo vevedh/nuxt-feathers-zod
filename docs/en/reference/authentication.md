@@ -101,4 +101,4 @@ Weak, demo, or project-path-derived secrets are rejected. Development mode gener
 
 Secrets, private keys, peppers, API key hashes, and service identities are never copied into public runtime configuration.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

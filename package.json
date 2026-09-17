@@ -1,7 +1,7 @@
 {
   "name": "nuxt-feathers-zod",
   "type": "module",
-  "version": "6.7.45",
+  "version": "6.7.51",
   "packageManager": "bun@1.3.14",
   "description": "Nuxt 4 module for FeathersJS v5 with embedded or remote mode, Zod-first services, named MongoDB/SQL connections and extensible authentication providers.",
   "author": "Herve de CHAVIGNY",
@@ -281,8 +281,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "cli:smoke": "bun scripts/cli-smoke.ts",
-    "publish:npm": "bun run release:check:registry && bun run release:artifact:check && node scripts/publish-release.mjs",
-    "release:check": "bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-artifact-lifecycle && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:generated-template-types && bun run sanity:embedded-runtime && bun run sanity:zod-boundary && bun run sanity:auth-mongodb-id && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:eslint-coverage && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-retry && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:starter-published-types && bun run sanity:starter-quasar-compat && bun run sanity:starter-release-runtime && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:release-gate-regressions && bun run sanity:playwright && bun run sanity:auth-hydration && bun run sanity:auth-security && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-commands && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun run sanity:package-exports",
+    "publish:npm": "bun run release:git:check:tagged && bun run release:check:registry && bun run release:artifact:check && node scripts/publish-release.mjs",
+    "release:check": "bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-git-sync && bun run sanity:release-artifact-lifecycle && bun run lint && bun run sanity:templates && bun run sanity:file-service-template && bun run sanity:generated-template-types && bun run sanity:embedded-runtime && bun run sanity:zod-boundary && bun run sanity:auth-mongodb-id && bun run sanity:syntax && bun run sanity:internal-imports && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:dependency-convergence && bun run sanity:maintenance-debt && bun run sanity:release-consumer-install-resilience && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:eslint-coverage && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-retry && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:docs-bundle-observability && bun run sanity:starter-published-types && bun run sanity:starter-quasar-compat && bun run sanity:starter-release-runtime && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:release-gate-regressions && bun run sanity:playwright && bun run sanity:auth-hydration && bun run sanity:auth-security && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:mysql-mariadb-certification && bun run sanity:sqlite-certification && bun run sanity:mssql-certification && bun run sanity:database-certification-matrix && bun run sanity:examples && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-commands && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:release-meta && bun run sanity:release-files && bun run typecheck && bun run prepare && bun run test && bun run docs:build && bun run cli:smoke && bun run cli:benchmark && bun run sanity:package-exports",
     "release": "bun run release:prepare",
     "release:patch": "node scripts/set-release-version.mjs patch",
     "release:minor": "node scripts/set-release-version.mjs minor",
@@ -320,7 +320,7 @@
     "verify:typecheck": "bun run typecheck",
     "verify:test": "bun run test",
     "verify:cli": "bun run cli:build && bun run cli:smoke && bun run cli:full-smoke",
-    "verify:sanity": "bun run sanity:auth-security && bun run sanity:playground-protected-session && bun run sanity:generated-template-types && bun run sanity:embedded-runtime && bun run sanity:zod-boundary && bun run sanity:auth-mongodb-id && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run sanity:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-artifact-lifecycle && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:eslint-coverage && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-retry && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:starter-published-types && bun run sanity:starter-release-runtime && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:release-gate-regressions && bun run sanity:playwright && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-commands && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
+    "verify:sanity": "bun run sanity:auth-security && bun run sanity:playground-protected-session && bun run sanity:generated-template-types && bun run sanity:embedded-runtime && bun run sanity:zod-boundary && bun run sanity:auth-mongodb-id && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:mysql-mariadb-certification && bun run sanity:sqlite-certification && bun run sanity:mssql-certification && bun run sanity:database-certification-matrix && bun run sanity:examples && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run sanity:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-git-sync && bun run sanity:release-artifact-lifecycle && bun run sanity:package-exports && bun run sanity:cli-dist-meta && bun run sanity:dependency-convergence && bun run sanity:maintenance-debt && bun run sanity:release-consumer-install-resilience && bun run sanity:generated-secret-safety && bun run sanity:source-hygiene && bun run sanity:eslint-coverage && bun run sanity:public-repository && bun run sanity:starter-security && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-retry && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:docs-bundle-observability && bun run sanity:starter-published-types && bun run sanity:starter-release-runtime && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:release-gate-regressions && bun run sanity:playwright && bun run docs:check-frontmatter && bun run docs:check-conflicts && bun run docs:check-links && bun run docs:check-commands && bun run docs:check-human-style && bun run docs:check-branding && bun run docs:check-boundary && bun run sanity:client-runtime-esm-interop && bun run sanity:feathers-nitro && bun run sanity:feathers-first-console && bun run sanity:project-coherence",
     "verify:all": "bun run verify:build && bun run verify:typecheck && bun run verify:test && bun run verify:cli && bun run verify:sanity",
     "verify:full": "bun run verify:install && bun run verify:all",
     "cli:full-smoke": "bun scripts/cli-full-smoke.ts",
@@ -347,7 +347,7 @@
     "docs:sync-technical": "bun scripts/sync-technical-docs.ts",
     "sanity:project-coherence": "bun scripts/check-project-coherence.ts",
     "docs:check-links": "node scripts/check-docs-links.mjs",
-    "prepare:project": "bun run repo:clean-maintenance-index:if-git && bun run sanity:eslint-coverage && bun run sanity:auth-security && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-artifact-lifecycle && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:starter-published-types && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:playwright && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link && bun run docs:check-boundary && bun run docs:check-commands",
+    "prepare:project": "bun run repo:clean-maintenance-index:if-git && bun run sanity:maintenance-debt && bun run sanity:release-consumer-install-resilience && bun run sanity:eslint-coverage && bun run sanity:auth-security && bun run sanity:database-registry && bun run sanity:relational-sql-provider && bun run sanity:postgresql-certification && bun run sanity:mysql-mariadb-certification && bun run sanity:sqlite-certification && bun run sanity:mssql-certification && bun run sanity:database-certification-matrix && bun run sanity:examples && bun run sanity:portable-service-generator && bun run sanity:portable-identifiers && bun run sync:release-meta && bun run sanity:version-coherence && bun run sanity:release-lint-regressions && bun run sanity:release-typecheck-regressions && bun run sanity:release-finalization && bun run sanity:integration-gate-regressions && bun run sanity:publication-pipeline && bun run sanity:release-git-sync && bun run sanity:release-artifact-lifecycle && bun run sanity:internal-imports && bun run sanity:feathers-first-console && bun run sanity:project-coherence && bun run sanity:public-repository && bun run sanity:windows-tooling && bun run sanity:powershell-interpolation && bun run sanity:windows-install-verification && bun run sanity:windows-install-resilience && bun run sanity:docs-build-resilience && bun run sanity:docs-bundle-observability && bun run sanity:starter-published-types && bun run sanity:starter-release-install-resilience && bun run sanity:mcp-maintainer-config && bun run sanity:playwright && bun run module:prepare && bun run module:build && bun run sanity:file-service-template && bun run cli:build && bun run sanity:cli-dist-meta && bun run sanity:package-exports && bun run playground:ensure-link && bun run docs:check-boundary && bun run docs:check-commands",
     "sanity:public-repository": "node scripts/check-public-repository.mjs",
     "sanity:starter-security": "node scripts/check-starter-security.mjs",
     "repo:clean-maintenance-index": "node scripts/clean-tracked-maintenance.mjs",
@@ -396,7 +396,7 @@
     "prepublishOnly": "node scripts/block-direct-folder-publish.mjs",
     "release:version": "node scripts/set-release-version.mjs",
     "release:candidate": "node scripts/pack-release.mjs",
-    "release:verify:artifact": "bun run test:postgresql:release && bun run test:starter:release && bun run smoke:tarball",
+    "release:verify:artifact": "bun run test:postgresql:release && bun run test:mysql-mariadb:release && bun run test:sqlite:release && bun run test:mssql:release && bun run test:database-matrix:release && bun run test:starter:release && bun run smoke:tarball",
     "release:finalize": "node scripts/finalize-release.mjs",
     "release:artifact:check": "node scripts/check-release-artifact.mjs",
     "sanity:publication-pipeline": "node scripts/check-publication-pipeline.mjs",
@@ -409,7 +409,26 @@
     "sanity:starter-quasar-compat": "node scripts/check-starter-quasar-compat.mjs",
     "sanity:playground-protected-session": "node scripts/check-playground-protected-session.mjs",
     "sanity:portable-service-generator": "node scripts/check-portable-service-generator.mjs",
-    "sanity:portable-identifiers": "node scripts/check-portable-identifiers.mjs"
+    "sanity:portable-identifiers": "node scripts/check-portable-identifiers.mjs",
+    "sanity:mysql-mariadb-certification": "node scripts/check-mysql-mariadb-certification.mjs",
+    "test:mysql-mariadb:release": "node scripts/validate-mysql-mariadb-release.mjs",
+    "sanity:examples": "node scripts/check-examples-catalog.mjs",
+    "sanity:sqlite-certification": "node scripts/check-sqlite-certification.mjs",
+    "sanity:mssql-certification": "node scripts/check-mssql-certification.mjs",
+    "test:sqlite:release": "node scripts/validate-sqlite-release.mjs",
+    "test:mssql:release": "node scripts/validate-mssql-release.mjs",
+    "sanity:database-certification-matrix": "node scripts/check-database-certification-matrix.mjs",
+    "test:database-matrix:release": "node scripts/validate-database-matrix-release.mjs",
+    "sanity:release-docker": "node scripts/check-release-docker-preflight.mjs",
+    "release:candidate:status": "node scripts/check-release-candidate-state.mjs --json",
+    "verify:release:windows:resume": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -ResumeCandidate",
+    "sanity:maintenance-debt": "node scripts/check-maintenance-debt.mjs",
+    "sanity:release-consumer-install-resilience": "node scripts/check-release-consumer-install-resilience.mjs",
+    "docs:bundle:report": "node scripts/report-docs-bundle.mjs docs docs-private",
+    "sanity:docs-bundle-observability": "node scripts/check-docs-bundle-observability.mjs",
+    "sanity:release-git-sync": "node scripts/check-release-git-sync-regressions.mjs",
+    "release:git:check": "node scripts/check-release-git-sync.mjs",
+    "release:git:check:tagged": "node scripts/check-release-git-sync.mjs --tagged"
   },
   "peerDependencies": {
     "nuxt": "^4.0.0",
@@ -420,7 +439,8 @@
     "pg": "^8.0.0",
     "mysql2": "^3.0.0",
     "better-sqlite3": "^11.0.0 || ^12.0.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "tedious": "^20.0.0"
   },
   "dependencies": {
     "@feathersjs/adapter-commons": "5.0.49",
@@ -553,6 +573,9 @@
       "optional": true
     },
     "better-sqlite3": {
+      "optional": true
+    },
+    "tedious": {
       "optional": true
     }
   },

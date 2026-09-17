@@ -91,4 +91,4 @@ bun run build
 
 Le package valide aussi son starter principal après empaquetage, sur un serveur Nitro de production, avec authentification et CRUD REST Express réel.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->

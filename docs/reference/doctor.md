@@ -41,6 +41,18 @@ zod compatibility: compatible
 
 Une copie Zod transitive n'est pas automatiquement bloquante. Le doctor contrôle les runtimes réellement résolus par l'application et NFZ.
 
+
+## Matrice de bases certifiée
+
+Le doctor expose aussi la matrice intégrée sans se connecter aux moteurs :
+
+```text
+database.supportedEngines: mongodb, postgresql, mysql, mariadb, sqlite, mssql
+database.certifiedEngines: 6/6
+```
+
+Utilisez `bunx nuxt-feathers-zod capabilities --section databases --json` pour obtenir les descripteurs complets, ou `nfz/database-connections` pour l'état des connexions réellement configurées.
+
 ## Après une modification structurelle
 
 ```bash
@@ -51,4 +63,4 @@ bun run build
 
 Conserve `servicesDirs` comme source métier unique et le `loadOrder` standard. Les plugins restent réservés à l'infrastructure transversale.
 
-<!-- release-version: 6.7.45 -->
+<!-- release-version: 6.7.51 -->
