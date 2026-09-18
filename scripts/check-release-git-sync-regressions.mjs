@@ -21,8 +21,27 @@ function must(command, args, cwd) {
   return String(result.stdout || '').trim()
 }
 
-function guardRun(args = [], env = {}) {
-  return run(process.execPath, [guard, '--root', work, ...args], projectRoot, { ...process.env, ...env })
+const releaseContextEnvKeys = [
+  'GITHUB_ACTIONS',
+  'GITHUB_EVENT_NAME',
+  'GITHUB_REF',
+  'GITHUB_REF_NAME',
+  'GITHUB_REF_TYPE',
+  'GITHUB_HEAD_REF',
+  'GITHUB_BASE_REF',
+  'GITHUB_SHA',
+  'NFZ_RELEASE_TAG',
+]
+
+function isolatedGuardEnv(overrides = {}, baseEnv = process.env) {
+  const childEnv = { ...baseEnv }
+  for (const key of releaseContextEnvKeys)
+    delete childEnv[key]
+  return { ...childEnv, ...overrides }
+}
+
+function guardRun(args = [], env = {}, baseEnv = process.env) {
+  return run(process.execPath, [guard, '--root', work, ...args], projectRoot, isolatedGuardEnv(env, baseEnv))
 }
 
 function expectStatus(result, expected, label) {
@@ -59,7 +78,20 @@ try {
   must('git', ['tag', 'v6.7.51'], work)
   expectStatus(guardRun(), 1, 'local tag rejection in preparation mode')
   must('git', ['push', 'origin', 'v6.7.51'], work)
-  expectStatus(guardRun(['--tagged'], { NFZ_RELEASE_TAG: 'v6.7.51' }), 0, 'tagged publication accepted')
+  const contaminatedPushEnv = {
+    ...process.env,
+    GITHUB_ACTIONS: 'true',
+    GITHUB_EVENT_NAME: 'push',
+    GITHUB_REF: 'refs/heads/main',
+    GITHUB_REF_NAME: 'main',
+    GITHUB_REF_TYPE: 'branch',
+    GITHUB_SHA: must('git', ['rev-parse', 'HEAD'], work),
+  }
+  expectStatus(
+    guardRun(['--tagged'], { NFZ_RELEASE_TAG: 'v6.7.51' }, contaminatedPushEnv),
+    0,
+    'tagged publication accepted with ambient GitHub push context isolated',
+  )
 
   writeFileSync(join(work, 'tracked.txt'), 'main-after-tag\n')
   must('git', ['add', 'tracked.txt'], work)
