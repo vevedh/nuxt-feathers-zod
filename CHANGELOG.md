@@ -1,6 +1,7 @@
 ## 6.7.51 - 2026-09-15 - Maintenance-debt observability and docs bundle measurement
 
 ### Fixed
+- allow the documentation bundle observability guard to run in a public GitHub checkout where intentionally ignored `docs-private/` is absent, while still enforcing the same Vite/Node warning policy whenever private docs are present.
 - isolate synthetic release-tag regression scenarios from ambient GitHub Actions branch variables so `sanity:release-git-sync` behaves deterministically on `push` CI while the production publication guard remains fail-closed and unchanged.
 - finish Vue lint convergence for the maintained DaisyUiKit/Redis example by replacing an all-static `:class` binding with `class` and aligning DaisyUiKit `is` ordering around `v-if`/`v-else`; no NFZ runtime/API/dependency change.
 - make the maintained Nuxt 4 + DaisyUiKit + Redis example satisfy the repository lint contract: CSS/YAML/JSONC/Vue/import formatting is aligned and Bearer-token parsing no longer uses the regex rejected for potential super-linear backtracking; no NFZ runtime/API/dependency change.
