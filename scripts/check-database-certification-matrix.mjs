@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 const root = process.cwd()
 const failures = []
-const read = path => readFileSync(resolve(root, path), 'utf8')
+const read = path => readFileSync(resolve(root, path), 'utf8').replace(/\r\n?/g, '\n')
 const requireText = (source, needle, label) => {
   if (!source.includes(needle))
     failures.push(`missing ${label}: ${needle}`)
