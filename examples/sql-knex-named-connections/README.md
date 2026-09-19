@@ -1,6 +1,6 @@
 # SQL / Knex named connections
 
-Recette ciblée pour les moteurs SQL certifiés de **nuxt-feathers-zod 6.7.51** : PostgreSQL, MySQL et MariaDB.
+Recette ciblée pour les moteurs SQL certifiés de **nuxt-feathers-zod 6.8.0** : PostgreSQL, MySQL et MariaDB.
 
 ## 1. Installer les drivers
 
@@ -24,9 +24,9 @@ Voir `nuxt.config.ts`. En production, garde toujours `database.default` explicit
 ## 4. Générer un service par moteur
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service pg-events --database postgresql --connection postgresql --table pg_events --schema zod
-bunx nuxt-feathers-zod@6.7.51 add service mysql-events --database mysql --connection mysql --table mysql_events --schema zod
-bunx nuxt-feathers-zod@6.7.51 add service mariadb-events --database mariadb --connection mariadb --table mariadb_events --schema zod
+bunx nuxt-feathers-zod@6.8.0 add service pg-events --database postgresql --connection postgresql --table pg_events --schema zod
+bunx nuxt-feathers-zod@6.8.0 add service mysql-events --database mysql --connection mysql --table mysql_events --schema zod
+bunx nuxt-feathers-zod@6.8.0 add service mariadb-events --database mariadb --connection mariadb --table mariadb_events --schema zod
 ```
 
 NFZ partage les connexions du registre : les services générés ne créent pas leur propre pool.

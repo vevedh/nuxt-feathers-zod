@@ -1,4 +1,4 @@
-# Nuxt 4 SSR + Quasar + UnoCSS + NFZ 6.7.51 remote + Keycloak client-only + LDAP backend
+# Nuxt 4 SSR + Quasar + UnoCSS + NFZ 6.8.0 remote + Keycloak client-only + LDAP backend
 
 Cette application est une **déclinaison SSR** du modèle validé `nuxt4-keycloak-ldap-spa`.
 
@@ -6,7 +6,7 @@ Le principe reste identique côté sécurité et architecture :
 
 ```txt
 Keycloak = uniquement côté client Nuxt
-NFZ 6.7.51 = client Feathers remote direct
+NFZ 6.8.0 = client Feathers remote direct
 LDAP = uniquement côté backend Feathers
 SSR Nuxt = actif, mais sans orchestration Keycloak côté serveur
 ```

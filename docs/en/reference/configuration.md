@@ -20,7 +20,7 @@ The keys below match `ModuleOptions` in the module source.
 |---|---|
 | `transports` | REST and Socket.IO |
 | `database` | MongoDB and MongoDB Management |
-| `cache` | not exposed in 6.7.51; use Nitro/Unstorage for Redis |
+| `cache` | server-native cache; disabled by default, `memory` provider in Patch073 r1 |
 | `servicesDirs` | service discovery directories |
 | `server` | embedded server, modules, and security |
 | `auth` | local/JWT authentication |
@@ -152,22 +152,52 @@ feathers: {
 
 It is mapped to a named `default` connection. Do not combine `database.mongo` with `database.connections.default`. Destructive MongoDB management operations remain disabled by default. See [Multi-database registry](/en/guide/multi-database).
 
-## Redis cache
+## `cache` — native 6.8.0 foundation
 
-There is no public `feathers.cache` or `feathers.redis` key in the 6.7.51 `ModuleOptions` contract. Use Nitro/Unstorage on the server and keep Redis credentials in private runtime configuration.
+Patch073 r1 introduces a **server-only** NFZ cache that remains disabled by default. This first revision supports only the native `memory` provider; Redis is not an NFZ provider yet.
 
 ```ts
 export default defineNuxtConfig({
-  runtimeConfig: {
-    redis: {
-      url: process.env.REDIS_URL || 'redis://127.0.0.1:6379/0',
-      prefix: process.env.REDIS_PREFIX || 'nfz:app',
+  feathers: {
+    cache: {
+      enabled: true,
+      provider: 'memory',
+      namespace: 'nfz',
+      defaultTtlMs: 60_000,
+      maxEntries: 1_000,
+      failOpen: true,
     },
   },
 })
 ```
 
-See [Redis cache with NFZ](/en/guide/redis-cache) for the driver mount, TTL/invalidation rules, and the full DaisyUiKit example.
+| Option | Default | Purpose |
+|---|---:|---|
+| `enabled` | `true` when the object is supplied | enables the native cache |
+| `provider` | `memory` | only provider implemented in r1 |
+| `namespace` | `nfz` | private logical prefix applied to keys |
+| `defaultTtlMs` | `60000` | default TTL; `0` means no expiration |
+| `maxEntries` | `1000` | in-process memory bound, from 1 to 100000 |
+| `failOpen` | `true` | cache backend errors degrade to misses/write failures instead of business-request failures |
+
+The server API is exported from `nuxt-feathers-zod/server-cache`:
+
+```ts
+import { getNfzCache } from 'nuxt-feathers-zod/server-cache'
+
+const cache = getNfzCache(app)
+const value = await cache?.getOrSet('dashboard:summary:v1', async () => {
+  return await buildDashboardSummary()
+}, { ttlMs: 30_000 })
+```
+
+`getOrSet` deduplicates concurrent producers for the same key. Diagnostics expose no keys or cached values. `undefined` cannot be cached. The memory store is process-local and does not synchronize multiple replicas.
+
+### Redis in Patch073 r1
+
+Continue to use Nitro/Unstorage at the application layer for Redis and keep credentials in private `runtimeConfig`. Do not configure `provider: 'redis'`: the 6.8.0 r1 resolver rejects it explicitly until the native Redis revision lands.
+
+See [Redis cache with NFZ](/en/guide/redis-cache) for the current driver mount, TTL/invalidation rules, and the full DaisyUiKit example.
 
 ## `auth`
 
@@ -207,4 +237,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

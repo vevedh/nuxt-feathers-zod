@@ -228,7 +228,7 @@ reporting: {
 MongoDB:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service messages \
+bunx nuxt-feathers-zod@6.8.0 add service messages \
   --database mongodb \
   --connection primary \
   --collection messages \
@@ -238,7 +238,7 @@ bunx nuxt-feathers-zod@6.7.51 add service messages \
 PostgreSQL with an explicit table and SQL schema:
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service audit-events \
+bunx nuxt-feathers-zod@6.8.0 add service audit-events \
   --database postgresql \
   --connection reporting \
   --table audit_events \
@@ -360,4 +360,4 @@ An exception from the callback is propagated to Knex so that connection's transa
 - MikroORM and relational entities are reserved for a later release.
 - SQL drivers remain optional dependencies of the consumer application.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

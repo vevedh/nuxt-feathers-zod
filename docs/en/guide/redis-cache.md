@@ -1,8 +1,8 @@
 # Redis cache with NFZ
 
-NFZ 6.7.51 can be used with Redis in a Nuxt 4 application, but **the module does not currently expose a public `feathers.cache` or `feathers.redis` option**.
+NFZ 6.8.0 Patch073 r1 introduces a **server-native cache foundation** with the `memory` provider. Redis is deliberately not a native NFZ provider yet; this revision keeps Redis integration at the application layer through Nitro/Unstorage.
 
-The recommended application cache uses Nitro/Unstorage on the server. This keeps Redis credentials private and avoids documenting an NFZ API that does not exist yet.
+This lets NFZ stabilize `NfzCacheStore`, TTL semantics, fail-open behavior, single-flight `getOrSet`, and value-free diagnostics before adding a Redis client dependency.
 
 ## Recommended architecture
 
@@ -87,8 +87,26 @@ examples/real-world-nuxt4-daisyui-pinia-redis/
 
 It combines Nuxt 4, Vue 3, `daisy-ui-kit/nuxt`, Tailwind CSS 4, Pinia, MongoDB 7, embedded FeathersJS v5, local/JWT authentication, `admin/member` RBAC, Redis through Nitro/Unstorage, a protected cached dashboard, and switchable light/dark/custom DaisyUI themes.
 
-## Why not `feathers.cache` yet?
+## What the native r1 cache already provides
 
-A first-class NFZ cache contract belongs to the later 6.8.0 design work. It needs an explicit driver contract, TTL/invalidation semantics, observability, multi-instance behavior, security rules, and Redis/Valkey compatibility before becoming a stable public module option.
+For process-local memory caching, enable NFZ directly:
 
-<!-- release-version: 6.7.51 -->
+```ts
+feathers: {
+  cache: {
+    enabled: true,
+    provider: 'memory',
+    defaultTtlMs: 60_000,
+    maxEntries: 1_000,
+    failOpen: true,
+  },
+}
+```
+
+Server services/plugins can retrieve it with `getNfzCache(app)` from `nuxt-feathers-zod/server-cache`. The stable high-level surface includes `get`, `set`, `remove`, `clear`, `has`, `getOrSet`, `diagnostics`, and `close`.
+
+## Why does Redis stay application-level in r1?
+
+r1 stabilizes the abstraction and in-process provider before introducing a network backend. A native Redis/Valkey provider still needs explicit connection/reconnect semantics, distributed TTL behavior, namespace/tenant isolation, observability, and Docker multi-instance certification. Until that revision, `provider: 'redis'` is explicitly rejected rather than exposing a partially implemented capability.
+
+<!-- release-version: 6.8.0 -->

@@ -56,6 +56,13 @@ const config = useRuntimeConfig()
 const mode = config.public._feathers?.client?.mode
 ```
 
+
+## Cache natif et frontière privée
+
+`feathers.cache` est résolu uniquement dans `runtimeConfig._feathers.cache`. Il n'est jamais copié dans `runtimeConfig.public._feathers`. Le frontend ne doit donc pas dépendre de la présence, du namespace ou des diagnostics du cache serveur.
+
+En Patch073 r1, seul le provider `memory` est disponible. Les identifiants Redis restent hors du contrat NFZ natif et, lorsqu'une application utilise Nitro/Unstorage, doivent rester dans une section privée de `runtimeConfig`.
+
 ## Points de vigilance
 
 - Les chemins exposés (`/feathers`, `/feathers/nfz/*`, `/socket.io`, `/mongo`) et les éventuelles façades `/api/nfz/*` doivent être documentés dans le projet applicatif.
@@ -69,4 +76,4 @@ const mode = config.public._feathers?.client?.mode
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

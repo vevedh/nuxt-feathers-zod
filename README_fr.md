@@ -3,9 +3,9 @@
 `nuxt-feathers-zod` intègre FeathersJS v5 (Dove), les schémas Zod et l'accès typé aux services dans Nuxt 4.
 Le module s'adresse aux applications qui ont besoin d'un vrai contrat backend dans un projet Nuxt, tout en conservant la possibilité de se connecter à une API Feathers externe.
 
-Version de référence : **6.7.51**.
+Version de référence : **6.8.0**.
 
-Socle runtime de la version `6.7.39` : Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6` (validation de release recommandée avec Bun 1.3.14).
+Socle runtime de la version `6.8.0` : Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6` (validation de release recommandée avec Bun 1.3.14).
 Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5.0.49, Nuxt 4.5.2 et Vue 3.5.42 ; Nitro 2.13.4 et H3 1.15.11 restent volontairement gelés sur ce train.
 
 
@@ -18,7 +18,7 @@ Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5
 - Registre extensible de providers local, JWT, OIDC, clé API et custom, avec flux remote orientés Keycloak.
 - Transports REST et Socket.io.
 - Connexions nommées MongoDB et Knex (PostgreSQL, MySQL, MariaDB, SQLite et Microsoft SQL Server), avec drivers SQL explicites, pools sûrs, transactions mono-connexion, diagnostics expurgés et endpoints optionnels d'administration MongoDB. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite et MSSQL sont certifiés par des gates réelles sur le candidate exact ; la certification MSSQL utilise SQL Server 2025 avec `tedious`, une base/un schéma isolés et un teardown lié au SHA du candidate.
-- Intégration cache Redis via Nitro/Unstorage pour les routes serveur et les patterns cache-aside métier ; NFZ 6.7.51 n’expose pas d’option native `feathers.cache`.
+- Fondation de cache natif serveur (`feathers.cache`) avec provider `memory` borné, TTL, namespaces, fail-open, `getOrSet` single-flight et diagnostics sans contenu. Redis reste une intégration applicative Nitro/Unstorage dans Patch073 r1.
 - Services Builder et diagnostic Feathers-first sous `nfz/*`.
 - Composables runtime pour le client, les services, l'authentification et les services protégés.
 - Documentation VitePress en français et en anglais.

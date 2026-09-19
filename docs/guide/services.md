@@ -19,7 +19,7 @@ Les anciens sélecteurs `--adapter mongodb|knex` restent compatibles. `--adapter
 Pour SQL, utilisez `--table` et, si nécessaire, `--schemaName` :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service audit-events \
+bunx nuxt-feathers-zod@6.8.0 add service audit-events \
   --database postgresql \
   --connection reporting \
   --table audit_events \
@@ -42,7 +42,7 @@ Depuis 6.7.44, `--idStrategy` rend le contrat d'identifiant explicite sans dédu
 Exemple PostgreSQL avec UUID :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service api-keys \
+bunx nuxt-feathers-zod@6.8.0 add service api-keys \
   --database postgresql \
   --connection reporting \
   --table api_keys \
@@ -128,4 +128,4 @@ Aucune boucle HTTP vers la même application n’est nécessaire.
 - N’acceptez jamais un nom de service ou de champ non validé depuis une entrée utilisateur.
 - Exécutez `doctor` et `schema <service> --validate` avant une release.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

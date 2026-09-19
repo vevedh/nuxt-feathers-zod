@@ -46,4 +46,4 @@ bunx nuxt-feathers-zod schema users --validate
 bunx nuxt-feathers-zod schema users --repair-auth
 ```
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

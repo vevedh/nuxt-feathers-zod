@@ -44,4 +44,4 @@ bun run build
 
 Keep `servicesDirs` as the single business registrar source and preserve the standard load order. Use plugins only for cross-cutting infrastructure.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

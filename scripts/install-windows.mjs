@@ -12,13 +12,16 @@ import { isAbsolute, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import { requireBunExecutable } from './lib/bun-executable.mjs'
+import { createWindowsInstallFingerprint } from './lib/windows-install-fingerprint.mjs'
 import {
+  isFrozenLockfileMismatch,
   isRetryableInstallFailure,
   isWindowsFileLockFailure,
   parsePositiveInteger,
   resolveAttemptCount,
   resolveNetworkConcurrency,
   resolveRetryDelayMs,
+  shouldAttemptInPlaceReconciliation,
   shouldReuseInstall,
 } from './lib/windows-install-policy.mjs'
 import {
@@ -103,13 +106,14 @@ function readOptional(path) {
 }
 
 function createInstallFingerprint(bunVersion) {
-  const hash = createHash('sha256')
-  hash.update(readOptional(resolve(root, 'package.json')))
-  hash.update(readOptional(resolve(root, 'bun.lock')))
-  hash.update(`\nbun=${bunVersion}\n`)
-  hash.update(`frozen=${String(frozenLockfile)}\n`)
-  hash.update('ignoreScripts=true\n')
-  return hash.digest('hex')
+  return createWindowsInstallFingerprint({
+    packageJsonText: readOptional(resolve(root, 'package.json')),
+    lockfileBytes: readOptional(resolve(root, 'bun.lock')),
+    npmrcBytes: readOptional(resolve(root, '.npmrc')),
+    bunVersion,
+    frozenLockfile,
+    ignoreScripts: true,
+  })
 }
 
 function readInstallState() {
@@ -124,11 +128,15 @@ function readInstallState() {
   }
 }
 
-function writeInstallState({ fingerprint, bunVersion }) {
+function writeInstallState({ fingerprintDetails, bunVersion }) {
   mkdirSync(stateRoot, { recursive: true })
   writeFileSync(stateFile, `${JSON.stringify({
-    schemaVersion: 2,
-    fingerprint,
+    schemaVersion: 3,
+    fingerprintKind: 'dependency-resolution-v1',
+    fingerprint: fingerprintDetails.fingerprint,
+    dependencyManifestSha256: fingerprintDetails.dependencyManifestSha256,
+    lockfileSha256: fingerprintDetails.lockfileSha256,
+    npmrcSha256: fingerprintDetails.npmrcSha256,
     bunVersion,
     cacheDir,
     verifiedAt: new Date().toISOString(),
@@ -177,32 +185,100 @@ function runBunInstall(args) {
 }
 
 const bunVersion = getBunVersion()
-const fingerprint = createInstallFingerprint(bunVersion)
+const fingerprintDetails = createInstallFingerprint(bunVersion)
+const fingerprint = fingerprintDetails.fingerprint
 const state = readInstallState()
 const initialVerification = verifyInstall()
 const installVerified = initialVerification.ok
-const stateMatches = state?.fingerprint === fingerprint
+const stateMatches = state?.schemaVersion === 3
+  && state?.fingerprintKind === 'dependency-resolution-v1'
+  && state?.fingerprint === fingerprint
+const legacyState = state?.schemaVersion === 2 && typeof state?.fingerprint === 'string'
 
 if (checkOnly) {
   if (!stateMatches || !installVerified) {
     throw new Error(
-      '[install:windows] The current dependency tree is not verified for this package.json, bun.lock and Bun version. '
+      '[install:windows] The current dependency tree is not verified for the dependency-resolution manifest, bun.lock, .npmrc and Bun version. '
       + 'Run `bun run install:windows` before using a skip-install verification command.\n'
       + formatWindowsInstallVerificationFailure(initialVerification),
     )
   }
-  console.log('[install:windows] Existing dependency tree is verified and matches the current lockfile.')
+  console.log('[install:windows] Existing dependency tree is verified and matches the current dependency-resolution state.')
   process.exit(0)
 }
 
 if (shouldReuseInstall({ force, stateMatches, installVerified })) {
-  console.log('[install:windows] Existing dependency tree already matches package.json, bun.lock and Bun. Installation skipped.')
+  console.log('[install:windows] Existing dependency tree already matches dependency resolution inputs, bun.lock and Bun. Installation skipped.')
   console.log('[install:windows] Use `bun run install:windows -- --force` to force a clean reinstall.')
   process.exit(0)
 }
 
 mkdirSync(stateRoot, { recursive: true })
 mkdirSync(cacheDir, { recursive: true })
+
+if (shouldAttemptInPlaceReconciliation({
+  force,
+  nodeModulesPresent: existsSync(nodeModules),
+  stateMatches,
+  installVerified,
+})) {
+  const reconciliationArgs = [
+    'install',
+    ...(frozenLockfile ? ['--frozen-lockfile'] : []),
+    '--backend=copyfile',
+    '--linker=hoisted',
+    '--concurrent-scripts=1',
+    '--ignore-scripts',
+    `--network-concurrency=${initialNetworkConcurrency}`,
+    '--cache-dir', cacheDir,
+    '--no-progress',
+  ]
+
+  const reconciliationReason = legacyState
+    ? 'Legacy install state detected.'
+    : stateMatches
+      ? 'The dependency install state matches, but runtime probes show an incomplete node_modules tree.'
+      : 'Dependency resolution inputs changed while node_modules still exists.'
+
+  console.log(`[install:windows] ${reconciliationReason} Reconciling the existing node_modules tree in place before any destructive cleanup.`)
+  console.log(`[install:windows] ${bun} ${reconciliationArgs.join(' ')}`)
+  const reconciliationResult = await runBunInstall(reconciliationArgs)
+  const reconciliationVerification = !reconciliationResult.error && reconciliationResult.status === 0
+    ? verifyInstall()
+    : undefined
+
+  if (!reconciliationResult.error && reconciliationResult.status === 0 && reconciliationVerification?.ok) {
+    writeInstallState({ fingerprintDetails, bunVersion })
+    console.log('[install:windows] Existing dependency tree reconciled and verified in place without deleting node_modules.')
+    process.exit(0)
+  }
+
+  const reconciliationVerificationFailure = reconciliationVerification && !reconciliationVerification.ok
+    ? formatWindowsInstallVerificationFailure(reconciliationVerification)
+    : ''
+  const reconciliationOutput = [
+    reconciliationResult.stdout || '',
+    reconciliationResult.stderr || '',
+    reconciliationVerificationFailure,
+  ].filter(Boolean).join('\n')
+
+  if (frozenLockfile && isFrozenLockfileMismatch(reconciliationOutput)) {
+    throw new Error(
+      '[install:windows] bun.lock does not match the current dependency-resolution manifest. Refusing destructive node_modules cleanup because deleting installed files cannot repair a frozen-lock mismatch. Regenerate the canonical lockfile with the project maintenance command, then retry `bun run install:windows`.',
+      { cause: reconciliationResult.error || new Error(`Bun install exited with status ${reconciliationResult.status ?? 'unknown'}.`) },
+    )
+  }
+
+  if (isWindowsFileLockFailure(reconciliationOutput)) {
+    throw new Error(
+      '[install:windows] Windows locked an existing dependency while NFZ was reconciling node_modules in place. The tree was preserved instead of attempting a destructive cleanup that would hit the same lock. Close Nuxt, Vite, Vitest, Playwright, Node and Bun processes, then retry.',
+      { cause: reconciliationResult.error || new Error(`Bun install exited with status ${reconciliationResult.status ?? 'unknown'}.`) },
+    )
+  }
+
+  console.warn('[install:windows] Non-destructive dependency reconciliation did not complete cleanly. Falling back to the existing clean/retry recovery sequence.')
+}
+
 console.log('[install:windows] Dependency lifecycle scripts are skipped during installation; the explicit verification gate runs project preparation and builds once afterward.')
 removeTree(nodeModules, 'the incomplete node_modules directory')
 removeTransientCacheEntries()
@@ -242,7 +318,7 @@ for (let attempt = 1; attempt <= attempts; attempt += 1) {
   ].filter(Boolean).join('\n')
 
   if (!result.error && result.status === 0 && verification?.ok) {
-    writeInstallState({ fingerprint, bunVersion })
+    writeInstallState({ fingerprintDetails, bunVersion })
     console.log('[install:windows] Dependencies installed and verified successfully.')
     console.log(`[install:windows] Reusable cache: ${cacheDir}`)
     process.exit(0)
@@ -307,7 +383,7 @@ if (isWindowsFileLockFailure(lastOutput)) {
     : undefined
 
   if (!rescueResult.error && rescueResult.status === 0 && rescueVerification?.ok) {
-    writeInstallState({ fingerprint, bunVersion })
+    writeInstallState({ fingerprintDetails, bunVersion })
     console.log('[install:windows] Dependencies installed and verified successfully through the isolated rescue cache.')
     console.log(`[install:windows] Shared cache retained at: ${cacheDir}`)
     removeTree(rescueCacheDir, 'the isolated Bun rescue cache', { required: false })

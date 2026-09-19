@@ -76,4 +76,4 @@ database.certifiedEngines: 6/6
 
 Pour l'état d'une connexion configurée, utilisez `nuxt-feathers-zod doctor` ou le service Feathers `nfz/database-connections`. Les diagnostics restent expurgés des secrets.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

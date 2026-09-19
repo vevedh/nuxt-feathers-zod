@@ -6,8 +6,9 @@
     "build": "nuxi build",
     "dev": "nuxi dev --host",
     "generate": "nuxt generate",
-    "preview": "nuxi preview",
+    "lint": "eslint .",
     "prepare": "nuxi prepare",
+    "preview": "nuxi preview",
     "test:types": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -25,7 +26,9 @@
     "vue-router": "latest"
   },
   "devDependencies": {
-    "@gabortorma/nuxt-eslint-layer": "latest",
+    "@antfu/eslint-config": "4.18.0",
+    "@nuxt/eslint": "1.7.0",
+    "eslint": "9.31.0",
     "ofetch": "latest",
     "typescript": "latest"
   }

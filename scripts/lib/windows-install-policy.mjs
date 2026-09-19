@@ -5,6 +5,11 @@ const WINDOWS_LOCK_PATTERNS = [
   /Access is denied/i,
 ]
 
+const FROZEN_LOCKFILE_PATTERNS = [
+  /lockfile had changes, but lockfile is frozen/i,
+  /frozen[- ]lockfile.*(?:changed|out[- ]of[- ]date|mismatch)/i,
+]
+
 const RETRYABLE_NETWORK_PATTERNS = [
   /ECONNRESET/i,
   /ETIMEDOUT/i,
@@ -37,6 +42,11 @@ export function isWindowsFileLockFailure(output) {
   return WINDOWS_LOCK_PATTERNS.some(pattern => pattern.test(text))
 }
 
+export function isFrozenLockfileMismatch(output) {
+  const text = String(output || '')
+  return FROZEN_LOCKFILE_PATTERNS.some(pattern => pattern.test(text))
+}
+
 export function isRetryableInstallFailure(output) {
   const text = String(output || '')
   return isWindowsFileLockFailure(text)
@@ -52,3 +62,17 @@ export function resolveRetryDelayMs(attempt, output) {
 export function shouldReuseInstall({ force = false, stateMatches = false, installVerified = false } = {}) {
   return !force && stateMatches && installVerified
 }
+
+export function shouldAttemptLegacyInstallMigration({ force = false, legacyState = false } = {}) {
+  return !force && legacyState
+}
+
+export function shouldAttemptInPlaceReconciliation({
+  force = false,
+  nodeModulesPresent = false,
+  stateMatches = false,
+  installVerified = false,
+} = {}) {
+  return !force && nodeModulesPresent && (!stateMatches || !installVerified)
+}
+

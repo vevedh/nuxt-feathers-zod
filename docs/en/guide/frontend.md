@@ -90,4 +90,4 @@ Use the generated session middleware for protected pages, or check `auth.isAuthe
 - Put repeated calls in a composable or Pinia store.
 - Show a simple user-facing error and keep technical diagnostics separate.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

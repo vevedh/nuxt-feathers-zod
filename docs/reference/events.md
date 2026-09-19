@@ -69,4 +69,4 @@ const diagnostics = useAuthDiagnostics()
 
 Le playground `/auth-runtime` permet de contrôler la séquence récente sans afficher les secrets ou le token complet.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

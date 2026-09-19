@@ -65,4 +65,4 @@ The normalization performs no implicit numeric conversion and does not weaken th
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

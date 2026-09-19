@@ -13,6 +13,7 @@ const problems = []
 
 const requiredExports = [
   './server-database',
+  './server-cache',
 ]
 
 for (const subpath of requiredExports) {

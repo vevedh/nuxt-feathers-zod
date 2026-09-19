@@ -120,4 +120,4 @@ bun install
 
 et évite `bun run clean:repo` avant installation, qui suppose déjà `@nuxt/kit` présent localement.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

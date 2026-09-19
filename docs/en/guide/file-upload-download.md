@@ -96,4 +96,4 @@ export default defineNuxtConfig({
 
 The local template does not provide multipart streaming, range downloads, S3/MinIO/OVH Object Storage, signed URLs, antivirus/DLP, ownership rules or quotas. Keep the Feathers `upload()` and `download()` contract and replace the storage implementation when those capabilities are required.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

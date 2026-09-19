@@ -3,7 +3,7 @@ editLink: false
 ---
 # Module options
 
-The `feathers` block controls the embedded server, the client, transports, authentication, databases and administration services. Keep runtime-affecting choices explicit in `nuxt.config.ts`.
+The `feathers` block controls the embedded server, the client, transports, authentication, native server cache, databases and administration services. Keep runtime-affecting choices explicit in `nuxt.config.ts`.
 
 ## Minimal embedded setup
 
@@ -69,6 +69,23 @@ server: {
 
 Keep `allowMissingDatabaseServices` disabled for required production services. Skipped optional registrars are exposed through `nfz/status`.
 
+## `cache`
+
+The native cache is server-only and disabled by default. Patch073 r1 implements only the `memory` provider.
+
+```ts
+cache: {
+  enabled: true,
+  provider: 'memory',
+  namespace: 'nfz',
+  defaultTtlMs: 60_000,
+  maxEntries: 1_000,
+  failOpen: true,
+}
+```
+
+`provider: 'redis'` is rejected in r1. Keep Redis on Nitro/Unstorage until the dedicated native-provider revision.
+
 ## `database.connections`
 
 Named SQL connections resolve an explicit Knex client and driver before startup. Supported SQL `type` values are `postgresql`, `mysql`, `mariadb`, `sqlite`, and `mssql`. Standard driver packages are respectively `pg`, `mysql2`, `mysql2`, `better-sqlite3`, and `tedious`. Server SQL engines default to `pool: { min: 0, max: 10 }`; SQLite is constrained to `max: 1`. `searchPath` is primarily useful with PostgreSQL and MSSQL. Connection values and credentials remain private; diagnostics expose only redacted metadata and capabilities.
@@ -81,10 +98,11 @@ Named SQL connections resolve an explicit Knex client and driver before startup.
 - `auth`: Feathers authentication service and strategies.
 - `keycloak`: browser SSO and optional server bridge.
 - `database.mongo`: MongoDB connection and management services.
+- `cache`: optional native server cache; `memory` only in Patch073 r1.
 - `validator`: Zod and JSON schema validation settings.
 - `templates`: explicit generated-template overrides.
 - `console`: Feathers Builder and diagnostic services.
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

@@ -3,9 +3,9 @@
 `nuxt-feathers-zod` integrates FeathersJS v5 (Dove), Zod schemas and typed service access into Nuxt 4.
 It is designed for applications that need a real backend contract inside a Nuxt project, while keeping the option to connect to an external Feathers API.
 
-Current reference version: **6.7.51**.
+Current reference version: **6.8.0**.
 
-Runtime baseline for `6.7.39`: Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6` (release validation is recommended with Bun 1.3.14).
+Runtime baseline for `6.8.0`: Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.3.6` (release validation is recommended with Bun 1.3.14).
 The embedded Nitro bridge uses `@vevedh/feathers-nitro@0.6.0` with FeathersJS 5.0.49, Nuxt 4.5.2 and Vue 3.5.42; Nitro 2.13.4 and H3 1.15.11 remain deliberately frozen on this train.
 
 
@@ -18,7 +18,7 @@ The embedded Nitro bridge uses `@vevedh/feathers-nitro@0.6.0` with FeathersJS 5.
 - Extensible local, JWT, OIDC, API-key and custom authentication provider registry, plus Keycloak-oriented remote flows.
 - REST and Socket.io transports.
 - Named MongoDB and Knex connections (PostgreSQL, MySQL, MariaDB, SQLite and Microsoft SQL Server), with explicit SQL drivers, safe pool defaults, single-connection transaction helpers, redacted diagnostics, and optional MongoDB management endpoints. MongoDB, PostgreSQL, MySQL, MariaDB, SQLite and MSSQL are certified by exact-candidate real-engine gates; MSSQL certification uses SQL Server 2025 with `tedious`, an isolated database/schema, and candidate-bound teardown evidence.
-- Redis cache integration through Nitro/Unstorage for server routes and cache-aside business patterns; NFZ 6.7.51 does **not** expose a native `feathers.cache` option.
+- Native server cache foundation (`feathers.cache`) with a bounded in-process `memory` provider, TTL, namespaces, fail-open behavior, single-flight `getOrSet`, and content-free diagnostics. Redis remains an application-level Nitro/Unstorage integration in Patch073 r1.
 - Feathers-first Builder and diagnostic services under `nfz/*`.
 - Runtime composables for client, service, authentication and protected service access.
 - VitePress documentation in French and English.

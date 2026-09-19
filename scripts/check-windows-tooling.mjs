@@ -19,6 +19,7 @@ const playwrightRuntime = readFileSync(resolve(rootDir, 'scripts/lib/ensure-play
 const bunExecutableResolver = readFileSync(resolve(rootDir, 'scripts/lib/bun-executable.mjs'), 'utf8')
 const windowsInstaller = readFileSync(resolve(rootDir, 'scripts/install-windows.mjs'), 'utf8')
 const windowsInstallPolicy = readFileSync(resolve(rootDir, 'scripts/lib/windows-install-policy.mjs'), 'utf8')
+const windowsInstallFingerprint = readFileSync(resolve(rootDir, 'scripts/lib/windows-install-fingerprint.mjs'), 'utf8')
 const windowsInstallVerification = readFileSync(resolve(rootDir, 'scripts/lib/windows-install-verification.mjs'), 'utf8')
 const docsBuildRunner = readFileSync(resolve(rootDir, 'scripts/run-docs-build.mjs'), 'utf8')
 const starterRelease = readFileSync(resolve(rootDir, 'scripts/validate-starter-release.mjs'), 'utf8')
@@ -293,6 +294,9 @@ if (pkg.packageManager !== 'bun@1.3.14')
 if (scripts['install:windows'] !== 'node scripts/install-windows.mjs')
   failures.push('install:windows must execute the resilient reusable-cache installer')
 
+if (scripts['sanity:windows-install-fingerprint'] !== 'node scripts/check-windows-install-fingerprint.mjs')
+  failures.push('sanity:windows-install-fingerprint must guard dependency-scoped install reuse')
+
 for (const fragment of [
   "'--backend=copyfile'",
   "'--linker=hoisted'",
@@ -303,6 +307,9 @@ for (const fragment of [
   'NFZ_WINDOWS_CACHE_DIR',
   'install-state.json',
   'shouldReuseInstall({ force, stateMatches, installVerified })',
+  'shouldAttemptInPlaceReconciliation({',
+  'isFrozenLockfileMismatch(reconciliationOutput)',
+  'createWindowsInstallFingerprint',
   'removeTransientCacheEntries()',
   'verifyInstall()',
   "process.argv.includes('--check')",
@@ -320,6 +327,9 @@ if (!windowsInstaller.includes('verifyWindowsInstall({ root })'))
 if (windowsInstaller.includes("require.resolve('human-signals/package.json')"))
   failures.push('install-windows.mjs must not resolve package.json subpaths that ESM packages may not export')
 
+if (!verifyWindows.includes("sanity:windows-install-fingerprint"))
+  failures.push('verify-windows.ps1 must execute the dependency-scoped install fingerprint guard')
+
 if (!windowsInstallVerification.includes('await import(specifier)'))
   failures.push('windows-install-verification.mjs must execute public package entry-point probes')
 
@@ -328,9 +338,22 @@ for (const fragment of [
   'isWindowsFileLockFailure',
   'isRetryableInstallFailure',
   'shouldReuseInstall',
+  'shouldAttemptInPlaceReconciliation',
+  'isFrozenLockfileMismatch',
 ]) {
   if (!windowsInstallPolicy.includes(fragment))
     failures.push(`windows-install-policy.mjs is missing ${fragment}`)
+}
+
+for (const fragment of [
+  'selectDependencyResolutionManifest',
+  'dependencyManifestSha256',
+  'lockfileSha256',
+  'npmrcSha256',
+  'nfz-windows-install-fingerprint-v1',
+]) {
+  if (!windowsInstallFingerprint.includes(fragment))
+    failures.push(`windows-install-fingerprint.mjs is missing ${fragment}`)
 }
 
 if (!bunExecutableResolver.includes('NFZ_BUN_EXECUTABLE') || !bunExecutableResolver.includes('npm_execpath'))

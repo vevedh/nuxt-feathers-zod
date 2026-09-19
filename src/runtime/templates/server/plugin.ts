@@ -125,6 +125,7 @@ export function getServerPluginContents(options: ResolvedOptions) {
         websocket: sio ? { enabled: true, ...(websocketOptions || {}), path: websocketPath ?? '/socket.io' } : false,
       },
       loadFeathersConfig: Boolean(options.loadFeathersConfig),
+      cache: options.cache || false,
       auth: { enabled: auth, strategies: parseStrategies || [] },
       server: {
         secureDefaults: (options.server as any)?.secureDefaults,
@@ -180,6 +181,7 @@ export default defineNitroPlugin(async (nitroApp) => {
     auth: { ...nfzBaseServerConfig.auth, ...(privateConfig.auth || {}) },
     server: { ...nfzBaseServerConfig.server, ...(privateConfig.server || {}) },
     database: privateConfig.database || nfzBaseServerConfig.database,
+    cache: privateConfig.cache ?? nfzBaseServerConfig.cache,
     keycloak: privateConfig.keycloak || nfzBaseServerConfig.keycloak,
   }
 

@@ -1,4 +1,57 @@
-import antfu from '@gabortorma/antfu-eslint-config'
+import antfu from '@antfu/eslint-config'
+
+const eslintProviderCompatibility = [
+  {
+    name: 'nfz/eslint-provider-compat/javascript',
+    files: ['**/*.?([cm])js', '**/*.?([cm])jsx', '**/*.?([cm])ts', '**/*.?([cm])tsx', '**/*.vue'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    name: 'nfz/eslint-provider-compat/typescript',
+    files: ['**/*.?([cm])ts', '**/*.?([cm])tsx', '**/*.vue'],
+    rules: {
+      'ts/method-signature-style': ['error', 'method'],
+      'ts/strict-boolean-expressions': 'off',
+    },
+  },
+  {
+    name: 'nfz/eslint-provider-compat/vue',
+    files: ['**/*.vue'],
+    rules: {
+      'vue/component-name-in-template-casing': [
+        'error',
+        'PascalCase',
+        {
+          registeredComponentsOnly: false,
+          ignores: ['/^v-/'],
+        },
+      ],
+      'vue/max-attributes-per-line': ['warn', {
+        singleline: 100,
+        multiline: 1,
+      }],
+    },
+  },
+  {
+    name: 'nfz/eslint-provider-compat/style-max-len',
+    files: ['**/*.?([cm])js', '**/*.?([cm])jsx', '**/*.?([cm])ts', '**/*.?([cm])tsx', '**/*.vue'],
+    rules: {
+      'style/max-len': ['warn', {
+        code: 125,
+        tabWidth: 2,
+        ignoreComments: true,
+        ignoreTrailingComments: true,
+        ignoreUrls: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreRegExpLiterals: true,
+        ignorePattern: `^(\\s+|export\\s(default\\s)?(async\\s)?)function`,
+      }],
+    },
+  },
+]
 
 let withNuxt = config => config
 
@@ -9,7 +62,7 @@ try {
 }
 catch {}
 
-export default withNuxt(
+const eslintConfig = withNuxt(
   antfu({
     // 1) Ne pas lint les markdown avec ESLint
     ignores: [
@@ -107,3 +160,5 @@ export default withNuxt(
     },
   }),
 )
+
+export default eslintConfig.append(...eslintProviderCompatibility)

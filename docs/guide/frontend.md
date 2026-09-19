@@ -90,4 +90,4 @@ Pour protéger une page, utilisez le middleware de session généré ou contrôl
 - Centralisez les appels répétés dans un composable ou un store Pinia.
 - Affichez un message utilisateur simple et journalisez séparément le diagnostic technique.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

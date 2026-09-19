@@ -1,4 +1,5 @@
 import type { NfzInfrastructureHandlers } from './types'
+import { configureNfzCache } from './cache'
 
 export function attachNitroApp(app: any, nitroApp: any): void {
   app.nitroApp = nitroApp
@@ -20,6 +21,8 @@ export async function configureNfzInfrastructure(
   config: any,
   handlers: NfzInfrastructureHandlers,
 ): Promise<void> {
+  configureNfzCache(app, config?.cache)
+
   if (config?.auth?.enabled !== false && typeof handlers.authentication === 'function')
     await handlers.authentication(app)
 

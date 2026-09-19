@@ -1,3 +1,69 @@
+## 6.8.0 — Patch073 r10
+
+### Fixed
+- Generalize the Windows installer non-destructive reconciliation path to every existing stale or incomplete `node_modules` tree, not only legacy schema-v2 install state. Dependency-manifest or lockfile changes now get one in-place frozen Bun reconciliation before any destructive cleanup.
+- Fail closed on a frozen-lockfile mismatch before deleting `node_modules`, with explicit lock-resynchronization guidance, because removing installed files cannot repair an inconsistent lockfile.
+- Preserve `node_modules` when Windows reports a file lock during in-place reconciliation instead of immediately invoking the destructive cleanup path that would hit the same locked native binary.
+
+## 6.8.0 — Patch073 r9
+
+### Removed
+- Remove the unused maintainer-only `@gabortorma/mwm@0.9.3` dependency. NFZ does not invoke its CLI from source, tests, documentation, workflows or release scripts.
+
+### Added
+- Add `sanity:mwm-removal` and a Bun 1.3.14 lock canonicalization helper so the removal is enforced by release/verify gates without hand-editing `bun.lock`.
+
+## 6.8.0 — Patch073 r8
+
+### Fixed
+- Preserve the historical lint policy explicitly after the official Antfu/Nuxt ESLint provider migration: TypeScript method signatures remain in `method` form, `no-console` stays disabled for existing operational diagnostics, and `style/max-len` remains a 125-column warning.
+- Extend the ESLint provider guard so future official-provider upgrades cannot silently reintroduce those policy regressions.
+
+## 6.8.0 — Patch073 r7
+
+### Changed
+- Replace `@gabortorma/nuxt-eslint-layer` with the official `@nuxt/eslint@1.7.0` integration in the playground; the version is intentionally the same official Nuxt ESLint version that the removed layer already used transitively.
+- Compose the generated Nuxt project-aware flat config with the direct official Antfu preset (`standalone: false`, `autoInit: false`, checker disabled), remove the duplicate playground ESLint config, and keep the playground's prior effective `@antfu/eslint-config@4.18.0` / ESLint `9.31.0` baseline.
+- Add `eslint:official:sync-locks`, which uses the certified Bun 1.3.14 runtime to regenerate and frozen-verify both root and playground `bun.lock` files instead of hand-editing dependency graphs.
+
+### Fixed
+- Make `sanity:eslint-provider` fail closed on any remaining `@gabortorma/antfu-eslint-config` or `@gabortorma/nuxt-eslint-layer` occurrence in manifests, configs or canonical lockfiles, while exposing a source-only preflight before lock synchronization.
+
+## 6.8.0 — Patch073 r6
+
+### Fixed
+- Reconcile `bun.lock` after the direct migration from `@gabortorma/antfu-eslint-config` to `@antfu/eslint-config@3.7.1`: remove the 114 package records that became orphaned when the root wrapper was removed, while preserving the still-required transitive wrapper isolated under `@gabortorma/nuxt-eslint-layer`.
+- Extend `sanity:eslint-provider` to verify the root lockfile workspace and reject the stale root-wrapper lock subtree, preventing a handoff where `bun install --frozen-lockfile` would rewrite the lockfile.
+
+## 6.8.0 — Patch073 r5
+
+### Changed
+- Replace the root and playground direct ESLint preset import/dependency `@gabortorma/antfu-eslint-config` with the official `@antfu/eslint-config` package.
+- Pin the first migration step to `@antfu/eslint-config@3.7.1`, matching the official preset version already used underneath the previous wrapper, so provider migration is separated from the later major preset upgrade.
+- Add `sanity:eslint-provider` to prevent direct regression to the wrapper while keeping the existing `@gabortorma/nuxt-eslint-layer` compatibility layer isolated for a later dedicated Nuxt ESLint migration.
+
+## 6.8.0 - 2026-09-18 - Native cache foundation and memory runtime
+
+### Added
+- add an opt-in, server-only `feathers.cache` foundation with typed `memory` configuration, namespaced keys, bounded entries, TTLs, fail-open behavior and redacted diagnostics; the default remains disabled;
+- add the public `nuxt-feathers-zod/server-cache` server subpath with `NfzCacheStore`, the native memory store and high-level `get`/`set`/`remove`/`clear`/`has`/`getOrSet` APIs;
+- add single-flight `getOrSet` behavior so concurrent misses for one key share one producer execution;
+- add focused option/runtime tests and the dependency-free `sanity:cache-foundation` contract guard.
+
+### Fixed
+- recover interrupted Windows dependency cleanup non-destructively: any legacy schema-v2 install state now receives one frozen in-place Bun reconciliation before `node_modules` deletion, even when the previous cleanup already removed part of the tree; `--force` remains explicitly destructive and failed reconciliation still falls back to the existing clean/retry/rescue path;
+- make Windows dependency reuse depend on dependency-resolution inputs rather than the entire root `package.json`: version/scripts/exports-only changes no longer force a destructive `node_modules` reinstall; migrate verified schema-v2 install state through one frozen, non-destructive Bun reconciliation before any cleanup, then persist schema v3 with dependency-manifest, lockfile and `.npmrc` fingerprints;
+- align the Patch073 cache foundation with the repository ESLint contract: simplify cache regexes, sort cache exports, mark Promise-returning cache callbacks `async`, remove an unnecessary iterator assertion and expand test `if` statements to Antfu style; no cache API/runtime semantic change.
+
+### Changed
+- initialize enabled native cache infrastructure before authentication/database setup and close it during NFZ runtime teardown;
+- document the Patch073 r1 boundary in FR/EN: native memory caching is available in 6.8.0, while Redis remains an application-level Nitro/Unstorage integration until a later Patch073 revision.
+
+### Security
+- keep all cache configuration private to server runtime config; no cache settings, keys or values are exposed through `runtimeConfig.public`;
+- reject undefined cache values and unsafe key/namespace formats; diagnostics expose counters/configuration only, never cached keys or values;
+- protected or tenant-sensitive cache reads remain the application's responsibility and must occur after the relevant authentication/authorization context is established.
+
 ## 6.7.51 - 2026-09-15 - Maintenance-debt observability and docs bundle measurement
 
 ### Fixed

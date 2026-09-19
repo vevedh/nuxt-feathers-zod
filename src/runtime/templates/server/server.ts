@@ -23,6 +23,7 @@ export function getServerTypesContents(options: ResolvedOptions) {
     const koa = (transports?.rest as RestOptions).framework === 'koa'
 
     const database = Object.keys(options.database?.connections || {}).length > 0
+    const cache = Boolean(options.cache)
 
     let entity, entityImport
     const auth = options?.auth as DefaultAuthOptions
@@ -35,6 +36,7 @@ export function getServerTypesContents(options: ResolvedOptions) {
 import type { ${put(!rest, `Application as FeathersApplication, `)}HookContext as FeathersHookContext, NextFunction } from '@feathersjs/feathers'
 ${put(database, `import type { Db, MongoClient } from 'mongodb'
 import type { NfzDatabaseRegistry } from 'nuxt-feathers-zod/server-database'`)}
+${put(cache, `import type { NfzCache } from 'nuxt-feathers-zod/server-cache'`)}
 ${puts([
   [koa, `import type { Application as FeathersApplication } from '@feathersjs/koa'`],
   [exp, `import type { Application as FeathersApplication } from '@feathersjs/express'`],
@@ -46,7 +48,8 @@ export type { NextFunction }
 
 export interface Configuration {
   framework?: 'express' | 'koa'
-  websocket?: boolean${put(database, `
+  websocket?: boolean${put(cache, `
+  nfzCache?: NfzCache`)}${put(database, `
   databaseRegistry: NfzDatabaseRegistry
   databaseConnections: NfzDatabaseRegistry['connections']
   database_ok: boolean

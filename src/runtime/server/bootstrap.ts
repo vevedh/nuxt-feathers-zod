@@ -269,6 +269,12 @@ function clearLegacyGlobalApp(app: any): void {
     delete (globalThis as any).__NFZ_EMBEDDED_EXPRESS_APP
 }
 
+async function closeCacheInfrastructure(app: any): Promise<void> {
+  const cache = app?.get?.('nfzCache')
+  if (cache && typeof cache.close === 'function')
+    await cache.close()
+}
+
 async function closeDatabaseInfrastructure(app: any): Promise<void> {
   const registry = app?.get?.('databaseRegistry')
   if (registry && typeof registry.closeAll === 'function') {
@@ -323,10 +329,15 @@ export function createServerBootstrap(runtime: NfzServerBootstrapConfig) {
       }
       finally {
         try {
-          await closeDatabaseInfrastructure(app)
+          await closeCacheInfrastructure(app)
         }
         finally {
-          clearLegacyGlobalApp(app)
+          try {
+            await closeDatabaseInfrastructure(app)
+          }
+          finally {
+            clearLegacyGlobalApp(app)
+          }
         }
       }
     }

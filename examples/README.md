@@ -27,4 +27,4 @@ Ce dossier regroupe les exemples maintenus du module. Commence par le plus petit
 
 ## Règle de maintenance
 
-Les exemples maintenus utilisent la version courante **nuxt-feathers-zod 6.7.51**. Les exemples lourds ne sont pas tous publiés dans le tarball npm : le starter `nfz-quasar-unocss-pinia-starter` reste l'asset de starter distribué, tandis que les autres exemples sont principalement des références du dépôt source.
+Les exemples maintenus utilisent la version courante **nuxt-feathers-zod 6.8.0**. Les exemples lourds ne sont pas tous publiés dans le tarball npm : le starter `nfz-quasar-unocss-pinia-starter` reste l'asset de starter distribué, tandis que les autres exemples sont principalement des références du dépôt source.

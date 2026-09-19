@@ -1,5 +1,6 @@
 import type { Nuxt } from '@nuxt/schema'
 import type { AuthOptions, PublicAuthOptions, ResolvedAuthOptions, ResolvedAuthOptionsOrDisabled } from './authentication'
+import type { CacheOptions, ResolvedCacheOptions, ResolvedCacheOptionsOrDisabled } from './cache'
 import type { ClientOptions, ResolvedClientOptions, ResolvedClientOptionsOrDisabled } from './client'
 import type { PiniaOptions } from './client/pinia'
 import type { ConsoleOptions, ResolvedConsoleOptions } from './console'
@@ -25,6 +26,7 @@ import { createResolver } from '@nuxt/kit'
 
 import { getServicesImports } from '../services'
 import { resolveAuthOptions } from './authentication'
+import { resolveCacheOptions } from './cache'
 import { resolveClientOptions } from './client'
 import { resolveConsoleOptions } from './console'
 import { resolveDataBaseOptions } from './database'
@@ -41,6 +43,7 @@ import { resolveValidatorOptions } from './validator'
 export interface ModuleOptions {
   transports: TransportsOptions
   database: DataBaseOptions
+  cache?: CacheOptions | boolean
   servicesDirs: ServicesDir | ServicesDirs
   server: ServerOptions
   auth: AuthOptions | boolean
@@ -58,6 +61,7 @@ export interface ResolvedOptions {
   templateDir: string
   transports: ResolvedTransportsOptions
   database: ResolvedDataBaseOptions
+  cache: ResolvedCacheOptionsOrDisabled
   servicesDirs: ServicesDirs
   server: ResolvedServerOptions
   auth: ResolvedAuthOptionsOrDisabled
@@ -77,6 +81,7 @@ export interface FeathersRuntimeConfig {
   auth?: ResolvedAuthOptions
   keycloak?: Partial<ResolvedKeycloakOptions>
   database?: ResolvedDataBaseOptions
+  cache?: ResolvedCacheOptions
 }
 
 export interface FeathersPublicRuntimeConfig {
@@ -211,6 +216,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
   const templateDir = createResolver(nuxt.options.buildDir).resolve('feathers')
   const transports = resolveTransportsOptions(options.transports, nuxt.options.ssr !== false)
   const database = resolveDataBaseOptions(options.database)
+  const cache = resolveCacheOptions(options.cache)
   const client = await resolveClientOptions(options.client, Object.keys(database.connections).length > 0, rootDir, srcDir)
   const serverFramework = transports.rest && typeof transports.rest === 'object' ? transports.rest.framework : 'express'
   const explicitServer = typeof options.server === 'object' && options.server !== null ? options.server : undefined
@@ -246,6 +252,7 @@ export async function resolveOptions(options: ModuleOptions, nuxt: Nuxt): Promis
     templateDir,
     transports,
     database,
+    cache,
     servicesDirs,
     server,
     auth,
@@ -297,6 +304,7 @@ export function resolveRuntimeConfig(options: ResolvedOptions): FeathersRuntimeC
     database: Object.keys(options.database.connections).length > 0
       ? options.database
       : undefined,
+    cache: options.cache || undefined,
   }
 }
 
@@ -477,6 +485,9 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
     authProvider: options.keycloak ? 'keycloak' : undefined,
   }
 }
+
+export type { CacheOptions, NfzCacheProvider, ResolvedCacheOptions, ResolvedCacheOptionsOrDisabled } from './cache'
+export { NFZ_CACHE_DEFAULTS, resolveCacheOptions } from './cache'
 
 export {
   getNfzDatabaseProviderDescriptor,

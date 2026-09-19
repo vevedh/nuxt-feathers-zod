@@ -1,8 +1,8 @@
 # Redis cache avec NFZ
 
-NFZ 6.7.51 peut être utilisé avec Redis dans une application Nuxt 4, mais **le module ne déclare pas encore d'option publique `feathers.cache` ou `feathers.redis`**.
+NFZ 6.8.0 introduit avec Patch073 r1 une **fondation de cache native serveur** avec le provider `memory`. Redis n'est volontairement pas encore un provider natif NFZ : l'intégration Redis reste, pour cette révision, une responsabilité applicative via Nitro/Unstorage.
 
-Le cache applicatif recommandé repose sur la couche serveur Nitro/Unstorage. Cela évite d'introduire une API NFZ fictive et permet de conserver les identifiants Redis uniquement côté serveur.
+Cette séparation permet de stabiliser d'abord le contrat `NfzCacheStore`, les TTL, le fail-open, `getOrSet` single-flight et les diagnostics sans ajouter prématurément une dépendance Redis au module.
 
 ## Architecture recommandée
 
@@ -31,7 +31,7 @@ Pour un montage Redis explicite avec Unstorage :
 bun add unstorage ioredis
 ```
 
-`ioredis` doit rester compatible avec la version attendue par Unstorage/Nitro. Dans l'exemple maintenu 6.7.51, `ioredis` reste épinglé sur la branche 5.x utilisée par Nitro 2.13.4.
+`ioredis` doit rester compatible avec la version attendue par Unstorage/Nitro. Dans l'exemple maintenu 6.8.0, `ioredis` reste épinglé sur la branche 5.x utilisée par Nitro 2.13.4.
 
 ## Configuration privée
 
@@ -127,8 +127,26 @@ Il fournit :
 
 La page d'accueil de l'exemple sert aussi de page de promotion de cette architecture.
 
-## Pourquoi pas `feathers.cache` maintenant ?
+## Ce que fournit déjà le cache natif r1
 
-La série 6.7.x est stabilisée autour du runtime Feathers, de l'authentification et du registre de bases de données. Une éventuelle API cache native NFZ appartient au chantier 6.8.0 et doit être conçue séparément : contrat driver, TTL, invalidation, observabilité, comportement multi-instance, sécurité et compatibilité Redis/Valkey.
+Pour un cache mémoire local au processus, activez directement NFZ :
 
-<!-- release-version: 6.7.51 -->
+```ts
+feathers: {
+  cache: {
+    enabled: true,
+    provider: 'memory',
+    defaultTtlMs: 60_000,
+    maxEntries: 1_000,
+    failOpen: true,
+  },
+}
+```
+
+Les services/plugins serveur peuvent récupérer le cache avec `getNfzCache(app)` depuis `nuxt-feathers-zod/server-cache`. Le contrat expose `get`, `set`, `remove`, `clear`, `has`, `getOrSet`, `diagnostics` et `close`.
+
+## Pourquoi Redis reste applicatif en r1 ?
+
+La révision r1 stabilise l'abstraction et le provider mémoire avant d'ajouter un backend réseau. Le provider Redis/Valkey natif doit encore définir et certifier la connexion, le reconnect/fail-open, le TTL distribué, l'isolation namespace/tenant, l'observabilité et les tests Docker multi-instance. Jusqu'à cette révision, `provider: 'redis'` est explicitement rejeté afin d'éviter une capacité partiellement fonctionnelle.
+
+<!-- release-version: 6.8.0 -->

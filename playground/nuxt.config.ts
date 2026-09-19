@@ -178,14 +178,19 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: false,
   },
-  extends: [
-    '@gabortorma/nuxt-eslint-layer',
-  ],
-
   modules: [
     '@pinia/nuxt',
+    '@nuxt/eslint',
     '../src/module.ts',
   ],
+
+  eslint: {
+    checker: false,
+    config: {
+      autoInit: false,
+      standalone: false,
+    },
+  },
 
   feathers: {
     swagger: { enabled: true },

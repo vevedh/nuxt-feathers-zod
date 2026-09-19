@@ -235,7 +235,7 @@ reporting: {
 MongoDB :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service messages \
+bunx nuxt-feathers-zod@6.8.0 add service messages \
   --database mongodb \
   --connection primary \
   --collection messages \
@@ -245,7 +245,7 @@ bunx nuxt-feathers-zod@6.7.51 add service messages \
 PostgreSQL avec une table et un schéma SQL explicites :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service audit-events \
+bunx nuxt-feathers-zod@6.8.0 add service audit-events \
   --database postgresql \
   --connection reporting \
   --table audit_events \
@@ -366,4 +366,4 @@ Une exception dans le callback est propagée à Knex, qui effectue le rollback d
 - MikroORM et les entités relationnelles sont réservés à une version ultérieure.
 - Les pilotes SQL restent des dépendances optionnelles de l’application consommatrice.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

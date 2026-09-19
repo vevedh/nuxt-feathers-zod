@@ -1,6 +1,6 @@
 # Minimal embedded Memory
 
-Le plus petit exemple maintenu pour comprendre **nuxt-feathers-zod 6.7.51** sans MongoDB, SQL, Quasar ou authentification.
+Le plus petit exemple maintenu pour comprendre **nuxt-feathers-zod 6.8.0** sans MongoDB, SQL, Quasar ou authentification.
 
 ```bash
 bun install
@@ -19,5 +19,5 @@ Le stockage est volatile : un redémarrage vide les messages. C'est volontaire p
 Pour générer la même structure depuis le CLI dans une application existante :
 
 ```bash
-bunx nuxt-feathers-zod@6.7.51 add service messages --adapter memory --schema zod
+bunx nuxt-feathers-zod@6.8.0 add service messages --adapter memory --schema zod
 ```

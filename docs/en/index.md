@@ -31,7 +31,7 @@ features:
   - title: "Multi-database registry"
     details: "Name several MongoDB or Knex connections, select one per service, and inspect health without exposing credentials."
   - title: "Redis through Nitro/Unstorage"
-    details: "Add a server-side Redis cache with explicit TTL and invalidation without exposing credentials or documenting a native NFZ option that 6.7.51 does not provide."
+    details: "Use the native server-side memory cache for bounded local caching, or keep Redis on Nitro/Unstorage in Patch073 r1 with explicit TTL/invalidation and private credentials."
   - title: "Project-oriented CLI"
     details: "Initialize the integration, generate services, and inspect configuration without copying a complete architecture."
   - title: "Verifiable playground"
@@ -82,4 +82,4 @@ Screenshots are generated from the playground only after the related Playwright 
 - [npm package](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [GitHub repository](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

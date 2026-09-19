@@ -44,4 +44,4 @@ feathers: {
 
 Enable the legacy Nitro facades only while validating a migration from an older release.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

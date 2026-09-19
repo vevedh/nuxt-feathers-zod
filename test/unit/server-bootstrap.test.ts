@@ -25,10 +25,13 @@ function missingMongoAdapterError() {
 describe('server bootstrap', () => {
   afterEach(() => clearNfzRuntimeInstance('test-bootstrap'))
 
-  it('waits for routers and closes Feathers plus MongoDB once', async () => {
+  it('waits for routers and closes Feathers, cache and MongoDB once', async () => {
     const calls: string[] = []
     const mongoClose = vi.fn(async () => {
       calls.push('mongo:close')
+    })
+    const cacheClose = vi.fn(async () => {
+      calls.push('cache:close')
     })
     const app = Object.assign(() => undefined, {
       configure: vi.fn(),
@@ -38,7 +41,13 @@ describe('server bootstrap', () => {
       teardown: vi.fn(async () => {
         calls.push('app:teardown')
       }),
-      get: vi.fn((key: string) => key === 'mongodbConnection' ? { close: mongoClose } : undefined),
+      get: vi.fn((key: string) => {
+        if (key === 'nfzCache')
+          return { close: cacheClose }
+        if (key === 'mongodbConnection')
+          return { close: mongoClose }
+        return undefined
+      }),
       set: vi.fn(),
     })
     const { nitroApp, getCloseHook } = createNitroApp()
@@ -70,8 +79,9 @@ describe('server bootstrap', () => {
     await getCloseHook()?.()
 
     expect(app.teardown).toHaveBeenCalledTimes(1)
+    expect(cacheClose).toHaveBeenCalledTimes(1)
     expect(mongoClose).toHaveBeenCalledTimes(1)
-    expect(calls.slice(-2)).toEqual(['app:teardown', 'mongo:close'])
+    expect(calls.slice(-3)).toEqual(['app:teardown', 'cache:close', 'mongo:close'])
   })
 
   it('fails closed when a required persistent service cannot access its database', async () => {

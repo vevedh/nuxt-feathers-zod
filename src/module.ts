@@ -46,6 +46,7 @@ export default defineNuxtModule<ModuleOptions>({
   },
   defaults: {
     transports: { websocket: true },
+    cache: false,
     server: serverDefaults,
     client: true,
     servicesDirs: ['services'],

@@ -33,7 +33,7 @@ function onThemeChange(event: Event): void {
             {{ runtimeConfig.public.appName }}
           </NuxtLink>
           <Badge accent>
-            NFZ 6.7.51
+            NFZ 6.8.0
           </Badge>
         </div>
 

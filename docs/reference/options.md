@@ -39,6 +39,13 @@ export default defineNuxtConfig({
       modules: [],
     },
 
+    cache: {
+      enabled: true,
+      provider: 'memory',
+      defaultTtlMs: 60_000,
+      maxEntries: 1_000,
+    },
+
     database: {
       mongo: {
         url: 'mongodb://root:change-me@127.0.0.1:27017/app?authSource=admin',
@@ -69,6 +76,7 @@ export default defineNuxtConfig({
 | `auth` | `object \| boolean` | `true` | Authentification Feathers |
 | `keycloak` | `object \| boolean` | `false` | SSO Keycloak côté client |
 | `database` | `object` | `{}` | Infrastructure base de données |
+| `cache` | `object \| boolean` | `false` | Cache natif serveur ; provider `memory` en Patch073 r1 |
 | `validator` | `object` | `{ formats: [], extendDefaults: true }` | Validateurs Zod/AJV |
 | `swagger` | `object \| boolean` | `false` | Swagger legacy |
 | `templates` | `object` | `{}` | Overrides de templates |
@@ -180,6 +188,23 @@ server: {
 | `serveStatic` | Sert des fichiers statiques |
 | `serveStaticPath` | Chemin public |
 | `serveStaticDir` | Dossier local |
+
+## `cache`
+
+Le cache natif est serveur-only et désactivé par défaut. Patch073 r1 implémente uniquement `memory`.
+
+```ts
+cache: {
+  enabled: true,
+  provider: 'memory',
+  namespace: 'nfz',
+  defaultTtlMs: 60_000,
+  maxEntries: 1_000,
+  failOpen: true,
+}
+```
+
+`provider: 'redis'` n'est pas accepté en r1. Pour Redis, conservez Nitro/Unstorage jusqu'à la révision native dédiée.
 
 ## `auth`
 

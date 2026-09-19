@@ -135,4 +135,4 @@ Server services and modules can import `getNfzDatabaseRegistry`, `getNfzDatabase
 
 Connection diagnostics also include `provider`, `databaseFamily`, `certification`, `capabilities`, and `driverPackage` for SQL connections. They remain deliberately redacted: no URL, password, or raw `connection` object is returned to clients.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->

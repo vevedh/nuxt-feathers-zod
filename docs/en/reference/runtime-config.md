@@ -53,6 +53,13 @@ const messages = api.service('messages')
 const result = await messages.find({ query: { $limit: 10 } })
 ```
 
+
+## Native cache and private boundary
+
+`feathers.cache` is resolved only into `runtimeConfig._feathers.cache`; it is never copied into `runtimeConfig.public._feathers`. Browser code must not depend on server cache namespace/configuration/diagnostics.
+
+Patch073 r1 exposes only the `memory` provider. Redis credentials remain outside the native NFZ contract and, when an application uses Nitro/Unstorage, belong in private `runtimeConfig`.
+
 ## Practical advice
 
 - Keep runtime-affecting options explicit in `nuxt.config.ts`.
@@ -60,4 +67,4 @@ const result = await messages.find({ query: { $limit: 10 } })
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.7.51 -->
+<!-- release-version: 6.8.0 -->
