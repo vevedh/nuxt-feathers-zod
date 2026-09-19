@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(process.cwd())
-const read = relativePath => readFileSync(resolve(root, relativePath), 'utf8')
+const read = relativePath => readFileSync(resolve(root, relativePath), 'utf8').replace(/\r\n?/g, '\n')
 const problems = []
 
 function requireText(source, expected, label) {

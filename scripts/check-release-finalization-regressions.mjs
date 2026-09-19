@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(process.cwd())
-const read = relativePath => readFileSync(resolve(root, relativePath), 'utf8')
+const read = relativePath => readFileSync(resolve(root, relativePath), 'utf8').replace(/\r\n?/g, '\n')
 const pkg = JSON.parse(read('package.json'))
 const starterPackage = JSON.parse(read('examples/nfz-quasar-unocss-pinia-starter/package.json'))
 const spaPackage = JSON.parse(read('examples/nuxt4-keycloak-ldap-spa-ref/package.json'))

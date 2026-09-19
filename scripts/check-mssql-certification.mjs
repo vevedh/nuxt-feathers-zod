@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(process.cwd())
-const read = relative => readFileSync(resolve(root, relative), 'utf8')
+const read = relative => readFileSync(resolve(root, relative), 'utf8').replace(/\r\n?/g, '\n')
 const pkg = JSON.parse(read('package.json'))
 const connections = read('src/runtime/options/database/connections.ts')
 const certification = read('scripts/validate-mssql-release.mjs')
