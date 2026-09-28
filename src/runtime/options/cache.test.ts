@@ -35,8 +35,26 @@ describe('cache options', () => {
     })
   })
 
-  it('rejects unimplemented providers and unsafe bounds', () => {
-    expect(() => resolveCacheOptions({ provider: 'redis' as any })).toThrow(/not supported/i)
+  it('resolves a private bounded Redis/Valkey contract without exposing credentials', () => {
+    expect(resolveCacheOptions({
+      provider: 'redis',
+      namespace: 'tenant_1:messages',
+      redis: { url: 'rediss://cache-user:secret@example.invalid:6380/2' },
+    })).toMatchObject({
+      provider: 'redis',
+      namespace: 'tenant_1:messages',
+      redis: {
+        protocol: 'rediss',
+        connectTimeoutMs: 2_000,
+        commandTimeoutMs: 2_000,
+        maxReconnectAttempts: 3,
+      },
+    })
+  })
+
+  it('rejects invalid Redis URLs, unsafe bounds and memory-only settings', () => {
+    expect(() => resolveCacheOptions({ provider: 'redis', redis: { url: 'https://example.invalid' } })).toThrow(/redis:\/\//i)
+    expect(() => resolveCacheOptions({ provider: 'redis', redis: { url: '' } })).toThrow(/required/i)
     expect(() => resolveCacheOptions({ namespace: '../secret' })).toThrow(/cache\.namespace/)
     expect(() => resolveCacheOptions({ defaultTtlMs: -1 })).toThrow(/defaultTtlMs/)
     expect(() => resolveCacheOptions({ maxEntries: 0 })).toThrow(/maxEntries/)

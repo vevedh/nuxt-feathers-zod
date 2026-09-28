@@ -23,8 +23,7 @@ export default defineNuxtConfig({
     transports: {
       rest: {
         path: '/feathers',
-        framework: 'express',
-      },
+        },
       websocket: {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
@@ -34,7 +33,6 @@ export default defineNuxtConfig({
 
     server: {
       enabled: true,
-      framework: 'express',
       secureDefaults: true,
       modules: [],
     },
@@ -71,7 +69,7 @@ export default defineNuxtConfig({
 |---|---:|---:|---|
 | `servicesDirs` | `string \| string[]` | `['services']` | Dossiers scannés pour les services embedded |
 | `transports` | `object` | `{ websocket: true }` | REST et Socket.IO |
-| `server` | `object \| boolean` | `serverDefaults` | Runtime serveur embedded |
+| `server` | `object` | `serverDefaults` | Runtime serveur embedded |
 | `client` | `object \| boolean` | `true` | Client Nuxt |
 | `auth` | `object \| boolean` | `true` | Authentification Feathers |
 | `keycloak` | `object \| boolean` | `false` | SSO Keycloak côté client |
@@ -165,7 +163,6 @@ transports: {
 ```ts
 server: {
   enabled: true,
-  framework: 'express',
   secureDefaults: true,
   allowMissingDatabaseServices: false,
   duplicateServicePolicy: 'error',
@@ -177,17 +174,14 @@ server: {
 | Option | Description |
 |---|---|
 | `enabled` | Active le runtime serveur embedded |
-| `framework` | `express` ou `koa` |
 | `secureDefaults` | Active un preset sécurisé |
 | `allowMissingDatabaseServices` | Autorise explicitement le skip des services persistants dont la base est indisponible. `false` par défaut ; à réserver aux services réellement facultatifs. |
 | `duplicateServicePolicy` | `error` par défaut. Rejette un chemin Feathers enregistré deux fois et affiche les deux sources. `skip` conserve explicitement le premier registrar. |
 | `bootstrapDiagnostics` | Active les traces structurées non sensibles `[NFZ bootstrap]`. |
 | `loadOrder` | Ordre déterministe des phases. Lorsque `servicesDirs` découvre des services, la phase `services` doit rester présente. |
 | `modules` | Modules serveur personnalisés |
-| `modulesDir` | Dossier des modules serveur |
-| `serveStatic` | Sert des fichiers statiques |
-| `serveStaticPath` | Chemin public |
-| `serveStaticDir` | Dossier local |
+| `moduleDirs` | Dossier ou liste de dossiers scannés pour les modules serveur |
+| `secure.serveStatic` | `false` ou `{ path?, dir? }` pour le service statique sécurisé |
 
 ## `cache`
 
@@ -204,7 +198,7 @@ cache: {
 }
 ```
 
-`provider: 'redis'` n'est pas accepté en r1. Pour Redis, conservez Nitro/Unstorage jusqu'à la révision native dédiée.
+`provider: 'redis'` active le provider distribué natif. Installez `ioredis` dans l'application et gardez `redis.url` côté serveur.
 
 ## `auth`
 

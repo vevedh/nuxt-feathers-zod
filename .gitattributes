@@ -1,0 +1,18 @@
+# NFZ repository text normalization.
+# Keep source/release artifacts byte-stable across Windows and Unix checkouts.
+* text=auto eol=lf
+
+# Binary assets must never be newline-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.zip binary
+*.tgz binary
+*.gz binary
+*.pdf binary

@@ -83,4 +83,4 @@ bun run build
 
 The package also validates its main starter from the packed tarball against a production Nitro server with real authentication and Express REST CRUD.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

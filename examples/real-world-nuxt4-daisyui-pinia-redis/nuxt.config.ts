@@ -36,6 +36,16 @@ export default defineNuxtConfig({
       mode: 'embedded',
       pinia: { idField: 'id' },
     },
+    cache: {
+      enabled: process.env.REDIS_ENABLED !== 'false',
+      provider: 'redis',
+      namespace: process.env.REDIS_PREFIX || 'nfz:daisyui',
+      defaultTtlMs: Number.parseInt(process.env.REDIS_CACHE_TTL_MS || '60000', 10),
+      failOpen: true,
+      redis: {
+        url: process.env.REDIS_URL || 'redis://127.0.0.1:6380/0',
+      },
+    },
     servicesDirs: ['services'],
     transports: {
       rest: {
@@ -88,12 +98,6 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    redis: {
-      enabled: process.env.REDIS_ENABLED !== 'false',
-      url: process.env.REDIS_URL || 'redis://127.0.0.1:6380/0',
-      prefix: process.env.REDIS_PREFIX || 'nfz:daisyui',
-      ttlSeconds: Number(process.env.REDIS_CACHE_TTL_SECONDS || 60),
-    },
     demo: {
       enabled: process.env.NFZ_DEMO_ENABLED,
       user: process.env.NFZ_DEMO_USER || 'admin',

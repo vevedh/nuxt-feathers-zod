@@ -7,13 +7,13 @@ Le starter `nfz-quasar-unocss-pinia-starter` est le modèle applicatif principal
 
 Il formalise un flux complet : **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + auth locale JWT + RBAC**.
 
-La référence fonctionnelle auditée pour la release NFZ `6.8.0` est le dossier maintenu dans le dépôt :
+La référence fonctionnelle auditée pour la release NFZ `6.9.0` est le dossier maintenu dans le dépôt :
 
 ```txt
 examples/nfz-quasar-unocss-pinia-starter
 ```
 
-Pour la release `6.7.39`, le contrat testé du starter est **Nuxt 4.5.2 + Vue 3.5.42 + `nuxt-quasar-ui` 3.1.1 + Quasar 2.31.0**. Cette combinaison est volontairement épinglée dans le starter afin que `nuxt prepare` et `vue-tsc --noEmit` ne dépendent pas d’une résolution flottante du bridge Quasar.
+Pour la release `6.9.0`, le contrat testé du starter est **Nuxt 4.5.2 + Vue 3.5.42 + `nuxt-quasar-ui` 3.1.1 + Quasar 2.31.0**. Cette combinaison est volontairement épinglée dans le starter afin que `nuxt prepare` et `vue-tsc --noEmit` ne dépendent pas d’une résolution flottante du bridge Quasar.
 
 Dans le dépôt du module, ce modèle est maintenu sous :
 
@@ -24,7 +24,7 @@ examples/nfz-quasar-unocss-pinia-starter
 La CLI peut le copier avec :
 
 ```bash
-bunx nuxt-feathers-zod@6.8.0 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.9.0 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env
@@ -138,12 +138,17 @@ export default defineNuxtConfig({
 
   feathers: {
     auth: {
-      authStrategies: ['local', 'jwt'],
-      local: {
-        usernameField: 'userId',
-        passwordField: 'password',
-        entityUsernameField: 'userId',
-        entityPasswordField: 'password',
+      providers: {
+        local: {
+          type: 'local',
+          usernameField: 'userId',
+          passwordField: 'password',
+          entityUsernameField: 'userId',
+          entityPasswordField: 'password',
+        },
+        jwt: {
+          type: 'jwt',
+        },
       },
     },
     servicesDirs: ['services'],

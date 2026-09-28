@@ -49,6 +49,13 @@ export const NFZ_MODULE_CAPABILITIES = {
   schemaModes: ['none', 'zod', 'json'],
   serviceKinds: ['adapter', 'custom', 'file', 'remote'],
   adapters: ['memory', 'mongodb', 'knex'],
+  cache: {
+    native: true,
+    serverOnly: true,
+    defaultEnabled: false,
+    providers: ['memory', 'redis'],
+    distributed: true,
+  },
   databaseEngines: listNfzDatabaseProviderDescriptors(),
   authProviders: ['jwt', 'local', 'oauth', 'oidc', 'api-key', 'custom', 'keycloak-bridge', 'remote', 'none'],
   consoleServices: [

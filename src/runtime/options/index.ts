@@ -486,7 +486,7 @@ export function resolvePublicRuntimeConfig(options: ResolvedOptions): FeathersPu
   }
 }
 
-export type { CacheOptions, NfzCacheProvider, ResolvedCacheOptions, ResolvedCacheOptionsOrDisabled } from './cache'
+export type { CacheOptions, DistributedCacheOptions, MemoryCacheOptions, NfzCacheProvider, NfzRedisProtocol, RedisCacheOptions, ResolvedCacheOptions, ResolvedCacheOptionsOrDisabled, ResolvedMemoryCacheOptions, ResolvedRedisCacheOptions } from './cache'
 export { NFZ_CACHE_DEFAULTS, resolveCacheOptions } from './cache'
 
 export {

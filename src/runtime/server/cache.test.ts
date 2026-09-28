@@ -1,7 +1,7 @@
 import type { ResolvedCacheOptions } from '../options/cache'
 import type { NfzCacheStore } from './cache'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryCacheStore, createNfzCache, normalizeNfzCacheKey } from './cache'
+import { createMemoryCacheStore, createNfzCache, createRedisCacheStore, normalizeNfzCacheKey } from './cache'
 
 const defaults: ResolvedCacheOptions = {
   enabled: true,
@@ -98,6 +98,71 @@ describe('native memory cache', () => {
     await expect(cache.getOrSet('valid', () => undefined)).rejects.toThrow(/undefined/)
   })
 
+  it('supports provider-neutral diagnostics with an injected Redis/Valkey store contract', async () => {
+    const values = new Map<string, unknown>()
+    const redisStore: NfzCacheStore = {
+      provider: 'redis',
+      async get(key) { return values.get(key) },
+      async set(key, value) { values.set(key, value) },
+      async remove(key) { return values.delete(key) },
+      async clear(prefix) {
+        let removed = 0
+        for (const key of [...values.keys()]) {
+          if (!prefix || key.startsWith(prefix)) {
+            values.delete(key)
+            removed += 1
+          }
+        }
+        return removed
+      },
+      async has(key) { return values.has(key) },
+      async health() { return { status: 'ready', latencyMs: 1 } },
+      async close() { values.clear() },
+    }
+    const redisOptions: ResolvedCacheOptions = {
+      enabled: true,
+      provider: 'redis',
+      namespace: 'nfz-redis-test',
+      defaultTtlMs: 1_000,
+      failOpen: true,
+      redis: {
+        url: 'redis://user:secret@example.invalid:6379/0',
+        protocol: 'redis',
+        connectTimeoutMs: 2_000,
+        commandTimeoutMs: 2_000,
+        maxReconnectAttempts: 3,
+      },
+    }
+    const cache = createNfzCache(redisOptions, redisStore)
+    await cache.set('message:1', { text: 'hello' })
+    expect(await cache.get('message:1')).toEqual({ text: 'hello' })
+    const diagnostics = await cache.diagnostics()
+    expect(diagnostics.provider).toBe('redis')
+    expect(diagnostics.maxEntries).toBeNull()
+    expect(diagnostics.health.status).toBe('ready')
+    expect(JSON.stringify(diagnostics)).not.toContain('secret')
+    expect(JSON.stringify(diagnostics)).not.toContain('example.invalid')
+  })
+
+  it('rejects a store whose provider disagrees with the resolved cache provider', () => {
+    const memoryStore = createMemoryCacheStore({ maxEntries: 10 })
+    const redisOptions: ResolvedCacheOptions = {
+      enabled: true,
+      provider: 'redis',
+      namespace: 'nfz',
+      defaultTtlMs: 1_000,
+      failOpen: true,
+      redis: {
+        url: 'redis://example.invalid:6379/',
+        protocol: 'redis',
+        connectTimeoutMs: 2_000,
+        commandTimeoutMs: 2_000,
+        maxReconnectAttempts: 3,
+      },
+    }
+    expect(() => createNfzCache(redisOptions, memoryStore)).toThrow(/does not match/)
+  })
+
   it('supports prefix clearing within its namespace', async () => {
     const store = createMemoryCacheStore({ maxEntries: 10 })
     const cache = createNfzCache({ ...defaults, maxEntries: 10 }, store)
@@ -107,5 +172,117 @@ describe('native memory cache', () => {
     expect(await cache.clear('users:')).toBe(2)
     expect(await cache.has('users:1')).toBe(false)
     expect(await cache.get('messages:1')).toBe(3)
+  })
+})
+
+describe('native Redis/Valkey cache store', () => {
+  const redisOptions: Extract<ResolvedCacheOptions, { provider: 'redis' }> = {
+    enabled: true,
+    provider: 'redis',
+    namespace: 'nfz-redis-test',
+    defaultTtlMs: 1_000,
+    failOpen: false,
+    redis: {
+      url: 'redis://user:secret@127.0.0.1:6379/0',
+      protocol: 'redis',
+      connectTimeoutMs: 100,
+      commandTimeoutMs: 100,
+      maxReconnectAttempts: 2,
+    },
+  }
+
+  class FakeRedis {
+    static last: FakeRedis | undefined
+    status = 'wait'
+    readonly values = new Map<string, string>()
+    readonly expirations = new Map<string, number>()
+    readonly commands: string[] = []
+
+    constructor(_url: string, _options: Record<string, unknown>) {
+      FakeRedis.last = this
+    }
+
+    on() { return this }
+    async connect() { this.status = 'ready' }
+    async get(key: string) { return this.values.get(key) ?? null }
+    async set(key: string, value: string, ...args: Array<string | number>) {
+      this.values.set(key, value)
+      if (args[0] === 'PX')
+        this.expirations.set(key, Number(args[1]))
+      return 'OK'
+    }
+
+    async del(key: string) { return this.values.delete(key) ? 1 : 0 }
+    async exists(key: string) { return this.values.has(key) ? 1 : 0 }
+    async ping() { return 'PONG' }
+    async scan(_cursor: string, ...args: Array<string | number>): Promise<[string, string[]]> {
+      this.commands.push('SCAN')
+      const match = String(args[args.indexOf('MATCH') + 1] ?? '*').replace(/\*$/, '')
+      return ['0', [...this.values.keys()].filter(key => key.startsWith(match))]
+    }
+
+    async unlink(...keys: string[]) {
+      this.commands.push('UNLINK')
+      let removed = 0
+      for (const key of keys)
+        removed += this.values.delete(key) ? 1 : 0
+      return removed
+    }
+
+    async quit() { this.status = 'end'; return 'OK' }
+    disconnect() { this.status = 'end' }
+  }
+
+  it('serializes values, applies PX TTL and round-trips null', async () => {
+    const store = createRedisCacheStore(redisOptions, FakeRedis)
+    await store.set('nfz-redis-test:item', { nested: ['value'] }, { ttlMs: 250 })
+    await store.set('nfz-redis-test:null', null, { ttlMs: 0 })
+    await expect(store.get('nfz-redis-test:item')).resolves.toEqual({ nested: ['value'] })
+    await expect(store.get('nfz-redis-test:null')).resolves.toBeNull()
+    expect(FakeRedis.last?.expirations.get('nfz-redis-test:item')).toBe(250)
+    expect(FakeRedis.last?.values.get('nfz-redis-test:item')).toContain('"version":1')
+  })
+
+  it('keeps Redis diagnostics keyspace-free and reports an unknown entry count', async () => {
+    const store = await createRedisCacheStore(redisOptions, FakeRedis as never)
+    const cache = createNfzCache(redisOptions, store)
+    const diagnostics = await cache.diagnostics()
+
+    expect(diagnostics.entries).toBeNull()
+    expect(diagnostics.provider).toBe('redis')
+    expect(FakeRedis.last?.commands).not.toContain('PING')
+    expect(FakeRedis.last?.commands).not.toContain('SCAN')
+    await cache.close()
+  })
+
+  it('invalidates with SCAN plus UNLINK and never KEYS', async () => {
+    const store = createRedisCacheStore(redisOptions, FakeRedis)
+    await store.set('nfz-redis-test:a', 1)
+    await store.set('nfz-redis-test:b', 2)
+    await store.set('other:c', 3)
+    await expect(store.clear('nfz-redis-test:')).resolves.toBe(2)
+    expect(FakeRedis.last?.commands).toContain('SCAN')
+    expect(FakeRedis.last?.commands).toContain('UNLINK')
+    expect(FakeRedis.last?.commands).not.toContain('KEYS')
+    await expect(store.has('other:c')).resolves.toBe(true)
+  })
+
+  it('reports health and closes the connection', async () => {
+    const store = createRedisCacheStore(redisOptions, FakeRedis)
+    await expect(store.health?.()).resolves.toMatchObject({ status: 'ready' })
+    await store.close()
+    expect(FakeRedis.last?.status).toBe('end')
+  })
+
+  it('makes memory values mutation-isolated like serialized distributed values', async () => {
+    const cache = createNfzCache(defaults)
+    const source = { nested: { count: 1 } }
+    await cache.set('isolated', source)
+    source.nested.count = 2
+    const first = await cache.get<typeof source>('isolated')
+    expect(first?.nested.count).toBe(1)
+    if (first)
+      first.nested.count = 3
+    expect((await cache.get<typeof source>('isolated'))?.nested.count).toBe(1)
   })
 })

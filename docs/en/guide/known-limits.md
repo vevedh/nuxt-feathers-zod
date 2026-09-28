@@ -39,4 +39,4 @@ A capability must not be presented as a core pillar until it has:
 - aligned documentation;
 - and stable Bun CLI parsing.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

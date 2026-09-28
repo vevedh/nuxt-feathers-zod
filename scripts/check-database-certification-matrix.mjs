@@ -68,8 +68,13 @@ if (!packageJson.exports?.['./options'])
   failures.push('package exports is missing ./options for the matrix public descriptor import')
 if (!packageJson.exports?.['./server-database'])
   failures.push('package exports is missing ./server-database for the matrix registry import')
+
 requireText(cli, "normalized === 'databases'", 'CLI database capability section')
-requireText(cli, "options: ['summary', 'runtime', 'services', 'client', 'events', 'databases', 'all']", 'CLI database capability selector')
+requireText(
+  cli,
+  "options: ['summary', 'runtime', 'services', 'client', 'events', 'databases', 'cache', 'all']",
+  'CLI capability selector including databases and native cache',
+)
 requireText(cliReferenceRenderer, 'modes, transports, moteurs de base, services NFZ', 'French generated CLI source-of-truth database wording')
 requireText(cliReferenceRenderer, 'modes, transports, database engines, NFZ services', 'English generated CLI source-of-truth database wording')
 for (const [path, source, needle] of [
@@ -109,7 +114,6 @@ for (const [marker, label] of [
   ['Promise.all', 'parallel coexistence proof'],
 ])
   requireText(matrixValidator, marker, label)
-
 
 for (const key of ['prepare:project', 'release:check', 'verify:sanity']) {
   requireText(packageJson.scripts?.[key] || '', 'bun run sanity:database-certification-matrix', `${key} matrix guard`)

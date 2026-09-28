@@ -7,13 +7,13 @@ The `nfz-quasar-unocss-pinia-starter` starter is the recommended main applicatio
 
 It formalizes a complete flow: **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + local JWT auth + RBAC**.
 
-The audited working reference for NFZ release `6.8.0` is the maintained repository directory:
+The audited working reference for NFZ release `6.9.0` is the maintained repository directory:
 
 ```txt
 examples/nfz-quasar-unocss-pinia-starter
 ```
 
-For release `6.7.39`, the tested starter contract is **Nuxt 4.5.2 + Vue 3.5.42 + `nuxt-quasar-ui` 3.1.1 + Quasar 2.31.0**. This combination is intentionally pinned in the starter so `nuxt prepare` and `vue-tsc --noEmit` do not depend on a floating Quasar bridge resolution.
+For release `6.9.0`, the tested starter contract is **Nuxt 4.5.2 + Vue 3.5.42 + `nuxt-quasar-ui` 3.1.1 + Quasar 2.31.0**. This combination is intentionally pinned in the starter so `nuxt prepare` and `vue-tsc --noEmit` do not depend on a floating Quasar bridge resolution.
 
 In the module repository, the maintained model lives under:
 
@@ -24,7 +24,7 @@ examples/nfz-quasar-unocss-pinia-starter
 The CLI can copy it with:
 
 ```bash
-bunx nuxt-feathers-zod@6.8.0 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.9.0 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env
@@ -138,12 +138,17 @@ export default defineNuxtConfig({
 
   feathers: {
     auth: {
-      authStrategies: ['local', 'jwt'],
-      local: {
-        usernameField: 'userId',
-        passwordField: 'password',
-        entityUsernameField: 'userId',
-        entityPasswordField: 'password',
+      providers: {
+        local: {
+          type: 'local',
+          usernameField: 'userId',
+          passwordField: 'password',
+          entityUsernameField: 'userId',
+          entityPasswordField: 'password',
+        },
+        jwt: {
+          type: 'jwt',
+        },
       },
     },
     servicesDirs: ['services'],

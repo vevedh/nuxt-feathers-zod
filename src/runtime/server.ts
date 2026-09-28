@@ -51,6 +51,6 @@ export function defineFeathersServerModule(def: FeathersServerModule): FeathersS
 
 export type { NfzAuthenticationAssuranceLevel, NfzPrincipal } from './auth/principal'
 export { configureNfzCache, createMemoryCacheStore, createNfzCache, getNfzCache, NfzCache, normalizeNfzCacheKey } from './server/cache'
-export type { NfzCacheDiagnostics, NfzCacheSetOptions, NfzCacheStatistics, NfzCacheStore } from './server/cache'
+export type { NfzCacheDiagnostics, NfzCacheHealthStatus, NfzCacheSetOptions, NfzCacheStatistics, NfzCacheStore, NfzCacheStoreHealth } from './server/cache'
 export { NFZ_CONSOLE_SERVICE_PATHS, registerNfzConsoleServices, resolveNfzConsoleServiceContext } from './server/console-services'
 export type { NfzConsoleRuntimeConfig, NfzConsoleServiceContext } from './server/console-services'

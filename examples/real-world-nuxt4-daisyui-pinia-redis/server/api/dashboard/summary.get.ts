@@ -1,5 +1,6 @@
 import type { Application } from 'nuxt-feathers-zod/server'
 import { createError, getHeader, getQuery } from 'h3'
+import { getNfzCache } from 'nuxt-feathers-zod/server-cache'
 import { waitForNfzRuntimeInstance } from 'nuxt-feathers-zod/server-instance-registry'
 
 interface CountResult {
@@ -69,24 +70,18 @@ export default defineEventHandler(async (event): Promise<DashboardSummary> => {
   if (!roles.some(role => role === 'admin' || role === 'member'))
     throw createError({ statusCode: 403, statusMessage: 'Dashboard role required.' })
 
-  const runtimeConfig = useRuntimeConfig()
-  const ttlSeconds = Math.max(5, Number(runtimeConfig.redis.ttlSeconds || 60))
-  const redisEnabled = runtimeConfig.redis.enabled !== false
+  const cache = getNfzCache(app)
+  const ttlSeconds = Math.max(5, Math.floor((await cache?.diagnostics())?.defaultTtlMs ?? 60_000) / 1_000)
   const refresh = getQuery(event).refresh === '1'
   const cacheKey = 'dashboard:summary:v1'
 
-  if (redisEnabled && !refresh) {
-    try {
-      const cached = await useStorage('nfz-cache').getItem<Omit<DashboardSummary, 'cache'>>(cacheKey)
-      if (cached) {
-        return {
-          ...cached,
-          cache: 'redis',
-        }
+  if (cache && !refresh) {
+    const cached = await cache.get<Omit<DashboardSummary, 'cache'>>(cacheKey)
+    if (cached) {
+      return {
+        ...cached,
+        cache: 'redis',
       }
-    }
-    catch {
-      console.warn('[nfz-daisyui] Redis cache read unavailable; using origin services.')
     }
   }
 
@@ -104,14 +99,8 @@ export default defineEventHandler(async (event): Promise<DashboardSummary> => {
     ttlSeconds,
   }
 
-  if (redisEnabled) {
-    try {
-      await useStorage('nfz-cache').setItem(cacheKey, origin, { ttl: ttlSeconds })
-    }
-    catch {
-      console.warn('[nfz-daisyui] Redis cache write unavailable; response remains valid.')
-    }
-  }
+  if (cache)
+    await cache.set(cacheKey, origin, { ttlMs: ttlSeconds * 1_000 })
 
   return {
     ...origin,

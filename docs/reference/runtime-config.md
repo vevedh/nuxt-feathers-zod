@@ -61,7 +61,7 @@ const mode = config.public._feathers?.client?.mode
 
 `feathers.cache` est résolu uniquement dans `runtimeConfig._feathers.cache`. Il n'est jamais copié dans `runtimeConfig.public._feathers`. Le frontend ne doit donc pas dépendre de la présence, du namespace ou des diagnostics du cache serveur.
 
-En Patch073 r1, seul le provider `memory` est disponible. Les identifiants Redis restent hors du contrat NFZ natif et, lorsqu'une application utilise Nitro/Unstorage, doivent rester dans une section privée de `runtimeConfig`.
+En 6.9.0 Patch075, `memory` et `redis` sont natifs. Les credentials Redis/Valkey restent serveur uniquement dans `feathers.cache.redis.url` et ne doivent jamais être copiés dans `runtimeConfig.public`.
 
 ## Points de vigilance
 
@@ -76,4 +76,4 @@ En Patch073 r1, seul le provider `memory` est disponible. Les identifiants Redis
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

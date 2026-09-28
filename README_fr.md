@@ -3,7 +3,7 @@
 `nuxt-feathers-zod` intègre FeathersJS v5 (Dove), les schémas Zod et l'accès typé aux services dans Nuxt 4.
 Le module s'adresse aux applications qui ont besoin d'un vrai contrat backend dans un projet Nuxt, tout en conservant la possibilité de se connecter à une API Feathers externe.
 
-Version de référence : **6.8.0**.
+Version de référence : **6.9.0**.
 
 Socle runtime de la version `6.8.0` : Node.js `^22.19.0 || ^24.11.0 || >=26.0.0` et Bun `>=1.3.6` (validation de release recommandée avec Bun 1.3.14).
 Le pont Nitro embarqué utilise `@vevedh/feathers-nitro@0.6.0` avec FeathersJS 5.0.49, Nuxt 4.5.2 et Vue 3.5.42 ; Nitro 2.13.4 et H3 1.15.11 restent volontairement gelés sur ce train.

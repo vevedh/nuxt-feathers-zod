@@ -1,29 +1,64 @@
-export type NfzCacheProvider = 'memory'
+export type NfzCacheProvider = 'memory' | 'redis'
+export type NfzRedisProtocol = 'redis' | 'rediss'
 
-export interface CacheOptions {
-  /** Enable the native NFZ server cache. Disabled by default. */
+export interface RedisCacheOptions {
+  /** Server-only Redis/Valkey URL. Credentials must never be exposed through runtimeConfig.public. */
+  url: string
+  /** Connection timeout in milliseconds. */
+  connectTimeoutMs?: number
+  /** Command timeout in milliseconds. */
+  commandTimeoutMs?: number
+  /** Maximum reconnect attempts before the provider reports unavailable. */
+  maxReconnectAttempts?: number
+}
+
+interface CacheOptionsBase {
   enabled?: boolean
-  /** Cache backend. Patch073 r1 intentionally supports only the in-process memory provider. */
-  provider?: NfzCacheProvider
-  /** Logical prefix applied to every cache key. */
   namespace?: string
-  /** Default TTL in milliseconds. Use 0 for entries that do not expire. */
   defaultTtlMs?: number
-  /** Maximum number of entries retained by the in-process memory store. */
-  maxEntries?: number
-  /** Treat cache backend errors as misses/write failures instead of failing the business request. */
   failOpen?: boolean
 }
 
-export interface ResolvedCacheOptions {
+export interface MemoryCacheOptions extends CacheOptionsBase {
+  provider?: 'memory'
+  /** Maximum number of entries retained by the in-process memory store. */
+  maxEntries?: number
+  redis?: never
+}
+
+export interface DistributedCacheOptions extends CacheOptionsBase {
+  provider: 'redis'
+  /** Redis and Valkey share the Redis wire protocol. */
+  redis: RedisCacheOptions
+  maxEntries?: never
+}
+
+export type CacheOptions = MemoryCacheOptions | DistributedCacheOptions
+
+interface ResolvedCacheOptionsBase {
   enabled: true
-  provider: 'memory'
   namespace: string
   defaultTtlMs: number
-  maxEntries: number
   failOpen: boolean
 }
 
+export interface ResolvedMemoryCacheOptions extends ResolvedCacheOptionsBase {
+  provider: 'memory'
+  maxEntries: number
+}
+
+export interface ResolvedRedisCacheOptions extends ResolvedCacheOptionsBase {
+  provider: 'redis'
+  redis: {
+    url: string
+    protocol: NfzRedisProtocol
+    connectTimeoutMs: number
+    commandTimeoutMs: number
+    maxReconnectAttempts: number
+  }
+}
+
+export type ResolvedCacheOptions = ResolvedMemoryCacheOptions | ResolvedRedisCacheOptions
 export type ResolvedCacheOptionsOrDisabled = ResolvedCacheOptions | false
 
 export const NFZ_CACHE_DEFAULTS = Object.freeze({
@@ -31,6 +66,11 @@ export const NFZ_CACHE_DEFAULTS = Object.freeze({
   defaultTtlMs: 60_000,
   maxEntries: 1_000,
   failOpen: true,
+  redis: Object.freeze({
+    connectTimeoutMs: 2_000,
+    commandTimeoutMs: 2_000,
+    maxReconnectAttempts: 3,
+  }),
 } as const)
 
 const NAMESPACE_PATTERN = /^[a-z\d][\w:-]{0,63}$/i
@@ -43,6 +83,32 @@ function resolveNonNegativeInteger(value: unknown, fallback: number, label: stri
   return Number(value)
 }
 
+function resolvePositiveInteger(value: unknown, fallback: number, label: string, max: number): number {
+  const resolved = resolveNonNegativeInteger(value, fallback, label)
+  if (resolved < 1 || resolved > max)
+    throw new Error(`${label} must be between 1 and ${max}.`)
+  return resolved
+}
+
+function resolveRedisUrl(value: unknown): { url: string, protocol: NfzRedisProtocol } {
+  if (typeof value !== 'string' || !value.trim())
+    throw new Error('cache.redis.url is required when cache.provider is redis.')
+
+  let parsed: URL
+  try {
+    parsed = new URL(value.trim())
+  }
+  catch {
+    throw new Error('cache.redis.url must be a valid redis:// or rediss:// URL.')
+  }
+  if (parsed.protocol !== 'redis:' && parsed.protocol !== 'rediss:')
+    throw new Error('cache.redis.url must use the redis:// or rediss:// protocol.')
+  if (!parsed.hostname)
+    throw new Error('cache.redis.url must include a hostname.')
+
+  return { url: parsed.toString(), protocol: parsed.protocol.slice(0, -1) as NfzRedisProtocol }
+}
+
 export function resolveCacheOptions(input: CacheOptions | boolean | undefined): ResolvedCacheOptionsOrDisabled {
   if (input === undefined || input === false)
     return false
@@ -52,9 +118,6 @@ export function resolveCacheOptions(input: CacheOptions | boolean | undefined): 
     return false
 
   const provider = options.provider ?? 'memory'
-  if (provider !== 'memory')
-    throw new Error(`cache.provider '${String(provider)}' is not supported in 6.8.0 Patch073 r1. Use 'memory'.`)
-
   const namespace = String(options.namespace ?? NFZ_CACHE_DEFAULTS.namespace).trim()
   if (!NAMESPACE_PATTERN.test(namespace)) {
     throw new Error(
@@ -67,20 +130,35 @@ export function resolveCacheOptions(input: CacheOptions | boolean | undefined): 
     NFZ_CACHE_DEFAULTS.defaultTtlMs,
     'cache.defaultTtlMs',
   )
-  const maxEntries = resolveNonNegativeInteger(
-    options.maxEntries,
-    NFZ_CACHE_DEFAULTS.maxEntries,
-    'cache.maxEntries',
-  )
-  if (maxEntries < 1 || maxEntries > 100_000)
-    throw new Error('cache.maxEntries must be between 1 and 100000.')
+  const failOpen = options.failOpen !== false
 
-  return {
-    enabled: true,
-    provider,
-    namespace,
-    defaultTtlMs,
-    maxEntries,
-    failOpen: options.failOpen !== false,
+  if (provider === 'memory') {
+    const maxEntries = resolvePositiveInteger(
+      options.maxEntries,
+      NFZ_CACHE_DEFAULTS.maxEntries,
+      'cache.maxEntries',
+      100_000,
+    )
+    return { enabled: true, provider, namespace, defaultTtlMs, maxEntries, failOpen }
   }
+
+  if (provider === 'redis') {
+    const { url, protocol } = resolveRedisUrl(options.redis?.url)
+    return {
+      enabled: true,
+      provider,
+      namespace,
+      defaultTtlMs,
+      failOpen,
+      redis: {
+        url,
+        protocol,
+        connectTimeoutMs: resolvePositiveInteger(options.redis?.connectTimeoutMs, NFZ_CACHE_DEFAULTS.redis.connectTimeoutMs, 'cache.redis.connectTimeoutMs', 60_000),
+        commandTimeoutMs: resolvePositiveInteger(options.redis?.commandTimeoutMs, NFZ_CACHE_DEFAULTS.redis.commandTimeoutMs, 'cache.redis.commandTimeoutMs', 60_000),
+        maxReconnectAttempts: resolveNonNegativeInteger(options.redis?.maxReconnectAttempts, NFZ_CACHE_DEFAULTS.redis.maxReconnectAttempts, 'cache.redis.maxReconnectAttempts'),
+      },
+    }
+  }
+
+  throw new Error(`cache.provider '${String(provider)}' is not supported. Use 'memory' or 'redis'.`)
 }

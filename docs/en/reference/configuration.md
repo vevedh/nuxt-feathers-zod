@@ -19,7 +19,7 @@ The keys below match `ModuleOptions` in the module source.
 | Option | Purpose |
 |---|---|
 | `transports` | REST and Socket.IO |
-| `database` | MongoDB and MongoDB Management |
+| `database` | named MongoDB and SQL connection registry |
 | `cache` | server-native cache; disabled by default, `memory` provider in Patch073 r1 |
 | `servicesDirs` | service discovery directories |
 | `server` | embedded server, modules, and security |
@@ -195,7 +195,7 @@ const value = await cache?.getOrSet('dashboard:summary:v1', async () => {
 
 ### Redis in Patch073 r1
 
-Continue to use Nitro/Unstorage at the application layer for Redis and keep credentials in private `runtimeConfig`. Do not configure `provider: 'redis'`: the 6.8.0 r1 resolver rejects it explicitly until the native Redis revision lands.
+For Redis or Valkey, use `cache.provider: 'redis'`, install the optional `ioredis` peer, and keep `cache.redis.url` server-only. Diagnostics never expose credentials.
 
 See [Redis cache with NFZ](/en/guide/redis-cache) for the current driver mount, TTL/invalidation rules, and the full DaisyUiKit example.
 
@@ -237,4 +237,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

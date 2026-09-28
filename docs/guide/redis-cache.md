@@ -1,152 +1,64 @@
-# Redis cache avec NFZ
+# Redis et Valkey avec le cache NFZ
 
-NFZ 6.8.0 introduit avec Patch073 r1 une **fondation de cache native serveur** avec le provider `memory`. Redis n'est volontairement pas encore un provider natif NFZ : l'intégration Redis reste, pour cette révision, une responsabilité applicative via Nitro/Unstorage.
-
-Cette séparation permet de stabiliser d'abord le contrat `NfzCacheStore`, les TTL, le fail-open, `getOrSet` single-flight et les diagnostics sans ajouter prématurément une dépendance Redis au module.
-
-## Architecture recommandée
-
-```txt
-Nuxt UI / Pinia
-   │
-   ├─ client NFZ embedded / JWT
-   │       │
-   │       └─ services Feathers v5 -> MongoDB / SQL
-   │
-   └─ routes serveur / agrégats
-           │
-           └─ Nitro Storage -> Redis
-```
-
-Deux usages sont complémentaires :
-
-- **cache de routes/agrégats Nuxt** : `useStorage()` ou `routeRules` avec un stockage Redis ;
-- **cache métier Feathers** : hook ou service applicatif qui lit/écrit Redis, avec invalidation sur `create`, `patch`, `update` et `remove`.
+NFZ 6.9.0 Patch075 fournit un cache serveur natif avec deux providers : `memory` et `redis`. Le provider `redis` utilise le même contrat avec **Redis** et **Valkey**.
 
 ## Installation
 
-Pour un montage Redis explicite avec Unstorage :
+Le client Redis reste optionnel pour ne rien imposer aux projets qui utilisent seulement `memory` :
 
 ```bash
-bun add unstorage ioredis
+bun add ioredis
 ```
 
-`ioredis` doit rester compatible avec la version attendue par Unstorage/Nitro. Dans l'exemple maintenu 6.8.0, `ioredis` reste épinglé sur la branche 5.x utilisée par Nitro 2.13.4.
-
-## Configuration privée
+## Configuration
 
 ```ts
 export default defineNuxtConfig({
-  runtimeConfig: {
-    redis: {
-      enabled: process.env.REDIS_ENABLED !== 'false',
-      url: process.env.REDIS_URL || 'redis://127.0.0.1:6379/0',
-      prefix: process.env.REDIS_PREFIX || 'nfz:app',
-      ttlSeconds: Number(process.env.REDIS_CACHE_TTL_SECONDS || 60),
+  feathers: {
+    cache: {
+      enabled: true,
+      provider: 'redis',
+      namespace: 'nfz:app',
+      defaultTtlMs: 60_000,
+      failOpen: true,
+      redis: {
+        url: process.env.REDIS_URL || 'redis://127.0.0.1:6379/0',
+        connectTimeoutMs: 2_000,
+        commandTimeoutMs: 2_000,
+        maxReconnectAttempts: 3,
+      },
     },
   },
 })
 ```
 
-Ne place jamais `REDIS_URL`, un mot de passe ou un token Redis dans `runtimeConfig.public`.
+`REDIS_URL` est une configuration **serveur uniquement**. Ne placez jamais l'URL, le mot de passe ou un token Redis dans `runtimeConfig.public`.
 
-## Monter Redis dans Nitro
-
-```ts
-import redisDriver from 'unstorage/drivers/redis'
-
-export default defineNitroPlugin(() => {
-  const config = useRuntimeConfig()
-
-  if (config.redis.enabled === false)
-    return
-
-  useStorage().mount('nfz-cache', redisDriver({
-    url: String(config.redis.url),
-    base: String(config.redis.prefix || 'nfz:app'),
-    lazyConnect: true,
-    connectTimeout: 2_000,
-    maxRetriesPerRequest: 1,
-  }))
-})
-```
-
-Le stockage devient ensuite accessible avec :
+## Utiliser le cache côté serveur
 
 ```ts
-const cache = useStorage('nfz-cache')
+import { getNfzCache } from 'nuxt-feathers-zod/server-cache'
 
-await cache.setItem('dashboard:summary:v1', payload, { ttl: 60 })
-const cached = await cache.getItem('dashboard:summary:v1')
+const cache = getNfzCache(app)
+const summary = await cache?.getOrSet('dashboard:summary:v1', async () => {
+  return await buildDashboardSummary()
+}, { ttlMs: 30_000 })
 ```
 
-## Cache et authentification
+`getOrSet()` déduplique les producteurs concurrents pour une clé **dans le même processus Node uniquement**. Il ne constitue pas un verrou distribué entre plusieurs replicas.
 
-Une route protégée doit vérifier le JWT **avant** de lire une valeur qui ne doit être accessible qu'à un utilisateur authentifié.
+## Comportement distribué
 
-Pour un cache partagé :
+Les valeurs sont sérialisées avant stockage afin d'aligner les providers. Un TTL positif utilise l'expiration Redis/Valkey ; `0` signifie sans expiration. L'effacement d'un namespace utilise une itération bornée `SCAN` puis `UNLINK` et n'utilise pas `KEYS`.
 
-- ne stocke pas le JWT dans la clé ;
-- ne stocke pas de profil utilisateur ou de donnée personnelle sans partitionnement par sujet/tenant ;
-- versionne les clés (`dashboard:summary:v1`) ;
-- utilise un TTL borné ;
-- invalide après mutation métier ;
-- garde un comportement déterministe si Redis est temporairement indisponible.
+Avec `failOpen: true`, une panne du cache ne doit pas rendre le traitement métier indisponible : une lecture devient un miss et une écriture peut échouer sans remplacer la réponse métier. Les diagnostics exposent le provider, l'état et la latence éventuelle, mais jamais l'URL, les credentials, les clés ou les valeurs. Pour le provider distribué, `entries` vaut `null` : lire les diagnostics ne parcourt jamais implicitement le keyspace Redis/Valkey.
 
-## Cache d'un service métier
+## Authentification et isolation
 
-Pour un service Feathers, le cache doit être placé autour d'une lecture coûteuse et invalidé lorsque la ressource change. Exemple de stratégie :
-
-```txt
-find/get -> lookup Redis -> miss -> service/DB -> Redis SET + TTL
-create/patch/update/remove -> service/DB -> DEL des clés concernées
-```
-
-Évite de cacher aveuglément les résultats contenant des champs dépendants de `params.user`, `params.provider`, du tenant ou des permissions RBAC.
+Vérifiez l'autorisation avant de lire une valeur protégée. Ne mettez pas un JWT dans une clé. Si la réponse dépend d'un utilisateur ou d'un tenant, partitionnez explicitement la clé et n'utilisez pas un cache partagé non isolé.
 
 ## Exemple complet DaisyUiKit
 
-Le dépôt contient maintenant :
+`examples/real-world-nuxt4-daisyui-pinia-redis/` utilise directement `feathers.cache.provider = 'redis'`. Son dashboard récupère le cache NFZ attaché à l'application Feathers avec `getNfzCache(app)` ; il n'utilise plus un second cache Nitro/Unstorage.
 
-```txt
-examples/real-world-nuxt4-daisyui-pinia-redis/
-```
-
-Il fournit :
-
-- Nuxt 4 + Vue 3 ;
-- `daisy-ui-kit/nuxt` + DaisyUI/Tailwind CSS 4 ;
-- Pinia ;
-- MongoDB 7 ;
-- FeathersJS v5 embedded via NFZ ;
-- authentification locale/JWT ;
-- RBAC `admin/member` ;
-- Redis monté avec Nitro/Unstorage ;
-- dashboard protégé avec agrégat cache Redis ;
-- light/dark et thèmes personnalisables.
-
-La page d'accueil de l'exemple sert aussi de page de promotion de cette architecture.
-
-## Ce que fournit déjà le cache natif r1
-
-Pour un cache mémoire local au processus, activez directement NFZ :
-
-```ts
-feathers: {
-  cache: {
-    enabled: true,
-    provider: 'memory',
-    defaultTtlMs: 60_000,
-    maxEntries: 1_000,
-    failOpen: true,
-  },
-}
-```
-
-Les services/plugins serveur peuvent récupérer le cache avec `getNfzCache(app)` depuis `nuxt-feathers-zod/server-cache`. Le contrat expose `get`, `set`, `remove`, `clear`, `has`, `getOrSet`, `diagnostics` et `close`.
-
-## Pourquoi Redis reste applicatif en r1 ?
-
-La révision r1 stabilise l'abstraction et le provider mémoire avant d'ajouter un backend réseau. Le provider Redis/Valkey natif doit encore définir et certifier la connexion, le reconnect/fail-open, le TTL distribué, l'isolation namespace/tenant, l'observabilité et les tests Docker multi-instance. Jusqu'à cette révision, `provider: 'redis'` est explicitement rejeté afin d'éviter une capacité partiellement fonctionnelle.
-
-<!-- release-version: 6.8.0 -->
+Le provider a été conçu pour le même protocole Redis et le gate Patch075 exécute le même contrat réel contre Redis et Valkey avant promotion de la capability distribuée.

@@ -30,8 +30,8 @@ features:
     details: "Utilisez local/JWT, OIDC, Keycloak ou des clés API derrière un principal normalisé."
   - title: "Registre multi-base"
     details: "Nommez plusieurs connexions MongoDB ou Knex, choisissez la connexion de chaque service et surveillez leur santé sans exposer les secrets."
-  - title: "Redis avec Nitro/Unstorage"
-    details: "Utilisez le cache mémoire natif côté serveur pour un cache local borné, ou conservez Redis sur Nitro/Unstorage en Patch073 r1 avec TTL/invalidation explicites et secrets privés."
+  - title: "Redis et Valkey natifs"
+    details: "Utilisez le cache NFZ natif avec `memory` ou le provider distribué `redis`, certifié contre Redis et Valkey, avec TTL, invalidation sûre et secrets serveur."
   - title: "CLI orientée projet"
     details: "Initialisez l'intégration, générez des services et contrôlez la configuration sans recopier une architecture entière."
   - title: "Playground vérifiable"
@@ -82,4 +82,4 @@ Les captures sont générées depuis le playground après réussite des assertio
 - [Package npm](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [Dépôt GitHub](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

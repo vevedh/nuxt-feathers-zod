@@ -160,7 +160,23 @@ describe('nuxt-feathers-zod CLI generators', () => {
     const section = capabilities?.args?.section as { options?: string[] } | undefined
 
     expect(capabilities).toBeTruthy()
-    expect(section?.options).toEqual(['summary', 'runtime', 'services', 'client', 'events', 'databases', 'all'])
+    expect(section?.options).toEqual([
+      'summary',
+      'runtime',
+      'services',
+      'client',
+      'events',
+      'databases',
+      'cache',
+      'all',
+    ])
+    expect(NFZ_MODULE_CAPABILITIES.cache).toEqual({
+  native: true,
+  serverOnly: true,
+  defaultEnabled: false,
+  providers: ['memory', 'redis'],
+  distributed: true,
+})
     expect(NFZ_MODULE_CAPABILITIES.consoleServices).toHaveLength(9)
     expect(NFZ_MODULE_CAPABILITIES.architecture.apiModel).toBe('feathers-first')
     expect(NFZ_MODULE_CAPABILITIES.databaseEngines).toHaveLength(6)

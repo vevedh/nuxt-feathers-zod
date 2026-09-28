@@ -155,6 +155,8 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
         ? { authEvents: NFZ_MODULE_CAPABILITIES.authEvents }
         : normalized === 'databases'
           ? { databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines }
+          : normalized === 'cache'
+            ? { cache: NFZ_MODULE_CAPABILITIES.cache }
         : normalized === 'client'
           ? { composables: NFZ_MODULE_CAPABILITIES.composables, helpers: NFZ_MODULE_CAPABILITIES.clientHelpers }
           : normalized === 'runtime'
@@ -167,6 +169,7 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
                 serviceKinds: NFZ_MODULE_CAPABILITIES.serviceKinds,
                 adapters: NFZ_MODULE_CAPABILITIES.adapters,
                 databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines,
+                cache: NFZ_MODULE_CAPABILITIES.cache,
                 authProviders: NFZ_MODULE_CAPABILITIES.authProviders,
                 serverLifecycle: NFZ_MODULE_CAPABILITIES.serverLifecycle,
               }
@@ -181,6 +184,7 @@ function printCapabilities(section: string, jsonOutput: boolean): void {
                 authEvents: NFZ_MODULE_CAPABILITIES.authEvents.length,
                 databaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines.length,
                 certifiedDatabaseEngines: NFZ_MODULE_CAPABILITIES.databaseEngines.filter(engine => engine.certification === 'certified').length,
+                cacheProviders: NFZ_MODULE_CAPABILITIES.cache.providers.length,
               }
 
   if (jsonOutput) {
@@ -198,7 +202,8 @@ NFZ services: ${NFZ_MODULE_CAPABILITIES.consoleServices.length}
 Client composables: ${NFZ_MODULE_CAPABILITIES.composables.length}
 Client helpers: ${NFZ_MODULE_CAPABILITIES.clientHelpers.length}
 Auth trace events: ${NFZ_MODULE_CAPABILITIES.authEvents.length}
-Database engines: ${NFZ_MODULE_CAPABILITIES.databaseEngines.filter(engine => engine.certification === 'certified').length}/${NFZ_MODULE_CAPABILITIES.databaseEngines.length} certified`)
+Database engines: ${NFZ_MODULE_CAPABILITIES.databaseEngines.filter(engine => engine.certification === 'certified').length}/${NFZ_MODULE_CAPABILITIES.databaseEngines.length} certified
+Native cache providers: ${NFZ_MODULE_CAPABILITIES.cache.providers.join(', ')}`)
     return
   }
 
@@ -954,7 +959,7 @@ export function createCliCommand() {
       description: 'Inspect the capabilities implemented by this module version',
     },
     args: {
-      section: { type: 'enum', options: ['summary', 'runtime', 'services', 'client', 'events', 'databases', 'all'], description: 'Capability section to display' },
+      section: { type: 'enum', options: ['summary', 'runtime', 'services', 'client', 'events', 'databases', 'cache', 'all'], description: 'Capability section to display' },
       json: { type: 'boolean', description: 'Print machine-readable JSON' },
     },
     run: ({ args }) => {

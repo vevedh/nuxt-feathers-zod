@@ -205,6 +205,8 @@ if ($StartDev) {
 }
 
 if ($Full) {
+  # Patch075: full certification must prove the distributed cache against both real engines.
+  Invoke-BunCommand @('run', 'test:cache:redis-valkey')
   Invoke-BunCommand @('run', 'release:check:registry')
   Invoke-BunCommand @('run', 'docs:build')
   Invoke-BunCommand @('run', 'docs:private:build')

@@ -58,7 +58,7 @@ const result = await messages.find({ query: { $limit: 10 } })
 
 `feathers.cache` is resolved only into `runtimeConfig._feathers.cache`; it is never copied into `runtimeConfig.public._feathers`. Browser code must not depend on server cache namespace/configuration/diagnostics.
 
-Patch073 r1 exposes only the `memory` provider. Redis credentials remain outside the native NFZ contract and, when an application uses Nitro/Unstorage, belong in private `runtimeConfig`.
+NFZ 6.9.0 Patch075 exposes native `memory` and `redis` providers. Redis/Valkey credentials stay server-only in `feathers.cache.redis.url` and must never be copied into `runtimeConfig.public`.
 
 ## Practical advice
 
@@ -67,4 +67,4 @@ Patch073 r1 exposes only the `memory` provider. Redis credentials remain outside
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

@@ -68,4 +68,4 @@ GET /mongo/:db/:collection/schema
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

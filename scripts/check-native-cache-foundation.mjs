@@ -20,20 +20,18 @@ function requireMatch(source, pattern, message) {
     problems.push(message)
 }
 
-if (pkg.version !== '6.8.0')
-  problems.push(`package version must be 6.8.0 for Patch073 r1 (found ${pkg.version})`)
-
 if (pkg.dependencies?.redis || pkg.dependencies?.ioredis || pkg.devDependencies?.redis || pkg.devDependencies?.ioredis)
-  problems.push('Patch073 r1 must not add a Redis client dependency')
+  problems.push('native memory cache foundation must not add a Redis client dependency')
 
 if (!pkg.exports?.['./server-cache'] || !pkg.typesVersions?.['*']?.['server-cache'])
   problems.push('package exports/typesVersions must expose ./server-cache')
 
-requireMatch(options, /export type NfzCacheProvider = 'memory'/, 'cache provider union must remain memory-only in r1')
+requireMatch(options, /export type NfzCacheProvider = 'memory' \| 'redis'/, 'cache provider contract must include memory and the Patch075 Redis/Valkey target')
 requireMatch(options, /defaultTtlMs:\s*60_000/, 'cache default TTL must remain explicit')
 requireMatch(options, /maxEntries:\s*1_000/, 'memory cache must have a bounded default entry count')
 requireMatch(options, /failOpen:\s*true/, 'cache must default to fail-open')
-requireMatch(options, /provider !== 'memory'/, 'cache option resolver must reject unimplemented providers')
+requireMatch(options, /provider === 'memory'/, 'cache option resolver must preserve the memory branch')
+requireMatch(options, /provider === 'redis'/, 'cache option resolver must validate the Redis/Valkey branch')
 requireMatch(moduleSource, /cache:\s*false/, 'module cache must be disabled by default')
 requireMatch(optionsIndex, /cache\?: ResolvedCacheOptions/, 'private runtime config must carry resolved cache settings')
 
@@ -72,4 +70,4 @@ if (problems.length) {
   process.exit(1)
 }
 
-console.log('[nuxt-feathers-zod] Native cache foundation contract passed: disabled-by-default, private memory provider, bounded TTL store, single-flight getOrSet, fail-open diagnostics and lifecycle integration.')
+console.log('[nuxt-feathers-zod] Native cache foundation contract passed: disabled-by-default memory baseline plus Patch075 Redis/Valkey configuration contract, bounded TTL, single-flight getOrSet, fail-open diagnostics and lifecycle integration.')

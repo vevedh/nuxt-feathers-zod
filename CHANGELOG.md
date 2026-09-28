@@ -1,3 +1,25 @@
+## 6.9.0 - 2026-09-27 - Patch075 native Redis/Valkey
+
+- r1 establishes provider-neutral cache contracts and private validated Redis/Valkey configuration.
+- The certified memory provider remains operational and backward-compatible.
+- r2 adds the native Redis/Valkey runtime and passed the same real-engine contract against Redis 8.2 and Valkey 8.1.10.
+- r3 promotes `memory` + `redis` capabilities, migrates the maintained DaisyUiKit example to the native provider, and aligns FR/EN documentation.
+- r4 makes `verify:windows` the canonical Full release gate and requires real Redis + Valkey evidence.
+- r5 makes distributed diagnostics keyspace-free (`entries: null`), removes the implicit Redis `SCAN` from diagnostics, and converges release-facing README/docs/example wording before publication.
+
+## 6.8.1 - 2026-09-19 - Patch074 cross-surface contract convergence
+- release-contract hardening: active feature guards now derive the current release dynamically instead of pinning historical Patch073/6.8.0 values; canonical Bun locks remain mandatory.
+
+### Fixed
+- align the Redis example with the native `feathers.cache` memory provider introduced in 6.8.0 while keeping Redis explicitly application-level through Nitro/Unstorage;
+- remove stale `server.framework`, `modulesDir`, `serveStaticPath` and `serveStaticDir` documentation and align the server reference with the actual `ServerOptions` contract;
+- align the maintained Quasar starter documentation with its real `auth.providers` configuration and the current certified release baseline;
+- complete `typesVersions` coverage for the public `capabilities` and `server-console-services` exports.
+
+### Added
+- expose native cache capabilities through `NFZ_MODULE_CAPABILITIES` and `capabilities --section cache`;
+- add a cross-surface contract guard covering cache documentation, starter configuration, server options and package export/type metadata.
+
 ## 6.8.0 — Patch073 r10
 
 ### Fixed

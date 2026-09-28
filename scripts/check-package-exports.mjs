@@ -23,6 +23,13 @@ for (const subpath of requiredExports) {
     problems.push(`package.json typesVersions must include ${subpath.slice(2)}`)
 }
 
+for (const [subpath, target] of Object.entries(exportsMap)) {
+  if (subpath === '.' || subpath.includes('*') || !target || typeof target !== 'object')
+    continue
+  if (typeof target.types === 'string' && !typesVersions[subpath.slice(2)])
+    problems.push(`package.json typesVersions must include every typed public export: ${subpath.slice(2)}`)
+}
+
 function checkFile(rel, label) {
   const abs = resolve(rootDir, rel)
   if (!existsSync(abs) || !statSync(abs).isFile())

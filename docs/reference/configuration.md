@@ -196,7 +196,7 @@ Elle devient une connexion nommée `default`. Ne combinez pas `database.mongo` e
 
 ## `cache` — fondation native 6.8.0
 
-Patch073 r1 introduit un cache NFZ **serveur uniquement**, désactivé par défaut. Le seul provider natif de cette première révision est `memory` ; Redis n'est pas encore un provider NFZ.
+Patch073 r1 introduit un cache NFZ **serveur uniquement**, désactivé par défaut. Les providers natifs sont `memory` et `redis`. Le provider `redis` cible Redis et Valkey avec le même contrat serveur.
 
 ```ts
 export default defineNuxtConfig({
@@ -237,7 +237,7 @@ const value = await cache?.getOrSet('dashboard:summary:v1', async () => {
 
 ### Redis en Patch073 r1
 
-Pour Redis, utilisez encore Nitro/Unstorage au niveau applicatif et gardez les secrets dans `runtimeConfig` privé. N'utilisez pas `provider: 'redis'` : le resolver 6.8.0 r1 le rejette explicitement jusqu'à la révision Redis native.
+Pour Redis ou Valkey, utilisez `cache.provider: 'redis'`, installez le peer optionnel `ioredis` et gardez `cache.redis.url` côté serveur. Les diagnostics ne doivent jamais exposer les credentials.
 
 Voir [Redis cache avec NFZ](/guide/redis-cache) pour le montage actuel, le TTL, l'invalidation et l'exemple DaisyUiKit complet.
 
@@ -340,4 +340,4 @@ Le module sépare :
 
 Ne dupliquez jamais une URL MongoDB avec identifiants ou un secret Keycloak dans `runtimeConfig.public`.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

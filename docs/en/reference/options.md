@@ -84,7 +84,7 @@ cache: {
 }
 ```
 
-`provider: 'redis'` is rejected in r1. Keep Redis on Nitro/Unstorage until the dedicated native-provider revision.
+`provider: 'redis'` enables the native distributed provider. Install `ioredis` in the application and keep `redis.url` server-only.
 
 ## `database.connections`
 
@@ -105,4 +105,4 @@ Named SQL connections resolve an explicit Knex client and driver before startup.
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->

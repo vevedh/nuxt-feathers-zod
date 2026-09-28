@@ -411,8 +411,14 @@ for (const fragment of [
     failures.push(`documentation build runner is missing ${fragment}`)
 }
 
-if (scripts['verify:windows'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Quick')
-  failures.push('verify:windows must execute the explicit quick Windows gate')
+if (scripts['verify:windows'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Full')
+  failures.push('verify:windows must execute the full Windows release gate')
+
+if (scripts['verify:windows:quick'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Quick')
+  failures.push('verify:windows:quick must execute the explicit quick Windows gate')
+
+if (scripts['verify:release:windows'] !== scripts['verify:windows'])
+  failures.push('verify:release:windows must remain an alias of the full verify:windows gate')
 
 if (scripts['verify:windows:skip-install'] !== 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows.ps1 -Quick -SkipInstall')
   failures.push('verify:windows:skip-install must reuse a verified dependency tree')
@@ -425,6 +431,9 @@ if (!verifyWindows.includes('node scripts/print-bun-executable.mjs'))
 
 if (!verifyWindows.includes('node scripts/install-windows.mjs --check') || !verifyWindows.includes('$SkipInstall'))
   failures.push('verify-windows.ps1 must support validated skip-install mode')
+
+if (!verifyWindows.includes("Invoke-BunCommand @('run', 'test:cache:redis-valkey')"))
+  failures.push('verify-windows.ps1 full gate must certify the cache against real Redis and Valkey engines')
 
 if (!verifyWindows.includes("sanity:docs-build-resilience"))
   failures.push('verify-windows.ps1 must run the documentation build resilience guard before VitePress builds')

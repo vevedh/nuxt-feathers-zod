@@ -60,4 +60,4 @@ Les images de cette documentation sont produites par les scénarios Playwright d
 
 Le playground utilise uniquement des identités et secrets de test. Ne recopiez jamais ces valeurs dans un environnement de production.
 
-<!-- release-version: 6.8.0 -->
+<!-- release-version: 6.9.0 -->
