@@ -174,8 +174,32 @@ async function provisionDockerMssql() {
       const logs = spawnSync('docker', ['logs', '--tail', '120', name], { encoding: 'utf8', timeout: 20_000 })
       const text = `${String(logs.stdout || '')}\n${String(logs.stderr || '')}`
       if (/SQL Server is now ready for client connections/i.test(text)) {
-        ready = true
-        break
+        const probe = spawnSync(process.execPath, ['mssql-readiness.mjs'], {
+          cwd: workspace,
+          encoding: 'utf8',
+          timeout: 10_000,
+          env: {
+            ...process.env,
+            NFZ_MSSQL_CERTIFICATION_CONNECTION_JSON: JSON.stringify({
+              server: '127.0.0.1',
+              port,
+              user: 'sa',
+              password,
+              database: 'master',
+              options: {
+                encrypt: true,
+                trustServerCertificate: true,
+                enableArithAbort: true,
+                lowerCaseGuids: true,
+                serverName: 'localhost',
+              },
+            }),
+          },
+        })
+        if (!probe.error && probe.status === 0) {
+          ready = true
+          break
+        }
       }
       await sleep(1_000)
     }
@@ -221,6 +245,25 @@ async function provisionDockerMssql() {
     throw error
   }
 }
+
+const readinessProbeSource = String.raw`
+import knex from 'knex'
+
+const connection = JSON.parse(process.env.NFZ_MSSQL_CERTIFICATION_CONNECTION_JSON || '{}')
+const client = knex({
+  client: 'mssql',
+  connection,
+  pool: { min: 0, max: 1 },
+  acquireConnectionTimeout: 5_000,
+})
+
+try {
+  await client.raw('SELECT 1 AS ready')
+}
+finally {
+  await client.destroy()
+}
+`
 
 const harnessSource = String.raw`
 import assert from 'node:assert/strict'
@@ -558,6 +601,7 @@ try {
   })
 
   await writeFile(resolve(workspace, 'package.json'), `${JSON.stringify(consumerPackage, null, 2)}\n`)
+  await writeFile(resolve(workspace, 'mssql-readiness.mjs'), readinessProbeSource)
   await writeFile(resolve(workspace, 'mssql-certification.mjs'), harnessSource)
 
   console.log(`[mssql-cert] Installing exact certification consumer for ${basename(candidate)}.`)

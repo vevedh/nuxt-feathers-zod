@@ -105,4 +105,4 @@ Named SQL connections resolve an explicit Knex client and driver before startup.
 
 Use private runtime configuration for database URLs and secrets. Do not serialize them into public configuration or generated source files.
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

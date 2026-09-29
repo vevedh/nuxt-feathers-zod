@@ -76,4 +76,4 @@ En 6.9.0 Patch075, `memory` et `redis` sont natifs. Les credentials Redis/Valkey
 - Versionne les fichiers générés importants et documente toute option non standard.
 - Teste un appel REST minimal avant de diagnostiquer le frontend.
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

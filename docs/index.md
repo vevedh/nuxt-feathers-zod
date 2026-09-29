@@ -82,4 +82,4 @@ Les captures sont générées depuis le playground après réussite des assertio
 - [Package npm](https://www.npmjs.com/package/nuxt-feathers-zod)
 - [Dépôt GitHub](https://github.com/vevedh/nuxt-feathers-zod)
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

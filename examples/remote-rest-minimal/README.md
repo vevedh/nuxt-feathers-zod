@@ -1,6 +1,6 @@
 # Minimal remote REST
 
-Exemple minimal pour consommer un backend Feathers existant avec **nuxt-feathers-zod 6.9.0**.
+Exemple minimal pour consommer un backend Feathers existant avec **nuxt-feathers-zod 6.9.1**.
 
 ```bash
 cp .env.example .env

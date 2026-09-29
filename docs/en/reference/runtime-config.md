@@ -67,4 +67,4 @@ NFZ 6.9.0 Patch075 exposes native `memory` and `redis` providers. Redis/Valkey c
 - Run `bunx nuxt-feathers-zod doctor` after structural changes.
 - Use `--dry` before write operations on an existing project.
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

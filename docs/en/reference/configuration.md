@@ -237,4 +237,4 @@ feathers: {
 
 Private values live under `runtimeConfig._feathers`. Client-safe values live under `runtimeConfig.public._feathers`. Never copy a credentialed MongoDB URL or Keycloak secret to public runtime configuration.
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

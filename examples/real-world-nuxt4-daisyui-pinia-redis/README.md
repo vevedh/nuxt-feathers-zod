@@ -1,8 +1,8 @@
 # Intégrer NFZ + Redis cache dans une vraie application Nuxt 4 + DaisyUiKit + Pinia
 
-Exemple source maintenu pour **nuxt-feathers-zod 6.9.0**. Il montre une application métier complète avec Nuxt 4, Vue 3, DaisyUiKit, **Tailwind CSS 4** (choisi ici parmi l'alternative UnoCSS/Tailwind), Pinia, MongoDB, FeathersJS v5 embedded, auth locale/JWT, RBAC `admin/member`, Redis et thèmes DaisyUI.
+Exemple source maintenu pour **nuxt-feathers-zod 6.9.1**. Il montre une application métier complète avec Nuxt 4, Vue 3, DaisyUiKit, **Tailwind CSS 4** (choisi ici parmi l'alternative UnoCSS/Tailwind), Pinia, MongoDB, FeathersJS v5 embedded, auth locale/JWT, RBAC `admin/member`, Redis et thèmes DaisyUI.
 
-> NFZ 6.9.0 utilise ici le provider natif `redis`. Le même runtime a passé le contrat réel contre Redis et Valkey ; `ioredis` reste un peer optionnel de NFZ et une dépendance directe de cet exemple.
+> NFZ 6.9.1 utilise ici le provider natif `redis`. Le même runtime a passé le contrat réel contre Redis et Valkey ; `ioredis` reste un peer optionnel de NFZ et une dépendance directe de cet exemple.
 
 ## Démarrage
 

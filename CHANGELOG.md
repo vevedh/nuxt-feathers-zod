@@ -1,3 +1,9 @@
+## 6.9.1 - 2026-09-29 - Patch075 r5b MSSQL certification readiness hardening
+
+- Harden the SQL Server 2025 release-certification readiness gate: container log readiness is now followed by an authenticated `sa`/`master` probe before the exact-candidate functional harness starts.
+- Keep the readiness probe bounded by the existing certification timeout and reuse the generated certification credentials without logging secrets.
+- Strengthen the MSSQL certification guard so a future regression to log-only readiness is rejected.
+- No NFZ runtime/API behavior change.
 ## 6.9.0 - 2026-09-27 - Patch075 native Redis/Valkey
 
 - r1 establishes provider-neutral cache contracts and private validated Redis/Valkey configuration.

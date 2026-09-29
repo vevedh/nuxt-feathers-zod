@@ -53,6 +53,14 @@ requireText(certification, 'ensureDockerImageAvailable(dockerImage)', 'MSSQL Doc
 if (certification.includes('mcr.microsoft.com/mssql/server:2025-GA-ubuntu'))
   problems.push('MSSQL certification must not use the unavailable 2025-GA-ubuntu tag')
 
+requireText(certification, "const readinessProbeSource = String.raw`", 'authenticated MSSQL readiness probe source')
+requireText(certification, "await client.raw('SELECT 1 AS ready')", 'authenticated MSSQL readiness query')
+requireText(certification, "spawnSync(process.execPath, ['mssql-readiness.mjs']", 'authenticated MSSQL readiness execution')
+requireText(certification, "if (!probe.error && probe.status === 0)", 'authenticated MSSQL readiness success gate')
+requireText(certification, "await writeFile(resolve(workspace, 'mssql-readiness.mjs'), readinessProbeSource)", 'authenticated MSSQL readiness probe materialization')
+requireText(certification, "database: 'master'", 'MSSQL readiness targets master database')
+if (certification.includes("if (/SQL Server is now ready for client connections/i.test(text)) {\n        ready = true"))
+  problems.push('MSSQL log readiness must not directly mark the container ready without an authenticated probe')
 requireText(certification, 'MSSQL_SA_PASSWORD', 'current SQL Server container password environment')
 requireText(certification, "'--env', 'MSSQL_SA_PASSWORD'", 'Docker password environment forwarding')
 requireText(certification, 'env: { ...process.env, MSSQL_SA_PASSWORD: password }', 'Docker child password environment')
@@ -148,5 +156,5 @@ if (problems.length) {
 
 console.log(
   '[nuxt-feathers-zod] MSSQL certification contract is aligned: exact candidate, SQL Server 2025, '
-  + 'canonical lowercase GUIDs, CRUD/auth/query/schema/index/rollback/lifecycle evidence, synchronized CLI docs and candidate-bound stamp.',
+  + 'authenticated sa/master readiness, canonical lowercase GUIDs, CRUD/auth/query/schema/index/rollback/lifecycle evidence, synchronized CLI docs and candidate-bound stamp.',
 )

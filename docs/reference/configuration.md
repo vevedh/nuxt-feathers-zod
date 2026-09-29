@@ -340,4 +340,4 @@ Le module sépare :
 
 Ne dupliquez jamais une URL MongoDB avec identifiants ou un secret Keycloak dans `runtimeConfig.public`.
 
-<!-- release-version: 6.9.0 -->
+<!-- release-version: 6.9.1 -->

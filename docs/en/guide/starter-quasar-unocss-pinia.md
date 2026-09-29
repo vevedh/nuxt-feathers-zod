@@ -7,7 +7,7 @@ The `nfz-quasar-unocss-pinia-starter` starter is the recommended main applicatio
 
 It formalizes a complete flow: **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod + MongoDB + local JWT auth + RBAC**.
 
-The audited working reference for NFZ release `6.9.0` is the maintained repository directory:
+The audited working reference for NFZ release `6.9.1` is the maintained repository directory:
 
 ```txt
 examples/nfz-quasar-unocss-pinia-starter
@@ -24,7 +24,7 @@ examples/nfz-quasar-unocss-pinia-starter
 The CLI can copy it with:
 
 ```bash
-bunx nuxt-feathers-zod@6.9.0 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
+bunx nuxt-feathers-zod@6.9.1 init starter --preset quasar-unocss-pinia-auth --dir nfz-starter
 cd nfz-starter
 bun install
 cp .env.example .env

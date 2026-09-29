@@ -1,6 +1,6 @@
 # NFZ Quasar UnoCSS Pinia Starter
 
-Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.9.0** avec MongoDB local prêt à l’emploi.
+Starter **Nuxt 4 + Quasar 2 + UnoCSS + Pinia + nuxt-feathers-zod 6.9.1** avec MongoDB local prêt à l’emploi.
 
 Baseline UI validée pour ce starter : **`nuxt-quasar-ui` 3.1.1 + Quasar 2.31.0**. La branche 3.x du module Quasar est utilisée avec Nuxt 4 ; la version 3.1.1 filtre les clés non identifiantes de l’import-map Quasar avant de générer les shims TypeScript.
 
@@ -55,25 +55,25 @@ bun run db:logs    # affiche les logs MongoDB
 bun run db:down    # arrête MongoDB
 ```
 
-## Dépendance NFZ 6.9.0
+## Dépendance NFZ 6.9.1
 
 Le `package.json` cible :
 
 ```json
-"nuxt-feathers-zod": "6.9.0"
+"nuxt-feathers-zod": "6.9.1"
 ```
 
-Si la version 6.9.0 n’est pas encore publiée sur npm, utilise ton tarball local :
+Si la version 6.9.1 n’est pas encore publiée sur npm, utilise ton tarball local :
 
 ```bash
-# depuis le dépôt nuxt-feathers-zod 6.9.0
+# depuis le dépôt nuxt-feathers-zod 6.9.1
 bun install
 bun run build
 npm pack
 
 # dans ce starter
 bun remove nuxt-feathers-zod
-bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.9.0.tgz
+bun add ../nuxt-feathers-zod/nuxt-feathers-zod-6.9.1.tgz
 ```
 
 ## Architecture
@@ -252,11 +252,11 @@ bun lint:fix
 bun build
 ```
 
-## Correctif `/messages` 6.9.0
+## Correctif `/messages` 6.9.1
 
 La page `/messages` utilise volontairement une couche d'accès centralisée (`useAdminFeathers`) plutôt que des appels directs `$api.service(...)` dans la page.
 
-Depuis `6.9.0`, cette couche injecte explicitement le JWT dans les appels Feathers protégés :
+Depuis `6.9.1`, cette couche injecte explicitement le JWT dans les appels Feathers protégés :
 
 ```ts
 headers: {
@@ -270,7 +270,7 @@ authentication: {
 
 Cela évite le cas où l'UI affiche une session active mais où l'appel REST Feathers reçoit une requête sans authentification exploitable. Les erreurs Feathers sont aussi normalisées pour éviter l'affichage `[object Object]`.
 
-## Patch 6.9.0 - Hydration / Quasar ripple cleanup
+## Patch 6.9.1 - Hydration / Quasar ripple cleanup
 
 - Ajout de `routeRules` `ssr:false` pour les pages privées `/dashboard`, `/messages` et `/session` afin d'éviter le mismatch SSR/client lors des redirections d'authentification côté session.
 - Désactivation globale du ripple Quasar (`quasar.config.ripple=false`) pour réduire les warnings navigateur `touchstart` non-passive liés aux effets tactiles.
