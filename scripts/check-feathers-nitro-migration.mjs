@@ -10,7 +10,7 @@ const appTemplate = read('src/runtime/templates/server/app.ts')
 const pluginTemplate = read('src/runtime/templates/server/plugin.ts')
 
 const expectedPackage = '@vevedh/feathers-nitro'
-const expectedVersion = '0.6.0'
+const expectedVersion = '0.6.2'
 const expectedNodeEngine = '^22.19.0 || ^24.11.0 || >=26.0.0'
 const expectedFeathersRange = '^5.0.49'
 const expectedNitroVersion = '2.13.4'

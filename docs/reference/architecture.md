@@ -102,4 +102,4 @@ feathers: {
 }
 ```
 
-<!-- release-version: 6.9.1 -->
+<!-- release-version: 6.9.2 -->

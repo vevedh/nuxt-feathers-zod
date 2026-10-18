@@ -63,4 +63,4 @@ bun run build
 
 Conserve `servicesDirs` comme source métier unique et le `loadOrder` standard. Les plugins restent réservés à l'infrastructure transversale.
 
-<!-- release-version: 6.9.1 -->
+<!-- release-version: 6.9.2 -->

@@ -11,7 +11,7 @@ const keycloakSsr = readJson('examples/nuxt4-keycloak-ldap-ssr-ref/package.json'
 const problems = []
 
 const FEATHERS_VERSION = '5.0.49'
-const FEATHERS_NITRO_VERSION = '0.6.0'
+const FEATHERS_NITRO_VERSION = '0.6.2'
 const NUXT_VERSION = '4.5.2'
 const VUE_VERSION = '3.5.42'
 const NUXT_TEST_UTILS_VERSION = '4.2.0'

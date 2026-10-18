@@ -56,4 +56,4 @@ bun run build
 bun run docs:build
 ```
 
-<!-- release-version: 6.9.1 -->
+<!-- release-version: 6.9.2 -->

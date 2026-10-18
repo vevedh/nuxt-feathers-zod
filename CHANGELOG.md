@@ -1,9 +1,18 @@
+## 6.9.2 - 2026-10-18 - Patch076 r1 Feathers Nitro 0.6.2 compatibility
+
+### Changed
+
+- Updated `@vevedh/feathers-nitro` from `0.6.0` to `0.6.2`.
+- Aligned Feathers Nitro compatibility and dependency convergence checks.
+- Preserved existing FeathersJS v5 integration, runtime APIs and database provider contracts.
+
 ## 6.9.1 - 2026-09-29 - Patch075 r5b MSSQL certification readiness hardening
 
 - Harden the SQL Server 2025 release-certification readiness gate: container log readiness is now followed by an authenticated `sa`/`master` probe before the exact-candidate functional harness starts.
 - Keep the readiness probe bounded by the existing certification timeout and reuse the generated certification credentials without logging secrets.
 - Strengthen the MSSQL certification guard so a future regression to log-only readiness is rejected.
 - No NFZ runtime/API behavior change.
+
 ## 6.9.0 - 2026-09-27 - Patch075 native Redis/Valkey
 
 - r1 establishes provider-neutral cache contracts and private validated Redis/Valkey configuration.
@@ -14,21 +23,25 @@
 - r5 makes distributed diagnostics keyspace-free (`entries: null`), removes the implicit Redis `SCAN` from diagnostics, and converges release-facing README/docs/example wording before publication.
 
 ## 6.8.1 - 2026-09-19 - Patch074 cross-surface contract convergence
+
 - release-contract hardening: active feature guards now derive the current release dynamically instead of pinning historical Patch073/6.8.0 values; canonical Bun locks remain mandatory.
 
 ### Fixed
+
 - align the Redis example with the native `feathers.cache` memory provider introduced in 6.8.0 while keeping Redis explicitly application-level through Nitro/Unstorage;
 - remove stale `server.framework`, `modulesDir`, `serveStaticPath` and `serveStaticDir` documentation and align the server reference with the actual `ServerOptions` contract;
 - align the maintained Quasar starter documentation with its real `auth.providers` configuration and the current certified release baseline;
 - complete `typesVersions` coverage for the public `capabilities` and `server-console-services` exports.
 
 ### Added
+
 - expose native cache capabilities through `NFZ_MODULE_CAPABILITIES` and `capabilities --section cache`;
 - add a cross-surface contract guard covering cache documentation, starter configuration, server options and package export/type metadata.
 
 ## 6.8.0 — Patch073 r10
 
 ### Fixed
+
 - Generalize the Windows installer non-destructive reconciliation path to every existing stale or incomplete `node_modules` tree, not only legacy schema-v2 install state. Dependency-manifest or lockfile changes now get one in-place frozen Bun reconciliation before any destructive cleanup.
 - Fail closed on a frozen-lockfile mismatch before deleting `node_modules`, with explicit lock-resynchronization guidance, because removing installed files cannot repair an inconsistent lockfile.
 - Preserve `node_modules` when Windows reports a file lock during in-place reconciliation instead of immediately invoking the destructive cleanup path that would hit the same locked native binary.
@@ -36,36 +49,43 @@
 ## 6.8.0 — Patch073 r9
 
 ### Removed
+
 - Remove the unused maintainer-only `@gabortorma/mwm@0.9.3` dependency. NFZ does not invoke its CLI from source, tests, documentation, workflows or release scripts.
 
 ### Added
+
 - Add `sanity:mwm-removal` and a Bun 1.3.14 lock canonicalization helper so the removal is enforced by release/verify gates without hand-editing `bun.lock`.
 
 ## 6.8.0 — Patch073 r8
 
 ### Fixed
+
 - Preserve the historical lint policy explicitly after the official Antfu/Nuxt ESLint provider migration: TypeScript method signatures remain in `method` form, `no-console` stays disabled for existing operational diagnostics, and `style/max-len` remains a 125-column warning.
 - Extend the ESLint provider guard so future official-provider upgrades cannot silently reintroduce those policy regressions.
 
 ## 6.8.0 — Patch073 r7
 
 ### Changed
+
 - Replace `@gabortorma/nuxt-eslint-layer` with the official `@nuxt/eslint@1.7.0` integration in the playground; the version is intentionally the same official Nuxt ESLint version that the removed layer already used transitively.
 - Compose the generated Nuxt project-aware flat config with the direct official Antfu preset (`standalone: false`, `autoInit: false`, checker disabled), remove the duplicate playground ESLint config, and keep the playground's prior effective `@antfu/eslint-config@4.18.0` / ESLint `9.31.0` baseline.
 - Add `eslint:official:sync-locks`, which uses the certified Bun 1.3.14 runtime to regenerate and frozen-verify both root and playground `bun.lock` files instead of hand-editing dependency graphs.
 
 ### Fixed
+
 - Make `sanity:eslint-provider` fail closed on any remaining `@gabortorma/antfu-eslint-config` or `@gabortorma/nuxt-eslint-layer` occurrence in manifests, configs or canonical lockfiles, while exposing a source-only preflight before lock synchronization.
 
 ## 6.8.0 — Patch073 r6
 
 ### Fixed
+
 - Reconcile `bun.lock` after the direct migration from `@gabortorma/antfu-eslint-config` to `@antfu/eslint-config@3.7.1`: remove the 114 package records that became orphaned when the root wrapper was removed, while preserving the still-required transitive wrapper isolated under `@gabortorma/nuxt-eslint-layer`.
 - Extend `sanity:eslint-provider` to verify the root lockfile workspace and reject the stale root-wrapper lock subtree, preventing a handoff where `bun install --frozen-lockfile` would rewrite the lockfile.
 
 ## 6.8.0 — Patch073 r5
 
 ### Changed
+
 - Replace the root and playground direct ESLint preset import/dependency `@gabortorma/antfu-eslint-config` with the official `@antfu/eslint-config` package.
 - Pin the first migration step to `@antfu/eslint-config@3.7.1`, matching the official preset version already used underneath the previous wrapper, so provider migration is separated from the later major preset upgrade.
 - Add `sanity:eslint-provider` to prevent direct regression to the wrapper while keeping the existing `@gabortorma/nuxt-eslint-layer` compatibility layer isolated for a later dedicated Nuxt ESLint migration.
@@ -73,21 +93,25 @@
 ## 6.8.0 - 2026-09-18 - Native cache foundation and memory runtime
 
 ### Added
+
 - add an opt-in, server-only `feathers.cache` foundation with typed `memory` configuration, namespaced keys, bounded entries, TTLs, fail-open behavior and redacted diagnostics; the default remains disabled;
 - add the public `nuxt-feathers-zod/server-cache` server subpath with `NfzCacheStore`, the native memory store and high-level `get`/`set`/`remove`/`clear`/`has`/`getOrSet` APIs;
 - add single-flight `getOrSet` behavior so concurrent misses for one key share one producer execution;
 - add focused option/runtime tests and the dependency-free `sanity:cache-foundation` contract guard.
 
 ### Fixed
+
 - recover interrupted Windows dependency cleanup non-destructively: any legacy schema-v2 install state now receives one frozen in-place Bun reconciliation before `node_modules` deletion, even when the previous cleanup already removed part of the tree; `--force` remains explicitly destructive and failed reconciliation still falls back to the existing clean/retry/rescue path;
 - make Windows dependency reuse depend on dependency-resolution inputs rather than the entire root `package.json`: version/scripts/exports-only changes no longer force a destructive `node_modules` reinstall; migrate verified schema-v2 install state through one frozen, non-destructive Bun reconciliation before any cleanup, then persist schema v3 with dependency-manifest, lockfile and `.npmrc` fingerprints;
 - align the Patch073 cache foundation with the repository ESLint contract: simplify cache regexes, sort cache exports, mark Promise-returning cache callbacks `async`, remove an unnecessary iterator assertion and expand test `if` statements to Antfu style; no cache API/runtime semantic change.
 
 ### Changed
+
 - initialize enabled native cache infrastructure before authentication/database setup and close it during NFZ runtime teardown;
 - document the Patch073 r1 boundary in FR/EN: native memory caching is available in 6.8.0, while Redis remains an application-level Nitro/Unstorage integration until a later Patch073 revision.
 
 ### Security
+
 - keep all cache configuration private to server runtime config; no cache settings, keys or values are exposed through `runtimeConfig.public`;
 - reject undefined cache values and unsafe key/namespace formats; diagnostics expose counters/configuration only, never cached keys or values;
 - protected or tenant-sensitive cache reads remain the application's responsibility and must occur after the relevant authentication/authorization context is established.
@@ -95,6 +119,7 @@
 ## 6.7.51 - 2026-09-15 - Maintenance-debt observability and docs bundle measurement
 
 ### Fixed
+
 - allow the documentation bundle observability guard to run in a public GitHub checkout where intentionally ignored `docs-private/` is absent, while still enforcing the same Vite/Node warning policy whenever private docs are present.
 - isolate synthetic release-tag regression scenarios from ambient GitHub Actions branch variables so `sanity:release-git-sync` behaves deterministically on `push` CI while the production publication guard remains fail-closed and unchanged.
 - finish Vue lint convergence for the maintained DaisyUiKit/Redis example by replacing an all-static `:class` binding with `class` and aligning DaisyUiKit `is` ordering around `v-if`/`v-else`; no NFZ runtime/API/dependency change.
@@ -103,12 +128,14 @@
 - keep documentation resilience fixtures dependency-complete after post-build bundle reporting was introduced: copy `report-docs-bundle.mjs` alongside `run-docs-build.mjs` so isolated-rescue and hung-build smokes exercise the real runner contract instead of failing with `MODULE_NOT_FOUND`.
 
 ### Changed
+
 - promote the certified 6.7.50 / Patch071 r7 artifact SHA `a826f8fc0e14d8f6df7d1ce3c924721cf8b28912e55ff77b0d739a9e88a4fa22` as the baseline for the next maintenance cycle;
 - keep the certified `better-sqlite3@12.11.1` / public `^11 || ^12` line fail-closed until the v13 Windows/npm native-install path is proven;
 - keep transitive `uuid@8` and `glob@10` debt explicit without unsafe root major overrides;
 - classify Node `DEP0155` as visible upstream Nuxt/Nitro/Vue packaging debt rather than suppressing deprecation output.
 
 ### Added
+
 - document Redis cache integration explicitly as a Nitro/Unstorage application concern in 6.7.51, including private credentials, TTL, invalidation, RBAC-sensitive cache guidance and FR/EN configuration references;
 - add the maintained source example `examples/real-world-nuxt4-daisyui-pinia-redis` with Nuxt 4, DaisyUiKit 5.2.7, Tailwind CSS 4, Pinia, MongoDB, embedded FeathersJS v5, local/JWT auth, `admin/member` RBAC, theme switching and a protected Redis-cached dashboard;
 - extend maintained-example and release-metadata guards so the new example remains indexed and NFZ-version aligned.
@@ -119,6 +146,7 @@
 ## 6.7.50 - 2026-09-15 - Release engineering maintenance and safe candidate resume
 
 ### Fixed
+
 - scope exact-candidate database fixture installation to the database proof itself: use Bun with `--omit=peer`, `copyfile`, hoisted linking and bounded network backoff so PostgreSQL/MySQL/MariaDB/SQLite/MSSQL/matrix no longer install a full Nuxt application graph; keep the separate clean npm consumer as the Nuxt/npm peer-contract gate;
 - contain the npm 10.9.3 Arborist `#loadPeerSet` / `edgesOut` crash in exact-candidate fixtures by explicitly pinning Nuxt 4.5.2, the certified Vite/Rolldown/Vue/TypeScript platform and the complete FeathersJS 5.0.49 family before invoking fixture-scoped `--legacy-peer-deps`; keep published peer ranges and runtime semantics unchanged;
 - make exact-candidate npm consumer installation resilient and deterministic on Windows: shared 15-minute timeout, 2 bounded attempts, clean retry state, `--prefer-offline`, exact Nuxt 4.5.2 peer satisfaction, and inherited Vite 8.2.2 / Rolldown 1.2.4 / Vue 3.5.42 root overrides across PostgreSQL, MySQL/MariaDB, SQLite, MSSQL, database-matrix and the clean tarball consumer;
@@ -128,6 +156,7 @@
 - guard both regressions in the Windows tooling and full release regression sentinels.
 
 ### Changed
+
 - preflight Docker Desktop/Engine at the start of the full Windows release path, before source tests, docs and browser gates;
 - add `verify:release:windows:resume` to continue validation of an existing immutable candidate while reusing only SHA-matching validation stamps;
 - add `release:candidate:status` for candidate SHA and stamp visibility;
@@ -136,17 +165,20 @@
 - document FR/EN Docker preflight and safe candidate recovery semantics.
 
 ### Baseline
+
 - promote 6.7.49 / Patch070 r6 as the certified baseline with immutable candidate/final SHA-256 `ebb76e3113c501ea467998c2e42977f454632af385e96c37ee973bb8c3a468a5`;
 - Patch070 closes the database portability train 061–070.
 
 ## 6.7.49 — Patch070 r6
 
 ### Fixed
+
 - Make the dependency-free documentation resilience success/reuse fixtures use a 10-second bounded VitePress deadline instead of 2 seconds, while preserving the dedicated 600 ms hung-build timeout proof; this removes a Windows scheduling/AV false positive without changing production docs-build limits or runtime behavior.
 
 ## 6.7.49 — Patch070 r5
 
 ### Fixed
+
 - Keep the cross-database exact-candidate harness on published package surfaces by replacing its invalid `resolveDataBaseOptions` import with the public database provider descriptor API.
 - Add an exact-candidate package-surface smoke before native rebuilds and Docker startup so missing `./options` or `./server-database` exports fail immediately.
 - Harden the database-matrix guard against importing internal option resolvers from public subpaths; no NFZ runtime API is broadened.
@@ -154,6 +186,7 @@
 ## 6.7.49 — Patch070 r4
 
 ### Fixed
+
 - Preflight the cross-database MongoDB/PostgreSQL Docker images with explicit bounded pulls before container startup, avoiding false `docker run` `ETIMEDOUT` failures during implicit image download.
 - Document the actual immutable order `MSSQL -> database-matrix -> starter` and expose matrix Docker image overrides in `.env.release.example`.
 - Replace the stale MSSQL `2025-GA-ubuntu` release-env example with the certified `2025-CU8-ubuntu-22.04` pin.
@@ -161,6 +194,7 @@
 ## 6.7.49 — Patch070 r3
 
 ### Fixed
+
 - Kept generated FR/EN CLI source-of-truth prose synchronized with the public database-engine capability matrix.
 - Extended the database certification matrix guard to cover the CLI reference renderer and all four generated CLI documentation surfaces.
 - Preserved fail-closed `sanity:project-coherence` instead of auto-rewriting stale tracked documentation during install.
@@ -897,7 +931,6 @@
 - Restored minimal reference indexes and session-auth Pinia pages referenced by the VitePress navigation.
 - Updated the README, release metadata and manual service guide to stop documenting legacy `public.feathers` reads.
 
-
 ## 6.5.22 - Runtime config and Builder API alignment
 
 - Fixed server/runtime consistency by reading internal configuration from `runtimeConfig._feathers` instead of legacy `runtimeConfig.feathers` fallbacks.
@@ -921,14 +954,12 @@
 - Added FR/EN documentation for the simplified session-auth flow and migration from Feathers-Pinia.
 - Removed `feathers-pinia` from package and playground dependencies.
 
-
 ## 6.5.20 - Preset preview typecheck fix
 
 - Corrige l'erreur TypeScript `TS2352` dans `src/runtime/server/api/nfz/presets/preview.post.ts` détectée par `bun verify:all` pendant `bun run typecheck`.
 - Convertit explicitement le résultat typé `PresetPlan` via `unknown` avant destructuration comme `Record<string, unknown>`.
 - Préserve le contrat API existant de la preview des presets : suppression de `ok` depuis le plan interne puis retour `{ ...payload, ok: true }`.
 - Documente le diagnostic, le correctif et la règle de maintenance associée.
-
 
 ## 6.5.19 - Lint scratch-file guard
 
@@ -952,7 +983,6 @@
 - Corrige `scripts/check-docs-frontmatter.mjs` pour ne plus analyser `docs/node_modules/**` ni les répertoires de cache/build VitePress.
 - Aligne `verify:sanity` avec le comportement attendu après `bun install` : seuls les fichiers Markdown maintenus par le projet sont contrôlés.
 - Met à jour les notes de maintenance avec l’analyse post-`verify:all`, le diagnostic et la règle de maintenance associée.
-
 
 ## 6.5.16
 
@@ -979,8 +1009,6 @@
 - fix client runtime: remove browser static imports of `@feathersjs/feathers`, `@feathersjs/rest-client`, and `@feathersjs/authentication-client` from the generated Nuxt client path.
 - add a native NFZ client shell for tarball installs under Nuxt 4.1.x, avoiding raw CommonJS `exports` in the browser.
 - add native REST/auth client templates compatible with generated `.shared.ts` service registrations.
-
-
 - Fixed the remaining browser ESM/CJS mismatch that appears when NFZ is consumed as a packed tarball instead of a local file dependency.
 - Added nested Vite optimizer entries such as `nuxt-feathers-zod > @feathersjs/feathers` so tarball-installed Feathers CommonJS packages are pre-bundled before browser execution.
 - Added equivalent nested optimizer entries for `feathers-pinia > @feathersjs/*`, but only when `feathers.client.pinia` is explicitly enabled.
@@ -1015,7 +1043,6 @@
 - Always add Vite interop hints for Feathers core client packages when the NFZ client layer is enabled; Feathers-Pinia hints remain opt-in.
 - Addresses: `@feathersjs/feathers/lib/index.js does not provide an export named 'feathers'` from `createFeathersClient.js`.
 
-
 ## 6.5.4 - Feathers-Pinia optional runtime split
 
 - Keeps Feathers-Pinia fully opt-in through `feathers.client.pinia`.
@@ -1040,17 +1067,20 @@
 - Declare `@feathersjs/commons` as a direct dependency because `feathers-pinia` expects it as a Feathers peer dependency.
 
 ## 6.5.0
+
 - fix `cli:smoke` doctor expectations to match the current embedded auth defaults and divergent field mapping output.
 - stabilize E2E fixtures by aligning embedded auth setup with the already stable absolute-path pattern used by the basic fixture.
 - keep the repository on the release-hardened path for npm/GitHub publication after the validated 6.4.138 line.
 
 ## 6.4.138
+
 - promote the previously validated 6.4.137 release candidate to a stable 6.4.138 release line.
 - stabilize release validation workflow for community publication (typecheck, e2e, tarball smoke, docs build/preview).
 - serialize E2E suites in Vitest to reduce flaky startup/port timeout failures on CI and Windows.
 - narrow strict ESLint scope temporarily so release-critical CI checks stay green while preserving build, packaging, E2E and docs coverage.
 
 ## 6.4.137
+
 - npm metadata aligned for Nuxt community-module submission (`repository`, `homepage`, `bugs`, `keywords`, `engines`, `publishConfig`).
 - README / README_fr wording softened to position NFZ as a Nuxt module for FeathersJS rather than an “official Nuxt 4 module”.
 - added repository-local draft files for the future `nuxt/modules` listing issue and npm metadata notes.
@@ -1061,10 +1091,12 @@
 - Mongo management auth options now expose `authStrategies` (default `['jwt']`) to control that bridge explicitly.
 - Generated Mongo admin hooks now reuse the resolved auth options consistently per mounted service.
 
-
 ## 6.4.135
+
 - Fix generated server app template syntax in `src/runtime/templates/server/app.ts` so playground/dev build no longer fails with `Unexpected "const"` in `.nuxt/feathers/server/app.ts`.
+
 ## 6.4.132
+
 - Mongo admin embedded runtime now uses `app.get('mongoPath')` as the single source of truth for service mounting.
 - `configureFeathersInfrastructure()` normalizes and seeds `mongoPath`; `mongodb.ts` only falls back to `management.basePath` once when no runtime value exists.
 - Added regression coverage for the single-source `mongoPath` contract.
@@ -1077,6 +1109,7 @@
 - fix(mongodb): align default resolved Mongo admin auth flags with `management.enabled` when auth config is omitted
 
 ## 6.4.130
+
 - fix(client/plugin): avoid referencing `piniaClient` outside `defineNuxtPlugin()` scope in remote dev logging.
 - fix(auth-runtime): stop mutating `state.ready` inside `reAuthenticate()` and guard server-side `setSession()` / `synchronizeKeycloakSession()` against shared SSR state pollution.
 - fix(auth-local): align default local auth fields with generated auth services by using `email/password` instead of `userId/password`.
@@ -1088,8 +1121,8 @@
 - Restore deterministic `transport: 'auto'` semantics: embedded browser prefers REST first; remote prefers Socket.IO when available, then falls back to REST.
 - Add regression coverage for the client connection template.
 
-
 ## 6.4.128
+
 - Mongo admin template: audit logger now resolves `management.auth.userProperty` instead of hardcoding `params.user`.
 - Mongo admin docs clarify `mongodbClient` (`Promise<Db>`), `mongodbDb`, and `mongodbConnection`.
 - Added template regression coverage for audit/auth alignment.
@@ -1100,29 +1133,34 @@
 - auth runtime: `getAuthorizationHeader()` now performs a last-mile token recovery before protected REST calls
 
 ## 6.4.126
+
 - safer client transport resolution: embedded browser auto mode now prefers REST; remote auto keeps Socket.IO preference when available and falls back to REST
 - remote client plugin no longer forces `socketio` when remote transport is omitted; it preserves `auto`
 - REST transport now stays enabled by default unless the app explicitly sets `rest: false`, which avoids accidental Socket.IO-only browser clients
 - added regression coverage for client connection template and updated transport docs
 
 ## 6.4.125
+
 - Auth runtime now treats startup `reAuthenticate()` with no stored token as an anonymous state instead of an error state.
 - Added `reauth-skipped` auth trace events and removed the stale-token startup fallback that could previously mark a session as authenticated after failed reauth.
 - Remote client bootstrap now avoids classifying missing-token startup as an auth error, keeping the unified runtime state coherent across embedded and remote modes.
 - Updated FR/EN auth runtime + playground docs to explain `anonymous` / `tokenSource = none` on first load, and added regression coverage for missing-token detection.
 
 ## 6.4.124
+
 - CLI/docs sync pass: release metadata now aligns on 6.4.124 across README and CLI docs.
 - `doctor` now reports embedded local auth defaults, resolved field mapping, and a Feathers-compatible local payload example.
 - `doctor` warns when request fields and entity fields diverge for local auth, pointing consumer UIs to `buildLocalAuthPayload()` / `runtimeConfig.public._feathers.auth.local`.
 - `scripts/cli-smoke.ts` now includes a doctor/auth smoke scenario.
 
 ## 6.4.123
+
 - Fixed the embedded server authentication template to inject the resolved Feathers auth config with `app.set('authentication', authOptions)` before creating `new AuthenticationService(app, 'authentication')`.
 - Added a regression test covering the generated authentication server template so the invalid third-argument constructor usage does not reappear.
 - Updated README + FR/EN auth docs to clarify that the public local auth field metadata is now honored end-to-end by the Feathers server runtime.
 
 ## 6.4.122
+
 - Exposed embedded local auth field metadata in `runtimeConfig.public._feathers.auth.local` (`usernameField`, `passwordField`, `entityUsernameField`, `entityPasswordField`).
 - Added `buildLocalAuthPayload()` to `nuxt-feathers-zod/auth-utils` so consumer login UIs can build the correct embedded local auth payload from runtime metadata.
 - `useAuthStore().userId` now falls back to `user.userId` / `user.email` before `id` / `_id`.
@@ -1131,6 +1169,7 @@
 ## 6.4.102
 
 ## 6.4.103
+
 - Fixed embedded Mongo management public base path resolution. In embedded mode, client tooling now prefixes the Mongo management base path with the embedded REST path, so `/feathers` + `/mongo` becomes `/feathers/mongo` and avoids broken requests/warnings to `/mongo/...`.
 - playground: ajout de `/auth-runtime` pour diagnostiquer le runtime auth unifié et lire la trace récente des événements auth
 - playground: page `/mongo` alignée sur `useProtectedPage()` et `useMongoManagementClient()`
@@ -1150,6 +1189,7 @@
 ## 6.4.99
 
 ### Stabilization
+
 - replace internal runtime self-imports (`nuxt-feathers-zod/client`) with relative imports inside `src/runtime/composables/*`
 - add `scripts/check-internal-self-imports.mjs` to prevent forbidden package self-imports from reappearing outside template/runtime entrypoint boundaries
 - wire `sanity:internal-imports` into `prepack`, `prepare`, and `release:check`
@@ -1166,7 +1206,6 @@
 - expose safe public runtime metadata for Mongo management basePath and routes
 - align docs FR/EN for protected runtime tools and embedded Mongo management
 
-
 ## 6.4.93
 
 - auth runtime phase 2: add `useAuthenticatedRequest()` and `useProtectedService()`
@@ -1179,7 +1218,6 @@
 - positionnement produit clarifié face à `@nuxtjs/supabase` (README + docs)
 - ajout d’une roadmap publique NFZ vNext orientée DX/auth/builder/diagnostics
 - ajout des journaux techniques et du suivi de patch nécessaires aux prochaines itérations
-
 
 ## 6.4.45
 
@@ -1196,11 +1234,13 @@
 - DevTools: icon route now varies on `Sec-CH-Prefers-Color-Scheme` and iframe theme sync with parent remains enabled by default.
 
 ## 6.4.33
+
 - remote + Keycloak auth sync hardening: the Keycloak plugin no longer marks Pinia auth as authenticated when Feathers `authenticate()` actually failed.
 - remote client bootstrap now mirrors successful `authenticate()` / `reAuthenticate()` results into the Pinia auth store so Feathers session state is visible immediately in remote mode.
 - auth token extraction now accepts `accessToken`, `access_token`, and `token` (including nested `authentication.*` variants) for better IdP/backend interoperability.
 
 ## 6.4.31
+
 - Fixed NFZ DevTools icon routing by registering `/__nfz-devtools-icon.png` before the iframe route `/__nfz-devtools` to avoid route capture in consumer apps.
 - Kept parent theme auto-sync logic for the NFZ DevTools iframe.
 
@@ -1216,15 +1256,15 @@
 - Removed fragile direct spawn of bun.cmd that was failing with spawnSync EINVAL on Node 22 / Windows.
 - Kept dist/cli/package.json generation after successful bundle.
 
-
 ## v6.4.17
+
 - Fixed template-string escaping regressions in `src/cli/core.ts` and `src/runtime/templates/client/plugin.ts`.
 - Restored build/typecheck compatibility for generated Keycloak route middleware and Pinia warning fallback message.
 - Updated `package.json` version to `6.4.17`.
-
 - v6.4.16: docs add clear explanation/examples for plugin, server-module, module, client-module, hook, policy CLI targets.
 
 ## v6.4.15
+
 - client remote/runtime: when `feathers.client.pinia` is enabled but `nuxtApp.$pinia` is missing, log a clear warning and fall back to the raw Feathers client for `$api` instead of crashing in `createPiniaClient`.
 
 ## v6.4.31
@@ -1249,7 +1289,6 @@
 
 - Fixed CLI inline help for `add middleware <name>` so all supported targets are shown, including `route`, `client-module`, `hook`, and `policy`.
 - Synced the README and technical reference with the new route middleware generator example `auth-keycloak`.
-
 
 ## v6.4.9
 
@@ -1286,30 +1325,32 @@
 - Stopped aliasing deep imports like `js-sha256/src/sha256.js`, which previously caused Vite/esbuild to rewrite the shim import into an invalid local path in consumer Nuxt 4 apps.
 - Kept the runtime shim approach for `keycloak-js`, while making the package safer for downstream apps.
 
-
 ## v6.4.4
 
 ### Fixed
+
 - Fixed the Keycloak `js-sha256` compatibility shim for consumer Nuxt 4 apps by importing from `js-sha256/src/sha256.js` and exposing a safe default export without alias recursion.
 - Fixed consumer dev startup crashes caused by the previous shim implementation (`No matching export ... for import "sha256"`, followed by esbuild `EPIPE` during dependency optimization).
 
 ## v6.4.2
 
 ### Fixed
+
 - Fixed TypeScript narrowing regression in `src/cli/core.ts` for remote patch generation.
 - Fixed broken multiline string in `test/cli.spec.ts` so the CLI test suite parses correctly again.
 - Finalized 6.4.x release validation for keycloak shim and remote CLI patching.
 
-
 ## v6.4.1
 
 ### Fixed
+
 - Added an automatic Vite/Nuxt alias for `js-sha256` when Keycloak SSO is enabled so consumer Nuxt 4 apps no longer crash in the browser on `keycloak-js` default-import interop.
 - Added `keycloak-js` and `js-sha256` to Vite optimizeDeps when Keycloak is enabled.
 
 ## v6.4.0 - 2026-03-17
 
 ### Fixed
+
 - Fixed remote CLI patching for successive commands in consumer apps.
 - Fixed `init remote`, `remote auth keycloak`, and `add remote-service` merges so `nuxt.config.ts` stays valid TypeScript.
 - Fixed duplicate transport emission like `rest: rest:` / `websocket: websocket:`.
@@ -1317,60 +1358,70 @@
 - Fixed accidental insertion of top-level `auth: false` during remote config patching.
 
 ### Changed
+
 - Hardened remote `feathers` config regeneration to rebuild nested `client.remote`, `keycloak`, and `transports` blocks safely.
 - Added CLI regression coverage for chained remote configuration commands.
 
 ## v6.3.9 - 2026-03-16
 
 ### Fixed
+
 - Fixed published package export maps so consumer Nuxt 4 applications resolve NFZ builtin helpers and server modules through `dist/` instead of `src/`.
 - Fixed builtin Express/Koa server module resolution to prefer packaged `dist/runtime/server/modules/...` entries with a local-source fallback only for repository development.
 
 ### Changed
+
 - Updated release metadata, README, changelog, and public docs for the official `6.3.9` publication.
 - Kept the published CLI binaries `nuxt-feathers-zod` and `nfz` aligned with the built `dist/cli/index.mjs` entry.
 
 ## v6.3.8
+
 - fix(exports): published package exports now point to dist/ for server, client, auth-utils, config-utils, options, zod helpers, and builtin Express/Koa server modules; builtin server module resolution now prefers dist/ with source fallback for local repo development.
- - 2026-03-16
+- 2026-03-16
 
 ### Fixed
+
 - Fixed published CLI execution so `bunx nuxt-feathers-zod --help` works in consumer Nuxt 4 applications.
 - Fixed `runCli()` to support execution without explicit options and default safely to `process.cwd()`.
 - Fixed the built CLI entrypoint by removing the invalid `handleCliError` import from `src/cli/bin.ts`.
 
 ### Added
+
 - Added npm binary alias `nfz` so the CLI can also be executed with `bunx nfz --help`.
 
 ### Changed
+
 - Updated release metadata and README references from `6.3.7` to `6.3.8`.
 - Updated package publication settings to include the built CLI and top-level release documents.
-
-
 
 ## v6.4.1
 
 ### Fixed
+
 - Added an automatic Vite/Nuxt alias for `js-sha256` when Keycloak SSO is enabled so consumer Nuxt 4 apps no longer crash in the browser on `keycloak-js` default-import interop.
 - Added `keycloak-js` and `js-sha256` to Vite optimizeDeps when Keycloak is enabled.
 
 ## v6.3.7 - 2026-03-16
 
 ### Fixed
+
 - Fixed npm/Bun consumer CLI packaging so `bunx nuxt-feathers-zod --help` no longer executes `src/cli/index.ts` from the published package.
 - Published CLI now points to a built artifact under `dist/cli/index.mjs`.
 - Added CLI build step to `prepare` and `prepack`.
 
 ### Tests
+
 - Added packaging assertions for the published CLI `bin` target.
 
 ## 6.3.6
 
 ### Changed
+
 - Updated the official release metadata and documentation targets from 6.3.5 to 6.3.6.
 - Carried forward the validated OSS release base for publication, including embedded Mongo management, expanded CLI coverage, Bun/VitePress docs build fixes, and NFZ DevTools parent-theme synchronization by default.
 
 ### Validation
+
 - `bun install` OK
 - `bun run module:prepare` OK
 - `bun run module:build` OK
@@ -1393,30 +1444,32 @@
 - Prevents Vue Router warnings caused by invalid CSS selector hashes after `check-sso` redirects.
 
 ## v6.4.31
+
 - Fix CLI build regression in renderAuthKeycloakRouteMiddleware by replacing an invalid nested template literal with string concatenation (`window.location.pathname + window.location.search`).
 - Keep package.json version in sync.
 
 ## 6.4.31
+
 - DevTools registration switched from untyped `nuxt.hook('devtools:customTabs', ...)` to `addCustomTab(...)`.
 - NFZ tab icon is now served by the module on `/__nfz-devtools-icon.png` for consumer-app reliability.
 - Keeps parent-theme sync logic for the NFZ DevTools iframe.
 
 ## 6.4.31
+
 - DevTools: local icon route now serves an embedded 64x64 plume PNG buffer instead of reading public/plume-light.png at runtime.
 - DevTools: parent theme auto-sync now retries after load and observes both html/body with data-theme and data-color-mode support.
 
-
 ## 6.4.32
+
 - Remote mode + payloadMode=keycloak: Keycloak authenticated state now synchronizes the Feathers client auth session automatically.
 - The auth store is marked authenticated with a token fallback to keycloak.token, and protected services using authentication('jwt') are authorized on boot and token refresh.
 - feathers-auth bootstrap skips reAuthenticate() in remote Keycloak payload mode; keycloak-sso becomes the source of truth for auth session bootstrap.
 
-
 ## 6.4.35
+
 - devtools asset loading made lazy and fault-tolerant to avoid module prepare failure masked as src/module.ts load error
 - public release metadata resynchronized to 6.4.35
 - devtools plume icon/theme-parent behavior preserved
-
 - 6.4.45: remote Keycloak Option B contract (`strategy: 'sso'`, `user: loginuser`, `authenticated: true`) is now first-class in the runtime and docs; generated route middleware no longer re-runs `auth.init()` or reuses callback hashes in redirect URIs.
 
 ## 6.4.94
@@ -1426,8 +1479,8 @@
 - `useProtectedService()` retries once after `reAuthenticate()` on 401
 - docs FR/EN updated for phase 3 runtime auth usage
 
-
 ## 6.4.96
+
 - auth runtime phase 5: official Keycloak bridge helper and richer diagnostics
 - protected helpers now validate Keycloak bearer before protected calls
 - docs FR/EN aligned on auth runtime phases 3/4/5
